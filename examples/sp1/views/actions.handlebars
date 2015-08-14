@@ -1,0 +1,43 @@
+<!--
+actions.handlebars
+
+This file provides a template for POST-binding actions.
+In order to make it more flexible, there are serveral parameters you can set.
+
+entityEndpoint: either service or identity provider
+actionType: declares the type of actions (SAMLRequest/SAMLResponse)
+actionValue: value for action (value should be base64 encoded before subsitution)
+
+-->
+<form id="saml-form" method="post" action="{{entityEndpoint}}">
+    <input type="hidden" name="{{actionType}}" value="{{actionValue}}" />
+    {{#if relayState}}
+        <input type="hidden" name="RelayState" value="{{relayState}}" />
+    {{/if}}
+    {{#if method}}
+        <input type="hidden" name="method" value="{{method}}"/>
+    {{/if}}
+</form>
+<script type="text/javascript">
+    (function(){
+        {{#if ajaxSubmit}}
+            var inputs = document.forms[0].getElementsByTagName("input");
+            var data = { ajaxForm: true };
+            for(var i=0,j=inputs.length;i<j;++i){
+               data[inputs[i].id] = inputs[i].value;
+            }
+            $.ajax({
+                type: document.getElementById('method').value,
+                //dataType: 'jsonp', // trick to do ajax call without dealing with same origin policy problem
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                url: document.getElementById('saml-form').action,
+                success: function(data) {
+                    console.log(JSON.stringify(data));
+                }
+            });
+        {{else}}
+                document.forms[0].submit();
+        {{/if}}
+    })();
+</script>

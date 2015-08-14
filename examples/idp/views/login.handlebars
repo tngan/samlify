@@ -1,0 +1,19 @@
+<h3> IdP Login Portal </h3>
+{{#each messages}}
+   <h5 style="color:#BBB;">{{this}}</h5>
+{{/each}}
+<form id="idp-login" method="post" action="/login">
+    <input type="hidden" name="_csrf" value="{{_csrf}}"/>
+    <input type="email" name="email" value="" />
+    {{#if target}}
+        <input type="hidden" name="target" value="{{target}}"/>
+    {{/if}}
+    {{#if method}}
+        <input type="hidden" name="method" value="{{method}}"/>
+    {{/if}}
+    {{#if appID}}
+        <input type="hidden" name="appID" value="{{appID}}"/>
+    {{/if}}
+    <input type="password" name="password" value="" />
+    <button type="submit" form="idp-login" value="Submit">Login</button>
+</form>

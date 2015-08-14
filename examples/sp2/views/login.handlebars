@@ -1,0 +1,28 @@
+{{#if isSSOLogin}}
+    <form id="sso-login" method="post" action="/login/external.esaml">
+        <input type="hidden" name="_csrf" value="{{_csrf}}"/>
+        <input type="hidden" name="email" value="{{email}}" />
+        <input type="hidden" name="password" value="$" />
+    </form>
+    <script type="text/javascript">
+        (function(){
+            document.forms[0].submit();
+        })();
+    </script>
+{{else}}
+    <h3> Login to My Application </h3>
+    {{#each messages}}
+       <h5 style="color:#BBB;">{{this}}</h5>
+    {{/each}}
+    <form id="sp-login" method="post" action="/login">
+        <input type="hidden" name="_csrf" value="{{_csrf}}"/>
+        <input type="email" name="email" value="" />
+        <input type="password" name="password" value="" />
+        <button type="submit" form="sp-login" value="Submit">Login</button>
+    </form>
+    <br>--------------------------------------------------<br>
+    <h5>
+        <span>SP-initiated Single Sign On (Redirect binding) <a href="/sso/spinitsso-redirect">Login</a></span><br>
+        <span>SP-initiated Single Sign On (Post binding) <a href="/sso/spinitsso-post">Login</a></span>
+    </h5>
+{{/if}}

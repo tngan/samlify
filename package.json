@@ -1,0 +1,41 @@
+{
+  "name": "express-saml2",
+  "version": "1.0.0",
+  "description": "High-level API for Single Sign On (SAML 2.0)",
+  "main": "index.js",
+  "keywords": [
+    "nodejs",
+    "express",
+    "saml2",
+    "sso",
+    "metadata"
+  ],
+  "scripts": {
+    "test": "mocha ./test/index.js"
+  },
+  "contributors": [
+    "Tony Ngan <tonynwk919@gmail.com>"
+  ],
+  "author": "tngan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tngan/express-saml2"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "deflate-js": "^0.2.3",
+    "lodash": "^3.10.0",
+    "node-forge": "^0.6.34",
+    "node-rsa": "^0.2.24",
+    "node-uuid": "^1.4.3",
+    "xml": "^1.0.0",
+    "xml-crypto": "^0.5.27",
+    "xmldom": "^0.1.19",
+    "xpath": "0.0.9"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "q": "^1.4.1",
+    "should": "^7.0.1"
+  }
+}

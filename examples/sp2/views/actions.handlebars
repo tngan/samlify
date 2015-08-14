@@ -1,0 +1,22 @@
+<!--
+actions.handlebars
+
+This file provides a template for POST-binding actions.
+In order to make it more flexible, there are serveral parameters you can set.
+
+entityEndpoint: either service or identity provider
+actionType: declares the type of actions (SAMLRequest/SAMLResponse)
+actionValue: value for action (value should be base64 encoded before subsitution)
+
+-->
+<form id="saml-form" method="post" action="{{entityEndpoint}}">
+    <input type="hidden" name="{{actionType}}" value="{{actionValue}}" />
+    {{#if relayState}}
+        <input type="hidden" name="RelayState" value="{{relayState}}" />
+    {{/if}}
+</form>
+<script type="text/javascript">
+    (function(){
+        document.forms[0].submit();
+    })();
+</script>
