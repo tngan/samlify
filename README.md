@@ -6,7 +6,7 @@ High-level API for Single Sign On (SAML 2.0)
 
 ##Description
 
-This module provides hight-level API for scalable Single Sign On (SSO) implementation. Developers can easily configure the Service Providers and Identity Providers by importing the corresponding metadata. SAML2.0 provides a standard guide but leaves a lot of options, so we keep simple coding but with highly configuarable.
+This module provides hight-level API for scalable Single Sign On (SSO) implementation. Developers can easily configure the Service Providers and Identity Providers by importing the corresponding metadata. SAML2.0 provides a standard guide but leaves a lot of options, so we provide a simple interface that's highly configurable.
 
 ##Glossary
 
@@ -353,7 +353,7 @@ password: admin123
 6. Login user with email `admin@sp1.com` is shown on screen.
 7. Steps (1-6) can be repeated to login `sp2`
 
-####Behind code:
+####Backend code:
 In our basic solution, email is assumed to be an unique field and used to identify each user. There is a one-to-many user email mapping in identity provider. When SAML response message is sent, the associated email is included in <saml:NameID> field. In our example, we hard coded the association but better use database to do it in practical.
 ```javascript
 /*
@@ -383,7 +383,7 @@ In our basic solution, email is assumed to be an unique field and used to identi
 7. Login user with email `admin@sp1.com` is shown on screen.
 8. Steps (1-7) can be repeated to login `sp2`
 
-####Behind code:
+####Backend code:
 We implement Redirect binding using URL redirect. The redirect URL has the format  `http://localhost:3001/sso/SingleSignOnService?SAMLRequest=@SAMLRequest&SigAlg=@SigAlg&RelayState=@RelayState&Signature=@Signature`. Notice that `RelayState`, `SigAlg` and `Signature` are optional depending on the perference of `idp`. `SigAlg` and `Signature` will be issued only when `WantAuthnRequestsSigned` is set to true in idp metadata.
 ```javascript
 /*
@@ -407,7 +407,7 @@ router.get('/spinitsso-redirect',function(req,res){
 7. Login user with email `admin@sp1.com` is shown on screen.
 8. Steps (1-7) can be repeated to login `sp2`
 
-####Behind code:
+####Backend code:
 We implement POST binding using an automatic form submit. Once the `idp` validates and parses the SAML request from `sp1` succcessfully, it will render the parse result to a new page defined in `views/actions.handlebars` as follow:
 ```javascript
 /*
@@ -463,7 +463,7 @@ Access the above three homepage after login, you are able to logout all three po
 12. Redirect to the `idp` login portal http://localhost:3001/login.
 13. When accessing `sp1` and `sp2`, the browser will redirect you to the corresponding login page.
 
-####Behind code:
+####Backend code:
 We have set `relayState` to go through all participating service providers. When user is logged out from `idp`, also indicated that logged out from `sp1` and `sp2` in our example.
 
 ## Customization
