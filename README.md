@@ -215,7 +215,7 @@ parameters:
     privateKeyFilePass <string|o>         Set if your .pem file has protected passpharse (recommend)
     signingCertFile <string|m>            File path of .cer file which is your X.509 certificate (#2)
     nameIDFormat <[string]|o>             Define the support name ID format
-    singleSignOnService <[object]|m>      Define binding and location of each single sign on service
+    assertionConsumerService <[object]|m> Define binding and location of each single assertion consumer service
     singleLogoutService <[object]|o>      Define binding and location of each single logout service (#3)
     wantAssertionsSigned <boolean|o>      Define whether assertion need signature (Default is false) (#4)
     wantLogoutRequestSigned <boolean|o>   Define whether logout request need signature (Default is false) (#5)
@@ -238,7 +238,7 @@ var spSetting = {
     privateKeyFile: './privateKey.pem',
     privateKeyFilePass: 'myPassword',
     signingCertFile: './certificate.cer',
-    singleSignOnService:[{
+    assertionConsumerService:[{
         Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
         Location: 'https://sp.example.org/sso/acs'
     },{
