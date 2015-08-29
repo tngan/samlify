@@ -231,7 +231,7 @@ remarks:
 ```
 #####Example
 ```javascript
-// Sample of IDP setting used to construct an identity provider
+// Sample of IDP setting used to construct an service provider
 var spSetting = {
     entityID:'https://sp.example.org/metadata',
     nameIDFormat:['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
