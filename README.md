@@ -1,9 +1,6 @@
 # express-saml2
 High-level API for Single Sign On (SAML 2.0)
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-
 ##Description
 
 This module provides hight-level API for scalable Single Sign On (SSO) implementation. Developers can easily configure the Service Providers and Identity Providers by importing the corresponding metadata. SAML2.0 provides a standard guide but leaves a lot of options, so we provide a simple interface that's highly configurable.
@@ -14,11 +11,15 @@ Metadata: A public XML document specifies the entity's preference<br/>
 Identity Provider: An entity authenticates the users<br/>
 Service Provider: An entity provides services/resources
 
-##Install
+##Get Started
 
 ```bash
-$ npm install express-saml2
+$ git clone https://github.com/tngan/express-saml2.git
 ```
+
+##Branches
+
+Currently we are working on v1.1, it will be noticed if we are ready to release the alpha version. In terms of long term development and integration, for those who love coding with ES6, we are happy to announce that we will embrace ES6 later on, and compile with [Babel](https://babeljs.io/).
 
 ##API Reference
 ```javascript
@@ -549,6 +550,7 @@ router.post('/acs',function(req,res,next){
 There is plenty of room for improvement and more features will be added. Please feel free to contribute. Some features and supports are planning to be added in the next release as follow:
 
 + More test cases !
++ Embrace ES6 !
 + UI improvement of the express applications
 + A GUI for SAML tools
 + Encryption in SAML messages
@@ -566,8 +568,3 @@ There is plenty of room for improvement and more features will be added. Please 
 ## Copyright
 
 Copyright (C) 2015 Tony Ngan, released under the MIT License.
-
-[npm-url]: https://npmjs.org/package/express-saml2
-[npm-image]: https://img.shields.io/npm/v/express-saml2.svg
-[downloads-url]: https://npmjs.org/package/express-saml2
-[downloads-image]: https://img.shields.io/npm/dm/express-saml2.svg
