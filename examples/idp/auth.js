@@ -1,6 +1,6 @@
 var LocalStrategy = require('passport-local').Strategy;
 var passport = require('passport');
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcryptjs');
 // store in database
 var epn = {
     'admin@idp.com' : {
