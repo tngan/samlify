@@ -143,6 +143,7 @@ router.post('/SingleLogoutService/:id',function(req,res){
         if(req.body.RelayState){
             res.redirect(req.body.RelayState);
         } else {
+            delete req.session.relayStep;
             req.logout();
             req.flash('info','All participating service provider has been logged out');
             res.redirect('/login');
@@ -153,13 +154,15 @@ router.post('/SingleLogoutService/:id',function(req,res){
 router.get('/logout/all',function(req,res){
     var serviceList = Object.keys(epn[req.user.sysEmail].app);
     var relayState = 'http://localhost:3001/sso/logout/all';
-    if(req.session.relayStep !== undefined) {
-        req.session.relayStep = parseInt(req.session.relayStep) + 1;
+    var relayStep = req.session.relayStep;
+    if(relayStep !== undefined && relayStep + 1 !== serviceList.length) {
+        req.session.relayStep = parseInt(relayStep) + 1;
     } else {
         req.session.relayStep = 0;
     }
-    if(req.session.relayStep <= serviceList.length){
-        if(req.session.relayStep == serviceList.length){
+    //console.log('session:relayStep',req.session.relayStep,serviceList.length);
+    if(req.session.relayStep < serviceList.length){
+        if(req.session.relayStep === serviceList.length - 1){
             relayState = '';
         }
         var id = serviceList[req.session.relayStep];
