@@ -32,6 +32,7 @@ router.get('/login/external.esaml', function(req, res, next) {
     if(method && target){
         res.render('login', {
             title: 'idp - SSO External Login',
+            web: 'es2-IdP External Login',
             method: method,
             target: target
         });

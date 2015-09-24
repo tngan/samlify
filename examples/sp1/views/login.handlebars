@@ -10,19 +10,30 @@
         })();
     </script>
 {{else}}
-    <h3> Login to My Application </h3>
+    <header>Demo for express-saml2</header>
+    <h3>es2-SP1 Login Portal</h3>
     {{#each messages}}
        <h5 style="color:#BBB;">{{this}}</h5>
     {{/each}}
-    <form id="sp-login" method="post" action="/login">
-        <input type="hidden" name="_csrf" value="{{_csrf}}"/>
-        <input type="email" name="email" value="" />
-        <input type="password" name="password" value="" />
-        <button type="submit" form="sp-login" value="Submit">Login</button>
-    </form>
-    <br>--------------------------------------------------<br>
-    <h5>
-        <span>SP-initiated Single Sign On (Redirect binding) <a href="/sso/spinitsso-redirect">Login</a></span><br>
-        <span>SP-initiated Single Sign On (Post binding) <a href="/sso/spinitsso-post">Login</a></span>
-    </h5>
+    <div id="form-wrapper">
+        <form id="sp-login" method="post" action="/login">
+            <input type="hidden" name="_csrf" value="{{_csrf}}"/>
+            <input type="email" name="email" value="" />
+            <input type="password" name="password" value="" />
+            <button type="submit" form="sp-login" value="Submit">Login</button>
+        </form>
+        <div class="sso-btn" onClick="spInitSSO(0);">Login via SSO (Redirect)</div>
+        <div class="sso-btn" onClick="spInitSSO(1);">Login via SSO (Post)</div>
+    </div>
+    <!--
+        <h5>
+            <span>SP-initiated Single Sign On (Redirect binding) <a href="/sso/spinitsso-redirect">Login</a></span><br>
+            <span>SP-initiated Single Sign On (Post binding) <a href="/sso/spinitsso-post">Login</a></span>
+        </h5>
+    -->
+    <script>
+        function spInitSSO(binding){
+            window.location.href = '/sso/spinitsso-' + (binding === 0 ? 'redirect' : 'post');
+        }
+    </script>
 {{/if}}
