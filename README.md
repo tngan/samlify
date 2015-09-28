@@ -1,6 +1,7 @@
 # express-saml2
 
 [![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 High-level API for Single Sign On (SAML 2.0)
 
 ##Description
@@ -562,6 +563,10 @@ There is plenty of room for improvement and more features will be added. Please 
 + Support for Artifact Binding
 + Support for rsa-sha256 signing algorithm
 + Support for more certificate format
+
+## References
+
+[An introduction to Single Sign On](http://www.slideshare.net/TonyNgan/an-introduction-of-single-sign-on)
 
 ## License
 
