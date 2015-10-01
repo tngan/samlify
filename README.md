@@ -1,13 +1,7 @@
 # express-saml2
-<<<<<<< HEAD
 
 [![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-=======
-
-[![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
->>>>>>> 59aa9e02d46e1c6f35e61342d3910042dfadc6af
 High-level API for Single Sign On (SAML 2.0)
 
 ##Description
