@@ -18,8 +18,8 @@
     <div id="form-wrapper">
         <form id="sp-login" method="post" action="/login">
             <input type="hidden" name="_csrf" value="{{_csrf}}"/>
-            <input type="email" name="email" value="" />
-            <input type="password" name="password" value="" />
+            <input type="email" name="email" placeholder="Email"value="" />
+            <input type="password" name="password" placeholder="Password" value="" />
             <button type="submit" form="sp-login" value="Submit">Login</button>
         </form>
         <div class="sso-btn" onClick="spInitSSO(0);">Login via SSO (Redirect)</div>
