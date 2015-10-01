@@ -575,3 +575,7 @@ There is plenty of room for improvement and more features will be added. Please 
 ## Copyright
 
 Copyright (C) 2015 Tony Ngan, released under the MIT License.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tngan/express-saml2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
