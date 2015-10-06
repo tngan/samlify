@@ -3,14 +3,15 @@
 ## [1.1](#)
 
 **Implemented enhancements:**
-+ Support RSASHA1, RSASHA256, RSASHA512 signature algorithms
-+ UI improvement of the express applications
-+ Continuous code refractoring (Do not delete me !)
++ Support RSASHA1, RSASHA256, RSASHA512 signature algorithms #6
++ Support AES128, AES256, TRI-DEC for assertion encryption #7
++ Improve the readability of README.md #8
++ Add more test cases
++ Delete the duplicated method `Metadata.prototype.createKeySection`
++ Continuous code refractoring
 
 **Merged pull requests:**
 + PR #2 Bad reference to IDPSSODescriptor
-
-**Fixed bugs:**
 
 **Remarks:**
 + All release now follows Semantic Versioning 2.0.0
