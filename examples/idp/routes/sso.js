@@ -21,10 +21,16 @@ var epn = {
 /// Restart server is needed when new metadata is imported
 var idp1 = require('../../../index').IdentityProvider({
     privateKeyFile: '../key/idp/privkey.pem',
+    isAssertionEncrypted: true,
+    encPrivateKeyFile: '../key/idp/encryptKey.pem',
+    encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
     privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW'
 },'../metadata/metadata_idp1.xml');
 var idp2 = require('../../../index').IdentityProvider({
     privateKeyFile: '../key/idp/privkey.pem',
+    isAssertionEncrypted: true,
+    encPrivateKeyFile: '../key/idp/encryptKey.pem',
+    encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
     privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW'
 },'../metadata/metadata_idp2.xml');
 
