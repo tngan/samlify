@@ -5,10 +5,12 @@ var utility = require('../../../index').Utility;
 var sp = require('../../../index').ServiceProvider({
     privateKeyFile: '../key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
-    requestSignatureAlgorithm: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
+    requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
 },'../metadata/metadata_sp1.xml');
 /// Declare the idp
-var idp = require('../../../index').IdentityProvider('../metadata/metadata_idp1.xml');
+var idp = require('../../../index').IdentityProvider({
+    isAssertionEncrypted: true
+},'../metadata/metadata_idp1.xml');
 
 ///
 /// metadata is publicly released, can access at /sso/metadata
