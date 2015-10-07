@@ -1,5 +1,5 @@
 {{#if isSSOLogin}}
-    <form id="sso-login" method="post" action="/login/external.esaml">
+    <form id="sso-login" autocomplete="off" method="post" action="/login/external.esaml">
         <input type="hidden" name="_csrf" value="{{_csrf}}"/>
         <input type="hidden" name="email" value="{{email}}" />
         <input type="hidden" name="password" value="$" />
@@ -16,7 +16,7 @@
        <h5 style="color:#BBB;">{{this}}</h5>
     {{/each}}
     <div id="form-wrapper">
-        <form id="sp-login" method="post" action="/login">
+        <form id="sp-login" autocomplete="off" method="post" action="/login">
             <input type="hidden" name="_csrf" value="{{_csrf}}"/>
             <input type="email" name="email" placeholder="Email" value="" />
             <input type="password" name="password" placeholder="Password" value="" />

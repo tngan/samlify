@@ -5,7 +5,7 @@
     <h3> es2-IdP Login Portal </h3>
 {{/if}}
 <div id="form-wrapper">
-    <form id="idp-login" method="post" action="/login">
+    <form id="idp-login" method="post" action="/login" autocomplete="off">
         <input type="hidden" name="_csrf" value="{{_csrf}}"/>
         <input type="email" name="email" placeholder="Email"value="" />
         {{#if target}}
