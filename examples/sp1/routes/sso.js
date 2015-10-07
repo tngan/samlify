@@ -5,9 +5,7 @@ var utility = require('../../../index').Utility;
 var sp = require('../../../index').ServiceProvider({
     privateKeyFile: '../key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
-    requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
-    encPrivateKeyFile: '../key/sp/encryptKey.pem',
-    encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU'
+    requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
 },'../metadata/metadata_sp1.xml');
 /// Declare the idp
 var idp = require('../../../index').IdentityProvider({

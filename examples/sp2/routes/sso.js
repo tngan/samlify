@@ -7,7 +7,9 @@ var sp = require('../../../index').ServiceProvider({
     requestSignatureAlgorithm: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
 },'../metadata/metadata_sp2.xml');
 
-var idp = require('../../../index').IdentityProvider('../metadata/metadata_idp2.xml');
+var idp = require('../../../index').IdentityProvider({
+    isAssertionEncrypted: true
+},'../metadata/metadata_idp2.xml');
 
 router.get('/metadata',function(req, res, next){
     res.header('Content-Type','text/xml').send(sp.getMetadata());
