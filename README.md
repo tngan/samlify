@@ -15,15 +15,30 @@ $ npm install express-saml2
 ```
 
 ###Get Started
-```bash
-$ git clone https://github.com/tngan/express-saml2.git
-```
 ```javascript
 var saml = require('express-saml2');
 ```
-
-###Wiki
 See full documentation [here](https://github.com/tngan/express-saml2/wiki)
+
+###Demo
+
+In the `/examples` folder, there are three entities (1 IdP and 2 SPs). They are at port 3001, 4002 and 4003.
+
+Without using Single Sign On, users have to remember several pairs of username/password in order to log into different internal applications.
+
+<img src="http://fat.gfycat.com/DarlingGeneralAntlion.gif" alt="normal-login" width="80%">
+
+SAML proposes two ways to initiate Single Sign On, they are respectively Service Provider Initiated SSO and Identity Provider Initiated SSO. In SP-initated SSO, the user attempts to access SP but their federated identity is authenticated by IdP, so they first have to log on IdP, then IdP sends back a SAML assertion response to SP, and finally SP creates a session to user in order to access the resources.
+
+<img src="http://giant.gfycat.com/BlissfulAppropriateDinosaur.gif" alt="spinit-sso" width="80%">
+
+In the approach of IdP-initated SSO, IdP provides links which refers to the resources in service providers. In this use case, users don't need to visit SP first.
+
+<img src="http://fat.gfycat.com/MarvelousKindheartedAlabamamapturtle.gif" alt="idpinit-sso" width="80%">
+
+IdP-initiated Single Logout is also provided and relied on relay state. IdP provides a link refers to the single logout endpoints in one of those participated service providers (SP1). The selected SP sends back a logout response to IdP with relay state which is the logout endpoint URL of next participated service provider (SP2), user finally log out IdP when all participated SP is logged out.
+
+<img src="http://fat.gfycat.com/DarlingGeneralAntlion.gif" alt="idpinit-slo" width="80%">
 
 ### Talks
 
@@ -36,7 +51,3 @@ See full documentation [here](https://github.com/tngan/express-saml2/wiki)
 ### Copyright
 
 Copyright (C) 2015 Tony Ngan, released under the MIT License.
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tngan/express-saml2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
