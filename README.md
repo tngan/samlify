@@ -41,7 +41,7 @@ In the `/examples` folder, there are three entities (1 IdP and 2 SPs). They are 
 
 Without using Single Sign On, users have to remember several pairs of username/password in order to log into different internal applications.
 
-<img src="http://fat.gfycat.com/DarlingGeneralAntlion.gif" alt="normal-login" width="80%">
+<img src="http://fat.gfycat.com/InexperiencedAdorableAntarcticgiantpetrel.gif" alt="normal-login" width="80%">
 
 SAML proposes two ways to initiate Single Sign On, they are respectively Service Provider Initiated SSO and Identity Provider Initiated SSO. In SP-initated SSO, the user attempts to access SP but their federated identity is authenticated by IdP, so they first have to log on IdP, then IdP sends back a SAML assertion response to SP, and finally SP creates a session to user in order to access the resources.
 
