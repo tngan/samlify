@@ -20,6 +20,21 @@ var saml = require('express-saml2');
 ```
 See full documentation [here](https://github.com/tngan/express-saml2/wiki)
 
+###Support algorithms
+Signature algorithms
+* http://www.w3.org/2000/09/xmldsig#rsa-sha1
+* http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
+* http://www.w3.org/2001/04/xmldsig-more#rsa-sha512
+
+Data encryption algorithms
+* http://www.w3.org/2001/04/xmlenc#tripledes-cbc
+* http://www.w3.org/2001/04/xmlenc#aes128-cbc
+* http://www.w3.org/2001/04/xmlenc#aes256-cbc
+
+Key encryption algorithms
+* http://www.w3.org/2001/04/xmlenc#rsa-1_5
+* http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p
+
 ###Demo
 
 In the `/examples` folder, there are three entities (1 IdP and 2 SPs). They are at port 3001, 4002 and 4003.
