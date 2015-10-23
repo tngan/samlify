@@ -8,6 +8,9 @@ var epn = {
     },
     'user@sp1.com' : {
         assoHash: '$2a$10$ezOOV6/c.SkWp73dyEcHjOTcVuZ50xxfYQreWyt430xJGxjwP2WOW' //user123
+    },
+    'admin@esaml2.com' : {
+        assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S' //admin123
     }
 };
 

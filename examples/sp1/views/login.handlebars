@@ -24,16 +24,12 @@
         </form>
         <div class="sso-btn" onClick="spInitSSO(0);">Login via SSO (Redirect)</div>
         <div class="sso-btn" onClick="spInitSSO(1);">Login via SSO (Post)</div>
+        <div class="sso-btn" onClick="spInitSSO(1,'onelogin');">Login via OneLogin</div>
     </div>
-    <!--
-        <h5>
-            <span>SP-initiated Single Sign On (Redirect binding) <a href="/sso/spinitsso-redirect">Login</a></span><br>
-            <span>SP-initiated Single Sign On (Post binding) <a href="/sso/spinitsso-post">Login</a></span>
-        </h5>
-    -->
     <script>
-        function spInitSSO(binding){
-            window.location.href = '/sso/spinitsso-' + (binding === 0 ? 'redirect' : 'post');
+        function spInitSSO(binding,idp){
+            var id = idp || '';
+            window.location.href = '/sso/spinitsso-' + (binding === 0 ? 'redirect' : 'post') + '?id=' + idp ;
         }
     </script>
 {{/if}}
