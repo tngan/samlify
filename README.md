@@ -14,6 +14,9 @@ To install the stable version
 $ npm install express-saml2
 ```
 
+### Integrations
++ [OneLogin](https://www.onelogin.com/)
+
 ### Get Started
 ```javascript
 var saml = require('express-saml2');
