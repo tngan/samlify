@@ -14,3 +14,5 @@ module.exports.SPMetadata = require(libPath+'SPMetadata');
 
 module.exports.Utility = require(libPath+'Utility');
 module.exports.SamlLib = require(libPath+'SamlLib');
+
+module.exports.Constants = require(libPath+'urn');
