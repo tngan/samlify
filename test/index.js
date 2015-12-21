@@ -4,15 +4,16 @@
 * @desc mocha test for Utility and SamlLib module
 */
 // Package
-var Utility = require('../lib/Utility');
+var entry = require('../index');
+var Utility = entry.Utility; 
 var should = require('should');
 var fs = require('fs');
-var SamlLib = require('../lib/SamlLib');
+var SamlLib = entry.SamlLib; 
 var xpath = require('xpath');
 var dom = require('xmldom').DOMParser;
-var binding = require('../lib/urn').namespace.binding;
+var binding = entry.Constants.namespace.binding;
 var select = require('xml-crypto').xpath;
-var algorithms = require('../lib/urn').algorithms;
+var algorithms = entry.Constants.algorithms;
 var signatureAlgorithms = algorithms.signature;
 
 // Define of metadata
@@ -22,7 +23,7 @@ var _spPrivKey = _spKeyFolder + 'nocrypt.pem';
 var _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
 
 // Define an identity provider
-var idp = require('../lib/IdentityProvider')({
+var idp = entry.IdentityProvider({
     privateKeyFile: './test/key/idp/privkey.pem',
     privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
     isAssertionEncrypted: true,
@@ -30,7 +31,7 @@ var idp = require('../lib/IdentityProvider')({
     encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN'
 },'./test/metadata/IDPMetadata.xml');
 
-var sp = require('../lib/ServiceProvider')({
+var sp = entry.ServiceProvider({
     privateKeyFile: './test/key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     isAssertionEncrypted: true, // for logout purpose
@@ -39,8 +40,8 @@ var sp = require('../lib/ServiceProvider')({
 },'./test/metadata/SPMetadata.xml');
 
 // Define metadata
-var IdPMetadata = require('../lib/IdPMetadata')('./test/metadata/IDPMetadata.xml');
-var SPMetadata = require('../lib/SPMetadata')('./test/metadata/SPMetadata.xml');
+var IdPMetadata = entry.IdPMetadata('./test/metadata/IDPMetadata.xml');
+var SPMetadata = entry.SPMetadata('./test/metadata/SPMetadata.xml');
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var sampleSignedResponse = fs.readFileSync('./test/metadata/SignSAMLResponse.xml').toString();
 var wrongResponse = fs.readFileSync('./test/metadata/wrongResponse.xml').toString();
@@ -442,5 +443,13 @@ describe('2. SamlLib.js', function() {
                 done();
             });
         });
+    });
+});
+
+describe('3 Constant.js', function() {
+    var entry = require('../index'); 
+    var constants = entry.Constants;
+    it('constants should be exported', function(done) {
+        if(typeof constants === 'object') done();
     });
 });
