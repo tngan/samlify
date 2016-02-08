@@ -88,7 +88,7 @@ router.get('/spinitsso-redirect',function(req,res){
     });
 });
 
-router.post('/acs/:idp',function(req,res,next){
+router.post('/acs/:idp?',function(req,res,next){
     var _idp, _sp;
     if(req.params.idp === 'onelogin'){
         _idp = oneLoginIdP;
