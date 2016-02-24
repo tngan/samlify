@@ -1,6 +1,6 @@
 {
   "name": "express-saml2",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "index.js",
   "keywords": [
@@ -36,10 +36,7 @@
     "xpath": "0.0.9"
   },
   "devDependencies": {
-    "gulp": "^3.9.0",
-    "gulp-eslint": "^1.0.0",
     "mocha": "^2.2.5",
-    "q": "^1.4.1",
     "should": "^7.0.1"
   }
 }
