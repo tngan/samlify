@@ -5,10 +5,10 @@
 */
 // Package
 var entry = require('../index');
-var Utility = entry.Utility; 
+var Utility = entry.Utility;
 var should = require('should');
 var fs = require('fs');
-var SamlLib = entry.SamlLib; 
+var SamlLib = entry.SamlLib;
 var xpath = require('xpath');
 var dom = require('xmldom').DOMParser;
 var wording = require('../lib/urn').wording;
@@ -46,10 +46,14 @@ var SPMetadata = entry.SPMetadata('./test/metadata/SPMetadata.xml');
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var sampleSignedResponse = fs.readFileSync('./test/metadata/SignSAMLResponse.xml').toString();
 var wrongResponse = fs.readFileSync('./test/metadata/wrongResponse.xml').toString();
+var spCertKnownGood = fs.readFileSync('./test/key/sp/knownGoodCert.cer').toString().trim();
+var spPemKnownGood = fs.readFileSync('./test/key/sp/knownGoodEncryptKey.pem').toString().trim();
+
 ///*
 function writer(str) {
     fs.writeFileSync('test.txt', str);
 }
+
 //*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 describe('1. Utility.js', function() {
@@ -74,6 +78,14 @@ describe('1. Utility.js', function() {
         (Utility.isTrue('false').should.be.equal(false));
         (Utility.isTrue(true).should.be.equal(true));
         (Utility.isTrue(undefined).should.be.equal(false));
+        done();
+    });
+    it('1.6 Parse Certificate should return clean certificate', function(done) {
+        (Utility.parseCerFile('./test/key/sp/cert.cer').should.be.equal((spCertKnownGood)));
+        done();
+    });
+    it('1.7 Normalize Pem should return clean string', function(done) {
+        (Utility.normalizePemString(fs.readFileSync('./test/key/sp/encryptKey.pem').toString()).should.be.equal((spPemKnownGood)));
         done();
     });
 });
@@ -252,7 +264,7 @@ describe('2. SamlLib.js', function() {
                     attributes: ['NotBefore', 'NotOnOrAfter']
                 }]))).should.be.equal(JSON.stringify({
                     conditions: {
-                        notbefore: "2014-07-17T01:01:18Z", 
+                        notbefore: "2014-07-17T01:01:18Z",
                         notonorafter: "2024-01-18T06:21:48Z"
                     }
                 }));
@@ -365,7 +377,7 @@ describe('2. SamlLib.js', function() {
             it('non-exist tag should return undefined', function(done) {
                 (JSON.stringify(SamlLib.extractor(SPMetadata.xmlString, [{
                     localName: {
-                        tag: 'KeyDescription', 
+                        tag: 'KeyDescription',
                         key: 'encrypt'
                     },
                     valueTag: 'X509Certificate'
@@ -388,7 +400,7 @@ describe('2. SamlLib.js', function() {
             it('single value should return array consists of one object', function(done) {
                 (JSON.stringify(SamlLib.extractor(SPMetadata.xmlString, [{
                     localName: {
-                        tag: 'AssertionConsumerService', 
+                        tag: 'AssertionConsumerService',
                         key: 'isDefault'
                     },
                     attributeTag: 'index'
@@ -398,7 +410,7 @@ describe('2. SamlLib.js', function() {
             it('multiple values should return array consists of multiple objects', function(done) {
                 (JSON.stringify(SamlLib.extractor(SPMetadata.xmlString, [{
                     localName: {
-                        tag: 'SingleLogoutService', 
+                        tag: 'SingleLogoutService',
                         key: 'Binding'
                     },
                     attributeTag: 'Location'
@@ -438,7 +450,7 @@ describe('2. SamlLib.js', function() {
             it('using custom key', function(done) {
                 (JSON.stringify(SamlLib.extractor(SPMetadata.xmlString, [{
                     localName: {
-                        tag: 'SingleLogoutService', 
+                        tag: 'SingleLogoutService',
                         key: 'Binding'
                     },
                     attributeTag: 'Location',
@@ -506,7 +518,7 @@ describe('2. SamlLib.js', function() {
 });
 
 describe('3 Constant.js', function() {
-    var entry = require('../index'); 
+    var entry = require('../index');
     var constants = entry.Constants;
     it('constants should be exported', function(done) {
         if(typeof constants === 'object') done();
