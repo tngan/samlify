@@ -1,6 +1,6 @@
 {
   "name": "express-saml2",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "index.js",
   "keywords": [
