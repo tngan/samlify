@@ -11,6 +11,7 @@ var fs = require('fs');
 var SamlLib = entry.SamlLib; 
 var xpath = require('xpath');
 var dom = require('xmldom').DOMParser;
+var wording = require('../lib/urn').wording;
 var binding = entry.Constants.namespace.binding;
 var select = require('xml-crypto').xpath;
 var algorithms = entry.Constants.algorithms;
@@ -511,3 +512,57 @@ describe('3 Constant.js', function() {
         if(typeof constants === 'object') done();
     });
 });
+
+describe('4 ServiceProvider.js', function() {
+    describe('4.1 SPMetadata.js', function() {
+        it('getAssertionConsumerService with one binding', function(done) {
+            var expectedPostLocation = 'https://sp.example.org/sp/sso/post';
+            var sp = entry.ServiceProvider({
+                privateKeyFile: './test/key/sp/privkey.pem',
+                privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+                isAssertionEncrypted: true, // for logout purpose
+                encPrivateKeyFile: './test/key/sp/encryptKey.pem',
+                encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+                assertionConsumerService: [{
+                    Binding: binding.post,
+                    Location: expectedPostLocation
+                }],
+                singleLogoutService: [{
+                    Binding: binding.redirect,
+                    Location: 'https://sp.example.org/sp/slo'
+                }]
+            });
+            sp.entityMeta.getAssertionConsumerService(wording.binding.post).should.be.equal(expectedPostLocation);
+            done();
+        });
+        it('getAssertionConsumerService with two bindings', function(done) {
+            var expectedPostLocation = 'https://sp.example.org/sp/sso/post';
+            var expectedArtifactLocation = 'https://sp.example.org/sp/sso/artifact';
+            var sp = entry.ServiceProvider({
+                privateKeyFile: './test/key/sp/privkey.pem',
+                privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+                isAssertionEncrypted: true, // for logout purpose
+                encPrivateKeyFile: './test/key/sp/encryptKey.pem',
+                encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+                assertionConsumerService: [{
+                    Binding: binding.post,
+                    Location: expectedPostLocation
+                }, {
+                    Binding: binding.arifact,
+                    Location: expectedArtifactLocation
+                }],
+                singleLogoutService: [{
+                    Binding: binding.redirect,
+                    Location: 'https://sp.example.org/sp/slo'
+                }, {
+                    Binding: binding.post,
+                    Location: 'https://sp.example.org/sp/slo'
+                }]
+            });
+            sp.entityMeta.getAssertionConsumerService(wording.binding.post).should.be.equal(expectedPostLocation);
+            sp.entityMeta.getAssertionConsumerService(wording.binding.arifact).should.be.equal(expectedArtifactLocation);
+            done();
+        });
+    })
+});
+
