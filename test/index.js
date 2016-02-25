@@ -45,10 +45,14 @@ var SPMetadata = entry.SPMetadata('./test/metadata/SPMetadata.xml');
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var sampleSignedResponse = fs.readFileSync('./test/metadata/SignSAMLResponse.xml').toString();
 var wrongResponse = fs.readFileSync('./test/metadata/wrongResponse.xml').toString();
+var spCertKnownGood = fs.readFileSync('./test/key/sp/knownGoodCert.txt').toString().trim();
+var spPemKnownGood = fs.readFileSync('./test/key/sp/knownGoodPem.txt').toString().trim();
+
 ///*
 function writer(str) {
     fs.writeFileSync('test.txt', str);
 }
+
 //*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 describe('1. Utility.js', function() {
@@ -73,6 +77,14 @@ describe('1. Utility.js', function() {
         (Utility.isTrue('false').should.be.equal(false));
         (Utility.isTrue(true).should.be.equal(true));
         (Utility.isTrue(undefined).should.be.equal(false));
+        done();
+    });
+    it('1.6 Parse Certificate should return clean certificate', function(done) {
+        (Utility.parseCerFile('./test/key/sp/cert.cer').should.be.equal((spCertKnownGood)));
+        done();
+    });
+    it('1.7 Normalize Pem should return clean string', function(done) {
+        (Utility.normalizePemString(fs.readFileSync('./test/key/sp/encryptKey.pem').toString()).should.be.equal((spPemKnownGood)));
         done();
     });
 });
