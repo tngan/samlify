@@ -30,7 +30,7 @@
     "node-rsa": "^0.2.24",
     "node-uuid": "^1.4.3",
     "xml": "^1.0.0",
-    "xml-crypto": "^0.8.0",
+    "xml-crypto": "0.8.2",
     "xml-encryption": "^0.7.2",
     "xmldom": "^0.1.19",
     "xpath": "0.0.9"
