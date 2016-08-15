@@ -42,9 +42,9 @@ var SPMetadata = '../metadata/metadata_sp1.xml';
 var SPMetadataForOnelogin = '../metadata/metadata_sp1_onelogin.xml';
 
 var basicSPConfig = {
-    privateKeyFile: '../key/sp/privkey.pem',
-    privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
-    requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
+  privateKeyFile: '../key/sp/privkey.pem',
+  privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
 };
 
 var sp = ServiceProvider(basicSPConfig,SPMetadata);
@@ -58,77 +58,77 @@ var olsp = ServiceProvider(SPMetadataForOnelogin);
 /// metadata is publicly released, can access at /sso/metadata
 ///
 router.get('/metadata',function(req, res, next){
-    res.header('Content-Type','text/xml').send(sp.getMetadata());
+  res.header('Content-Type','text/xml').send(sp.getMetadata());
 });
 
 router.get('/spinitsso-post',function(req,res){
-    var which = req.query.id || '';
-    var toIdP, fromSP;
-    switch(which){
-        case 'onelogin': {
-            fromSP = olsp;
-            toIdP = oneLoginIdP;
-            break;
-        }
-        default: {
-            fromSP = sp;
-            toIdP = idp;
-            break;
-        }
+  var which = req.query.id || '';
+  var toIdP, fromSP;
+  switch(which){
+    case 'onelogin': {
+      fromSP = olsp;
+      toIdP = oneLoginIdP;
+      break;
     }
-    console.log(fromSP.entityMeta.isAuthnRequestSigned(),toIdP.entityMeta.isWantAuthnRequestsSigned());
-    fromSP.sendLoginRequest(toIdP,'post',function(request){
-        res.render('actions',request);
-    });
+    default: {
+      fromSP = sp;
+      toIdP = idp;
+      break;
+    }
+  }
+  console.log(fromSP.entityMeta.isAuthnRequestSigned(),toIdP.entityMeta.isWantAuthnRequestsSigned());
+  fromSP.sendLoginRequest(toIdP,'post',function(request){
+    res.render('actions',request);
+  });
 });
 
 router.get('/spinitsso-redirect',function(req,res){
-    sp.sendLoginRequest(idp,'redirect',function(url){
-        res.redirect(url);
-    });
+  sp.sendLoginRequest(idp,'redirect',function(url){
+    res.redirect(url);
+  });
 });
 
 router.post('/acs/:idp?',function(req,res,next){
-    var _idp, _sp;
-    if(req.params.idp === 'onelogin'){
-        _idp = oneLoginIdP;
-        _sp = olsp;
+  var _idp, _sp;
+  if(req.params.idp === 'onelogin'){
+    _idp = oneLoginIdP;
+    _sp = olsp;
+  } else {
+    _idp = idp;
+    _sp = sp;
+  }
+  _sp.parseLoginResponse(_idp,'post',req,function(parseResult){
+    if(parseResult.extract.nameid){
+      res.render('login',{
+        title: 'Processing',
+        isSSOLogin: true,
+        email: parseResult.extract.nameid
+      });
     } else {
-        _idp = idp;
-        _sp = sp;
+      req.flash('info','Unexpected error');
+      res.redirect('/login');
     }
-    _sp.parseLoginResponse(_idp,'post',req,function(parseResult){
-        if(parseResult.extract.nameid){
-            res.render('login',{
-                title: 'Processing',
-                isSSOLogin: true,
-                email: parseResult.extract.nameid
-            });
-        } else {
-            req.flash('info','Unexpected error');
-            res.redirect('/login');
-        }
-    });
+  });
 });
 
 router.post('/slo',function(req,res){
-    sp.parseLogoutRequest(idp,'post',req,function(parseResult){
-        // Check before logout
-        req.logout();
-        sp.sendLogoutResponse(idp,parseResult,'redirect',req.body.RelayState,function(url){
-            res.redirect(url);
-        });
+  sp.parseLogoutRequest(idp,'post',req,function(parseResult){
+    // Check before logout
+    req.logout();
+    sp.sendLogoutResponse(idp,parseResult,'redirect',req.body.RelayState,function(url){
+      res.redirect(url);
     });
+  });
 });
 
 router.get('/slo',function(req,res){
-    sp.parseLogoutResponse(idp,'redirect',req,function(parseResult){
-        // Check before logout
-        req.logout();
-        sp.sendLogoutResponse(idp,parseResult,'redirect',req.query.RelayState,function(url){
-            res.redirect(url);
-        });
+  sp.parseLogoutResponse(idp,'redirect',req,function(parseResult){
+    // Check before logout
+    req.logout();
+    sp.sendLogoutResponse(idp,parseResult,'redirect',req.query.RelayState,function(url){
+      res.redirect(url);
     });
+  });
 });
 
 module.exports = router;
