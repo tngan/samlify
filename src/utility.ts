@@ -1,15 +1,15 @@
 /**
-* @file Utility.js
-* @author Tony Ngan
+* @file utility.ts
+* @author tngan
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
-import * as fs from "fs";
-import { pki, util, asn1 } from "node-forge";
-import { inflate, deflate } from "deflate-js";
-import * as _ from "lodash";
+import * as fs from 'fs';
+import { pki, util, asn1 } from 'node-forge';
+import { inflate, deflate } from 'deflate-js';
+import * as _ from 'lodash';
 
-const BASE64_STR = "base64";
-const ASCII_STR = "ascii";
+const BASE64_STR = 'base64';
+const ASCII_STR = 'ascii';
 /**
 * @desc Encode string with base64 format
 * @param  {string} message                       plain-text message
@@ -24,16 +24,16 @@ function base64Encode(message: string) {
 * @param  {boolean} isBytes                      determine the return value type (True: bytes False: string)
 * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
 */
-function base64Decode(base64Message: string, isBytes: boolean) {
+function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
   const bytes = new Buffer(base64Message, BASE64_STR);
-  return isBytes === true ? bytes : bytes.toString(ASCII_STR);
+  return Boolean(isBytes) ? bytes : bytes.toString(ASCII_STR);
 }
 /**
 * @desc Compress the string
 * @param  {string} message
 * @return {string} compressed string
 */
-function deflateString(message: string) {
+function deflateString(message: string): string {
   return deflate(Array.prototype.map.call(message, char => char.charCodeAt(0)));
 }
 /**
@@ -41,7 +41,7 @@ function deflateString(message: string) {
 * @param  {string} compressedString
 * @return {string} decompressed string
 */
-function inflateString(compressedString: string) {
+function inflateString(compressedString: string): string {
   return inflate(Array.prototype.map.call(new Buffer(compressedString, BASE64_STR).toString('binary'), char => char.charCodeAt(0)))
   .map(byte => String.fromCharCode(byte))
   .join('');
@@ -53,7 +53,7 @@ function inflateString(compressedString: string) {
 * @return {string} A formatted certificate string
 */
 function normalizeCerString(bin, format: string) {
-  return bin.toString().replace(/\n/g, "").replace(/\r/g, "").replace(`-----BEGIN ${format}-----`, "").replace(`-----END ${format}-----`, "");
+  return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '');
 }
 /**
 * @desc Parse the .cer to string format without line break, header and footer
@@ -61,7 +61,7 @@ function normalizeCerString(bin, format: string) {
 * @return {string} certificiate in string format
 */
 function parseCerFile(certFile: string){
-  return normalizeCerString(fs.readFileSync(certFile), "CERTIFICATE");
+  return normalizeCerString(fs.readFileSync(certFile), 'CERTIFICATE');
 }
 /**
 * @desc Normalize the string in .pem format without line break, header and footer
@@ -69,7 +69,7 @@ function parseCerFile(certFile: string){
 * @return {string} private key in string format
 */
 function normalizePemString(pemString: string){
-  return normalizeCerString(pemString.toString(), "RSA PRIVATE KEY");
+  return normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
 }
 /**
 * @desc Return the complete URL
@@ -80,27 +80,11 @@ function getFullURL(req){
   return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 }
 /**
-* @desc Check whether the input is true
-* @param  {string/boolean} t
-* @return {boolean}
-*/
-function isTrue(t){
-  let res = false;
-  if(t !== undefined){
-    if(t.constructor == Boolean){
-      res = t;
-    } else if(t.constructor == String){
-      res = t === 'true';
-    }
-  }
-  return res;
-}
-/**
 * @desc Parse input string, return default value if it is undefined
 * @param  {string/boolean}
 * @return {boolean}
 */
-function parseString(str, defaultValue = ""){
+function parseString(str, defaultValue = ''){
   return str || defaultValue;
 }
 /**
@@ -130,17 +114,17 @@ function getPublicKeyPemFromCertificate(x509Certificate: string){
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem file (recommend)
 */
-function readPrivateKeyFromFile(keyFile, passphrase, isOutputString){
+function readPrivateKeyFromFile(keyFile: string, passphrase: string, isOutputString?: boolean){
   return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(fs.readFileSync(keyFile), passphrase)), isOutputString) : fs.readFileSync(keyFile);
 }
 /**
 * @desc Inline syntax sugar
 */
 function convertToString(input, isOutputString){
-  return isOutputString === true ? input.toString() : input;
+  return Boolean(isOutputString) ? String(input) : input;
 }
 
-export default const Utility = {
+const utility = {
   base64Encode,
   base64Decode,
   deflateString,
@@ -148,10 +132,11 @@ export default const Utility = {
   parseCerFile,
   normalizePemString,
   getFullURL,
-  isTrue,
   parseString,
   applyDefault,
   getPublicKeyPemFromCertificate,
   readPrivateKeyFromFile,
   convertToString
 };
+
+export default utility;

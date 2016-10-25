@@ -4,7 +4,7 @@
   version "4.14.37"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.37.tgz#9a2169db336c87dc289c8d0aec2e5aa707feba2b"
 
-"@types/node-forge@^0.6.4":
+"@types/node-forge":
   version "0.6.4"
   resolved "https://registry.yarnpkg.com/@types/node-forge/-/node-forge-0.6.4.tgz#ef5c05c1cfd5a32e5e49409e8c5ae7fe0beccbc1"
 
@@ -18,7 +18,7 @@
   version "6.0.45"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-6.0.45.tgz#c4842a9d653d767831e4ff495b6008cc0d579966"
 
-"@types/xmldom@^0.1.28":
+"@types/xmldom":
   version "0.1.28"
   resolved "https://registry.yarnpkg.com/@types/xmldom/-/xmldom-0.1.28.tgz#52fabbeccc4f1806365d253b6c7b9673dda0f514"
 

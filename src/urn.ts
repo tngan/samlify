@@ -1,9 +1,9 @@
 /**
-* @file urn.js
-* @author Tony Ngan
+* @file urn.ts
+* @author tngan
 * @desc  Includes all keywords need in express-saml2
 */
-module.exports.namespace = {
+const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
     post: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
@@ -59,7 +59,7 @@ module.exports.namespace = {
   }
 };
 
-module.exports.tags = {
+const tags = {
   request: {
     AllowCreate: '{AllowCreate}',
     AssertionConsumerServiceURL: '{AssertionConsumerServiceURL}',
@@ -92,7 +92,7 @@ module.exports.tags = {
   }
 };
 
-module.exports.algorithms = {
+const algorithms = {
   signature: {
     RSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
     RSA_SHA256: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
@@ -116,7 +116,7 @@ module.exports.algorithms = {
   }
 };
 
-module.exports.wording = {
+const wording = {
   urlParams: {
     samlRequest: 'SAMLRequest',
     logoutRequest: 'LogoutRequest',
@@ -139,3 +139,5 @@ module.exports.wording = {
     idp: 'IdPMetadata'
   }
 };
+
+export { namespace, tags, algorithms, wording };

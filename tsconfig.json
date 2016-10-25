@@ -6,13 +6,15 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "noEmitHelpers": true,
     "outDir": "./build"
   },
   "atom": { "rewriteTsconfig": false },
+  "typeRoots": [
+    "node_modules/@types",
+    "@types"
+  ],
   "filesGlob": [
-    "./typings/index.d.ts",
-    "./src/*.ts"
+    "./src/**/*.ts"
   ],
   "compileOnSave": false,
   "buildOnSave": false

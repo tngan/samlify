@@ -1,5 +1,15 @@
 # Change Log
 
+## [2.0](#)
+
+**Breaking changes**
++ The file name SamlLib is renamed as libsaml
+
+**New features and support**
++ Use Typescript 2.0 in development
++ Write in ES2015/2016 style
++ Support Yarn package manager
+
 ## [1.1](#)
 
 **Implemented enhancements:**

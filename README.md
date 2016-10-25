@@ -1,7 +1,7 @@
 # express-saml2
 
+[![Release](https://img.shields.io/github/release/tngan/express-saml2.svg)](https://github.com/tngan/express-saml2/releases/latest)
 [![Build Status](https://travis-ci.org/tngan/express-saml2.svg?branch=master)](https://travis-ci.org/tngan/express-saml2)
-[![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 High-level API for Single Sign On (SAML 2.0)
 
@@ -15,12 +15,19 @@ To install the stable version
 $ npm install express-saml2
 ```
 
+### Development
+This project is now developed using TypeScript 2.0, also support Yarn which is a new package manager.
+```bash
+npm install typescript -g
+yarn install
+```
+
 ### Integrations
 + [OneLogin](https://www.onelogin.com/)
 
 ### Get Started
 ```javascript
-var saml = require('express-saml2');
+const saml = require('express-saml2');
 ```
 See full documentation [here](https://github.com/tngan/express-saml2/wiki)
 
