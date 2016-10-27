@@ -1,23 +1,21 @@
 /**
-* @file IdentityProvider.js
-* @author Tony Ngan
+* @file entity-idp.ts
+* @author tngan
 * @desc  Declares the actions taken by identity provider
 */
-var urn = require('./urn');
-var namespace = urn.namespace;
-var RedirectBinding = require('./RedirectBinding');
-var PostBinding = require('./PostBinding');
-var Utility = require('./Utility');
-var SamlLib = require('./SamlLib');
-var metaWord = urn.wording.metadata;
-var Entity = require('./Entity');
+import Entity from './entity';
+import libsaml from './libsaml';
+import utility from './utility';
+import { wording, namespace, tags } from './urn';
+import redirectBinding from './binding-redirect';
+import postBinding from './binding-post';
 
-/**
-* @desc  Identity prvider can be configured using either metadata importing or idpSetting
-* @param  {object} idpSetting
-* @param  {string} metaFile
-*/
-module.exports = function(idpSetting, metaFile) {
+const bindDict = wording.binding;
+const xmlTag = tags.xmlTag;
+const metaWord = wording.metadata;
+const xml = require('xml');
+
+export default class IdentityProvider extends Entity {
   // local variables
   // idpSetting is an object with properties as follow:
   // -------------------------------------------------
@@ -39,25 +37,23 @@ module.exports = function(idpSetting, metaFile) {
   // {boolean}      wantAuthnRequestsSigned
   // {boolean}      wantLogoutResponseSigned
   //
-  if (typeof idpSetting === 'string') {
-    metaFile = idpSetting;
-    idpSetting = {};
-  }
+	/**
+	* @desc  Identity prvider can be configured using either metadata importing or idpSetting
+	* @param  {object} idpSetting
+	* @param  {string} metaFile
+	*/
+	constructor (idpSetting, metaFile) {
+	  if (typeof idpSetting === 'string') {
+	    metaFile = idpSetting;
+	    idpSetting = {};
+	  }
+	  idpSetting = Object.assign({
+	    wantAuthnRequestsSigned: false
+	  }, idpSetting);
 
-  idpSetting = Utility.applyDefault({
-    wantAuthnRequestsSigned: false
-  }, idpSetting);
-  //
-  // optional if single logout service is not provided
-  // {string} logoutNameIDFormat
-  //
-  function IdentityProvider() {}
-  /**
-  * @desc  Inherited from Entity
-  * @param {object} entitySetting   setting of identity provider
-  * @param {string} metaFile     metadata file path
-  */
-  IdentityProvider.prototype = new Entity(idpSetting, metaWord.idp, metaFile);
+		super(idpSetting, metaFile.idp, metaFile);
+	}
+
   /**
   * @desc  Generates the login response and callback to developers to design their own method
   * @param  {ServiceProvider}   sp               object of service provider
@@ -67,10 +63,10 @@ module.exports = function(idpSetting, metaFile) {
   * @param  {function} callback                  developers use their own form submit to do with passing information
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-  IdentityProvider.prototype.sendLoginResponse = function sendLoginResponse(sp, requestInfo, binding, user, callback, rcallback) {
-    var _binding = namespace.binding[binding] || namespace.binding.redirect;
-    if(_binding == namespace.binding.post) {
-      PostBinding.base64LoginResponse(requestInfo, SamlLib.createXPath('Assertion'), {
+  public sendLoginResponse (sp, requestInfo, binding, user, callback, rcallback) {
+    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    if (protocol == namespace.binding.post) {
+      postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
         idp: this,
         sp: sp
       }, user, rcallback, function(res) {
@@ -85,7 +81,7 @@ module.exports = function(idpSetting, metaFile) {
       // Will support arifact in the next release
       throw new Error('This binding is not support');
     }
-  };
+  }
   /**
   * @desc   Validation and callback parsed the URL parameters
   * @param  {ServiceProvider}   sp               object of service provider
@@ -93,7 +89,7 @@ module.exports = function(idpSetting, metaFile) {
   * @param  {request}   req                      request
   * @param  {function} callback                  developers use their own validation to do with passing information
   */
-  IdentityProvider.prototype.parseLoginRequest = function parseLoginRequest(sp, binding, req, callback) {
+  public parseLoginRequest (sp, binding, req, callback) {
     return this.abstractBindingParser({
       parserFormat: ['AuthnContextClassRef', 'Issuer', {
         localName: 'Signature',
@@ -110,8 +106,4 @@ module.exports = function(idpSetting, metaFile) {
       actionType: 'login'
     }, binding, req, sp.entityMeta, callback);
   };
-  /**
-  * @desc return the prototype
-  */
-  return IdentityProvider.prototype;
-};
+}

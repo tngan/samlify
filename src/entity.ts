@@ -6,21 +6,19 @@
 * v2.0
 * v1.1  SS-1.1
 */
-
 import utility from './utility';
 import { namespace, wording, algorithms } from './urn';
 import * as uuid from 'node-uuid';
 import libsaml from './libsaml';
-import { EntityMeta } from './metadata';
+import Metadata from './metadata';
+import redirectBinding from './binding-redirect';
+import postBinding from './binding-post';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data; // SS1.1
 const keyEncryptionAlgorithm = algorithms.encryption.key; // SS1.1
 const bindDict = wording.binding;
 const signatureAlgorithms = algorithms.signature;
 const nsBinding = namespace.binding;
-
-var RedirectBinding = require('./RedirectBinding');
-var PostBinding = require('./PostBinding');
 
 export class EntitySetting {
   wantLogoutResponseSigned: boolean;
@@ -31,6 +29,7 @@ export class EntitySetting {
   dataEncryptionAlgorithm: string;
   keyEncryptionAlgorithm: string;
   generateID: () => string;
+  relayState: string;
 
   constructor (obj) {
     this.wantLogoutResponseSigned = !!obj.wantLogoutResponseSigned;
@@ -41,14 +40,15 @@ export class EntitySetting {
     this.dataEncryptionAlgorithm = obj.dataEncryptionAlgorithm || dataEncryptionAlgorithm.AES_256;
     this.keyEncryptionAlgorithm = obj.keyEncryptionAlgorithm || keyEncryptionAlgorithm.RSA_1_5;
     this.generateID = obj.generateID || ((): string => uuid.v4());
+    this.relayState = obj.relayState || '';
   }
 }
 
-class Entity {
+export default class Entity {
 
   entitySetting: EntitySetting;
   entityType: string;
-  entityMeta: EntityMeta;
+  entityMeta: any;
   /**
   * @desc  Constructor
   * @param {object} entitySetting
@@ -141,7 +141,7 @@ class Entity {
   */
   abstractBindingParser (opts, binding: string, req, targetEntityMetadata, parseCallback) {
     const here = this; //SS-1.1 (refractor later on)
-    const entityMeta = this.entityMeta;
+    const entityMeta: any = this.entityMeta;
     let options = opts || {};
     let parseResult = {};
     let supportBindings = [nsBinding.redirect, nsBinding.post];
@@ -241,14 +241,14 @@ class Entity {
   sendLogoutRequest (targetEntity, binding, user, relayState, callback, rcallback) {
     binding = namespace.binding[binding] || namespace.binding.redirect;
     if (binding === namespace.binding.redirect) {
-      return callback(RedirectBinding.logoutRequestRedirectURL(user, {
+      return callback(redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
         target: targetEntity
       }, rcallback, relayState));
     }
     if (binding === namespace.binding.post) {
       return callback({
-        actionValue: PostBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), {
+        actionValue: postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), {
           init: this,
           target: targetEntity
         }, rcallback),
@@ -272,14 +272,14 @@ class Entity {
   sendLogoutResponse (targetEntity, requestInfo, binding, relayState, callback, rcallback) {
     binding = namespace.binding[binding] || namespace.binding.redirect;
     if (binding === namespace.binding.redirect) {
-      return callback(RedirectBinding.logoutResponseRedirectURL(requestInfo, {
+      return callback(redirectBinding.logoutResponseRedirectURL(requestInfo, {
         init: this,
         target: targetEntity
       }, relayState, rcallback));
     }
     if (binding === namespace.binding.post) {
       return callback({
-        actionValue: PostBinding.base64LogoutResponse(requestInfo, libsaml.createXPath('Issuer'), {
+        actionValue: postBinding.base64LogoutResponse(requestInfo, libsaml.createXPath('Issuer'), {
           init: this,
           target: targetEntity
         }, rcallback),
@@ -336,8 +336,4 @@ class Entity {
       actionType: 'logout'
     },binding, req, targetEntity.entityMeta, parseCallback);
   }
-}
-
-export default function (entitySetting, entityType, entityMeta) {
-  return new Entity(entitySetting, entityType, entityMeta);
 }

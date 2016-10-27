@@ -1,45 +1,43 @@
 /**
-* @file ServiceProvider.js
-* @author Tony Ngan
+* @file entity-sp.ts
+* @author tngan
 * @desc  Declares the actions taken by service provider
 */
-var RedirectBinding = require('./RedirectBinding');
-var PostBinding = require('./PostBinding');
-var SamlLib = require('./SamlLib');
-var xml = require('xml');
-var Utility = require('./Utility');
-var Entity = require('./Entity');
-var urn = require('./urn');
-var bindDict = urn.wording.binding;
-var namespace = urn.namespace;
-var xmlTag = urn.tags.xmlTag;
-var metaWord = urn.wording.metadata;
+import Entity from './entity';
+import libsaml from './libsaml';
+import utility from './utility';
+import { wording, namespace, tags } from './urn';
+import redirectBinding from './binding-redirect';
+import postBinding from './binding-post';
+
+const bindDict = wording.binding;
+const xmlTag = tags.xmlTag;
+const metaWord = wording.metadata;
+const xml = require('xml');
+
 /**
 * @desc Service provider can be configured using either metadata importing or spSetting
 * @param  {object} spSetting
 * @param  {string} metaFile
 */
-module.exports = function(spSetting, metaFile) {
-  // local variables
-  // spSetting is an object with properties as follow:
-  // -------------------------------------------------
-  if (typeof spSetting === 'string') {
-    metaFile = spSetting;
-    spSetting = {};
-  }
-
-  spSetting = Utility.applyDefault({
-    authnRequestsSigned: false,
-    wantAssertionsSigned: false
-  }, spSetting);
-
-  function ServiceProvider() {}
+export default class ServiceProvider extends Entity {
   /**
   * @desc  Inherited from Entity
   * @param {object} spSetting    setting of service provider
   * @param {string} metaFile     metadata file path
   */
-  ServiceProvider.prototype = new Entity(spSetting, metaWord.sp, metaFile);
+	constructor(spSetting, metaFile) {
+	  if (typeof spSetting === 'string') {
+	    metaFile = spSetting;
+	    spSetting = {};
+	  }
+	  spSetting = Object.assign({
+	    authnRequestsSigned: false,
+	    wantAssertionsSigned: false
+	  }, spSetting);
+
+		super(spSetting, metaFile.sp, metaFile);
+	}
   /**
   * @desc  Generates the login request and callback to developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
@@ -47,16 +45,16 @@ module.exports = function(spSetting, metaFile) {
   * @param  {function} callback                  developers do their own request to do with passing information
   * @param  {function} rcallback     used when developers have their own login response template
   */
-  ServiceProvider.prototype.sendLoginRequest = function sendLoginRequest(idp, binding, callback, rcallback) {
-    var _binding = namespace.binding[binding] || namespace.binding.redirect;
-    if(_binding == namespace.binding.redirect) {
-      return callback(RedirectBinding.loginRequestRedirectURL({
+  public sendLoginRequest (idp, binding, callback, rcallback) {
+    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    if (protocol == namespace.binding.redirect) {
+      return callback(redirectBinding.loginRequestRedirectURL({
         idp: idp,
         sp: this
       }, rcallback));
-    } else if(_binding == namespace.binding.post) {
+    } else if (protocol == namespace.binding.post) {
       return callback({
-        actionValue: PostBinding.base64LoginRequest(SamlLib.createXPath('Issuer'), {
+        actionValue: postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), {
           idp: idp,
           sp: this
         }, rcallback),
@@ -68,7 +66,7 @@ module.exports = function(spSetting, metaFile) {
       // Will support arifact in the next release
       throw new Error('The binding is not support');
     }
-  };
+  }
   /**
   * @desc   Validation and callback parsed the URL parameters
   * @param  {IdentityProvider}   idp             object of identity provider
@@ -76,8 +74,8 @@ module.exports = function(spSetting, metaFile) {
   * @param  {request}   req                      request
   * @param  {function} parseCallback             developers use their own validation to do with passing information
   */
-  ServiceProvider.prototype.parseLoginResponse = function parseLoginResponse(idp, binding, req, parseCallback) {
-    return this.abstractBindingParser({
+  public parseLoginResponse (idp, binding, req, parseCallback) {
+    return super.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',
         attributes: ['Value']
@@ -101,8 +99,5 @@ module.exports = function(spSetting, metaFile) {
       actionType: 'login'
     }, binding, req, idp.entityMeta, parseCallback);
   };
-  /**
-  * @desc return the prototype
-  */
-  return ServiceProvider.prototype;
-};
+
+}

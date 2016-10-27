@@ -2,13 +2,16 @@
 
 ## [2.0](#)
 
-**Breaking changes**
+**Important changes**
 + The file name SamlLib is renamed as libsaml
++ The file name IdentityProvider is renamed as entity-idp
++ The file name ServiceProvider is renamed as entity-sp
 
 **New features and support**
 + Use Typescript 2.0 in development
 + Write in ES2015/2016 style
 + Support Yarn package manager
++ The name of API methods in v1.0 is no longer to be supported
 
 ## [1.1](#)
 

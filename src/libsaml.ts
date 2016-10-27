@@ -36,8 +36,8 @@ export interface LibSamlInterface {
   defaultLogoutRequestTemplate: string;
   defaultLoginResponseTemplate: string;
   defaultLogoutResponseTemplate: string;
-  replaceTagsByValue: (rawXML: string, tagValues: Array<any>) => string;
-  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output: boolean) => string;
+  replaceTagsByValue: (rawXML: string, tagValues: { any }) => string;
+  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
   verifySignature: (xml: string, signature, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResultInterface;
   createKeySection: (use: string, certFile: string) => {};
@@ -263,7 +263,7 @@ class LibSaml implements LibSamlInterface {
   * @return {string} xpath
   */
   public createXPath (local, isExtractAll?: boolean): string {
-    if(typeof local == 'object') {
+    if (typeof local == 'object') {
       return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
     }
     return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
@@ -274,7 +274,7 @@ class LibSaml implements LibSamlInterface {
   * @param  {array} tagValues    tag values
   * @return {string}
   */
-  public replaceTagsByValue (rawXML: string, tagValues: Array<any>): string {
+  public replaceTagsByValue (rawXML: string, tagValues: { any }): string {
     Object.keys(requestTags).forEach(t => {
       rawXML = rawXML.replace(new RegExp(requestTags[t], 'g'), tagValues[t]);
     });
@@ -289,7 +289,7 @@ class LibSaml implements LibSamlInterface {
   * @param  {string} signatureAlgorithm   signature algorithm (SS-1.1)
   * @return {string} base64 encoded string
   */
-  public constructSAMLSignature (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output: boolean) {
+  public constructSAMLSignature (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
     let sig = new SignedXml();
     // Add assertion sections as reference
     if (referenceXPath && referenceXPath !== '') {
@@ -318,7 +318,7 @@ class LibSaml implements LibSamlInterface {
     if (options.keyFile) {
       sig.keyInfoProvider = new FileKeyInfo(options.keyFile);
     } else if (options.cert) {
-      sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUsage.SIGNING));
+      sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUsage.signing));
     } else {
       throw new Error('Undefined certificate or keyfile in \'opts\' object');
     }
@@ -427,7 +427,7 @@ class LibSaml implements LibSamlInterface {
   * SS1.1 Code refractoring
   */
   public verifyMessageSignature (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm: string) {
-    let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUsage.SIGNING)), {
+    let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUsage.signing)), {
       signingScheme: this.getSigningScheme(verifyAlgorithm)
     });
     return key.verify(new Buffer(octetString), signature);
@@ -477,8 +477,8 @@ class LibSaml implements LibSamlInterface {
         // callback should be function (res) { ... }
         xmlenc.encrypt(assertion, {
           // use xml-encryption module
-          rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUsage.ENCRYPT)).replace(/\r?\n|\r/g, '')), // public key from certificate
-          pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUsage.ENCRYPT) + '-----END CERTIFICATE-----'),
+          rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUsage.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+          pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUsage.encrypt) + '-----END CERTIFICATE-----'),
           encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
           keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm // typo in xml-encryption
         }, function(err, res) {

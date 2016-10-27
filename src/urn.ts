@@ -131,8 +131,8 @@ const wording = {
     arifact: 'arifact'
   },
   certUse: {
-    SIGNING: 'signing',
-    ENCRYPT: 'encryption'
+    signing: 'signing',
+    encrypt: 'encryption'
   },
   metadata: {
     sp: 'SPMetadata',
