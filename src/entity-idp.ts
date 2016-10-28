@@ -42,16 +42,11 @@ export default class IdentityProvider extends Entity {
 	* @param  {object} idpSetting
 	* @param  {string} metaFile
 	*/
-	constructor (idpSetting, metaFile) {
-	  if (typeof idpSetting === 'string') {
-	    metaFile = idpSetting;
-	    idpSetting = {};
-	  }
-	  idpSetting = Object.assign({
-	    wantAuthnRequestsSigned: false
-	  }, idpSetting);
-
-		super(idpSetting, metaFile.idp, metaFile);
+	constructor (idpSetting) {
+	  const entitySetting = Object.assign({
+			wantAuthnRequestsSigned: false 
+		}, idpSetting);
+		super(entitySetting, metaWord.idp);
 	}
 
   /**

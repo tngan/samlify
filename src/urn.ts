@@ -135,8 +135,8 @@ const wording = {
     encrypt: 'encryption'
   },
   metadata: {
-    sp: 'SPMetadata',
-    idp: 'IdPMetadata'
+    sp: 'metadata-sp',
+    idp: 'metadata-idp'
   }
 };
 

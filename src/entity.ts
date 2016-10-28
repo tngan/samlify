@@ -53,14 +53,15 @@ export default class Entity {
   * @desc  Constructor
   * @param {object} entitySetting
   * @param {object} entityMetaClass determine whether the entity is IdentityProvider or ServiceProvider
-  * @param {string} entityMeta is the entity metafile path
+  * @param {string} entityMeta is the entity metafile path, deprecated after 2.0
   */
-  constructor (entitySetting, entityType, entityMeta) {
-    this.entitySetting = new EntitySetting(entitySetting);
+  constructor (entitySetting, entityType) {
     if (!['idp', 'sp'].indexOf(entityType)) {
       throw new Error('undefined entity type');
     }
-    this.entityMeta = require('./' + entityType)(entityMeta !== undefined ? entityMeta: entitySetting);
+    const metadata = entitySetting.metadata;
+    this.entitySetting = new EntitySetting(entitySetting);
+    this.entityMeta = require('./' + entityType)(metadata !== undefined ? metadata: entitySetting);
   }
   /**
   * @desc  getEntityID

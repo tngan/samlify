@@ -27,16 +27,11 @@ export default class ServiceProvider extends Entity {
   * @param {string} metaFile     metadata file path
   */
 	constructor(spSetting, metaFile) {
-	  if (typeof spSetting === 'string') {
-	    metaFile = spSetting;
-	    spSetting = {};
-	  }
-	  spSetting = Object.assign({
-	    authnRequestsSigned: false,
+	  const entitySetting = Object.assign({
+			authnRequestsSigned: false,
 	    wantAssertionsSigned: false
 	  }, spSetting);
-
-		super(spSetting, metaFile.sp, metaFile);
+		super(entitySetting, metaWord.sp);
 	}
   /**
   * @desc  Generates the login request and callback to developers to design their own method

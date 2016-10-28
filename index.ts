@@ -1,8 +1,8 @@
 /**
- * express-saml2
- * Copyright(c) 2015-2016 tngan
- * MIT
- */
+* express-saml2
+* Copyright(c) 2015-2016 tngan
+* MIT
+*/
 import IdentityProvider from './src/entity-idp';
 import ServiceProvider from './src/entity-sp';
 import IdPMetadata from './src/metadata-idp';
