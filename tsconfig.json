@@ -14,7 +14,8 @@
     "@types"
   ],
   "filesGlob": [
-    "./src/**/*.ts"
+    "./src/**/*.ts",
+    "index.ts"
   ],
   "compileOnSave": false,
   "buildOnSave": false
