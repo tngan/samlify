@@ -18,9 +18,9 @@
     "form-data": "^1.0.0-rc3",
     "http": "0.0.0",
     "morgan": "^1.6.1",
-    "node-uuid": "^1.4.3",
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",
-    "serve-favicon": "^2.3.0"
+    "serve-favicon": "^2.3.0",
+    "uuid": "^3.0.1"
   }
 }
