@@ -66,4 +66,4 @@ IdP-initiated Single Logout is also provided and relied on relay state. IdP prov
 
 ### Copyright
 
-Copyright (C) 2016 Tony Ngan, released under the MIT License.
+Copyright (C) 2016-2017 Tony Ngan, released under the MIT License.
