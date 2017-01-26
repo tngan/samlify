@@ -515,6 +515,26 @@ describe('2. SamlLib.js', function() {
             });
         });
     });
+    describe('2.10 parse query parameter for sso/slo', function() {
+        var getQueryParamByType = SamlLib.getQueryParamByType;
+        it('should return SamlRequest', function(done) {
+            getQueryParamByType('SAMLRequest').should.be.equal(wording.urlParams.samlRequest);
+            getQueryParamByType('LogoutRequest').should.be.equal(wording.urlParams.samlRequest);
+            done();
+        });
+        it('should return SamlResponse', function(done) {
+            getQueryParamByType('SAMLResponse').should.be.equal(wording.urlParams.samlResponse);
+            getQueryParamByType('LogoutResponse').should.be.equal(wording.urlParams.samlResponse);
+            done();
+        });
+        it('should return error for undefined query parameter', function(done) {
+            try {
+                getQueryParamByType('samlRequest');
+            } catch (e) {
+                done();
+            }
+        });
+    });
 });
 
 describe('3 Constant.js', function() {

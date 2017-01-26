@@ -4,7 +4,7 @@ var fs = require('fs');
 var utility = require('../../../index').Utility;
 var spSet = [];
 var epn = {
-    'admin@idp.com' : {
+    'admin@idp.com': {
         assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S',
         app: {
             '369550': {
@@ -25,32 +25,32 @@ var idp1 = require('../../../index').IdentityProvider({
     encPrivateKeyFile: '../key/idp/encryptKey.pem',
     encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
     privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW'
-},'../metadata/metadata_idp1.xml');
+}, '../metadata/metadata_idp1.xml');
 var idp2 = require('../../../index').IdentityProvider({
     privateKeyFile: '../key/idp/privkey.pem',
     isAssertionEncrypted: true,
     encPrivateKeyFile: '../key/idp/encryptKey.pem',
     encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
     privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW'
-},'../metadata/metadata_idp2.xml');
+}, '../metadata/metadata_idp2.xml');
 
 /// Declare the sp
 var sp1 = require('../../../index').ServiceProvider('../metadata/metadata_sp1.xml');
 var sp2 = require('../../../index').ServiceProvider('../metadata/metadata_sp2.xml');
 
 /// metadata is publicly released, can access at /sso/metadata
-router.get('/metadata/:id',function(req, res, next){
+router.get('/metadata/:id', function (req, res, next) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
-    res.header('Content-Type','text/xml').send(assoIdp.getMetadata());
+    res.header('Content-Type', 'text/xml').send(assoIdp.getMetadata());
 });
 
 spSet.push(sp1);
 spSet.push(sp2);
 
-function entityPair(id){
+function entityPair(id) {
     var targetSP, assoIdp;
-    switch(id.toString()){
+    switch (id.toString()) {
         case '369550':
             targetSP = sp1;
             assoIdp = idp1;
@@ -68,30 +68,30 @@ function entityPair(id){
     };
 }
 
-router.all('/:action/:id',function(req,res,next){
-    if(!req.isAuthenticated()){
+router.all('/:action/:id', function (req, res, next) {
+    if (!req.isAuthenticated()) {
         var url = '/login';
-        if(req.params && req.params.action == 'SingleSignOnService'){
-            if(req.method.toLowerCase() == 'post'){
-                url = '/login/external.esaml?METHOD=post&TARGET='+ utility.base64Encode(JSON.stringify({
+        if (req.params && req.params.action == 'SingleSignOnService') {
+            if (req.method.toLowerCase() == 'post') {
+                url = '/login/external.esaml?METHOD=post&TARGET=' + utility.base64Encode(JSON.stringify({
                     entityEndpoint: req.originalUrl,
                     actionType: 'SAMLRequest',
                     actionValue: req.body.SAMLRequest,
                     relayState: req.body.relayState
                 }));
-            }else if(req.method.toLowerCase() == 'get'){
-                url = '/login/external.esaml?METHOD=get&TARGET='+utility.base64Encode(req.originalUrl);
+            } else if (req.method.toLowerCase() == 'get') {
+                url = '/login/external.esaml?METHOD=get&TARGET=' + utility.base64Encode(req.originalUrl);
             }
-        } else if(req.params && req.params.action == 'SingleLogoutService'){
-            if(req.method.toLowerCase() == 'post'){
-                url = '/logout/external.esaml?METHOD=post&TARGET='+ utility.base64Encode(JSON.stringify({
+        } else if (req.params && req.params.action == 'SingleLogoutService') {
+            if (req.method.toLowerCase() == 'post') {
+                url = '/logout/external.esaml?METHOD=post&TARGET=' + utility.base64Encode(JSON.stringify({
                     entityEndpoint: req.originalUrl,
                     actionType: 'LogoutRequest',
                     actionValue: req.body.LogoutRequest,
                     relayState: req.body.relayState
                 }));
-            }else if(req.method.toLowerCase() == 'get'){
-                url = '/logout/external.esaml?METHOD=get&TARGET='+utility.base64Encode(req.originalUrl);
+            } else if (req.method.toLowerCase() == 'get') {
+                url = '/logout/external.esaml?METHOD=get&TARGET=' + utility.base64Encode(req.originalUrl);
             }
         } else {
             // Unexpected error
@@ -102,73 +102,72 @@ router.all('/:action/:id',function(req,res,next){
     next();
 });
 
-router.get('/SingleSignOnService/:id',function(req,res){
+router.get('/SingleSignOnService/:id', function (req, res) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
-    assoIdp.parseLoginRequest(targetSP,'redirect',req,function(parseResult){
+    assoIdp.parseLoginRequest(targetSP, 'redirect', req, function (parseResult) {
         req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-        assoIdp.sendLoginResponse(targetSP,parseResult,'post',req.user,function(response){
-            res.render('actions',response);
+        assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user, function (response) {
+            res.render('actions', response);
         });
     });
 });
 
-router.post('/SingleSignOnService/:id',function(req,res){
+router.post('/SingleSignOnService/:id', function (req, res) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
-    assoIdp.parseLoginRequest(targetSP,'post',req,function(parseResult){
+    assoIdp.parseLoginRequest(targetSP, 'post', req, function (parseResult) {
         req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-        assoIdp.sendLoginResponse(targetSP,parseResult,'post',req.user,function(response){
-            res.render('actions',response);
+        assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user, function (response) {
+            res.render('actions', response);
         });
     });
 });
 
-router.get('/SingleLogoutService/:id',function(req,res){
+router.get('/SingleLogoutService/:id', function (req, res) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
-    assoIdp.parseLogoutResponse(targetSP,'redirect',req,function(parseResult){
-        if(req.query.RelayState){
+    assoIdp.parseLogoutResponse(targetSP, 'redirect', req, function (parseResult) {
+        if (req.query.RelayState) {
             res.redirect(req.query.RelayState);
         } else {
             req.logout();
-            req.flash('info','All participating service provider has been logged out');
+            req.flash('info', 'All participating service provider has been logged out');
             res.redirect('/login');
         }
     });
 });
 
-router.post('/SingleLogoutService/:id',function(req,res){
+router.post('/SingleLogoutService/:id', function (req, res) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
-    assoIdp.parseLogoutResponse(targetSP,'post',req,function(parseResult){
-        if(req.body.RelayState){
+    assoIdp.parseLogoutResponse(targetSP, 'post', req, function (parseResult) {
+        if (req.body.RelayState) {
             res.redirect(req.body.RelayState);
         } else {
             delete req.session.relayStep;
             req.logout();
-            req.flash('info','All participating service provider has been logged out');
+            req.flash('info', 'All participating service provider has been logged out');
             res.redirect('/login');
         }
     });
 });
 
-router.get('/logout/all',function(req,res){
+router.get('/logout/all', function (req, res) {
     var serviceList = Object.keys(epn[req.user.sysEmail].app);
     var relayState = 'http://localhost:3001/sso/logout/all';
     var relayStep = req.session.relayStep;
-    if(relayStep !== undefined && relayStep + 1 !== serviceList.length) {
+    if (relayStep !== undefined && relayStep + 1 !== serviceList.length) {
         req.session.relayStep = parseInt(relayStep) + 1;
     } else {
         req.session.relayStep = 0;
     }
-    //console.log('session:relayStep',req.session.relayStep,serviceList.length);
-    if(req.session.relayStep < serviceList.length){
-        if(req.session.relayStep === serviceList.length - 1){
+    if (req.session.relayStep < serviceList.length) {
+        if (req.session.relayStep === serviceList.length - 1) {
             relayState = '';
         }
         var id = serviceList[req.session.relayStep];
@@ -176,27 +175,27 @@ router.get('/logout/all',function(req,res){
         var assoIdp = entity.assoIdp;
         var targetSP = entity.targetSP;
         req.user.email = epn[req.user.sysEmail].app[id.toString()].assoSpEmail;
-        assoIdp.sendLogoutRequest(targetSP,'post',req.user, relayState,function(response){
-            if(req.query && req.query.async && req.query.async.toString() === 'true'){
+        assoIdp.sendLogoutRequest(targetSP, 'post', req.user, relayState, function (response) {
+            if (req.query && req.query.async && req.query.async.toString() === 'true') {
                 response.ajaxSubmit = true;
             }
-            res.render('actions',response);
+            res.render('actions', response);
         });
     } else {
         req.logout();
-        req.flash('info','Unexpected error in /relayState');
+        req.flash('info', 'Unexpected error in /relayState');
         res.redirect('/login');
     }
 });
 
-router.get('/select/:id',function(req,res){
+router.get('/select/:id', function (req, res) {
     var entity = entityPair(req.params.id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
     req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-    assoIdp.sendLoginResponse(targetSP,null,'post',req.user,function(response){
+    assoIdp.sendLoginResponse(targetSP, null, 'post', req.user, function (response) {
         response.title = 'POST data';
-        res.render('actions',response);
+        res.render('actions', response);
     });
 });
 
