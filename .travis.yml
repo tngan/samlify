@@ -1,16 +1,9 @@
 language: node_js
 node_js:
-<<<<<<< HEAD
-    - "4"
-    - "5"
-    - "6"
-	- "7"
-=======
   - "4"
   - "5"
   - "6"
   - "7"
->>>>>>> origin
 branches:
   only:
   - master
