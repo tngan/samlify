@@ -140,7 +140,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (templ
         NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.transient,
         NameID: user.logoutNameID
       };
-      let rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate, tvalue);
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature

@@ -115,7 +115,7 @@ function getPublicKeyPemFromCertificate(x509Certificate: string){
 * If passphrase is used to protect the .pem file (recommend)
 */
 function readPrivateKeyFromFile(keyFile: string, passphrase: string, isOutputString?: boolean){
-  return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(fs.readFileSync(keyFile), passphrase)), isOutputString) : fs.readFileSync(keyFile);
+	return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(fs.readFileSync(keyFile)), passphrase)), isOutputString) : fs.readFileSync(keyFile);
 }
 /**
 * @desc Inline syntax sugar

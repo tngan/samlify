@@ -8,7 +8,7 @@ var bodyParser = require('body-parser');
 var expressSession = require('express-session');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
-var exphbs  = require('express-handlebars');
+var exphbs = require('express-handlebars');
 var app = express();
 var cors = require('cors');
 var routes = require('./routes/index');
@@ -16,7 +16,7 @@ var sso = require('./routes/sso');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.engine('handlebars', exphbs({defaultLayout: 'main'}));
+app.engine('handlebars', exphbs({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 
 // uncomment after placing your favicon in /public
@@ -42,7 +42,7 @@ app.use(cors());
 app.use('/sso', sso);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
@@ -53,7 +53,7 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
+  app.use(function (err, req, res, next) {
     res.status(err.status || 500);
     res.render('error', {
       message: err.message
@@ -63,7 +63,7 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error', {
     message: err.message

@@ -1,26 +1,26 @@
 var LocalStrategy = require('passport-local').Strategy;
 var passport = require('passport');
 var bcrypt = require('bcryptjs');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var epn = {
-  'admin@sp1.com' : {
+  'admin@sp1.com': {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S' //admin123
   },
-  'user@sp1.com' : {
+  'user@sp1.com': {
     assoHash: '$2a$10$ezOOV6/c.SkWp73dyEcHjOTcVuZ50xxfYQreWyt430xJGxjwP2WOW' //user123
   },
-  'admin@esaml2.com' : {
+  'admin@esaml2.com': {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S' //admin123
   }
 };
 
-function findEmailFromDummyDb(sysEmail, password, callback){
-  if(epn[sysEmail]){
-    bcrypt.compare(password,epn[sysEmail].assoHash,function(err,res){
-      if(err || !res){
+function findEmailFromDummyDb(sysEmail, password, callback) {
+  if (epn[sysEmail]) {
+    bcrypt.compare(password, epn[sysEmail].assoHash, function (err, res) {
+      if (err || !res) {
         callback(new Error('Authentication failure'));
       } else {
-        callback(null,{
+        callback(null, {
           email: sysEmail
         });
       }
@@ -30,16 +30,16 @@ function findEmailFromDummyDb(sysEmail, password, callback){
   }
 }
 
-module.exports = function(passport) {
+module.exports = function (passport) {
 
   passport.use('local-login', new LocalStrategy({
     usernameField: 'email',
     passwordField: 'password',
     passReqToCallback: true
-  }, function(req, spEmail, password, done) {
-    findEmailFromDummyDb(spEmail,password,function(err,user){
-      if(err) {
-        req.flash('info','Invalid email or password');
+  }, function (req, spEmail, password, done) {
+    findEmailFromDummyDb(spEmail, password, function (err, user) {
+      if (err) {
+        req.flash('info', 'Invalid email or password');
         done(null, false, {
           messages: 'Invalid email or password'
         });
@@ -52,13 +52,13 @@ module.exports = function(passport) {
       }
     });
   }));
-  
+
   passport.use('sso-login', new LocalStrategy({
     usernameField: 'email',
     passwordField: 'password'
-  }, function(email, password, done) {
-    if(Object.keys(epn).indexOf(email)!=-1){
-      done(null,{
+  }, function (email, password, done) {
+    if (Object.keys(epn).indexOf(email) != -1) {
+      done(null, {
         email: email,
         logoutNameID: email
       });
@@ -69,20 +69,20 @@ module.exports = function(passport) {
     }
   }));
 
-  passport.serializeUser(function(user, done) {
+  passport.serializeUser(function (user, done) {
     done(null, {
       email: user.email,
       logoutNameID: user.email
     });
   });
 
-  passport.deserializeUser(function(user, done) {
-    if(Object.keys(epn).indexOf(user.email)!=-1){
-      done(null,{
+  passport.deserializeUser(function (user, done) {
+    if (Object.keys(epn).indexOf(user.email) != -1) {
+      done(null, {
         email: user.email,
         logoutNameID: user.email
       });
-    }else{
+    } else {
       done(null, false, {
         messages: 'Fail to do deserializeUser'
       });

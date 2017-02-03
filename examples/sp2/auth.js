@@ -1,7 +1,7 @@
 var LocalStrategy = require('passport-local').Strategy;
 var passport = require('passport');
 var bcrypt = require('bcryptjs');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var epn = {
   'admin@sp2.com' : {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S'

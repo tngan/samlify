@@ -1,9 +1,10 @@
-# express-saml2
+# express-saml2 &middot; [![Build Status](https://travis-ci.org/tngan/express-saml2.svg?branch=master)](https://travis-ci.org/tngan/express-saml2) [![npm version](https://img.shields.io/npm/v/express-saml2.svg?style=flat)](https://www.npmjs.com/package/express-saml2) [![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Release](https://img.shields.io/github/release/tngan/express-saml2.svg)](https://github.com/tngan/express-saml2/releases/latest)
-[![Build Status](https://travis-ci.org/tngan/express-saml2.svg?branch=master)](https://travis-ci.org/tngan/express-saml2)
+High-level Node.js API for Single Sign On (SAML 2.0)
 
-High-level API for Single Sign On (SAML 2.0)
+### Welcome PRs
+
+Welcome all PRs for maintaining this project, or provide a link to the repositories especially for use cases alongside with different frameworks.
 
 ### Description
 
@@ -76,4 +77,4 @@ IdP-initiated Single Logout is also provided and relied on relay state. IdP prov
 
 ### Copyright
 
-Copyright (C) 2015-2016 Tony Ngan, released under the MIT License.
+Copyright (C) 2016-2017 Tony Ngan, released under the MIT License.

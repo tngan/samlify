@@ -25,7 +25,7 @@ actionValue: value for action (value should be base64 encoded before subsitution
                data[inputs[i].id] = inputs[i].value;
             }
             $.ajax({
-                type: 'POST',
+				type: 'POST',
                 data: JSON.stringify(data),
                 contentType: 'application/json',
                 url: document.getElementById('saml-form').action,
@@ -35,7 +35,7 @@ actionValue: value for action (value should be base64 encoded before subsitution
                 }
             });
         {{else}}
-                document.forms[0].submit();
+            document.forms[0].submit();
         {{/if}}
     })();
 </script>

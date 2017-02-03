@@ -119,6 +119,7 @@ const algorithms = {
 const wording = {
   urlParams: {
     samlRequest: 'SAMLRequest',
+    samlResponse: 'SAMLResponse',
     logoutRequest: 'LogoutRequest',
     logoutResponse: 'LogoutResponse',
     sigAlg: 'SigAlg',

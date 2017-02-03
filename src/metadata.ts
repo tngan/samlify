@@ -32,7 +32,7 @@ export default class Metadata implements MetadataInterface {
 	* @param  {Boolean} isXml declares whether meta is xmlString or filePath
 	*/
 	constructor (meta, extraParse, isXml?: boolean) {
-    this.xmlString = isXml === true ? meta.toString() :　fs.readFileSync(meta).toString();
+		this.xmlString = isXml === true ? String(meta) :　String(fs.readFileSync(meta));
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']
@@ -48,7 +48,7 @@ export default class Metadata implements MetadataInterface {
         key: 'Binding'
       },
       attributeTag: 'Location'
-    }, 'NameIDFormat'], extraParse || [])); // function overloading
+    }, 'NameIDFormat'], extraParse || []));
 	}
   /**
   * @desc Get the metadata in xml format
@@ -76,8 +76,11 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} use declares the type of certificate
   * @return {string} certificate in string format
   */
-  public getX509Certificate (certType: string): string {
-    return certType === certUse.signing || certType === certUse.encrypt ? this.meta.keydescriptor[certType] : this.meta.keydescriptor.signing;
+  public getX509Certificate (use: string): string {
+		if (use === certUse.signing || use === certUse.encrypt) {
+			return this.meta.keydescriptor[use];
+		}
+		throw new Error('undefined use of key in getX509Certificate');
   }
   /**
   * @desc Get the support NameID format declared in entity metadata
