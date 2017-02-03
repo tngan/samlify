@@ -44,6 +44,8 @@ var SPMetadataForOnelogin = '../metadata/metadata_sp1_onelogin.xml';
 var basicSPConfig = {
     privateKeyFile: '../key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    encPrivateKeyFile: '../key/sp/encryptKey.pem',
+    encPrivateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
 };
 
