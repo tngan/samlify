@@ -8,7 +8,7 @@
 */
 import utility from './utility';
 import libsaml from './libsaml';
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
 import Entity from './entity';
 import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';

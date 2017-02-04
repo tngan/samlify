@@ -21,3 +21,5 @@ node_modules
 build
 
 .yarnclean
+
+.nyc_output

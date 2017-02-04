@@ -13,7 +13,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "tsc && ava --verbose build/test"
+    "test": "tsc && ava --verbose build/test",
+    "coverage": "nyc npm test"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
@@ -28,7 +29,7 @@
     "@types/lodash": "^4.14.37",
     "@types/node": "^6.0.45",
     "@types/node-forge": "^0.6.5",
-    "@types/node-uuid": "0.0.28",
+    "@types/uuid": "^2.0.29",
     "@types/xmldom": "^0.1.28",
     "deflate-js": "^0.2.3",
     "lodash": "^3.10.0",
@@ -56,6 +57,7 @@
     "form-data": "^1.0.0-rc3",
     "http": "0.0.0",
     "morgan": "^1.6.1",
+    "nyc": "^10.1.2",
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",
     "serve-favicon": "^2.3.0"
