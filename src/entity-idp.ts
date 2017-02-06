@@ -55,55 +55,54 @@ export class IdentityProvider extends Entity {
   }
 
   /**
-  * @desc  Generates the login response and callback to developers to design their own method
+  * @desc  Generates the login response for developers to design their own method
   * @param  {ServiceProvider}   sp               object of service provider
   * @param  {object}   requestInfo               corresponding request, used to obtain the id
   * @param  {string}   binding                   protocol binding
   * @param  {object}   user                      current logged user (e.g. req.user)
-  * @param  {function} callback                  developers use their own form submit to do with passing information
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-  public sendLoginResponse(sp, requestInfo, binding, user, callback, rcallback) {
-    const protocol = namespace.binding[binding] || namespace.binding.redirect;
-    if (protocol == namespace.binding.post) {
-      postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
-        idp: this,
-        sp: sp
-      }, user, rcallback, function (res) {
-        // xmlenc is using async process
-        return callback({
-          actionValue: res,
-          entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
-          actionType: 'SAMLResponse'
-        });
-      });
-    } else {
-      // Will support arifact in the next release
-      throw new Error('This binding is not support');
-    }
-  }
+	public async sendLoginResponse(sp, requestInfo, binding, user, rcallback) {
+		const protocol = namespace.binding[binding] || namespace.binding.redirect;
+		if (protocol == namespace.binding.post) {
+			const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
+				idp: this,
+				sp: sp
+			}, user, rcallback);
+
+			// xmlenc is using async process
+			return {
+				actionValue: res,
+				entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
+				actionType: 'SAMLResponse'
+			};
+
+		} else {
+			// Will support arifact in the next release
+			throw new Error('This binding is not support');
+		}
+	}
   /**
-  * @desc   Validation and callback parsed the URL parameters
+  * @desc   Validation of the parsed URL parameters
   * @param  {ServiceProvider}   sp               object of service provider
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
-  * @param  {function} callback                  developers use their own validation to do with passing information
   */
-  public parseLoginRequest(sp, binding, req, callback) {
-    return this.abstractBindingParser({
-      parserFormat: ['AuthnContextClassRef', 'Issuer', {
-        localName: 'Signature',
-        extractEntireBody: true
-      }, {
-          localName: 'AuthnRequest',
-          attributes: ['ID']
-        }, {
-          localName: 'NameIDPolicy',
-          attributes: ['Format', 'AllowCreate']
-        }],
-      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
-      parserType: 'SAMLRequest',
-      actionType: 'login'
-    }, binding, req, sp.entityMeta, callback);
-  };
+	public parseLoginRequest(sp, binding, req) {
+		return this.abstractBindingParser({
+			parserFormat: ['AuthnContextClassRef', 'Issuer', {
+				localName: 'Signature',
+				extractEntireBody: true
+			}, {
+					localName: 'AuthnRequest',
+					attributes: ['ID']
+				}, {
+					localName: 'NameIDPolicy',
+					attributes: ['Format', 'AllowCreate']
+				}],
+			checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
+			parserType: 'SAMLRequest',
+			actionType: 'login'
+		}, binding, req, sp.entityMeta);
+	};
 }

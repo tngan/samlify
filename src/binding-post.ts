@@ -59,7 +59,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {function} rcallback     used when developers have their own login response template
 */
-function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any, rcallback: (template: string) => string, rtnCallback: (xmlStr: any) => void) {
+async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any, rcallback: (template: string) => string) {
   let metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta
@@ -107,7 +107,11 @@ function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity
     }
     resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKeyFile, idpSetting.privateKeyFilePass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
     // SS-1.1
-    idpSetting.isAssertionEncrypted ? libsaml.encryptAssertion(entity.idp, entity.sp, resXml, rtnCallback) : rtnCallback(resXml);
+    if( idpSetting.isAssertionEncrypted ) {
+      return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml)
+    }else{
+      return resXml
+    }
   } else {
     throw new Error('Missing declaration of metadata');
   }
