@@ -11,28 +11,28 @@ import { namespace, wording } from './urn';
 const certUse = wording.certUse;
 
 export interface MetadataInterface {
-	xmlString: string;
-	meta: any;
-	getMetadata: () => string;
-	exportMetadata: (exportFile: string) => void;
-	getEntityID: () => string;
-	getX509Certificate: (certType: string) => string;
-	getNameIDFormat: () => Array<any>;
-	getSingleLogoutService: (binding: string | undefined) => string | Object;
-	getSupportBindings: (services: Array<string>) => Array<string>;
+  xmlString: string;
+  meta: any;
+  getMetadata: () => string;
+  exportMetadata: (exportFile: string) => void;
+  getEntityID: () => string;
+  getX509Certificate: (certType: string) => string;
+  getNameIDFormat: () => Array<any>;
+  getSingleLogoutService: (binding: string | undefined) => string | Object;
+  getSupportBindings: (services: Array<string>) => Array<string>;
 }
 
 export default class Metadata implements MetadataInterface {
 
-	xmlString: string;
-	meta: any;
-	/**
-	* @param  {string} meta is either xmlString or file name
-	* @param  {object} extraParse for custom metadata extractor
-	* @param  {Boolean} isXml declares whether meta is xmlString or filePath
-	*/
-	constructor (meta, extraParse, isXml?: boolean) {
-		this.xmlString = isXml === true ? String(meta) :　String(fs.readFileSync(meta));
+  xmlString: string;
+  meta: any;
+  /**
+  * @param  {string} meta is either xmlString or file name
+  * @param  {object} extraParse for custom metadata extractor
+  * @param  {Boolean} isXml declares whether meta is xmlString or filePath
+  */
+  constructor (meta, extraParse, isXml?: boolean) {
+    this.xmlString = isXml === true ? String(meta) :　String(fs.readFileSync(meta));
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']
@@ -49,7 +49,7 @@ export default class Metadata implements MetadataInterface {
       },
       attributeTag: 'Location'
     }, 'NameIDFormat'], extraParse || []));
-	}
+  }
   /**
   * @desc Get the metadata in xml format
   * @return {string} metadata in xml format
@@ -77,10 +77,10 @@ export default class Metadata implements MetadataInterface {
   * @return {string} certificate in string format
   */
   public getX509Certificate (use: string): string {
-		if (use === certUse.signing || use === certUse.encrypt) {
-			return this.meta.keydescriptor[use];
-		}
-		throw new Error('undefined use of key in getX509Certificate');
+    if (use === certUse.signing || use === certUse.encrypt) {
+      return this.meta.keydescriptor[use];
+    }
+    throw new Error('undefined use of key in getX509Certificate');
   }
   /**
   * @desc Get the support NameID format declared in entity metadata

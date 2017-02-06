@@ -19,40 +19,40 @@ const xml = require('xml');
  * @desc interface function
  */
 export default function (props) {
-	return new IdentityProvider(props);
+  return new IdentityProvider(props);
 }
 
 export class IdentityProvider extends Entity {
-	// local variables
-	// idpSetting is an object with properties as follow:
-	// -------------------------------------------------
-	// {string}       requestSignatureAlgorithm     signature algorithm
-	// {string}       loginResponseTemplate         template of login response
-	// {string}       logoutRequestTemplate         template of logout request
-	// {function}     generateID is the customized function used for generating request ID
-	//
-	// if no metadata is provided, idpSetting includes
-	// {string}       entityID
-	// {string}       privateKeyFile
-	// {string}       privateKeyFilePass
-	// {string}       signingCertFile
-	// {string}       encryptCertFile (todo)
-	// {[string]}     nameIDFormat
-	// {[object]}     singleSignOnService
-	// {[object]}     singleLogoutService
-	// {boolean}      wantLogoutRequestSigned
-	// {boolean}      wantAuthnRequestsSigned
-	// {boolean}      wantLogoutResponseSigned
-	//
-	/**
-	* @desc  Identity prvider can be configured using either metadata importing or idpSetting
-	* @param  {object} idpSetting
-	* @param  {string} metaFile
-	*/
-	constructor(idpSetting) {
-		const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
-		super(entitySetting, 'idp');
-	}
+  // local variables
+  // idpSetting is an object with properties as follow:
+  // -------------------------------------------------
+  // {string}       requestSignatureAlgorithm     signature algorithm
+  // {string}       loginResponseTemplate         template of login response
+  // {string}       logoutRequestTemplate         template of logout request
+  // {function}     generateID is the customized function used for generating request ID
+  //
+  // if no metadata is provided, idpSetting includes
+  // {string}       entityID
+  // {string}       privateKeyFile
+  // {string}       privateKeyFilePass
+  // {string}       signingCertFile
+  // {string}       encryptCertFile (todo)
+  // {[string]}     nameIDFormat
+  // {[object]}     singleSignOnService
+  // {[object]}     singleLogoutService
+  // {boolean}      wantLogoutRequestSigned
+  // {boolean}      wantAuthnRequestsSigned
+  // {boolean}      wantLogoutResponseSigned
+  //
+  /**
+  * @desc  Identity prvider can be configured using either metadata importing or idpSetting
+  * @param  {object} idpSetting
+  * @param  {string} metaFile
+  */
+  constructor(idpSetting) {
+    const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    super(entitySetting, 'idp');
+  }
 
   /**
   * @desc  Generates the login response and callback to developers to design their own method
@@ -63,25 +63,25 @@ export class IdentityProvider extends Entity {
   * @param  {function} callback                  developers use their own form submit to do with passing information
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-	public sendLoginResponse(sp, requestInfo, binding, user, callback, rcallback) {
-		const protocol = namespace.binding[binding] || namespace.binding.redirect;
-		if (protocol == namespace.binding.post) {
-			postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
-				idp: this,
-				sp: sp
-			}, user, rcallback, function (res) {
-				// xmlenc is using async process
-				return callback({
-					actionValue: res,
-					entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
-					actionType: 'SAMLResponse'
-				});
-			});
-		} else {
-			// Will support arifact in the next release
-			throw new Error('This binding is not support');
-		}
-	}
+  public sendLoginResponse(sp, requestInfo, binding, user, callback, rcallback) {
+    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    if (protocol == namespace.binding.post) {
+      postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
+        idp: this,
+        sp: sp
+      }, user, rcallback, function (res) {
+        // xmlenc is using async process
+        return callback({
+          actionValue: res,
+          entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
+          actionType: 'SAMLResponse'
+        });
+      });
+    } else {
+      // Will support arifact in the next release
+      throw new Error('This binding is not support');
+    }
+  }
   /**
   * @desc   Validation and callback parsed the URL parameters
   * @param  {ServiceProvider}   sp               object of service provider
@@ -89,21 +89,21 @@ export class IdentityProvider extends Entity {
   * @param  {request}   req                      request
   * @param  {function} callback                  developers use their own validation to do with passing information
   */
-	public parseLoginRequest(sp, binding, req, callback) {
-		return this.abstractBindingParser({
-			parserFormat: ['AuthnContextClassRef', 'Issuer', {
-				localName: 'Signature',
-				extractEntireBody: true
-			}, {
-					localName: 'AuthnRequest',
-					attributes: ['ID']
-				}, {
-					localName: 'NameIDPolicy',
-					attributes: ['Format', 'AllowCreate']
-				}],
-			checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
-			parserType: 'SAMLRequest',
-			actionType: 'login'
-		}, binding, req, sp.entityMeta, callback);
-	};
+  public parseLoginRequest(sp, binding, req, callback) {
+    return this.abstractBindingParser({
+      parserFormat: ['AuthnContextClassRef', 'Issuer', {
+        localName: 'Signature',
+        extractEntireBody: true
+      }, {
+          localName: 'AuthnRequest',
+          attributes: ['ID']
+        }, {
+          localName: 'NameIDPolicy',
+          attributes: ['Format', 'AllowCreate']
+        }],
+      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
+      parserType: 'SAMLRequest',
+      actionType: 'login'
+    }, binding, req, sp.entityMeta, callback);
+  };
 }

@@ -173,7 +173,7 @@ function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entit
     } else {
       let tvalue: any = {
         ID: initSetting.generateID ? initSetting.generateID() : uuid.v4(),
-        Destination:  metadata.target.getAssertionConsumerService(binding.post),
+        Destination: metadata.target.getAssertionConsumerService(binding.post),
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
