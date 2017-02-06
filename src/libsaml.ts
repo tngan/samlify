@@ -491,7 +491,7 @@ const libSaml = function () {
 				let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
 
 				if (assertion === '') {
-					throw new Error('Undefined assertion or invalid syntax');
+					return callback('Undefined assertion or invalid syntax');
 				}
 				// Perform encryption depends on the setting, default is false
 				if (sourceEntitySetting.isAssertionEncrypted) {
@@ -504,18 +504,18 @@ const libSaml = function () {
 						keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
 					}, (err, res) => {
 						if (err) {
-							throw new Error('Exception in encrpytedAssertion ' + err);
+							return callback('Exception in encrpytedAssertion ' + err);
 						}
 						if (!res) {
-							throw new Error('Undefined encrypted assertion');
+							return callback('Undefined encrypted assertion');
 						}
-						return callback(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
+						return callback(null, utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
 					});
 				} else {
-					return callback(utility.base64Encode(entireXML)); // No need to do encrpytion
+					return callback(null, utility.base64Encode(entireXML)); // No need to do encrpytion
 				}
 			} else {
-				throw new Error('Empty or undefined xml string');
+				return callback('Empty or undefined xml string');
 			}
 		},
 		/**
