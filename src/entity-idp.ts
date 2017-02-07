@@ -62,47 +62,47 @@ export class IdentityProvider extends Entity {
   * @param  {object}   user                      current logged user (e.g. req.user)
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-	public async sendLoginResponse(sp, requestInfo, binding, user, rcallback) {
-		const protocol = namespace.binding[binding] || namespace.binding.redirect;
-		if (protocol == namespace.binding.post) {
-			const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
-				idp: this,
-				sp: sp
-			}, user, rcallback);
+  public async sendLoginResponse(sp, requestInfo, binding, user, rcallback) {
+    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    if (protocol == namespace.binding.post) {
+      const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
+        idp: this,
+        sp: sp
+      }, user, rcallback);
 
-			// xmlenc is using async process
-			return {
-				actionValue: res,
-				entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
-				actionType: 'SAMLResponse'
-			};
+      // xmlenc is using async process
+      return {
+        actionValue: res,
+        entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
+        actionType: 'SAMLResponse'
+      };
 
-		} else {
-			// Will support arifact in the next release
-			throw new Error('This binding is not support');
-		}
-	}
+    } else {
+      // Will support arifact in the next release
+      throw new Error('This binding is not support');
+    }
+  }
   /**
   * @desc   Validation of the parsed URL parameters
   * @param  {ServiceProvider}   sp               object of service provider
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   */
-	public parseLoginRequest(sp, binding, req) {
-		return this.abstractBindingParser({
-			parserFormat: ['AuthnContextClassRef', 'Issuer', {
-				localName: 'Signature',
-				extractEntireBody: true
-			}, {
-					localName: 'AuthnRequest',
-					attributes: ['ID']
-				}, {
-					localName: 'NameIDPolicy',
-					attributes: ['Format', 'AllowCreate']
-				}],
-			checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
-			parserType: 'SAMLRequest',
-			actionType: 'login'
-		}, binding, req, sp.entityMeta);
-	};
+  public parseLoginRequest(sp, binding, req) {
+    return this.abstractBindingParser({
+      parserFormat: ['AuthnContextClassRef', 'Issuer', {
+        localName: 'Signature',
+        extractEntireBody: true
+      }, {
+          localName: 'AuthnRequest',
+          attributes: ['ID']
+        }, {
+          localName: 'NameIDPolicy',
+          attributes: ['Format', 'AllowCreate']
+        }],
+      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
+      parserType: 'SAMLRequest',
+      actionType: 'login'
+    }, binding, req, sp.entityMeta);
+  };
 }
