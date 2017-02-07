@@ -79,13 +79,15 @@ router.get('/spinitsso-post', function (req, res) {
       break;
     }
   }
-  fromSP.sendLoginRequest(toIdP, 'post', function (request) {
+  fromSP.sendLoginRequest(toIdP, 'post')
+  .then(request => {
     res.render('actions', request);
   });
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  sp.sendLoginRequest(idp, 'redirect', function (url) {
+  sp.sendLoginRequest(idp, 'redirect')
+  .then(url => {
     res.redirect(url);
   });
 });
@@ -99,7 +101,7 @@ router.post('/acs/:idp?', function (req, res, next) {
     _idp = idp;
     _sp = sp;
   }
-  _sp.parseLoginResponse(_idp, 'post', req, function (parseResult) {
+  _sp.parseLoginResponse(_idp, 'post', req).then(parseResult => {
     if (parseResult.extract.nameid) {
       res.render('login', {
         title: 'Processing',
@@ -113,24 +115,24 @@ router.post('/acs/:idp?', function (req, res, next) {
   });
 });
 
-router.post('/slo', function (req, res) {
-  sp.parseLogoutRequest(idp, 'post', req, function (parseResult) {
-    // Check before logout
-    req.logout();
-    sp.sendLogoutResponse(idp, parseResult, 'redirect', req.body.RelayState, function (url) {
+function slo (req, res, binding, relayState) {
+  sp.parseLogoutRequest(idp, binding, req)
+    .then(parseResult => {
+      // Check before logout
+      req.logout();
+      return sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
+    })
+    .then(url => {
       res.redirect(url);
-    });
-  });
+    })
+}
+
+router.post('/slo', function (req, res) {
+  slo(req, res, 'post', req.body.RelayState)
 });
 
 router.get('/slo', function (req, res) {
-  sp.parseLogoutResponse(idp, 'redirect', req, function (parseResult) {
-    // Check before logout
-    req.logout();
-    sp.sendLogoutResponse(idp, parseResult, 'redirect', req.query.RelayState, function (url) {
-      res.redirect(url);
-    });
-  });
+  slo(req, res, 'redirect', req.query.RelayState)
 });
 
 module.exports = router;
