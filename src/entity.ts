@@ -202,7 +202,7 @@ export default class Entity {
 		if (binding == bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
 			// make sure express.bodyParser() has been used
 			let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
-			let decodedRequest = utility.base64Decode(encodedRequest);
+			let decodedRequest = String(utility.base64Decode(encodedRequest));
 			let issuer = targetEntityMetadata.getEntityID();
 			//SS-1.1
 			const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);

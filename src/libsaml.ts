@@ -527,7 +527,7 @@ const libSaml = function () {
 		* @param {string} entireXML         response in xml string format
 		* @return {function} a promise to get back the entire xml with decrypted assertion
 		*/
-		decryptAssertion: function (type: string, here, from, entireXML: string | Buffer) {
+		decryptAssertion: function (type: string, here, from, entireXML: string) {
 			return new Promise<string>((resolve,reject) => {
 				// Implement decryption first then check the signature
 				if (entireXML) {
