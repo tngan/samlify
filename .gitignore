@@ -26,3 +26,6 @@ build
 
 #jetbrains IDEs
 .idea
+
+#vscode
+.vscode
