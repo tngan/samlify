@@ -112,7 +112,7 @@ router.get('/SingleSignOnService/:id', function (req, res) {
       return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);
   })
   .then(response => {
-     res.render('actions', response);
+    res.render('actions', response);
   });
 });
 
@@ -123,9 +123,8 @@ router.post('/SingleSignOnService/:id', function (req, res) {
   assoIdp.parseLoginRequest(targetSP, 'post', req)
   .then(parseResult => {
     req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-    return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);
-  })
-  .then(response => {
+    return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);  
+  }).then(response => {
     res.render('actions', response);
   });
 });
@@ -181,13 +180,12 @@ router.get('/logout/all', function (req, res) {
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
     req.user.email = epn[req.user.sysEmail].app[id.toString()].assoSpEmail;
-    assoIdp.sendLogoutRequest(targetSP, 'post', req.user, relayState)
-    .then(response => {
-      if (req.query && req.query.async && req.query.async.toString() === 'true') {
-        response.ajaxSubmit = true;
-      }
-      return res.render('actions', response);
-    });
+    const response = assoIdp.sendLogoutRequest(targetSP, 'post', req.user, relayState)
+    if (req.query && req.query.async && req.query.async.toString() === 'true') {
+      response.ajaxSubmit = true;
+    }
+    return res.render('actions', response);
+ 
   } else {
     req.logout();
     req.flash('info', 'Unexpected error in /relayState');
@@ -200,10 +198,12 @@ router.get('/select/:id', function (req, res) {
   var assoIdp = entity.assoIdp;
   var targetSP = entity.targetSP;
   req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-  assoIdp.sendLoginResponse(targetSP, null, 'post', req.user).then(response => {
+  assoIdp.sendLoginResponse(targetSP, null, 'post', req.user)
+  .then(response => {
     response.title = 'POST data';
     res.render('actions', response);
   });
+  
 });
 
 module.exports = router;

@@ -20,17 +20,13 @@ router.get('/metadata', function (req, res, next) {
 });
 
 router.get('/spinitsso-post', function (req, res) {
-  sp.sendLoginRequest(idp, 'post')
-  .then(request => {
-    res.render('actions', request);
-  });
+  const request = sp.sendLoginRequest(idp, 'post');
+  res.render('actions', request);
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  sp.sendLoginRequest(idp, 'redirect')
-  .then(url => {
-    res.redirect(url);
-  });
+  const url = sp.sendLoginRequest(idp, 'redirect');
+  res.redirect(url);
 });
 
 router.post('/acs', function (req, res, next) {
@@ -52,11 +48,9 @@ function slo (req, res, binding, relayState) {
   sp.parseLogoutRequest(idp, binding, req)
     .then(parseResult => {
       req.logout();
-      return sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
-    })
-    .then(url => {
+      const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
-    })
+    });
 }
 
 router.post('/slo', function (req, res) {
