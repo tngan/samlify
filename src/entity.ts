@@ -8,7 +8,7 @@
 */
 import utility from './utility';
 import { namespace, wording, algorithms } from './urn';
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
 import libsaml from './libsaml';
 import Metadata from './metadata';
 import IdpMetadata from './metadata-idp';

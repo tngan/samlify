@@ -5,7 +5,7 @@
 */
 
 import { wording, tags, namespace } from './urn';
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
 import libsaml from './libsaml';
 import utility from './utility';
 

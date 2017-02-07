@@ -10,15 +10,15 @@
   version "0.6.5"
   resolved "https://registry.yarnpkg.com/@types/node-forge/-/node-forge-0.6.5.tgz#4ed3ea29b20ccca4e7cd778de0e039b01ddb3239"
 
-"@types/node-uuid@0.0.28":
-  version "0.0.28"
-  resolved "https://registry.yarnpkg.com/@types/node-uuid/-/node-uuid-0.0.28.tgz#41655b5ce63b2f3374c4e826b4dd21e729058e3d"
-  dependencies:
-    "@types/node" "*"
-
 "@types/node@*", "@types/node@^6.0.45":
   version "6.0.45"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-6.0.45.tgz#c4842a9d653d767831e4ff495b6008cc0d579966"
+
+"@types/uuid@2.0.29":
+  version "2.0.29"
+  resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-2.0.29.tgz#939a198ab73567f811ab84f670d2be9c25addd41"
+  dependencies:
+    "@types/node" "*"
 
 "@types/xmldom":
   version "0.1.28"
