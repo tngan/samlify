@@ -30,7 +30,7 @@ export class ServiceProvider extends Entity {
   /**
   * @desc  Inherited from Entity
   * @param {object} spSetting    setting of service provider
-  * @param {string} meta		     metadata path
+  * @param {string} meta		     metadata
   */
   constructor(spSetting) {
     const entitySetting = Object.assign({

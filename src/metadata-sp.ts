@@ -112,7 +112,7 @@ export class SpMetadata extends Metadata {
     }
     /**
     * @desc  Initialize with creating a new metadata object
-    * @param {string/objects} meta     declares path of the metadata
+    * @param {string/objects} meta     metadata XML
     * @param {array of Objects}        high-level XML element selector
     */
 
