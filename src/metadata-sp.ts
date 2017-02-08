@@ -122,7 +122,7 @@ export class SpMetadata extends Metadata {
     }, {
       localName: 'AssertionConsumerService',
       attributes: ['Binding', 'Location', 'isDefault', 'index']
-    }], !byMetadata);
+    }]);
   }
 
   /**

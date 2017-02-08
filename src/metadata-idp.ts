@@ -111,7 +111,7 @@ export class IdpMetadata extends Metadata {
     }, {
       localName: { tag: 'SingleSignOnService', key: 'Binding' },
       attributeTag: 'Location'
-    }], !byMetadata);
+    }]);
 
   }
   /**

@@ -12,7 +12,6 @@ const certUse = wording.certUse;
 
 export interface MetadataInterface {
   xmlString: string;
-  meta: any;
   getMetadata: () => string;
   exportMetadata: (exportFile: string) => void;
   getEntityID: () => string;
@@ -30,7 +29,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} xmlString is an xmlString
   * @param  {object} extraParse for custom metadata extractor
   */
-  constructor (xmlString, extraParse) {
+  constructor (xmlString: string, extraParse) {
     this.xmlString = xmlString;
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
