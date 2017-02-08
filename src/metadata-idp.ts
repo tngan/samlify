@@ -24,7 +24,7 @@ export class IdpMetadata extends Metadata {
 
   constructor(meta) {
 
-    const byMetadata = typeof meta === 'string';
+    const byMetadata = (typeof meta === 'string' || meta instanceof Buffer);
 
     if (!byMetadata) {
       let entityID = meta.entityID;

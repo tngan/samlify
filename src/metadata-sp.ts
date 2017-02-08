@@ -31,7 +31,7 @@ export class SpMetadata extends Metadata {
   */
   constructor(meta) {
 
-    let byMetadata = typeof meta === 'string';
+    let byMetadata = (typeof meta === 'string' || meta instanceof Buffer);
 
     if (!byMetadata) {
       let entityID = meta.entityID;

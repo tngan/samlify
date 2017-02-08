@@ -26,11 +26,11 @@ export default class Metadata implements MetadataInterface {
   xmlString: string;
   meta: any;
   /**
-  * @param  {string} xmlString is an xmlString
+  * @param  {string | Buffer} metadata xml
   * @param  {object} extraParse for custom metadata extractor
   */
-  constructor (xmlString: string, extraParse) {
-    this.xmlString = xmlString;
+  constructor (xml: string | Buffer, extraParse) {
+    this.xmlString = xml.toString();
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']
