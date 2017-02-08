@@ -42,8 +42,8 @@ export interface LibSamlInterface {
   constructMessageSignature: (octetString: string, keyFile: string, passphrase: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm: string) => boolean;
   getKeyInfo: (x509Certificate: string) => void;
-  encryptAssertion: (sourceEntity, targetEntity, entireXML: string, callback) => void;
-  decryptAssertion: (type: string, here, from, entireXML: string, callback) => void;
+  encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
+  decryptAssertion: (type: string, here, from, entireXML: string) => Promise<string>;
 
   getSigningScheme: (sigAlg: string) => string | null;
   getDigestMethod: (sigAlg: string) => string | null;
@@ -478,45 +478,46 @@ const libSaml = function () {
     * @param  {Entity} sourceEntity             source entity
     * @param  {Entity} targetEntity             target entity
     * @param {string} entireXML                 response in xml string format
-    * @return {function} a callback to receive the finalized xml
+    * @return {Promise} a promise to resolve the finalized xml
     */
-    encryptAssertion: function (sourceEntity, targetEntity, entireXML: string, callback) {
+    encryptAssertion: function (sourceEntity, targetEntity, entireXML: string) {
       // Implement encryption after signature if it has
-      if (entireXML) {
-        let sourceEntitySetting = sourceEntity.entitySetting;
-        let targetEntitySetting = targetEntity.entitySetting;
-        let sourceEntityMetadata = sourceEntity.entityMeta;
-        let targetEntityMetadata = targetEntity.entityMeta;
-        let assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
-        let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
+      return new Promise<string>((resolve,reject) => {
+        if (entireXML) {
+          let sourceEntitySetting = sourceEntity.entitySetting;
+          let targetEntitySetting = targetEntity.entitySetting;
+          let sourceEntityMetadata = sourceEntity.entityMeta;
+          let targetEntityMetadata = targetEntity.entityMeta;
+          let assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
+          let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
 
-        if (assertion === '') {
-          throw new Error('Undefined assertion or invalid syntax');
-        }
-        // Perform encryption depends on the setting, default is false
-        if (sourceEntitySetting.isAssertionEncrypted) {
-          // callback should be function (res) { ... }
-          xmlenc.encrypt(assertion, {
-            // use xml-encryption module
-            rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUsage.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
-            pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUsage.encrypt) + '-----END CERTIFICATE-----'),
-            encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
-            keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
-          }, (err, res) => {
-            if (err) {
-              throw new Error('Exception in encrpytedAssertion ' + err);
-            }
-            if (!res) {
-              throw new Error('Undefined encrypted assertion');
-            }
-            return callback(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
-          });
+          if (assertion === '') {
+            return  reject(new Error('Undefined assertion or invalid syntax'));
+          }
+          // Perform encryption depends on the setting, default is false
+          if (sourceEntitySetting.isAssertionEncrypted) {
+            xmlenc.encrypt(assertion, {
+              // use xml-encryption module
+              rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUsage.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+              pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUsage.encrypt) + '-----END CERTIFICATE-----'),
+              encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
+              keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
+            }, (err, res) => {
+              if (err) {
+                return  reject(new Error('Exception in encrpytedAssertion ' + err));
+              }
+              if (!res) {
+                return  reject(new Error('Undefined encrypted assertion'));
+              }
+              return resolve(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
+            });
+          } else {
+            return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
+          }
         } else {
-          return callback(utility.base64Encode(entireXML)); // No need to do encrpytion
+          return  reject(new Error('Empty or undefined xml string'));
         }
-      } else {
-        throw new Error('Empty or undefined xml string');
-      }
+      })
     },
     /**
     * @desc Decrypt the assertion section in Response
@@ -524,37 +525,40 @@ const libSaml = function () {
     * @param  {Entity} here             this entity
     * @param  {Entity} from             from the entity where the message is sent
     * @param {string} entireXML         response in xml string format
-    * @return {function} a callback to get back the entire xml with decrypted assertion
+    * @return {function} a promise to get back the entire xml with decrypted assertion
     */
-    decryptAssertion: function (type: string, here, from, entireXML: string | Buffer, callback) {
-      // Implement decryption first then check the signature
-      if (entireXML) {
-        // Perform encryption depends on the setting of where the message is sent, default is false
-        if (type === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-          let hereSetting = here.entitySetting;
-          let parseEntireXML = new dom().parseFromString(String(entireXML));
-          let encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
-          let encryptedData = encryptedDataNode !== undefined ? utility.parseString(encryptedDataNode.toString()) : '';
-          if (encryptedData === '') {
-            throw new Error('Undefined assertion or invalid syntax');
+    decryptAssertion: function (type: string, here, from, entireXML: string) {
+      return new Promise<string>((resolve,reject) => {
+        // Implement decryption first then check the signature
+        if (entireXML) {
+          // Perform encryption depends on the setting of where the message is sent, default is false
+          if (type === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
+            let hereSetting = here.entitySetting;
+            let parseEntireXML = new dom().parseFromString(String(entireXML));
+            let encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
+            let encryptedData = encryptedDataNode !== undefined ? utility.parseString(encryptedDataNode.toString()) : '';
+            if (encryptedData === '') {
+              return reject(new Error('Undefined assertion or invalid syntax'));
+            }
+            return xmlenc.decrypt(encryptedData, {
+              key: utility.readPrivateKeyFromFile(hereSetting.encPrivateKeyFile, hereSetting.encPrivateKeyFilePass)
+            }, (err, res) => {
+              if (err) {
+                return reject(new Error('Exception in decryptAssertion ' + err));
+              }
+              if (!res) {
+                return reject(new Error('Undefined encrypted assertion'));
+              }
+              return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
+            });
+          } else {
+            return resolve(entireXML); // No need to do encrpytion
           }
-          return xmlenc.decrypt(encryptedData, {
-            key: utility.readPrivateKeyFromFile(hereSetting.encPrivateKeyFile, hereSetting.encPrivateKeyFilePass)
-          }, (err, res) => {
-            if (err) {
-              throw new Error('Exception in decryptAssertion ' + err);
-            }
-            if (!res) {
-              throw new Error('Undefined encrypted assertion');
-            }
-            return callback(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
-          });
         } else {
-          return callback(entireXML); // No need to do encrpytion
+          return reject(new Error('Empty or undefined xml string'));
         }
-      } else {
-        throw new Error('Empty or undefined xml string');
-      }
+      });
+
     }
   };
 }

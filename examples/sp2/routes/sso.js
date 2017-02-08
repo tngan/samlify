@@ -20,19 +20,18 @@ router.get('/metadata', function (req, res, next) {
 });
 
 router.get('/spinitsso-post', function (req, res) {
-  sp.sendLoginRequest(idp, 'post', function (request) {
-    res.render('actions', request);
-  });
+  const request = sp.sendLoginRequest(idp, 'post');
+  res.render('actions', request);
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  sp.sendLoginRequest(idp, 'redirect', function (url) {
-    res.redirect(url);
-  });
+  const url = sp.sendLoginRequest(idp, 'redirect');
+  res.redirect(url);
 });
 
 router.post('/acs', function (req, res, next) {
-  sp.parseLoginResponse(idp, 'post', req, function (parseResult) {
+  sp.parseLoginResponse(idp, 'post', req)
+  .then(parseResult => {
     if (parseResult.extract.nameid) {
       res.render('login', {
         title: 'Processing',
@@ -42,25 +41,34 @@ router.post('/acs', function (req, res, next) {
     } else {
       res.redirect('/login');
     }
+  })
+  .catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
 });
 
-router.post('/slo', function (req, res) {
-  sp.parseLogoutRequest(idp, 'post', req, function (parseResult) {
-    req.logout();
-    sp.sendLogoutResponse(idp, parseResult, 'redirect', req.body.relayState, function (url) {
+function slo (req, res, binding, relayState) {
+  sp.parseLogoutRequest(idp, binding, req)
+    .then(parseResult => {
+      req.logout();
+      const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
+    })
+    .catch(err => {
+      res.render('error', {
+        message: err.message
+      });
     });
-  });
+}
+
+router.post('/slo', function (req, res) {
+  slo(req, res, 'post', req.body.RelayState)
 });
 
 router.get('/slo', function (req, res) {
-  sp.parseLogoutResponse(idp, 'redirect', req, function (parseResult) {
-    req.logout();
-    sp.sendLogoutResponse(idp, parseResult, 'redirect', req.body.relayState, function (url) {
-      res.redirect(url);
-    });
-  });
+  slo(req, res, 'redirect', req.query.RelayState)
 });
 
 module.exports = router;

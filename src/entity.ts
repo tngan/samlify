@@ -133,10 +133,9 @@ export default class Entity {
   * @param  {string} binding is the protocol bindings (e.g. redirect, post)
   * @param  {request} req is the http request
   * @param  {Metadata} targetEntityMetadata either IDP metadata or SP metadata
-  * @param  {function} parseCallback is the callback function with extracted parameter
-  * @return {function} parseCallback
+  * @return {ParseResult} parseResult
   */
-  abstractBindingParser(opts, binding: string, req, targetEntityMetadata, parseCallback) {
+  async abstractBindingParser(opts, binding: string, req, targetEntityMetadata) {
     const here = this; //SS-1.1 (refractor later on)
     const entityMeta: any = this.entityMeta;
     let options = opts || {};
@@ -197,86 +196,86 @@ export default class Entity {
           extract: libsaml.extractor(xmlString, fields)
         };
       }
-      return parseCallback(parseResult);
+      return parseResult;
     }
 
     if (binding == bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
-      let decodedRequest = utility.base64Decode(encodedRequest);
+      let decodedRequest = String(utility.base64Decode(encodedRequest));
       let issuer = targetEntityMetadata.getEntityID();
       //SS-1.1
-      return libsaml.decryptAssertion(parserType, here, from, decodedRequest, res => {
-        let parseResult = {
-          samlContent: res,
-          extract: libsaml.extractor(res, fields)
-        };
-        if (checkSignature) {
-          // verify the signature
-          if (!libsaml.verifySignature(res, parseResult.extract.signature, {
-            cert: targetEntityMetadata,
-            signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
-          })) {
-            throw new Error('incorrect signature');
-          }
+      const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
+
+      let parseResult = {
+        samlContent: res,
+        extract: libsaml.extractor(res, fields)
+      };
+      if (checkSignature) {
+        // verify the signature
+        if (!libsaml.verifySignature(res, parseResult.extract.signature, {
+          cert: targetEntityMetadata,
+          signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
+        })) {
+          throw new Error('incorrect signature');
         }
-        if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
-          throw new Error('incorrect issuer');
-        }
-        return parseCallback(parseResult);
-      });
+      }
+      if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
+        throw new Error('incorrect issuer');
+      }
+
+      return parseResult;
+
     }
     // Will support arifact in the next release
     throw new Error('this binding is not support');
   };
 
-  /** @desc   Generates the logout request and callback to developers to design their own method
+  /** @desc   Generates the logout request for developers to design their own method
   * @param  {ServiceProvider} sp     object of service provider
   * @param  {string}   binding       protocol binding
   * @param  {object}   user          current logged user (e.g. req.user)
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
-  * @param  {function} callback      developers do their own request to do with passing information
   * @param  {function} rcallback     used when developers have their own login response template
   */
-  sendLogoutRequest(targetEntity, binding, user, relayState, callback, rcallback) {
+  sendLogoutRequest(targetEntity, binding, user, relayState, rcallback) : any {
     if (binding === wording.binding.redirect) {
-      return callback(redirectBinding.logoutRequestRedirectURL(user, {
+      return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
         target: targetEntity
-      }, rcallback, relayState));
+      }, rcallback, relayState);
     }
     if (binding === wording.binding.post) {
       const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding);
       const	actionValue = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, rcallback);
-      return callback({
+      return {
         actionValue,
         relayState,
         entityEndpoint,
         actionType: 'SAMLRequest'
-      });
+      };
     }
     // Will support arifact in the next release
     throw new Error('The binding is not support');
   }
   /**
-  * @desc  Generates the logout response and callback to developers to design their own method
+  * @desc  Generates the logout response for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {object} requestInfo                 corresponding request, used to obtain the id
   * @param  {string} relayState                  the URL to which to redirect the user when logout is complete.
   * @param  {string} binding                     protocol binding
-  * @param  {function} callback                  developers use their own form submit to do with passing information
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-  sendLogoutResponse(targetEntity, requestInfo, binding, relayState, callback, rcallback) {
+  sendLogoutResponse(targetEntity, requestInfo, binding, relayState, rcallback) : any {
     binding = namespace.binding[binding] || namespace.binding.redirect;
     if (binding === namespace.binding.redirect) {
-      return callback(redirectBinding.logoutResponseRedirectURL(requestInfo, {
+      return redirectBinding.logoutResponseRedirectURL(requestInfo, {
         init: this,
         target: targetEntity
-      }, relayState, rcallback));
+      }, relayState, rcallback);
     }
     if (binding === namespace.binding.post) {
-      return callback({
+      return {
         actionValue: postBinding.base64LogoutResponse(requestInfo, libsaml.createXPath('Issuer'), {
           init: this,
           target: targetEntity
@@ -284,18 +283,18 @@ export default class Entity {
         relayState: relayState,
         entityEndpoint: targetEntity.entityMeta.getSingleLogoutService(binding),
         actionType: 'SAMLResponse'
-      });
+      };
     }
     throw new Error('This binding is not support');
   }
   /**
-  * @desc   Validation and callback parsed the URL parameters
+  * @desc   Validation of the parsed the URL parameters
   * @param  {IdentityProvider}   idp             object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
-  * @param  {function} parseCallback             developers use their own validation to do with passing information
+  * @return {Promise}
   */
-  parseLogoutRequest(targetEntity, binding, req, parseCallback) {
+  parseLogoutRequest(targetEntity, binding, req) {
     return this.abstractBindingParser({
       parserFormat: ['NameID', 'Issuer', {
         localName: 'Signature',
@@ -307,16 +306,16 @@ export default class Entity {
       checkSignature: this.entitySetting.wantLogoutRequestSigned,
       parserType: 'LogoutRequest',
       actionType: 'logout'
-    }, binding, req, targetEntity.entityMeta, parseCallback);
+    }, binding, req, targetEntity.entityMeta);
   };
   /**
-  * @desc   Validation and callback parsed the URL parameters
+  * @desc   Validation of the parsed the URL parameters
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   * @param  {ServiceProvider}   sp               object of service provider
-  * @param  {function} parseCallback             developers use their own validation to do with passing information
+  * @return {Promise}
   */
-  parseLogoutResponse(targetEntity, binding, req, parseCallback) {
+  parseLogoutResponse(targetEntity, binding, req) {
     return this.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',
@@ -332,6 +331,6 @@ export default class Entity {
       supportBindings: ['post'],
       parserType: 'LogoutResponse',
       actionType: 'logout'
-    }, binding, req, targetEntity.entityMeta, parseCallback);
+    }, binding, req, targetEntity.entityMeta);
   }
 }
