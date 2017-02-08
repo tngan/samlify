@@ -24,13 +24,13 @@ export default function (props) {
 /**
 * @desc Service provider can be configured using either metadata importing or spSetting
 * @param  {object} spSetting
-* @param  {string} metaFile
+* @param  {string} meta
 */
 export class ServiceProvider extends Entity {
   /**
   * @desc  Inherited from Entity
   * @param {object} spSetting    setting of service provider
-  * @param {string} metaFile     metadata file path
+  * @param {string} meta		     metadata path
   */
   constructor(spSetting) {
     const entitySetting = Object.assign({

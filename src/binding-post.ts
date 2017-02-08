@@ -43,7 +43,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
       });
     }
     if (metadata.idp.isWantAuthnRequestsSigned()) {
-      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.sp.getX509Certificate('signing'), spSetting.privateKeyFile, spSetting.privateKeyFilePass, spSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
+      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.sp.getX509Certificate('signing'), spSetting.privateKey, spSetting.privateKeyPass, spSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
       // No need to embeded XML signature
     }
     // No need to embeded XML signature
@@ -105,7 +105,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate, tvalue);
     }
-    resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKeyFile, idpSetting.privateKeyFilePass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
+    resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKey, idpSetting.privateKeyPass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
     // SS-1.1
     if( idpSetting.isAssertionEncrypted ) {
       return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml)
@@ -148,7 +148,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (templ
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature
-      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKeyFile, initSetting.privateKeyFilePass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
+      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKey, initSetting.privateKeyPass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
     } else {
       // No need to embeded XML signature
       return utility.base64Encode(rawSamlRequest);
@@ -189,7 +189,7 @@ function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entit
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate, tvalue);
       if (entity.target.entitySetting.wantLogoutResponseSigned) {
         // Need to embeded XML signature
-        return libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKeyFile, initSetting.privateKeyFilePass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
+        return libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKey, initSetting.privateKeyPass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
       }
       // No need to embeded XML signature
       return utility.base64Encode(rawSamlResponse);

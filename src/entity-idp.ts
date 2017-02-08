@@ -33,10 +33,10 @@ export class IdentityProvider extends Entity {
   //
   // if no metadata is provided, idpSetting includes
   // {string}       entityID
-  // {string}       privateKeyFile
-  // {string}       privateKeyFilePass
-  // {string}       signingCertFile
-  // {string}       encryptCertFile (todo)
+  // {string}       privateKey
+  // {string}       privateKeyPass
+  // {string}       signingCert
+  // {string}       encryptCert (todo)
   // {[string]}     nameIDFormat
   // {[object]}     singleSignOnService
   // {[object]}     singleLogoutService
@@ -47,7 +47,7 @@ export class IdentityProvider extends Entity {
   /**
   * @desc  Identity prvider can be configured using either metadata importing or idpSetting
   * @param  {object} idpSetting
-  * @param  {string} metaFile
+  * @param  {string} meta
   */
   constructor(idpSetting) {
     const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);

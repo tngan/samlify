@@ -26,7 +26,7 @@ export default function (meta) {
 export class SpMetadata extends Metadata {
 
   /**
-  * @param  {object/string} meta (either file path in string format or configuation in object)
+  * @param  {object/string} meta (either xml string or configuation in object)
   * @return {object} prototypes including public functions
   */
   constructor(meta) {
@@ -37,8 +37,8 @@ export class SpMetadata extends Metadata {
       let entityID = meta.entityID;
       let authnRequestsSigned = meta.authnRequestsSigned === true;
       let wantAssertionsSigned = meta.wantAssertionsSigned === true;
-      let signingCertFile = meta.signingCertFile;
-      let encryptCertFile = meta.encryptCertFile;
+      let signingCert = meta.signingCert;
+      let encryptCert = meta.encryptCert;
       let nameIDFormat = meta.nameIDFormat || [];
       let singleLogoutService = meta.singleLogoutService || [];
       let assertionConsumerService = meta.assertionConsumerService || [];
@@ -51,14 +51,14 @@ export class SpMetadata extends Metadata {
         }
       }];
 
-      if (signingCertFile) {
-        SPSSODescriptor.push(libsaml.createKeySection('signing', signingCertFile));
+      if (signingCert) {
+        SPSSODescriptor.push(libsaml.createKeySection('signing', signingCert));
       } else {
         //console.warn('Construct service provider - missing signing certificate');
       }
 
-      if (encryptCertFile) {
-        SPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCertFile));
+      if (encryptCert) {
+        SPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCert));
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }

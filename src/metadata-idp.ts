@@ -29,8 +29,8 @@ export class IdpMetadata extends Metadata {
     if (!byMetadata) {
       let entityID = meta.entityID;
       let wantAuthnRequestsSigned = meta.wantAuthnRequestsSigned === true;
-      let signingCertFile = meta.signingCertFile;
-      let encryptCertFile = meta.encryptCertFile;
+      let signingCert = meta.signingCert;
+      let encryptCert = meta.encryptCert;
       let nameIDFormat = meta.nameIDFormat || [];
       let singleSignOnService = meta.singleSignOnService || [];
       let singleLogoutService = meta.singleLogoutService || [];
@@ -41,15 +41,15 @@ export class IdpMetadata extends Metadata {
         }
       }];
 
-      if (signingCertFile) {
-        IDPSSODescriptor.push(libsaml.createKeySection('signing', signingCertFile));
+      if (signingCert) {
+        IDPSSODescriptor.push(libsaml.createKeySection('signing', signingCert));
       } else {
         //logging
         //console.warn('Construct identity provider - missing signing certificate');
       }
 
-      if (encryptCertFile) {
-        IDPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCertFile));
+      if (encryptCert) {
+        IDPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCert));
       } else {
         //logging
         //console.warn('Construct identity provider - missing encrypt certificate');

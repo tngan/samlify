@@ -24,7 +24,7 @@ const requestTags = tags.request;
 const urlParams = wording.urlParams;
 const dom = DOMParser;
 
-let { SignedXml, FileKeyInfo } = require('xml-crypto');
+let { SignedXml } = require('xml-crypto');
 
 interface ExtractorResultInterface {
   signature: any;
@@ -35,11 +35,11 @@ export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: { any }) => string;
-  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
+  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
   verifySignature: (xml: string, signature, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResultInterface;
-  createKeySection: (use: string, certFile: string) => {};
-  constructMessageSignature: (octetString: string, keyFile: string, passphrase: string, isBase64?: boolean, signingAlgorithm?: string) => string;
+  createKeySection: (use: string, cert: string | Buffer) => {};
+  constructMessageSignature: (octetString: string, key: string | Buffer, passphrase: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm: string) => boolean;
   getKeyInfo: (x509Certificate: string) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
@@ -314,12 +314,12 @@ const libSaml = function () {
     * @desc Construct the XML signature for POST binding
     * @param  {string} xmlString            request/response xml string
     * @param  {string} referenceXPath       reference uri
-    * @param  {string} keyFile              declares the .pem file storing the private key (e.g. path/privkey.pem)
-    * @param  {string} passphrase           passphrase of .pem file [optional]
+    * @param  {string} key                  declares the private key
+    * @param  {string} passphrase           passphrase of the private key [optional]
     * @param  {string} signatureAlgorithm   signature algorithm (SS-1.1)
     * @return {string} base64 encoded string
     */
-    constructSAMLSignature: function (xmlString: string, referenceXPath: string, x509: string, keyFile: string, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
+    constructSAMLSignature: function (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
       let sig = new SignedXml();
       // Add assertion sections as reference
       if (referenceXPath && referenceXPath !== '') {
@@ -327,7 +327,7 @@ const libSaml = function () {
       }
       sig.signatureAlgorithm = signatureAlgorithm; // SS-1.1
       sig.keyInfoProvider = new this.getKeyInfo(x509);
-      sig.signingKey = utility.readPrivateKeyFromFile(keyFile, passphrase, true);
+      sig.signingKey = utility.readPrivateKey(key, passphrase, true);
       sig.computeSignature(xmlString);
       return isBase64Output !== false ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
@@ -335,7 +335,7 @@ const libSaml = function () {
     * @desc Verify the XML signature
     * @param  {string} xml                  xml
     * @param  {signature} signature         context of XML signature
-    * @param  {object} opts                 keyFile or cert declares the X509 certificate
+    * @param  {object} opts                 cert declares the X509 certificate
     * @return {boolean} verification result
     */
     verifySignature: function (xml: string, signature, opts) {
@@ -345,12 +345,10 @@ const libSaml = function () {
       let sig = new SignedXml();
       sig.signatureAlgorithm = signatureAlgorithm; // SS1.1
       // Add assertion sections as reference
-      if (options.keyFile) {
-        sig.keyInfoProvider = new FileKeyInfo(options.keyFile);
-      } else if (options.cert) {
+      if (options.cert) {
         sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUsage.signing));
       } else {
-        throw new Error('Undefined certificate or keyfile in \'opts\' object');
+        throw new Error('Undefined certificate in \'opts\' object');
       }
       sig.loadSignature(signature.toString());
       let res = sig.checkSignature(xml);
@@ -406,10 +404,10 @@ const libSaml = function () {
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
     * @param  {string} use          type of certificate (e.g. signing, encrypt)
-    * @param  {string} certFile     declares the .cer file (e.g. path/certificate.cer)
+    * @param  {string} certString    declares the certificate String
     * @return {object} object used in xml module
     */
-    createKeySection: function (use: string, certFile: string) {
+    createKeySection: function (use: string, certString: string | Buffer) {
       return {
         KeyDescriptor: [{
           _attr: { use }
@@ -420,7 +418,7 @@ const libSaml = function () {
             }
           }, {
             X509Data: [{
-              X509Certificate: utility.parseCerFile(certFile)
+              X509Certificate: utility.normalizeCerString(certString)
             }]
           }]
         }]
@@ -429,18 +427,18 @@ const libSaml = function () {
     /**
     * @desc Constructs SAML message
     * @param  {string} octetString               see "Bindings for the OASIS Security Assertion Markup Language (SAML V2.0)" P.17/46
-    * @param  {string} keyFile                   declares the .pem file storing the private key (e.g. path/privkey.pem)
-    * @param  {string} passphrase                passphrase of .pem file [optional]
+    * @param  {string} key                       declares the pem-formatted private key
+    * @param  {string} passphrase                passphrase of private key [optional]
     * @param  {string} signingAlgorithm          signing algorithm (SS-1.1)
     * @return {string} message signature
     */
-    constructMessageSignature: function (octetString: string, keyFile: string, passphrase: string, isBase64: boolean, signingAlgorithm: string) {
+    constructMessageSignature: function (octetString: string, key: string | Buffer, passphrase: string, isBase64: boolean, signingAlgorithm: string) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
-      let key = new nrsa(utility.readPrivateKeyFromFile(keyFile, passphrase), {
+      let decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
         signingScheme: getSigningScheme(signingAlgorithm) // SS-1.1
       });
-      let signature = key.sign(octetString);
+      let signature = decryptedKey.sign(octetString);
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
     },
@@ -541,7 +539,7 @@ const libSaml = function () {
               return reject(new Error('Undefined assertion or invalid syntax'));
             }
             return xmlenc.decrypt(encryptedData, {
-              key: utility.readPrivateKeyFromFile(hereSetting.encPrivateKeyFile, hereSetting.encPrivateKeyFilePass)
+              key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass)
             }, (err, res) => {
               if (err) {
                 return reject(new Error('Exception in decryptAssertion ' + err));

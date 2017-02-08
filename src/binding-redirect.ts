@@ -49,7 +49,7 @@ function buildRedirectURL(type: string, isSigned: boolean, rawSamlRequest: strin
     let sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
     let octetString = samlRequest + sigAlg + relayState;
     // include signature algorithm (either SHA1 or SHA256) (SS1.1)
-    return pvPair(queryParam, octetString, true) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(type + '=' + octetString, entitySetting.privateKeyFile, entitySetting.privateKeyFilePass, null, entitySetting.requestSignatureAlgorithm)));
+    return pvPair(queryParam, octetString, true) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(type + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
   }
   return pvPair(queryParam, samlRequest + relayState, true);
 }
