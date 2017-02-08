@@ -79,7 +79,7 @@ router.get('/spinitsso-post', function (req, res) {
       break;
     }
   }
-  console.log("WTF2");
+
   const request = fromSP.sendLoginRequest(toIdP, 'post')
   res.render('actions', request);
 
@@ -99,7 +99,8 @@ router.post('/acs/:idp?', function (req, res, next) {
     _idp = idp;
     _sp = sp;
   }
-  _sp.parseLoginResponse(_idp, 'post', req).then(parseResult => {
+  _sp.parseLoginResponse(_idp, 'post', req)
+  .then(parseResult => {
     if (parseResult.extract.nameid) {
       res.render('login', {
         title: 'Processing',
@@ -110,6 +111,11 @@ router.post('/acs/:idp?', function (req, res, next) {
       req.flash('info', 'Unexpected error');
       res.redirect('/login');
     }
+  })
+  .catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
 });
 
@@ -121,6 +127,11 @@ function slo (req, res, binding, relayState) {
       const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
     })
+    .catch(err => {
+      res.render('error', {
+        message: err.message
+      });
+    });
 
 }
 

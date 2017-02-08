@@ -41,6 +41,11 @@ router.post('/acs', function (req, res, next) {
     } else {
       res.redirect('/login');
     }
+  })
+  .catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
 });
 
@@ -50,6 +55,11 @@ function slo (req, res, binding, relayState) {
       req.logout();
       const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
+    })
+    .catch(err => {
+      res.render('error', {
+        message: err.message
+      });
     });
 }
 

@@ -126,7 +126,12 @@ router.post('/SingleSignOnService/:id', function (req, res) {
     return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);  
   }).then(response => {
     res.render('actions', response);
+  }).catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
+
 });
 
 router.get('/SingleLogoutService/:id', function (req, res) {
@@ -136,14 +141,18 @@ router.get('/SingleLogoutService/:id', function (req, res) {
   assoIdp.parseLogoutResponse(targetSP, 'redirect', req)
     .then(parseResult => {
       if (req.query.RelayState) {
-      res.redirect(req.query.RelayState);
-    } else {
-      req.logout();
-      req.flash('info', 'All participating service provider has been logged out');
-      res.redirect('/login');
-    }
+        res.redirect(req.query.RelayState);
+      } else {
+        req.logout();
+        req.flash('info', 'All participating service provider has been logged out');
+        res.redirect('/login');
+      }
+    }).catch(err => {
+      res.render('error', {
+        message: err.message
+      });
     });
-});
+})
 
 router.post('/SingleLogoutService/:id', function (req, res) {
   var entity = entityPair(req.params.id);
@@ -159,6 +168,11 @@ router.post('/SingleLogoutService/:id', function (req, res) {
       req.flash('info', 'All participating service provider has been logged out');
       res.redirect('/login');
     }
+  })
+  .catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
 });
 
@@ -202,6 +216,11 @@ router.get('/select/:id', function (req, res) {
   .then(response => {
     response.title = 'POST data';
     res.render('actions', response);
+  })
+  .catch(err => {
+    res.render('error', {
+      message: err.message
+    });
   });
   
 });
