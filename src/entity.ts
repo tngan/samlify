@@ -43,7 +43,7 @@ export default class Entity {
   * @desc  Constructor
   * @param {object} entitySetting
   * @param {object} entityMetaClass determine whether the entity is IdentityProvider or ServiceProvider
-  * @param {string} entityMeta is the entity metafile path, deprecated after 2.0
+  * @param {string} entityMeta is the entity metadata, deprecated after 2.0
   */
   constructor(entitySetting, entityType) {
     this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);

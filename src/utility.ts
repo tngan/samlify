@@ -47,29 +47,29 @@ function inflateString(compressedString: string): string {
   .join('');
 }
 /**
-* @desc Abstract the parseCerFile and normalizePemString
-* @param {buffer} File stream
-* @param {string} String for header and tail of file
+* @desc Abstract the normalizeCerString and normalizePemString
+* @param {buffer} File stream or string
+* @param {string} String for header and tail
 * @return {string} A formatted certificate string
 */
-function normalizeCerString(bin, format: string) {
+function _normalizeCerString(bin: string | Buffer, format: string) {
   return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '');
 }
 /**
 * @desc Parse the .cer to string format without line break, header and footer
-* @param  {string} certFile     declares the .cer file (e.g. path/certificate.cer)
+* @param  {string} certString     declares the certificate contents
 * @return {string} certificiate in string format
 */
-function parseCerFile(certFile: string){
-  return normalizeCerString(fs.readFileSync(certFile), 'CERTIFICATE');
+function normalizeCerString(certString: string | Buffer){
+  return _normalizeCerString(certString, 'CERTIFICATE');
 }
 /**
 * @desc Normalize the string in .pem format without line break, header and footer
 * @param  {string} pemString
 * @return {string} private key in string format
 */
-function normalizePemString(pemString: string){
-  return normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
+function normalizePemString(pemString: string | Buffer){
+  return _normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
 }
 /**
 * @desc Return the complete URL
@@ -108,14 +108,14 @@ function getPublicKeyPemFromCertificate(x509Certificate: string){
   return pki.publicKeyToPem(cert.publicKey);
 }
 /**
-* @desc Read private key from .pem file
-* @param {string} path of the .pem file
-* @param {string} protected passphrase of the keyFile
+* @desc Read private key from pem-formatted string
+* @param {string | Buffer} keyString pem-formattted string
+* @param {string} protected passphrase of the key
 * @return {string} string in pem format
-* If passphrase is used to protect the .pem file (recommend)
+* If passphrase is used to protect the .pem content (recommend)
 */
-function readPrivateKeyFromFile(keyFile: string, passphrase: string, isOutputString?: boolean){
-  return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(fs.readFileSync(keyFile)), passphrase)), isOutputString) : fs.readFileSync(keyFile);
+function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean){
+  return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
 }
 /**
 * @desc Inline syntax sugar
@@ -129,13 +129,13 @@ const utility = {
   base64Decode,
   deflateString,
   inflateString,
-  parseCerFile,
+  normalizeCerString,
   normalizePemString,
   getFullURL,
   parseString,
   applyDefault,
   getPublicKeyPemFromCertificate,
-  readPrivateKeyFromFile,
+  readPrivateKey,
   convertToString
 };
 

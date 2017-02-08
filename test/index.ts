@@ -29,20 +29,20 @@ const _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
 
 // Define an identity provider
 const idp = identityProvider({
-  privateKeyFile: './test/key/idp/privkey.pem',
-  privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+  privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+  privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
   isAssertionEncrypted: true,
-  encPrivateKeyFile: './test/key/idp/encryptKey.pem',
-  encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
+  encPrivateKey: fs.readFileSync('./test/key/idp/encryptKey.pem'),
+  encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
   metadata: './test/metadata/IDPMetadata.xml'
 });
 
 const sp = serviceProvider({
-  privateKeyFile: './test/key/sp/privkey.pem',
-  privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+  privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
   isAssertionEncrypted: true, // for logout purpose
-  encPrivateKeyFile: './test/key/sp/encryptKey.pem',
-  encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+  encPrivateKey: fs.readFileSync('./test/key/sp/encryptKey.pem'),
+  encPrivateKeyPass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
   metadata: './test/metadata/SPMetadata.xml'
 });
 
@@ -73,7 +73,7 @@ test('base64 decoded + inflate', t => {
   t.is(utility.inflateString('80jNyclXCM8vykkBAA=='), 'Hello World');
 });
 test('parse cer format resulting clean certificate', t => {
-  t.is(utility.parseCerFile('./test/key/sp/cert.cer'), spCertKnownGood);
+  t.is(utility.normalizeCerString(fs.readFileSync('./test/key/sp/cert.cer')), spCertKnownGood);
 });
 test('normalize pem key returns clean string', t => {
 	const ekey = fs.readFileSync('./test/key/sp/encryptKey.pem').toString();

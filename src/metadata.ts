@@ -12,7 +12,6 @@ const certUse = wording.certUse;
 
 export interface MetadataInterface {
   xmlString: string;
-  meta: any;
   getMetadata: () => string;
   exportMetadata: (exportFile: string) => void;
   getEntityID: () => string;
@@ -27,12 +26,11 @@ export default class Metadata implements MetadataInterface {
   xmlString: string;
   meta: any;
   /**
-  * @param  {string} meta is either xmlString or file name
+  * @param  {string | Buffer} metadata xml
   * @param  {object} extraParse for custom metadata extractor
-  * @param  {Boolean} isXml declares whether meta is xmlString or filePath
   */
-  constructor (meta, extraParse, isXml?: boolean) {
-    this.xmlString = isXml === true ? String(meta) :　String(fs.readFileSync(meta));
+  constructor (xml: string | Buffer, extraParse) {
+    this.xmlString = xml.toString();
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']

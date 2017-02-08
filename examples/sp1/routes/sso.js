@@ -32,29 +32,30 @@ if (!Object.assign) {
   });
 }
 
+var fs = require('fs');
 var express = require('express');
 var router = express.Router();
 var utility = require('../../../build/index').Utility;
 var ServiceProvider = require('../../../build/index').ServiceProvider;
 var IdentityProvider = require('../../../build/index').IdentityProvider;
 
-var SPMetadata = '../metadata/metadata_sp1.xml';
-var SPMetadataForOnelogin = '../metadata/metadata_sp1_onelogin.xml';
+var SPMetadata = fs.readFileSync('../metadata/metadata_sp1.xml');
+var SPMetadataForOnelogin = fs.readFileSync('../metadata/metadata_sp1_onelogin.xml');
 
 var config = {
-  privateKeyFile: '../key/sp/privkey.pem',
-  privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
-  encPrivateKeyFile: '../key/sp/encryptKey.pem',
-  encPrivateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  privateKey: fs.readFileSync('../key/sp/privkey.pem'),
+  privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  encPrivateKey: fs.readFileSync('../key/sp/encryptKey.pem'),
+  encPrivateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
   requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
   metadata: SPMetadata
 };
 
 var sp = ServiceProvider(config);
-var idp = IdentityProvider({ isAssertionEncrypted: true, metadata: '../metadata/metadata_idp1.xml' });
+var idp = IdentityProvider({ isAssertionEncrypted: true, metadata: fs.readFileSync('../metadata/metadata_idp1.xml') });
 
 // Simple integration to OneLogin
-var oneLoginIdP = IdentityProvider({ metadata: '../metadata/onelogin_metadata_486670.xml' });
+var oneLoginIdP = IdentityProvider({ metadata: fs.readFileSync('../metadata/onelogin_metadata_486670.xml') });
 var olsp = ServiceProvider({ metadata: SPMetadataForOnelogin });
 
 ///
