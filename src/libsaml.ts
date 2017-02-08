@@ -492,7 +492,7 @@ const libSaml = function () {
           let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
 
           if (assertion === '') {
-            return  reject('Undefined assertion or invalid syntax');
+            return  reject(new Error('Undefined assertion or invalid syntax'));
           }
           // Perform encryption depends on the setting, default is false
           if (sourceEntitySetting.isAssertionEncrypted) {
@@ -504,10 +504,10 @@ const libSaml = function () {
               keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
             }, (err, res) => {
               if (err) {
-                return  reject('Exception in encrpytedAssertion ' + err);
+                return  reject(new Error('Exception in encrpytedAssertion ' + err));
               }
               if (!res) {
-                return  reject('Undefined encrypted assertion');
+                return  reject(new Error('Undefined encrypted assertion'));
               }
               return resolve(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
             });
@@ -515,7 +515,7 @@ const libSaml = function () {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
           }
         } else {
-          return  reject('Empty or undefined xml string');
+          return  reject(new Error('Empty or undefined xml string'));
         }
       })
     },
@@ -538,16 +538,16 @@ const libSaml = function () {
             let encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
             let encryptedData = encryptedDataNode !== undefined ? utility.parseString(encryptedDataNode.toString()) : '';
             if (encryptedData === '') {
-              return reject('Undefined assertion or invalid syntax');
+              return reject(new Error('Undefined assertion or invalid syntax'));
             }
             return xmlenc.decrypt(encryptedData, {
               key: utility.readPrivateKeyFromFile(hereSetting.encPrivateKeyFile, hereSetting.encPrivateKeyFilePass)
             }, (err, res) => {
               if (err) {
-                return reject('Exception in decryptAssertion ' + err);
+                return reject(new Error('Exception in decryptAssertion ' + err));
               }
               if (!res) {
-                return reject('Undefined encrypted assertion');
+                return reject(new Error('Undefined encrypted assertion'));
               }
               return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
             });
@@ -555,7 +555,7 @@ const libSaml = function () {
             return resolve(entireXML); // No need to do encrpytion
           }
         } else {
-          return reject('Empty or undefined xml string');
+          return reject(new Error('Empty or undefined xml string'));
         }
       });
 
