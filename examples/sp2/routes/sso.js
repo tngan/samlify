@@ -1,18 +1,19 @@
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
 
 var sp = require('../../../build/index').ServiceProvider({
-  privateKeyFile: '../key/sp/privkey.pem',
-  privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
-  encPrivateKeyFile: '../key/sp/encryptKey.pem',
-  encPrivateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  privateKey: fs.readFileSync('../key/sp/privkey.pem'),
+  privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  encPrivateKey: fs.readFileSync('../key/sp/encryptKey.pem'),
+  encPrivateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
   requestSignatureAlgorithm: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
   metadata: '../metadata/metadata_sp2.xml'
 });
 
 var idp = require('../../../build/index').IdentityProvider({
   isAssertionEncrypted: true,
-  metadata: '../metadata/metadata_idp2.xml'
+  metadata: fs.readFileSync('../metadata/metadata_idp2.xml')
 });
 
 router.get('/metadata', function (req, res, next) {

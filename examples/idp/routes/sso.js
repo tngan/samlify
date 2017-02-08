@@ -16,27 +16,27 @@ var epn = {
 /// Declare that entity, and load all settings when server is started
 /// Restart server is needed when new metadata is imported
 var idp1 = require('../../../build/index').IdentityProvider({
-  privateKeyFile: '../key/idp/privkey.pem',
+  privateKey: fs.readFileSync('../key/idp/privkey.pem'),
   isAssertionEncrypted: true,
-  encPrivateKeyFile: '../key/idp/encryptKey.pem',
-  encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
-  privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
-  metadata: '../metadata/metadata_idp1.xml'
+  encPrivateKey: fs.readFileSync('../key/idp/encryptKey.pem'),
+  encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
+  privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+  metadata: fs.readFileSync('../metadata/metadata_idp1.xml')
 });
 
 
 var idp2 = require('../../../build/index').IdentityProvider({
-  privateKeyFile: '../key/idp/privkey.pem',
+  privateKey: fs.readFileSync('../key/idp/privkey.pem'),
   isAssertionEncrypted: true,
-  encPrivateKeyFile: '../key/idp/encryptKey.pem',
-  encPrivateKeyFilePass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
-  privateKeyFilePass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
-  metadata: '../metadata/metadata_idp2.xml'
+  encPrivateKey: fs.readFileSync('../key/idp/encryptKey.pem'),
+  encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
+  privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+  metadata: fs.readFileSync('../metadata/metadata_idp2.xml')
 });
 
 /// Declare the sp
-var sp1 = require('../../../build/index').ServiceProvider({ metadata: '../metadata/metadata_sp1.xml' });
-var sp2 = require('../../../build/index').ServiceProvider({ metadata: '../metadata/metadata_sp2.xml' });
+var sp1 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp1.xml') });
+var sp2 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp2.xml') });
 
 /// metadata is publicly released, can access at /sso/metadata
 router.get('/metadata/:id', function (req, res, next) {
@@ -113,6 +113,13 @@ router.get('/SingleSignOnService/:id', function (req, res) {
   })
   .then(response => {
     res.render('actions', response);
+  })
+  .catch(err => {
+    console.log(err);
+
+    res.render('error', {
+      message: err.message
+    });
   });
 });
 
@@ -127,6 +134,8 @@ router.post('/SingleSignOnService/:id', function (req, res) {
   }).then(response => {
     res.render('actions', response);
   }).catch(err => {
+    console.log(err);
+
     res.render('error', {
       message: err.message
     });
@@ -148,6 +157,8 @@ router.get('/SingleLogoutService/:id', function (req, res) {
         res.redirect('/login');
       }
     }).catch(err => {
+      console.log(err);
+
       res.render('error', {
         message: err.message
       });
@@ -170,6 +181,8 @@ router.post('/SingleLogoutService/:id', function (req, res) {
     }
   })
   .catch(err => {
+    console.log(err);
+
     res.render('error', {
       message: err.message
     });
@@ -218,6 +231,8 @@ router.get('/select/:id', function (req, res) {
     res.render('actions', response);
   })
   .catch(err => {
+    console.log(err);
+
     res.render('error', {
       message: err.message
     });
