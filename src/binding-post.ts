@@ -78,7 +78,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
       let spEntityID = metadata.sp.getEntityID();
       let fiveMinutesLaterTime = new Date(nowTime.getTime());
       fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
-      let fiveMinutesLater = new Date(fiveMinutesLaterTime).toISOString();
+      let fiveMinutesLater = fiveMinutesLaterTime.toISOString();
       let now = nowTime.toISOString();
       let tvalue: any = {
         ID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),

@@ -15,6 +15,7 @@ import IdpMetadata from './metadata-idp';
 import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
+import * as _ from 'lodash';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data; // SS1.1
 const keyEncryptionAlgorithm = algorithms.encryption.key; // SS1.1
@@ -120,12 +121,12 @@ export default class Entity {
       return true; // throw exception todo
     }
     if (notBefore !== undefined && notOnOrAfter === undefined) {
-      return +new Date(notBefore) <= +now;
+      return +notBefore <= +now;
     }
     if (notBefore === undefined && notOnOrAfter !== undefined) {
-      return now < new Date(notOnOrAfter);
+      return now < notOnOrAfter;
     }
-    return +new Date(notBefore) <= +now && now < new Date(notOnOrAfter);
+    return +notBefore <= +now && now < notOnOrAfter;
   };
   /**
   * @desc  Validate and parse the request/response with different bindings

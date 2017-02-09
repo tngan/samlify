@@ -36,7 +36,7 @@
     "lodash": "^3.10.0",
     "node-forge": "^0.6.34",
     "node-rsa": "^0.2.24",
-    "typescript": "^2.0.3",
+    "typescript": "^2.1.6",
     "uuid": "^3.0.1",
     "xml": "^1.0.0",
     "xml-crypto": "0.8.2",
