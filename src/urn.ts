@@ -30,7 +30,7 @@ const namespace = {
     windowsDomainQualifiedName: 'urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName',
     x509SubjectName: 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName'
   },
-  statusCode:{
+  statusCode: {
     // permissible top-level status codes
     success: 'urn:oasis:names:tc:SAML:2.0:status:Success',
     requester: 'urn:oasis:names:tc:SAML:2.0:status:Requester',
@@ -40,22 +40,22 @@ const namespace = {
     authFailed: 'urn:oasis:names:tc:SAML:2.0:status:AuthnFailed',
     invalidAttrNameOrValue: 'urn:oasis:names:tc:SAML:2.0:status:InvalidAttrNameOrValue',
     invalidNameIDPolicy: 'urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy',
-    noAuthnContext:'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
-    noAvailableIDP:'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
-    noPassive:'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
-    noSupportedIDP:'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
-    partialLogout:'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
-    proxyCountExceeded:'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
-    requestDenied:'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
-    requestUnsupported:'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
-    requestVersionDeprecated:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
-    requestVersionTooHigh:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
-    requestVersionTooLow:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
-    resourceNotRecognized:'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
-    tooManyResponses:'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
-    unknownAttrProfile:'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
-    unknownPrincipal:'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
-    unsupportedBinding:'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding'
+    noAuthnContext: 'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
+    noAvailableIDP: 'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
+    noPassive: 'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
+    noSupportedIDP: 'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
+    partialLogout: 'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
+    proxyCountExceeded: 'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
+    requestDenied: 'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
+    requestUnsupported: 'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
+    requestVersionDeprecated: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
+    requestVersionTooHigh: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
+    requestVersionTooLow: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
+    resourceNotRecognized: 'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
+    tooManyResponses: 'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
+    unknownAttrProfile: 'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
+    unknownPrincipal: 'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
+    unsupportedBinding: 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding'
   }
 };
 

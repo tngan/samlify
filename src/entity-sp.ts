@@ -45,58 +45,58 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {function} rcallback     used when developers have their own login response template
   */
-	public sendLoginRequest(idp, binding, rcallback) : any {
-		const protocol = namespace.binding[binding] || namespace.binding.redirect;
-		if (protocol == namespace.binding.redirect) {
-			return redirectBinding.loginRequestRedirectURL({
-				idp: idp,
-				sp: this
-			}, rcallback);
-		} else if (protocol == namespace.binding.post) {
-			return {
-				actionValue: postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), {
-					idp: idp,
-					sp: this
-				}, rcallback),
-				relayState: this.entitySetting.relayState,
-				entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
-				actionType: 'SAMLRequest'
-			};
-		} else {
-			// Will support arifact in the next release
-			throw new Error('The binding is not support');
-		}
-	}
+  public sendLoginRequest(idp, binding, rcallback): any {
+    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    if (protocol == namespace.binding.redirect) {
+      return redirectBinding.loginRequestRedirectURL({
+        idp: idp,
+        sp: this
+      }, rcallback);
+    } else if (protocol == namespace.binding.post) {
+      return {
+        actionValue: postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), {
+          idp: idp,
+          sp: this
+        }, rcallback),
+        relayState: this.entitySetting.relayState,
+        entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
+        actionType: 'SAMLRequest'
+      };
+    } else {
+      // Will support arifact in the next release
+      throw new Error('The binding is not support');
+    }
+  }
   /**
   * @desc   Validation of the parsed the URL parameters
   * @param  {IdentityProvider}   idp             object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   */
-	public parseLoginResponse(idp, binding, req) {
-		return this.abstractBindingParser({
-			parserFormat: [{
-				localName: 'StatusCode',
-				attributes: ['Value']
-			}, {
-				localName: 'Conditions',
-				attributes: ['NotBefore', 'NotOnOrAfter']
-			}, 'Audience', 'Issuer', 'NameID', {
-				localName: 'Signature',
-				extractEntireBody: true
-			}, {
-				localName: {
-					tag: 'Attribute',
-					key: 'Name'
-				},
-				valueTag: 'AttributeValue'
-			}],
-			checkSignature: this.entityMeta.isWantAssertionsSigned(),
-			from: idp,
-			supportBindings: ['post'],
-			parserType: 'SAMLResponse',
-			actionType: 'login'
-		}, binding, req, idp.entityMeta);
-	};
+  public parseLoginResponse(idp, binding, req) {
+    return this.abstractBindingParser({
+      parserFormat: [{
+        localName: 'StatusCode',
+        attributes: ['Value']
+      }, {
+        localName: 'Conditions',
+        attributes: ['NotBefore', 'NotOnOrAfter']
+      }, 'Audience', 'Issuer', 'NameID', {
+        localName: 'Signature',
+        extractEntireBody: true
+      }, {
+        localName: {
+          tag: 'Attribute',
+          key: 'Name'
+        },
+        valueTag: 'AttributeValue'
+      }],
+      checkSignature: this.entityMeta.isWantAssertionsSigned(),
+      from: idp,
+      supportBindings: ['post'],
+      parserType: 'SAMLResponse',
+      actionType: 'login'
+    }, binding, req, idp.entityMeta);
+  };
 
 }

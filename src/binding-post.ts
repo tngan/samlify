@@ -107,9 +107,9 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
     }
     resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKey, idpSetting.privateKeyPass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
     // SS-1.1
-    if( idpSetting.isAssertionEncrypted ) {
+    if (idpSetting.isAssertionEncrypted) {
       return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml)
-    }else{
+    } else {
       return resXml
     }
   } else {

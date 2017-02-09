@@ -47,10 +47,10 @@ const sp = serviceProvider({
 });
 
 // Define metadata
-const IdPMetadata = idpMetadata('./test/metadata/IDPMetadata.xml');
-const SPMetadata = spMetadata('./test/metadata/SPMetadata.xml');
-const sampleSignedResponse = fs.readFileSync('./test/metadata/SignSAMLResponse.xml').toString();
-const wrongResponse = fs.readFileSync('./test/metadata/wrongResponse.xml').toString();
+const IdPMetadata = idpMetadata('./test/misc/IDPMetadata.xml');
+const SPMetadata = spMetadata('./test/misc/SPMetadata.xml');
+const sampleSignedResponse = fs.readFileSync('./test/misc/SignSAMLResponse.xml').toString();
+const wrongResponse = fs.readFileSync('./test/misc/wrongResponse.xml').toString();
 const spCertKnownGood = fs.readFileSync('./test/key/sp/knownGoodCert.cer').toString().trim();
 const spPemKnownGood = fs.readFileSync('./test/key/sp/knownGoodEncryptKey.pem').toString().trim();
 
@@ -79,3 +79,51 @@ test('normalize pem key returns clean string', t => {
 	const ekey = fs.readFileSync('./test/key/sp/encryptKey.pem').toString();
 	t.is(utility.normalizePemString(ekey), spPemKnownGood);
 });
+
+test('getAssertionConsumerService with one binding', t => {
+	const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
+	const sp = serviceProvider({
+		privateKeyFile: './test/key/sp/privkey.pem',
+		privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+		isAssertionEncrypted: true, // for logout purpose
+		encPrivateKeyFile: './test/key/sp/encryptKey.pem',
+		encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+		assertionConsumerService: [{
+			Binding: binding.post,
+			Location: expectedPostLocation
+		}],
+		singleLogoutService: [{
+			Binding: binding.redirect,
+			Location: 'https://sp.example.org/sp/slo'
+		}]
+	});
+	t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
+});
+test('getAssertionConsumerService with two bindings', t => {
+	const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
+	const expectedArtifactLocation = 'https://sp.example.org/sp/sso/artifact';
+	const sp = serviceProvider({
+		privateKeyFile: './test/key/sp/privkey.pem',
+		privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+		isAssertionEncrypted: true, // for logout purpose
+		encPrivateKeyFile: './test/key/sp/encryptKey.pem',
+		encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+		assertionConsumerService: [{
+			Binding: binding.post,
+			Location: expectedPostLocation
+		}, {
+			Binding: binding.arifact,
+			Location: expectedArtifactLocation
+		}],
+		singleLogoutService: [{
+			Binding: binding.redirect,
+			Location: 'https://sp.example.org/sp/slo'
+		}, {
+			Binding: binding.post,
+			Location: 'https://sp.example.org/sp/slo'
+		}]
+	});
+	t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
+  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.arifact), expectedArtifactLocation);
+});
+

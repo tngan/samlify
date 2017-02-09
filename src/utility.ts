@@ -43,8 +43,8 @@ function deflateString(message: string): string {
 */
 function inflateString(compressedString: string): string {
   return inflate(Array.prototype.map.call(new Buffer(compressedString, BASE64_STR).toString('binary'), char => char.charCodeAt(0)))
-  .map(byte => String.fromCharCode(byte))
-  .join('');
+    .map(byte => String.fromCharCode(byte))
+    .join('');
 }
 /**
 * @desc Abstract the normalizeCerString and normalizePemString
@@ -60,7 +60,7 @@ function _normalizeCerString(bin: string | Buffer, format: string) {
 * @param  {string} certString     declares the certificate contents
 * @return {string} certificiate in string format
 */
-function normalizeCerString(certString: string | Buffer){
+function normalizeCerString(certString: string | Buffer) {
   return _normalizeCerString(certString, 'CERTIFICATE');
 }
 /**
@@ -68,7 +68,7 @@ function normalizeCerString(certString: string | Buffer){
 * @param  {string} pemString
 * @return {string} private key in string format
 */
-function normalizePemString(pemString: string | Buffer){
+function normalizePemString(pemString: string | Buffer) {
   return _normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
 }
 /**
@@ -76,7 +76,7 @@ function normalizePemString(pemString: string | Buffer){
 * @param  {object} req                   HTTP request
 * @return {string} URL
 */
-function getFullURL(req){
+function getFullURL(req) {
   return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 }
 /**
@@ -84,7 +84,7 @@ function getFullURL(req){
 * @param  {string/boolean}
 * @return {boolean}
 */
-function parseString(str, defaultValue = ''){
+function parseString(str, defaultValue = '') {
   return str || defaultValue;
 }
 /**
@@ -93,7 +93,7 @@ function parseString(str, defaultValue = ''){
 * @param  {object} object applied to the default object
 * @return {object} result object
 */
-function applyDefault(obj1, obj2){
+function applyDefault(obj1, obj2) {
   return Object.assign({}, obj1, obj2);
 }
 /**
@@ -101,7 +101,7 @@ function applyDefault(obj1, obj2){
 * @param {string} x509 certificate
 * @return {string} public key fetched from the certificate
 */
-function getPublicKeyPemFromCertificate(x509Certificate: string){
+function getPublicKeyPemFromCertificate(x509Certificate: string) {
   const certDerBytes = util.decode64(x509Certificate);
   const obj = asn1.fromDer(certDerBytes);
   const cert = pki.certificateFromAsn1(obj);
@@ -114,13 +114,13 @@ function getPublicKeyPemFromCertificate(x509Certificate: string){
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem content (recommend)
 */
-function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean){
+function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean) {
   return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
 }
 /**
 * @desc Inline syntax sugar
 */
-function convertToString(input, isOutputString){
+function convertToString(input, isOutputString) {
   return Boolean(isOutputString) ? String(input) : input;
 }
 

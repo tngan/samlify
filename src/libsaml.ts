@@ -480,7 +480,7 @@ const libSaml = function () {
     */
     encryptAssertion: function (sourceEntity, targetEntity, entireXML: string) {
       // Implement encryption after signature if it has
-      return new Promise<string>((resolve,reject) => {
+      return new Promise<string>((resolve, reject) => {
         if (entireXML) {
           let sourceEntitySetting = sourceEntity.entitySetting;
           let targetEntitySetting = targetEntity.entitySetting;
@@ -490,7 +490,7 @@ const libSaml = function () {
           let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
 
           if (assertion === '') {
-            return  reject(new Error('Undefined assertion or invalid syntax'));
+            return reject(new Error('Undefined assertion or invalid syntax'));
           }
           // Perform encryption depends on the setting, default is false
           if (sourceEntitySetting.isAssertionEncrypted) {
@@ -502,10 +502,10 @@ const libSaml = function () {
               keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
             }, (err, res) => {
               if (err) {
-                return  reject(new Error('Exception in encrpytedAssertion ' + err));
+                return reject(new Error('Exception in encrpytedAssertion ' + err));
               }
               if (!res) {
-                return  reject(new Error('Undefined encrypted assertion'));
+                return reject(new Error('Undefined encrypted assertion'));
               }
               return resolve(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
             });
@@ -513,7 +513,7 @@ const libSaml = function () {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
           }
         } else {
-          return  reject(new Error('Empty or undefined xml string'));
+          return reject(new Error('Empty or undefined xml string'));
         }
       })
     },
@@ -526,7 +526,7 @@ const libSaml = function () {
     * @return {function} a promise to get back the entire xml with decrypted assertion
     */
     decryptAssertion: function (type: string, here, from, entireXML: string) {
-      return new Promise<string>((resolve,reject) => {
+      return new Promise<string>((resolve, reject) => {
         // Implement decryption first then check the signature
         if (entireXML) {
           // Perform encryption depends on the setting of where the message is sent, default is false

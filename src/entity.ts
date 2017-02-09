@@ -238,7 +238,7 @@ export default class Entity {
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
   * @param  {function} rcallback     used when developers have their own login response template
   */
-  sendLogoutRequest(targetEntity, binding, user, relayState, rcallback) : any {
+  sendLogoutRequest(targetEntity, binding, user, relayState, rcallback): any {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
@@ -247,7 +247,7 @@ export default class Entity {
     }
     if (binding === wording.binding.post) {
       const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding);
-      const	actionValue = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, rcallback);
+      const actionValue = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, rcallback);
       return {
         actionValue,
         relayState,
@@ -266,7 +266,7 @@ export default class Entity {
   * @param  {string} binding                     protocol binding
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-  sendLogoutResponse(targetEntity, requestInfo, binding, relayState, rcallback) : any {
+  sendLogoutResponse(targetEntity, requestInfo, binding, relayState, rcallback): any {
     binding = namespace.binding[binding] || namespace.binding.redirect;
     if (binding === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {

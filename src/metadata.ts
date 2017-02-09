@@ -29,18 +29,18 @@ export default class Metadata implements MetadataInterface {
   * @param  {string | Buffer} metadata xml
   * @param  {object} extraParse for custom metadata extractor
   */
-  constructor (xml: string | Buffer, extraParse) {
+  constructor(xml: string | Buffer, extraParse) {
     this.xmlString = xml.toString();
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']
-    },{
+    }, {
       localName: {
         tag: 'KeyDescriptor',
         key: 'use'
       },
       valueTag: 'X509Certificate'
-    },{
+    }, {
       localName: {
         tag: 'SingleLogoutService',
         key: 'Binding'
@@ -52,21 +52,21 @@ export default class Metadata implements MetadataInterface {
   * @desc Get the metadata in xml format
   * @return {string} metadata in xml format
   */
-  public getMetadata (): string {
+  public getMetadata(): string {
     return this.xmlString;
   }
   /**
   * @desc Export the metadata to specific file
   * @param {string} exportFile is the output file path
   */
-  public exportMetadata (exportFile: string): void {
+  public exportMetadata(exportFile: string): void {
     fs.writeFileSync(exportFile, this.xmlString);
   }
   /**
   * @desc Get the entityID in metadata
   * @return {string} entityID
   */
-  public getEntityID (): string {
+  public getEntityID(): string {
     return this.meta.entitydescriptor.entityid;
   }
   /**
@@ -74,7 +74,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} use declares the type of certificate
   * @return {string} certificate in string format
   */
-  public getX509Certificate (use: string): string {
+  public getX509Certificate(use: string): string {
     if (use === certUse.signing || use === certUse.encrypt) {
       return this.meta.keydescriptor[use];
     }
@@ -84,7 +84,7 @@ export default class Metadata implements MetadataInterface {
   * @desc Get the support NameID format declared in entity metadata
   * @return {array} support NameID format
   */
-  public getNameIDFormat (): Array<any> {
+  public getNameIDFormat(): Array<any> {
     return this.meta.nameidformat;
   }
   /**
@@ -92,7 +92,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} binding e.g. redirect, post
   * @return {string/object} location
   */
-  public getSingleLogoutService (binding: string | undefined): string | Object {
+  public getSingleLogoutService(binding: string | undefined): string | Object {
     if (typeof binding === 'string') {
       let location;
       let bindType = namespace.binding[binding];
@@ -111,7 +111,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {[string]} services
   * @return {[string]} support bindings
   */
-  public getSupportBindings (services: Array<string>): Array<string> {
+  public getSupportBindings(services: Array<string>): Array<string> {
     let supportBindings = [];
     if (services) {
       services.forEach(service => supportBindings.push(Object.keys(service)[0]));
