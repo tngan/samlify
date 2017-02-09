@@ -9,6 +9,7 @@ import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
+import * as _ from 'lodash';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
@@ -50,7 +51,7 @@ export class IdentityProvider extends Entity {
   * @param  {string} meta
   */
   constructor(idpSetting) {
-    const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    const entitySetting = _.assign({ wantAuthnRequestsSigned: false }, idpSetting);
     super(entitySetting, 'idp');
   }
 

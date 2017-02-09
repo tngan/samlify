@@ -94,7 +94,7 @@ function parseString(str, defaultValue = '') {
 * @return {object} result object
 */
 function applyDefault(obj1, obj2) {
-  return Object.assign({}, obj1, obj2);
+  return _.assign({}, obj1, obj2);
 }
 /**
 * @desc Get public key in pem format from the certificate included in the metadata

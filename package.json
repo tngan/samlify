@@ -32,6 +32,7 @@
     "@types/uuid": "^2.0.29",
     "@types/xmldom": "^0.1.28",
     "deflate-js": "^0.2.3",
+    "es6-promise": "^4.0.5",
     "lodash": "^3.10.0",
     "node-forge": "^0.6.34",
     "node-rsa": "^0.2.24",

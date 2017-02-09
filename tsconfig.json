@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
@@ -8,7 +8,13 @@
     "sourceMap": true,
     "outDir": "./build",
     "baseUrl": "./",
-    "paths": {}
+    "paths": {},
+    "lib": [
+      "dom",
+      "es5",
+      "es2015.promise",
+      "es2015.iterable"
+    ]
   },
   "atom": { "rewriteTsconfig": false },
   "typeRoots": [

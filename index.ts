@@ -1,3 +1,4 @@
+import "es6-promise";
 import IdentityProvider from './src/entity-idp';
 import ServiceProvider from './src/entity-sp';
 import IdPMetadata from './src/metadata-idp';
