@@ -14,7 +14,8 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc && ava --verbose build/test",
-    "coverage": "nyc npm test"
+    "coverage": "nyc npm test",
+    "postinstall": "git config --local include.path ../.gitconfig"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
