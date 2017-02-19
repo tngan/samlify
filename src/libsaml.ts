@@ -19,16 +19,19 @@ const xml = require('xml');
 const xmlenc = require('xml-encryption');
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
-const certUsage = wording.certUse;
+const certUse = wording.certUse;
 const requestTags = tags.request;
 const urlParams = wording.urlParams;
 const dom = DOMParser;
 
-let { SignedXml } = require('xml-crypto');
+let { SignedXml, FileKeyInfo } = require('xml-crypto');
 
 interface ExtractorResultInterface {
-  signature: any;
-  issuer: string;
+  [key: string]: any;
+  signature?: any;
+  issuer?: string;
+  nameid?: string;
+  notexist?: boolean;
 }
 
 export interface LibSamlInterface {
@@ -39,8 +42,8 @@ export interface LibSamlInterface {
   verifySignature: (xml: string, signature, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResultInterface;
   createKeySection: (use: string, cert: string | Buffer) => {};
-  constructMessageSignature: (octetString: string, key: string | Buffer, passphrase: string, isBase64?: boolean, signingAlgorithm?: string) => string;
-  verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm: string) => boolean;
+  constructMessageSignature: (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
+  verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
   decryptAssertion: (type: string, here, from, entireXML: string) => Promise<string>;
@@ -109,7 +112,7 @@ const libSaml = function () {
   * @param {string} sigAlg    signature algorithm
   * @return {string/null} signing algorithm short-hand for the module node-rsa
   */
-  function getSigningScheme(sigAlg: string): string | null {
+  function getSigningScheme(sigAlg?: string): string | null {
     const algAlias = nrsaAliasMapping[sigAlg];
     if (algAlias !== undefined) {
       return algAlias;
@@ -345,8 +348,10 @@ const libSaml = function () {
       let sig = new SignedXml();
       sig.signatureAlgorithm = signatureAlgorithm; // SS1.1
       // Add assertion sections as reference
-      if (options.cert) {
-        sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUsage.signing));
+      if (options.keyFile) {
+        sig.keyInfoProvider = new FileKeyInfo(options.keyFile);
+      } else if (options.cert) {
+        sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUse.signing));
       } else {
         throw new Error('Undefined certificate in \'opts\' object');
       }
@@ -432,7 +437,7 @@ const libSaml = function () {
     * @param  {string} signingAlgorithm          signing algorithm (SS-1.1)
     * @return {string} message signature
     */
-    constructMessageSignature: function (octetString: string, key: string | Buffer, passphrase: string, isBase64: boolean, signingAlgorithm: string) {
+    constructMessageSignature: function (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
       let decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
@@ -452,8 +457,8 @@ const libSaml = function () {
     *
     * SS1.1 Code refractoring
     */
-    verifyMessageSignature: function (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm: string) {
-      let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUsage.signing)), {
+    verifyMessageSignature: function (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
+      let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUse.signing)), {
         signingScheme: getSigningScheme(verifyAlgorithm)
       });
       return key.verify(new Buffer(octetString), signature);
@@ -496,8 +501,8 @@ const libSaml = function () {
           if (sourceEntitySetting.isAssertionEncrypted) {
             xmlenc.encrypt(assertion, {
               // use xml-encryption module
-              rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUsage.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
-              pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUsage.encrypt) + '-----END CERTIFICATE-----'),
+              rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+              pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
               encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
               keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
             }, (err, res) => {

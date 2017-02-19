@@ -7,6 +7,10 @@ clean:	;
 				rm -rf node_modules
 
 rebuild: ;
-	       rm -rf build; tsc; \
+	       rm -rf build; tsc;
 
-.PHONY: rebuild
+pretest:	;
+					mkdir -p build/test; \
+					cp -a test/key test/misc build/test;
+
+.PHONY: rebuild pretest
