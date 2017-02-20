@@ -60,9 +60,9 @@ export class IdpMetadata extends Metadata {
       }
 
       if (singleSignOnService && singleSignOnService.length > 0) {
+        let indexCount = 0;
         singleSignOnService.forEach(a => {
           let attr: any = {};
-          let indexCount = 0;
           if (a.isDefault) {
             attr.isDefault = true;
           }
@@ -78,9 +78,9 @@ export class IdpMetadata extends Metadata {
       }
 
       if (singleLogoutService && singleLogoutService.length > 0) {
+        let indexCount = 0;
         singleLogoutService.forEach(a => {
           let attr: any = {};
-          let indexCount = 0;
           if (a.isDefault) {
             attr.isDefault = true;
           }

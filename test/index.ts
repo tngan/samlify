@@ -458,21 +458,4 @@ test('getAssertionConsumerService with two bindings', t => {
       .catch(err => t.fail());
   });
 
-  test('#31 query param for sso/slo is SamlRequest', t => {
-    t.is(getQueryParamByType('SAMLRequest'), wording.urlParams.samlRequest);
-    t.is(getQueryParamByType('LogoutRequest'), wording.urlParams.samlRequest);
-  });
-  test('#31 query param for sso/slo is SamlResponse', t => {
-    t.is(getQueryParamByType('SAMLResponse'), wording.urlParams.samlResponse);
-    t.is(getQueryParamByType('LogoutResponse'), wording.urlParams.samlResponse);
-  });
-  test('#31 query param for sso/slo returns error', t => {
-    try {
-      getQueryParamByType('samlRequest');
-      t.fail();
-    } catch (e) {
-      t.pass();
-    }
-  });
-
 })();

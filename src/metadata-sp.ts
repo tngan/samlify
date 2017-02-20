@@ -68,10 +68,9 @@ export class SpMetadata extends Metadata {
       }
 
       if (singleLogoutService && singleLogoutService.length > 0) {
+        let indexCount = 0;
         singleLogoutService.forEach(function (a) {
           let attr: any = {};
-          let indexCount = 0;
-
           if (a.isDefault) {
             attr.isDefault = true;
           }
@@ -83,9 +82,9 @@ export class SpMetadata extends Metadata {
       }
 
       if (assertionConsumerService && assertionConsumerService.length > 0) {
+        let indexCount = 0;
         assertionConsumerService.forEach(a => {
           let attr: any = {};
-          let indexCount = 0;
           if (a.isDefault) {
             attr.isDefault = true;
           }
