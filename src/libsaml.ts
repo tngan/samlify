@@ -14,6 +14,7 @@ import utility from './utility';
 import { tags, algorithms, wording } from './urn';
 import xpath, { select } from 'xpath';
 
+//Why are these not imports?
 const nrsa = require('node-rsa');
 const xml = require('xml');
 const xmlenc = require('xml-encryption');
@@ -38,9 +39,9 @@ export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: { any }) => string;
-  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
+  constructSAMLSignature: (xmlDoc: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
   verifySignature: (xml: string, signature, opts) => boolean;
-  extractor: (xmlString: string, fields) => ExtractorResultInterface;
+  extractor: (xmlDoc: string, fields) => ExtractorResultInterface; //Since we have typescript intellisense anyway, it seems like bad practice to include the type in the variable name...
   createKeySection: (use: string, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
@@ -322,7 +323,7 @@ const libSaml = function () {
     * @param  {string} signatureAlgorithm   signature algorithm (SS-1.1)
     * @return {string} base64 encoded string
     */
-    constructSAMLSignature: function (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
+    constructSAMLSignature: function (xmlDoc: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
       let sig = new SignedXml();
       // Add assertion sections as reference
       if (referenceXPath && referenceXPath !== '') {
@@ -368,7 +369,7 @@ const libSaml = function () {
     * @param  {string} xmlString
     * @param  {object} fields
     */
-    extractor: function (xmlString: string, fields) {
+    extractor: function (xmlDoc: string, fields) {
       let doc = new dom().parseFromString(xmlString);
       let meta = {};
       fields.forEach(field => {

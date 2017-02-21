@@ -7,6 +7,7 @@ import Metadata, { MetadataInterface } from './metadata';
 import { namespace } from './urn';
 import libsaml from './libsaml';
 
+//Why is this require and not import?
 const xml = require('xml');
 
 export interface SpMetadataInterface extends MetadataInterface {

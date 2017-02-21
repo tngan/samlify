@@ -14,6 +14,7 @@ import * as _ from 'lodash';
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
+//Why not an import?
 const xml = require('xml');
 
 /*
@@ -63,7 +64,9 @@ export class IdentityProvider extends Entity {
   * @param  {object}   user                      current logged user (e.g. req.user)
   * @param  {function} rcallback                 used when developers have their own login response template
   */
-  public async sendLoginResponse(sp, requestInfo, binding, user, rcallback) {
+   //It's not actually sending anything, so I renamed to 'create'
+   //What does the 'r' in 'rcallback' stand for? Maybe rename to be more clear?
+  public async createLoginResponse(sp, requestInfo, binding, user, rcallback) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.post) {
       const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
