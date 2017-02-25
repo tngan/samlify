@@ -41,7 +41,7 @@
     "typescript": "^2.1.6",
     "uuid": "^3.0.1",
     "xml": "^1.0.0",
-    "xml-crypto": "0.8.2",
+    "xml-crypto": "^0.8.5",
     "xml-encryption": "^0.7.2",
     "xmldom": "^0.1.19",
     "xpath": "0.0.9"

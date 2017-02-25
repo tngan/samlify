@@ -3508,9 +3508,9 @@ xdg-basedir@^2.0.0:
   dependencies:
     os-homedir "^1.0.0"
 
-xml-crypto@0.8.2:
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-0.8.2.tgz#f11c993740ef420c17295441d8bfc07c97a3df33"
+xml-crypto@^0.8.5:
+  version "0.8.5"
+  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-0.8.5.tgz#2bbcfb3eb33f3a82a218b822bf672b6b1c20e538"
   dependencies:
     xmldom "=0.1.19"
     xpath.js ">=0.0.3"
