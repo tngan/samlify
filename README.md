@@ -25,6 +25,7 @@ yarn install
 
 ### Integrations
 + [OneLogin](https://www.onelogin.com/)
++ [Okta](https://www.okta.com/)
 
 ### Get Started
 ```javascript

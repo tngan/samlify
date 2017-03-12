@@ -11,6 +11,9 @@ var epn = {
   },
   'admin@esaml2.com': {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S' //admin123
+  },
+  'exprsaml2@gmail.com': {
+    assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S' //admin123
   }
 };
 

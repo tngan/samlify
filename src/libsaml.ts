@@ -308,8 +308,8 @@ const libSaml = function () {
     * @return {string}
     */
     replaceTagsByValue: function (rawXML: string, tagValues: { any }): string {
-      Object.keys(requestTags).forEach(t => {
-        rawXML = rawXML.replace(new RegExp(requestTags[t], 'g'), tagValues[t]);
+      Object.keys(tagValues).forEach(t => {
+        rawXML = rawXML.replace(new RegExp(`{${t}}`, 'g'), tagValues[t]);
       });
       return rawXML;
     },

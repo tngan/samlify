@@ -52,9 +52,12 @@ export default class Entity {
     switch (entityType) {
       case 'idp':
         this.entityMeta = IdpMetadata(metadata);
+        this.entitySetting.wantAuthnRequestsSigned = this.entityMeta.isWantAuthnRequestsSigned();
         break;
       case 'sp':
         this.entityMeta = SpMetadata(metadata);
+        this.entitySetting.authnRequestsSigned = this.entityMeta.isAuthnRequestSigned();
+        this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
         break;
       default:
         throw new Error('undefined entity type');
@@ -142,7 +145,7 @@ export default class Entity {
     let options = opts || {};
     let parseResult = {};
     let supportBindings = [nsBinding.redirect, nsBinding.post];
-    let { parserFormat: fields, parserType, actionType, from, checkSignature = true, decryptAssertion = true } = options;
+    let { parserFormat: fields, parserType, actionType, from, checkSignature = true, decryptAssertion = false } = options;
 
     if (actionType === 'login') {
       if (entityMeta.getAssertionConsumerService) {

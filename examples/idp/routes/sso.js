@@ -1,14 +1,18 @@
 var express = require('express');
+var uuid = require('uuid');
 var router = express.Router();
 var fs = require('fs');
 var utility = require('../../../build/index').Utility;
+var SamlLib = require('../../../build/index').SamlLib;
+var binding = require('../../../build/index').Constants.wording.binding;
 var spSet = [];
 var epn = {
   'admin@idp.com': {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S',
     app: {
       '369550': { assoSpEmail: 'admin@sp1.com' },
-      '369551': { assoSpEmail: 'admin@sp2.com' }
+      '369551': { assoSpEmail: 'admin@sp2.com' },
+      '369552': { assoSpEmail: 'exprsaml2@gmail.com' }
     }
   }
 };
@@ -24,7 +28,6 @@ var idp1 = require('../../../build/index').IdentityProvider({
   metadata: fs.readFileSync('../metadata/metadata_idp1.xml')
 });
 
-
 var idp2 = require('../../../build/index').IdentityProvider({
   privateKey: fs.readFileSync('../key/idp/privkey.pem'),
   isAssertionEncrypted: true,
@@ -34,9 +37,22 @@ var idp2 = require('../../../build/index').IdentityProvider({
   metadata: fs.readFileSync('../metadata/metadata_idp2.xml')
 });
 
+var idp3 = require('../../../build/index').IdentityProvider({
+  privateKey: fs.readFileSync('../key/idp/privkey.pem'),
+  isAssertionEncrypted: false,
+  privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+  metadata: fs.readFileSync('../metadata/metadata_idp1.xml'),
+  loginResponseTemplate: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AttributeStatement><saml:Attribute Name="appuser.email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>'
+});
+
 /// Declare the sp
 var sp1 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp1.xml') });
 var sp2 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp2.xml') });
+// Declare the okta sp for its inbound saml
+var sp3 = require('../../../build/index').ServiceProvider({ 
+  metadata: fs.readFileSync('../metadata/metadata_okta_sp.xml'),
+  loginResponseTemplate: ""
+});
 
 /// metadata is publicly released, can access at /sso/metadata
 router.get('/metadata/:id', function (req, res, next) {
@@ -47,6 +63,7 @@ router.get('/metadata/:id', function (req, res, next) {
 
 spSet.push(sp1);
 spSet.push(sp2);
+spSet.push(sp3);
 
 function entityPair(id) {
   var targetSP, assoIdp;
@@ -58,6 +75,10 @@ function entityPair(id) {
     case '369551':
       targetSP = sp2;
       assoIdp = idp2;
+      break;
+    case '369552':
+      targetSP = sp3;
+      assoIdp = idp3;
       break;
     default:
       break;
@@ -116,7 +137,6 @@ router.get('/SingleSignOnService/:id', function (req, res) {
   })
   .catch(err => {
     console.log(err);
-
     res.render('error', {
       message: err.message
     });
@@ -127,15 +147,49 @@ router.post('/SingleSignOnService/:id', function (req, res) {
   var entity = entityPair(req.params.id);
   var assoIdp = entity.assoIdp;
   var targetSP = entity.targetSP;
+
+  var tagReplacement = function(template) {
+    var now = new Date();
+    var spEntityID = targetSP.entityMeta.getEntityID();
+    var idpSetting = assoIdp.entitySetting;
+    var fiveMinutesLater = new Date(now.getTime());
+    fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
+    var fiveMinutesLater = new Date(fiveMinutesLater).toISOString();
+    var now = now.toISOString();
+    var tvalue = {
+      ID: uuid.v4(),
+      AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
+      Destination: targetSP.entityMeta.getAssertionConsumerService(binding.post),
+      Audience: spEntityID,
+      SubjectRecipient: spEntityID,
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      NameID: req.user.email,
+      Issuer: assoIdp.entityMeta.getEntityID(),
+      IssueInstant: now,
+      ConditionsNotBefore: now,
+      ConditionsNotOnOrAfter: fiveMinutesLater,
+      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
+      AssertionConsumerServiceURL: targetSP.entityMeta.getAssertionConsumerService(binding.post),
+      EntityID: spEntityID,
+      StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
+
+      attrUserEmail: req.user.email
+    };
+    response = SamlLib.replaceTagsByValue(template, tvalue);
+    // replace tag
+    console.log('*******************', response);
+    return response;
+  }
+
   assoIdp.parseLoginRequest(targetSP, 'post', req)
   .then(parseResult => {
     req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-    return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);  
+    return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user, tagReplacement); 
   }).then(response => {
+    console.log(response);
     res.render('actions', response);
   }).catch(err => {
     console.log(err);
-
     res.render('error', {
       message: err.message
     });

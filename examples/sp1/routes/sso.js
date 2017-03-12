@@ -41,6 +41,7 @@ var IdentityProvider = require('../../../build/index').IdentityProvider;
 
 var SPMetadata = fs.readFileSync('../metadata/metadata_sp1.xml');
 var SPMetadataForOnelogin = fs.readFileSync('../metadata/metadata_sp1_onelogin.xml');
+var SPMetadataForOkta = fs.readFileSync('../metadata/metadata_sp1_okta.xml');
 
 var config = {
   privateKey: fs.readFileSync('../key/sp/privkey.pem'),
@@ -58,6 +59,14 @@ var idp = IdentityProvider({ isAssertionEncrypted: true, metadata: fs.readFileSy
 var oneLoginIdP = IdentityProvider({ metadata: fs.readFileSync('../metadata/onelogin_metadata_486670.xml') });
 var olsp = ServiceProvider({ metadata: SPMetadataForOnelogin });
 
+var oktaIdp = IdentityProvider({ metadata: fs.readFileSync('../metadata/metadata_idp_okta.xml') })
+var otsp = ServiceProvider({ 
+  privateKey: fs.readFileSync('../key/sp/privkey.pem'),
+  privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
+  metadata: SPMetadataForOkta 
+});
+
 ///
 /// metadata is publicly released, can access at /sso/metadata
 ///
@@ -72,6 +81,11 @@ router.get('/spinitsso-post', function (req, res) {
     case 'onelogin': {
       fromSP = olsp;
       toIdP = oneLoginIdP;
+      break;
+    }
+    case 'okta': {
+      fromSP = otsp;
+      toIdP = oktaIdp;
       break;
     }
     default: {
@@ -96,6 +110,9 @@ router.post('/acs/:idp?', function (req, res, next) {
   if (req.params.idp === 'onelogin') {
     _idp = oneLoginIdP;
     _sp = olsp;
+  } else if (req.params.idp === 'okta') {
+    _idp = oktaIdp;
+    _sp = otsp;
   } else {
     _idp = idp;
     _sp = sp;
