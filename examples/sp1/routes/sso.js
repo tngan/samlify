@@ -78,7 +78,6 @@ router.get('/spinitsso-post', function (req, res) {
             break;
         }
     }
-    console.log(fromSP.entityMeta.isAuthnRequestSigned(), toIdP.entityMeta.isWantAuthnRequestsSigned());
     fromSP.sendLoginRequest(toIdP, 'post', function (request) {
         res.render('actions', request);
     });

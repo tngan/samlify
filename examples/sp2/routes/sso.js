@@ -5,7 +5,7 @@ var sp = require('../../../index').ServiceProvider({
     privateKeyFile: '../key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     encPrivateKeyFile: '../key/sp/encryptKey.pem',
-    encPrivateKeyFilePass: 'Woz6JHkpWjrpqhx3',
+    encPrivateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     requestSignatureAlgorithm: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
 }, '../metadata/metadata_sp2.xml');
 
