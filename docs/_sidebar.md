@@ -13,6 +13,7 @@
 - [Advanced](/advance)
   - [Configuration](/configuration)
   - [Custom Template](/template)
+  - [Helper Functions](/helpers)
   - [Multiple Entities](/multi-entities)
   - [Metadata Distribution](/metadata-distribution)
 - [Examples](/examples)
