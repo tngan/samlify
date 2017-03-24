@@ -18,6 +18,8 @@ const binding = wording.binding;
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} rcallback     used when developers have their own login response template
 */
+
+//It's unclear to me what the 'r' in 'rcallback' stands for. requestCallback? if so, that migth be a better name
 function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (template: string) => string) {
   let metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   let spSetting = entity.sp.entitySetting;
@@ -59,6 +61,8 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {function} rcallback     used when developers have their own login response template
 */
+
+//It's unclear to me what the 'r' in 'rcallback' stands for. responseCallback? if so, that migth be a better name
 async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any, rcallback: (template: string) => string) {
   let metadata = {
     idp: entity.idp.entityMeta,
@@ -124,6 +128,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
 * @param  {function} rcallback      used when developers have their own login response template
 * @return {string} base64 encoded request
 */
+//It's unclear to me what the 'r' in 'rcallback' stands for. requestCallback? if so, that migth be a better name
 function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (template: string) => string): string {
   let metadata = {
     init: entity.init.entityMeta,
@@ -164,6 +169,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (templ
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} rcallback     used when developers have their own login response template
 */
+//It's unclear to me what the 'r' in 'rcallback' stands for. responseCallback? if so, that migth be a better name
 function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entity: any, rcallback: (template: string) => string) {
   let metadata = {
     init: entity.init.entityMeta,

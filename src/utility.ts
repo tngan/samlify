@@ -52,7 +52,9 @@ function inflateString(compressedString: string): string {
 * @param {string} String for header and tail
 * @return {string} A formatted certificate string
 */
-function _normalizeCerString(bin: string | Buffer, format: string) {
+
+//Since it can be either a string or a buffer, don't name it with suffix -String
+function normalizeCert(cert: string | Buffer, format: string) {
   return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '');
 }
 /**
@@ -60,7 +62,7 @@ function _normalizeCerString(bin: string | Buffer, format: string) {
 * @param  {string} certString     declares the certificate contents
 * @return {string} certificiate in string format
 */
-function normalizeCerString(certString: string | Buffer) {
+function normalizeCer(cer: string | Buffer) {
   return _normalizeCerString(certString, 'CERTIFICATE');
 }
 /**
@@ -68,7 +70,7 @@ function normalizeCerString(certString: string | Buffer) {
 * @param  {string} pemString
 * @return {string} private key in string format
 */
-function normalizePemString(pemString: string | Buffer) {
+function normalizePem(pem: string | Buffer) {
   return _normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
 }
 /**
@@ -114,7 +116,7 @@ function getPublicKeyPemFromCertificate(x509Certificate: string) {
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem content (recommend)
 */
-function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean) {
+function readPrivateKey(key: string | Buffer, passphrase: string, isOutputString?: boolean) {
   return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
 }
 /**

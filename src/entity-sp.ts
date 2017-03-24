@@ -46,7 +46,8 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {function} rcallback     used when developers have their own login response template
   */
-  public sendLoginRequest(idp, binding, rcallback): any {
+   //It's not actually sending anything, so I renamed to 'create'
+  public createLoginRequest(idp, binding, rcallback): any {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.redirect) {
       return redirectBinding.loginRequestRedirectURL({
