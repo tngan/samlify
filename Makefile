@@ -13,4 +13,7 @@ pretest:	;
 					mkdir -p build/test; \
 					cp -a test/key test/misc build/test;
 
-.PHONY: rebuild pretest
+doc: ;@echo "prepare and serve the docs"; \
+	   docsify serve ./docs
+
+.PHONY: rebuild pretest doc
