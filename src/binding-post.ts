@@ -80,12 +80,13 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
       fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
       let fiveMinutesLater = fiveMinutesLaterTime.toISOString();
       let now = nowTime.toISOString();
+      const acl = metadata.sp.getAssertionConsumerService(binding.post);
       let tvalue: any = {
         ID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
         AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
         Destination: base,
         Audience: spEntityID,
-        SubjectRecipient: spEntityID,
+        SubjectRecipient: acl,
         NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
         NameID: _user.email || '',
         Issuer: metadata.idp.getEntityID(),
@@ -93,7 +94,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
         ConditionsNotBefore: now,
         ConditionsNotOnOrAfter: fiveMinutesLater,
         SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
+        AssertionConsumerServiceURL: acl,
         EntityID: spEntityID,
         StatusCode: namespace.statusCode.success,
         // future features
