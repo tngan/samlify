@@ -457,5 +457,27 @@ test('getAssertionConsumerService with two bindings', t => {
       .then(res => t.pass())
       .catch(err => t.fail());
   });
-
+  test('building attribute statement with one attribute', t => {
+    const attributes = [{
+      name: "email",
+      valueTag: "user.email",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    }];
+    t.is(libsaml.attributeStatementBuilder(attributes), '<saml:AttributeStatement><saml:Attribute Name="email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement>');
+  });
+  test('building attribute statement with multiple attributes', t => {
+    const attributes = [{
+      name: "email",
+      valueTag: "user.email",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    }, {
+      name: "firstname",
+      valueTag: "user.firstname",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    }];
+    t.is(libsaml.attributeStatementBuilder(attributes), '<saml:AttributeStatement><saml:Attribute Name="email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute><saml:Attribute Name="firstname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">{attrUserFirstname}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement>');
+  });
 })();

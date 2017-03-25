@@ -51,10 +51,20 @@ export class IdentityProvider extends Entity {
   * @param  {string} meta
   */
   constructor(idpSetting) {
-    const entitySetting = _.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    let entitySetting = _.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    // build attribute part
+    if (idpSetting.loginResponseTemplate) {
+      if(_.isString(idpSetting.loginResponseTemplate.context) && _.isArray(idpSetting.loginResponseTemplate.attributes)) {
+        let replacement = {
+          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes)
+        };
+        entitySetting.loginResponseTemplate = libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement);
+      } else {
+        console.warn('Invalid login response template');
+      }
+    }
     super(entitySetting, 'idp');
   }
-
   /**
   * @desc  Generates the login response for developers to design their own method
   * @param  {ServiceProvider}   sp               object of service provider

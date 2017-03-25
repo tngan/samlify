@@ -104,7 +104,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
       }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate, tvalue);
+      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
     resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKey, idpSetting.privateKeyPass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
     // SS-1.1

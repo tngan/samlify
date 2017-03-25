@@ -13,6 +13,7 @@ import { pki } from 'node-forge';
 import utility from './utility';
 import { tags, algorithms, wording } from './urn';
 import xpath, { select } from 'xpath';
+import * as camel from 'camelcase';
 
 const nrsa = require('node-rsa');
 const xml = require('xml');
@@ -26,7 +27,7 @@ const dom = DOMParser;
 
 let { SignedXml, FileKeyInfo } = require('xml-crypto');
 
-interface ExtractorResultInterface {
+interface ExtractorResult {
   [key: string]: any;
   signature?: any;
   issuer?: string;
@@ -34,13 +35,26 @@ interface ExtractorResultInterface {
   notexist?: boolean;
 }
 
+interface LoginResponseAttribute {
+  name: string;
+  nameFormat: string; //
+  valueXsiType: string; //
+  valueTag: string;
+}
+
+export interface LoginResponseTemplate {
+  context: string;
+  attributes?: Array<LoginResponseAttribute>;
+}
+
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
-  replaceTagsByValue: (rawXML: string, tagValues: { any }) => string;
+  replaceTagsByValue: (rawXML: string, tagValues: any) => string;
+  attributeStatementBuilder: (attributes: Array<LoginResponseAttribute>) => string;
   constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
   verifySignature: (xml: string, signature, opts) => boolean;
-  extractor: (xmlString: string, fields) => ExtractorResultInterface;
+  extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: string, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
@@ -60,7 +74,7 @@ export interface LibSamlInterface {
   nrsaAliasMapping: any;
   defaultLoginRequestTemplate: string;
   defaultLogoutRequestTemplate: string;
-  defaultLoginResponseTemplate: string;
+  defaultLoginResponseTemplate: LoginResponseTemplate;
   defaultLogoutResponseTemplate: string;
 }
 
@@ -100,7 +114,10 @@ const libSaml = function () {
   * @desc Default login response template
   * @type {String}
   */
-  const defaultLoginResponseTemplate = '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AuthnStatement}{AttributeStatement}</saml:Assertion></samlp:Response>'
+  const defaultLoginResponseTemplate = {
+    context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AuthnStatement}{AttributeStatement}</saml:Assertion></samlp:Response>',
+    attributes: []
+  };
   /**
   * @desc Default logout response template
   * @type {String}
@@ -291,6 +308,17 @@ const libSaml = function () {
     }
     return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
   }
+  /**
+   * @private
+   * @desc Tag normalization
+   * @param {string} prefix     prefix of the tag
+   * @param {content} content   normalize it to capitalized camel case
+   * @return {string}
+   */
+  function tagging(prefix: string, content: string): string {
+    let camelContent = camel(content);
+    return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
+  }
 
   return {
 
@@ -307,11 +335,22 @@ const libSaml = function () {
     * @param  {array} tagValues    tag values
     * @return {string}
     */
-    replaceTagsByValue: function (rawXML: string, tagValues: { any }): string {
+    replaceTagsByValue: function (rawXML: string, tagValues: any): string {
       Object.keys(tagValues).forEach(t => {
         rawXML = rawXML.replace(new RegExp(`{${t}}`, 'g'), tagValues[t]);
       });
       return rawXML;
+    },
+    /**
+    * @desc Helper function to build the AttributeStatement tag
+    * @param  {LoginResponseAttribute} attributes    an array of attribute configuration
+    * @return {string}
+    */
+    attributeStatementBuilder: function (attributes: Array<LoginResponseAttribute>): string {
+      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType }) => {
+        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`
+      }).join('');
+      return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`
     },
     /**
     * @desc Construct the XML signature for POST binding
@@ -404,7 +443,7 @@ const libSaml = function () {
           meta[customKey === '' ? objKey.toLowerCase() : customKey] = res;
         }
       });
-      return <ExtractorResultInterface>meta;
+      return <ExtractorResult>meta;
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)

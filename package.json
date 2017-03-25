@@ -28,11 +28,13 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@types/camelcase": "^0.0.30",
     "@types/lodash": "^4.14.37",
     "@types/node": "^6.0.45",
     "@types/node-forge": "^0.6.5",
     "@types/uuid": "^2.0.29",
     "@types/xmldom": "^0.1.28",
+    "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
     "es6-promise": "^4.0.5",
     "lodash": "^3.10.0",
