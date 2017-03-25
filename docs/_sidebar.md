@@ -1,8 +1,9 @@
 <!-- docs/_sidebar.md -->
 
-- [Home](/)
-- [Basic](/basic)
+- **Get Started**
   - [Prerequisite](/prerequistite)
+- **Basic**
+  - [Introduction](/basic)
   - [Identity Provider](/idp)
   - [Service Provider](/sp)
   - [SAML Request](/saml-request)
@@ -10,13 +11,14 @@
   - [SAML Response](/saml-response)
     - [Signed](/signed-saml-response)
     - [Encrypted](/encrypted-saml-response)
-- [Advanced](/advance)
+- **Advanced**
+  - [Introduction](/advance)
   - [Configuration](/configuration)
   - [Custom Template](/template)
   - [Helper Functions](/helpers)
   - [Multiple Entities](/multi-entities)
   - [Metadata Distribution](/metadata-distribution)
-- [Examples](/examples)
+- **Examples**
   - [OneLogin](/onelogin)
   - [Okta](/okta)
     - [Inbound SAML](/okta-inbound)

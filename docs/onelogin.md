@@ -2,7 +2,7 @@
 
 ?> In this chapter, we will make an sample application that implements IdP-initiated and SP-initiated SSO.
 
-Express.js is our default web framework in development. In fact, you can use other web framworks (e.g. koa, Loopback, Sails.js, Kraken.js ... etc) if you don't care the prefix of module is`express-`.
+Express.js is our default web framework in development. In fact, you can use other web framworks (e.g. koa, Sails.js, Kraken.js ... etc) if you don't care the prefix of module is`express-`.
 
 **1. Generate your express application**
 
