@@ -21,12 +21,12 @@ router.get('/metadata', function (req, res, next) {
 });
 
 router.get('/spinitsso-post', function (req, res) {
-  const request = sp.sendLoginRequest(idp, 'post');
+  const request = sp.createLoginRequest(idp, 'post');
   res.render('actions', request);
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  const url = sp.sendLoginRequest(idp, 'redirect');
+  const url = sp.createLoginRequest(idp, 'redirect');
   res.redirect(url);
 });
 
@@ -54,7 +54,7 @@ function slo (req, res, binding, relayState) {
   sp.parseLogoutRequest(idp, binding, req)
     .then(parseResult => {
       req.logout();
-      const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
+      const url = sp.createLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
     })
     .catch(err => {

@@ -49,10 +49,10 @@ There may be more than one SSO endpoint, to support different bindings. By using
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-	res.redirect(sp.sendLoginRequest(idp, 'redirect'));
+	res.redirect(sp.createLoginRequest(idp, 'redirect'));
 });
 ```
-By applying the preference of SP and IdP, `sp.sendLoginRequest`returns an URL which is in following general format:
+By applying the preference of SP and IdP, `sp.createLoginRequest`returns an URL which is in following general format:
 
 https://idp.example.org/sso/SingleSignOnService?SAMLRequest=www&SigAlg=xxx&RelayState=yyy&Signature=zzz
 
@@ -66,7 +66,7 @@ The Request XML is sent via a form post instead of embedding in URL parameters. 
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-  res.render('actions', sp.sendLoginRequest(idp, 'post'));
+  res.render('actions', sp.createLoginRequest(idp, 'post'));
 });
 ```
 

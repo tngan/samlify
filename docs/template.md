@@ -45,16 +45,16 @@ When you apply your own template, remember to do custom tag replacement when you
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-  sp.sendLoginRequest(idp, 'redirect', url => {
+  sp.createLoginRequest(idp, 'redirect', url => {
     res.redirect(url);
   }, loginRequestTemplate => {
     // Here is the callback function for custom template
     // the input parameter is the value of loginRequestTemplate
     // The following is the input parameter of rcallback in different actions
-    // sp.sendLoginRequest -> loginRequestTemplate
-    // sp.sendLogoutResponse -> logoutResponseTemplate
-    // idp.sendLoginResponse -> loginResponseTemplate
-    // idp.sendLogoutRequest -> logoutRequestTemplate
+    // sp.createLoginRequest -> loginRequestTemplate
+    // sp.createLogoutResponse -> logoutResponseTemplate
+    // idp.createLoginResponse -> loginResponseTemplate
+    // idp.createLogoutRequest -> logoutRequestTemplate
     // replaceTagFromTemplate is a function to do dynamically substitution of tags
     return replaceTagFromTemplate(loginRequestTemplate);
   });
@@ -68,7 +68,7 @@ const lib = saml.SamlLib;
 const requestTags = saml.Constants.tags.request;
 // ...
 router.get('/spinitsso-redirect', function(req, res) {
-  sp.sendLoginRequest(idp, 'redirect', url => {
+  sp.createLoginRequest(idp, 'redirect', url => {
     // ...
     return lib.replaceTagFromTemplate(loginRequestTemplate, requestTags);
   });

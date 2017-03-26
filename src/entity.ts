@@ -240,18 +240,18 @@ export default class Entity {
   * @param  {string}   binding       protocol binding
   * @param  {object}   user          current logged user (e.g. req.user)
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
-  * @param  {function} rcallback     used when developers have their own login response template
+  * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  sendLogoutRequest(targetEntity, binding, user, relayState, rcallback): any {
+  createLogoutRequest(targetEntity, binding, user, relayState, customTagReplacement): any {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
         target: targetEntity
-      }, rcallback, relayState);
+      }, customTagReplacement, relayState);
     }
     if (binding === wording.binding.post) {
       const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding);
-      const actionValue = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, rcallback);
+      const actionValue = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, customTagReplacement);
       return {
         actionValue,
         relayState,
@@ -268,22 +268,22 @@ export default class Entity {
   * @param  {object} requestInfo                 corresponding request, used to obtain the id
   * @param  {string} relayState                  the URL to which to redirect the user when logout is complete.
   * @param  {string} binding                     protocol binding
-  * @param  {function} rcallback                 used when developers have their own login response template
+  * @param  {function} customTagReplacement                 used when developers have their own login response template
   */
-  sendLogoutResponse(targetEntity, requestInfo, binding, relayState, rcallback): any {
+  createLogoutResponse(targetEntity, requestInfo, binding, relayState, customTagReplacement): any {
     binding = namespace.binding[binding] || namespace.binding.redirect;
     if (binding === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {
         init: this,
         target: targetEntity
-      }, relayState, rcallback);
+      }, relayState, customTagReplacement);
     }
     if (binding === namespace.binding.post) {
       return {
         actionValue: postBinding.base64LogoutResponse(requestInfo, libsaml.createXPath('Issuer'), {
           init: this,
           target: targetEntity
-        }, rcallback),
+        }, customTagReplacement),
         relayState: relayState,
         entityEndpoint: targetEntity.entityMeta.getSingleLogoutService(binding),
         actionType: 'SAMLResponse'

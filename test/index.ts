@@ -24,7 +24,7 @@ const select = require('xml-crypto').xpath;
 
 // Define of metadata
 const _spKeyFolder = './test/key/sp/';
-const _spPrivPem = readFileSync(_spKeyFolder + 'privkey.pem');
+const _spPrivPem = String(readFileSync(_spKeyFolder + 'privkey.pem'));
 const _spPrivKey = _spKeyFolder + 'nocrypt.pem';
 const _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
 
@@ -191,13 +191,34 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, new Buffer(signature, 'base64')), true);
   });
   test('construct signature with RSA-SHA1', t => {
-    t.is(libsaml.constructSAMLSignature(_originRequest, libsaml.createXPath('Issuer'), SPMetadata.getX509Certificate('signing'), _spPrivPem, _spPrivKeyPass, signatureAlgorithms.RSA_SHA1), dummySignRequest);
+    t.is(libsaml.constructSAMLSignature({
+      rawSamlMessage: _originRequest,
+      referenceTagXPath: libsaml.createXPath('Issuer'),
+      signingCert: SPMetadata.getX509Certificate('signing'),
+      privateKey: _spPrivPem,
+      privateKeyPass: _spPrivKeyPass,
+      signatureAlgorithm: signatureAlgorithms.RSA_SHA1
+    }), dummySignRequest);
   });
   test('construct signature with RSA-SHA256', t => {
-    t.is(libsaml.constructSAMLSignature(_originRequest, libsaml.createXPath('Issuer'), SPMetadata.getX509Certificate('signing'), _spPrivPem, _spPrivKeyPass, signatureAlgorithms.RSA_SHA256), dummySignRequestSHA256)
+    t.is(libsaml.constructSAMLSignature({
+      rawSamlMessage: _originRequest,
+      referenceTagXPath: libsaml.createXPath('Issuer'),
+      signingCert: SPMetadata.getX509Certificate('signing'),
+      privateKey: _spPrivPem,
+      privateKeyPass: _spPrivKeyPass,
+      signatureAlgorithm: signatureAlgorithms.RSA_SHA256
+    }), dummySignRequestSHA256)
   });
   test('construct signature with RSA-SHA512', t => {
-    t.is(libsaml.constructSAMLSignature(_originRequest, libsaml.createXPath('Issuer'), SPMetadata.getX509Certificate('signing'), _spPrivPem, _spPrivKeyPass, signatureAlgorithms.RSA_SHA512), dummySignRequestSHA512);
+    t.is(libsaml.constructSAMLSignature({
+      rawSamlMessage: _originRequest,
+      referenceTagXPath: libsaml.createXPath('Issuer'),
+      signingCert: SPMetadata.getX509Certificate('signing'),
+      privateKey: _spPrivPem,
+      privateKeyPass: _spPrivKeyPass,
+      signatureAlgorithm: signatureAlgorithms.RSA_SHA512
+    }), dummySignRequestSHA512);
   });
   test('verify a XML signature signed by RSA-SHA1 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedResponse, _decodedResponseSignature, { cert: IdPMetadata }), true);

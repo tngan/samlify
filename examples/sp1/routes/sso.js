@@ -95,13 +95,13 @@ router.get('/spinitsso-post', function (req, res) {
     }
   }
 
-  const request = fromSP.sendLoginRequest(toIdP, 'post')
+  const request = fromSP.createLoginRequest(toIdP, 'post')
   res.render('actions', request);
 
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  const url = sp.sendLoginRequest(idp, 'redirect');
+  const url = sp.createLoginRequest(idp, 'redirect');
   res.redirect(url);
 });
 
@@ -142,7 +142,7 @@ function slo (req, res, binding, relayState) {
     .then(parseResult => {
       // Check before logout
       req.logout();
-      const url = sp.sendLogoutResponse(idp, parseResult, 'redirect', relayState);
+      const url = sp.createLogoutResponse(idp, parseResult, 'redirect', relayState);
       res.redirect(url);
     })
     .catch(err => {

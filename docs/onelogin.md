@@ -77,7 +77,7 @@ router.get('/metadata', (req, res) => res.header('Content-Type','text/xml').send
 
 // Access URL for implementing SP-init SSO
 router.get('/spinitsso-redirect', (req, res) => {
-	const url = sp.sendLoginRequest(idp, 'redirect');
+	const url = sp.createLoginRequest(idp, 'redirect');
 	return res.redirect(url);
 });
 

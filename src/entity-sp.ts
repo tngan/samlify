@@ -44,21 +44,21 @@ export class ServiceProvider extends Entity {
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
-  * @param  {function} rcallback     used when developers have their own login response template
+  * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  public sendLoginRequest(idp, binding, rcallback): any {
+  public createLoginRequest(idp, binding, customTagReplacement): any {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.redirect) {
       return redirectBinding.loginRequestRedirectURL({
         idp: idp,
         sp: this
-      }, rcallback);
+      }, customTagReplacement);
     } else if (protocol == namespace.binding.post) {
       return {
         actionValue: postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), {
           idp: idp,
           sp: this
-        }, rcallback),
+        }, customTagReplacement),
         relayState: this.entitySetting.relayState,
         entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
         actionType: 'SAMLRequest'

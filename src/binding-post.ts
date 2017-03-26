@@ -16,9 +16,9 @@ const binding = wording.binding;
 * @desc Generate a base64 encoded login request
 * @param  {string} referenceTagXPath           reference uri
 * @param  {object} entity                      object includes both idp and sp
-* @param  {function} rcallback     used when developers have their own login response template
+* @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (template: string) => string) {
+function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement: (template: string) => string) {
   let metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   let spSetting = entity.sp.entitySetting;
 
@@ -29,9 +29,9 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
       throw new Error('Conflict of metadata - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
     }
     if (spSetting.loginRequestTemplate) {
-      rawSamlRequest = rcallback(spSetting.loginRequestTemplate);
+      rawSamlRequest = customTagReplacement(spSetting.loginRequestTemplate);
     } else {
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
         ID: spSetting.generateID ? spSetting.generateID() : uuid.v4(),
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -43,8 +43,15 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
       });
     }
     if (metadata.idp.isWantAuthnRequestsSigned()) {
-      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.sp.getX509Certificate('signing'), spSetting.privateKey, spSetting.privateKeyPass, spSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
-      // No need to embeded XML signature
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = spSetting;
+      return libsaml.constructSAMLSignature({
+        referenceTagXPath,
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm,
+        rawSamlMessage: rawSamlRequest,
+        signingCert: metadata.sp.getX509Certificate('signing'),
+      });
     }
     // No need to embeded XML signature
     return utility.base64Encode(rawSamlRequest);
@@ -57,9 +64,9 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, rcallback: (
 * @param  {string} referenceTagXPath           reference uri
 * @param  {object} entity                      object includes both idp and sp
 * @param  {object} user                        current logged user (e.g. req.user)
-* @param  {function} rcallback     used when developers have their own login response template
+* @param  {function} customTagReplacement     used when developers have their own login response template
 */
-async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any, rcallback: (template: string) => string) {
+async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any = {}, customTagReplacement: (template: string) => string) {
   let metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta
@@ -68,64 +75,69 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
   let resXml = undefined;
   if (metadata && metadata.idp && metadata.sp) {
     let base = metadata.sp.getAssertionConsumerService(binding.post);
-    let template;
-    let _user = user || {};
-    let rawSamlResponse;
+    let rawSamlResponse = undefined;
+    let nowTime = new Date();
+    let spEntityID = metadata.sp.getEntityID();
+    let fiveMinutesLaterTime = new Date(nowTime.getTime());
+    fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
+    let fiveMinutesLater = fiveMinutesLaterTime.toISOString();
+    let now = nowTime.toISOString();
+    const acl = metadata.sp.getAssertionConsumerService(binding.post);
+    let tvalue: any = {
+      ID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
+      AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
+      Destination: base,
+      Audience: spEntityID,
+      EntityID: spEntityID,
+      SubjectRecipient: acl,
+      Issuer: metadata.idp.getEntityID(),
+      IssueInstant: now,
+      AssertionConsumerServiceURL: acl,
+      StatusCode: namespace.statusCode.success,
+      // can be customized
+      ConditionsNotBefore: now,
+      ConditionsNotOnOrAfter: fiveMinutesLater,
+      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
+      NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
+      NameID: user.email || '',
+      // future features
+      AuthnStatement: '',
+      AttributeStatement: ''
+    };
     if (idpSetting.loginResponseTemplate) {
-      rawSamlResponse = rcallback(idpSetting.loginResponseTemplate);
+      rawSamlResponse = customTagReplacement(idpSetting.loginResponseTemplate);
     } else {
-      let nowTime = new Date();
-      let spEntityID = metadata.sp.getEntityID();
-      let fiveMinutesLaterTime = new Date(nowTime.getTime());
-      fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
-      let fiveMinutesLater = fiveMinutesLaterTime.toISOString();
-      let now = nowTime.toISOString();
-      const acl = metadata.sp.getAssertionConsumerService(binding.post);
-      let tvalue: any = {
-        ID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
-        AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
-        Destination: base,
-        Audience: spEntityID,
-        SubjectRecipient: acl,
-        NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
-        NameID: _user.email || '',
-        Issuer: metadata.idp.getEntityID(),
-        IssueInstant: now,
-        ConditionsNotBefore: now,
-        ConditionsNotOnOrAfter: fiveMinutesLater,
-        SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
-        AssertionConsumerServiceURL: acl,
-        EntityID: spEntityID,
-        StatusCode: namespace.statusCode.success,
-        // future features
-        AuthnStatement: '',
-        AttributeStatement: ''
-      };
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
-    resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.idp.getX509Certificate('signing'), idpSetting.privateKey, idpSetting.privateKeyPass, idpSetting.requestSignatureAlgorithm, false) : rawSamlResponse; // SS1.1 add signature algorithm
-    // SS-1.1
+    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = idpSetting;
+    resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature({
+      referenceTagXPath,
+      privateKey,
+      privateKeyPass,
+      signatureAlgorithm,
+      rawSamlMessage: rawSamlResponse,
+      signingCert: metadata.idp.getX509Certificate('signing'),
+      isBase64Output: false
+    }) : rawSamlResponse;
     if (idpSetting.isAssertionEncrypted) {
-      return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml)
-    } else {
-      return resXml
+      return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml);
     }
-  } else {
-    throw new Error('Missing declaration of metadata');
+    return resXml;
   }
+  throw new Error('Missing declaration of metadata');
 }
 /**
 * @desc Generate a base64 encoded logout request
 * @param  {object} user                         current logged user (e.g. req.user)
 * @param  {string} referenceTagXPath            reference uri
 * @param  {object} entity                       object includes both idp and sp
-* @param  {function} rcallback      used when developers have their own login response template
+* @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} base64 encoded request
 */
-function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (template: string) => string): string {
+function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => string): string {
   let metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta
@@ -134,7 +146,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (templ
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest;
     if (initSetting.loginRequestTemplate) {
-      rawSamlRequest = rcallback(initSetting.loginRequestTemplate);
+      rawSamlRequest = customTagReplacement(initSetting.loginRequestTemplate);
     } else {
       let tvalue: any = {
         ID: initSetting.generateID ? initSetting.generateID() : uuid.v4(),
@@ -145,27 +157,32 @@ function base64LogoutRequest(user, referenceTagXPath, entity, rcallback?: (templ
         NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.transient,
         NameID: user.logoutNameID
       };
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate, tvalue);
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature
-      return libsaml.constructSAMLSignature(rawSamlRequest, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKey, initSetting.privateKeyPass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
-    } else {
-      // No need to embeded XML signature
-      return utility.base64Encode(rawSamlRequest);
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
+      return libsaml.constructSAMLSignature({
+        referenceTagXPath,
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm,
+        rawSamlMessage: rawSamlRequest,
+        signingCert: metadata.init.getX509Certificate('signing'),
+      });
     }
-  } else {
-    throw new Error('Missing declaration of metadata');
+    return utility.base64Encode(rawSamlRequest);
   }
+  throw new Error('Missing declaration of metadata');
 }
 /**
 * @desc Generate a base64 encoded logout response
 * @param  {object} requestInfo                 corresponding request, used to obtain the id
 * @param  {string} referenceTagXPath           reference uri
 * @param  {object} entity                      object includes both idp and sp
-* @param  {function} rcallback     used when developers have their own login response template
+* @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entity: any, rcallback: (template: string) => string) {
+function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entity: any, customTagReplacement: (template: string) => string) {
   let metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta
@@ -174,7 +191,7 @@ function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entit
   if (metadata && metadata.init && metadata.target) {
     let rawSamlResponse;
     if (initSetting.logoutResponseTemplate) {
-      rawSamlResponse = rcallback(initSetting.logoutResponseTemplate);
+      rawSamlResponse = customTagReplacement(initSetting.logoutResponseTemplate);
     } else {
       let tvalue: any = {
         ID: initSetting.generateID ? initSetting.generateID() : uuid.v4(),
@@ -187,14 +204,20 @@ function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entit
       if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
         tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
       }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate, tvalue);
-      if (entity.target.entitySetting.wantLogoutResponseSigned) {
-        // Need to embeded XML signature
-        return libsaml.constructSAMLSignature(rawSamlResponse, referenceTagXPath, metadata.init.getX509Certificate('signing'), initSetting.privateKey, initSetting.privateKeyPass, initSetting.requestSignatureAlgorithm); // SS1.1 add signature algorithm
-      }
-      // No need to embeded XML signature
-      return utility.base64Encode(rawSamlResponse);
+      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
+    if (entity.target.entitySetting.wantLogoutResponseSigned) {
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
+      return libsaml.constructSAMLSignature({
+        referenceTagXPath,
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm ,
+        rawSamlMessage: rawSamlResponse,
+        signingCert: metadata.init.getX509Certificate('signing'),
+      });
+    }
+    return utility.base64Encode(rawSamlResponse);
   }
   throw new Error('Missing declaration of metadata');
 }

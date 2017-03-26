@@ -10,9 +10,9 @@ var epn = {
   'admin@idp.com': {
     assoHash: '$2a$10$/0lqAmz.r6trTurxW3qMJuFHyicUWsV3GKF94KcgN42eVR8y5c25S',
     app: {
-      '369550': { assoSpEmail: 'admin@sp1.com' },
-      '369551': { assoSpEmail: 'admin@sp2.com' },
-      '369552': { assoSpEmail: 'exprsaml2@gmail.com' }
+      '369550': { email: 'admin@sp1.com' },
+      '369551': { email: 'admin@sp2.com' },
+      '369552': { email: 'exprsaml2@gmail.com', firstname: 'Elisa', lastname: 'Sarah', login: 'Elisa' }
     }
   }
 };
@@ -42,15 +42,38 @@ var idp3 = require('../../../build/index').IdentityProvider({
   isAssertionEncrypted: false,
   privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
   metadata: fs.readFileSync('../metadata/metadata_idp1.xml'),
-  loginResponseTemplate: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AttributeStatement><saml:Attribute Name="appuser.email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>'
+  loginResponseTemplate: {
+    context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AttributeStatement}</saml:Assertion></samlp:Response>',
+    attributes: [{
+      name: "email",
+      valueTag: "user.email",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    },{
+      name: "firstname",
+      valueTag: "user.firstname",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    },{
+      name: "lastname",
+      valueTag: "user.lastname",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    },{
+      name: "login",
+      valueTag: "user.login",
+      nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+      valueXsiType: "xs:string"
+    }]
+  }
 });
 
 /// Declare the sp
 var sp1 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp1.xml') });
 var sp2 = require('../../../build/index').ServiceProvider({ metadata: fs.readFileSync('../metadata/metadata_sp2.xml') });
 // Declare the okta sp for its inbound saml
-var sp3 = require('../../../build/index').ServiceProvider({ 
-  metadata: fs.readFileSync('../metadata/metadata_okta_sp.xml'),
+var sp3 = require('../../../build/index').ServiceProvider({
+  metadata: fs.readFileSync('../metadata/metadata_sp_okta.xml'),
   loginResponseTemplate: ""
 });
 
@@ -129,8 +152,8 @@ router.get('/SingleSignOnService/:id', function (req, res) {
   var targetSP = entity.targetSP;
   assoIdp.parseLoginRequest(targetSP, 'redirect', req)
   .then(parseResult => {
-      req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-      return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user);
+      req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].email;
+      return assoIdp.createLoginResponse(targetSP, parseResult, 'post', req.user);
   })
   .then(response => {
     res.render('actions', response);
@@ -156,12 +179,13 @@ router.post('/SingleSignOnService/:id', function (req, res) {
     fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
     var fiveMinutesLater = new Date(fiveMinutesLater).toISOString();
     var now = now.toISOString();
+    const acl = targetSP.entityMeta.getAssertionConsumerService(binding.post);
     var tvalue = {
       ID: uuid.v4(),
       AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
-      Destination: targetSP.entityMeta.getAssertionConsumerService(binding.post),
+      Destination: acl,
       Audience: spEntityID,
-      SubjectRecipient: spEntityID,
+      SubjectRecipient: acl,
       NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
       NameID: req.user.email,
       Issuer: assoIdp.entityMeta.getEntityID(),
@@ -169,24 +193,30 @@ router.post('/SingleSignOnService/:id', function (req, res) {
       ConditionsNotBefore: now,
       ConditionsNotOnOrAfter: fiveMinutesLater,
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
-      AssertionConsumerServiceURL: targetSP.entityMeta.getAssertionConsumerService(binding.post),
+      AssertionConsumerServiceURL: acl,
       EntityID: spEntityID,
       StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
-
-      attrUserEmail: req.user.email
+      // replace attribute
+      attrUserEmail: req.user.email,
+      attrUserFirstname: req.user.firstname,
+      attrUserLastname: req.user.lastname,
+      attrUserLogin: req.user.login
     };
     response = SamlLib.replaceTagsByValue(template, tvalue);
+    console.log(response);
     // replace tag
-    console.log('*******************', response);
     return response;
   }
 
   assoIdp.parseLoginRequest(targetSP, 'post', req)
   .then(parseResult => {
-    req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-    return assoIdp.sendLoginResponse(targetSP, parseResult, 'post', req.user, tagReplacement); 
+    const user = epn[req.user.sysEmail].app[req.params.id.toString()];
+    req.user.email = user.email;
+    req.user.firstname = user.firstname;
+    req.user.lastname = user.lastname;
+    req.user.login = user.login;
+    return assoIdp.createLoginResponse(targetSP, parseResult, 'post', req.user, tagReplacement);
   }).then(response => {
-    console.log(response);
     res.render('actions', response);
   }).catch(err => {
     console.log(err);
@@ -260,13 +290,13 @@ router.get('/logout/all', function (req, res) {
     var entity = entityPair(id);
     var assoIdp = entity.assoIdp;
     var targetSP = entity.targetSP;
-    req.user.email = epn[req.user.sysEmail].app[id.toString()].assoSpEmail;
-    const response = assoIdp.sendLogoutRequest(targetSP, 'post', req.user, relayState)
+    req.user.email = epn[req.user.sysEmail].app[id.toString()].email;
+    const response = assoIdp.createLogoutRequest(targetSP, 'post', req.user, relayState)
     if (req.query && req.query.async && req.query.async.toString() === 'true') {
       response.ajaxSubmit = true;
     }
     return res.render('actions', response);
- 
+
   } else {
     req.logout();
     req.flash('info', 'Unexpected error in /relayState');
@@ -278,20 +308,19 @@ router.get('/select/:id', function (req, res) {
   var entity = entityPair(req.params.id);
   var assoIdp = entity.assoIdp;
   var targetSP = entity.targetSP;
-  req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].assoSpEmail;
-  assoIdp.sendLoginResponse(targetSP, null, 'post', req.user)
+  req.user.email = epn[req.user.sysEmail].app[req.params.id.toString()].email;
+  assoIdp.createLoginResponse(targetSP, null, 'post', req.user)
   .then(response => {
     response.title = 'POST data';
     res.render('actions', response);
   })
   .catch(err => {
     console.log(err);
-
     res.render('error', {
       message: err.message
     });
   });
-  
+
 });
 
 module.exports = router;

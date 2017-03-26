@@ -71,15 +71,15 @@ export class IdentityProvider extends Entity {
   * @param  {object}   requestInfo               corresponding request, used to obtain the id
   * @param  {string}   binding                   protocol binding
   * @param  {object}   user                      current logged user (e.g. req.user)
-  * @param  {function} rcallback                 used when developers have their own login response template
+  * @param  {function} customTagReplacement                 used when developers have their own login response template
   */
-  public async sendLoginResponse(sp, requestInfo, binding, user, rcallback) {
+  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.post) {
       const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
         idp: this,
         sp: sp
-      }, user, rcallback);
+      }, user, customTagReplacement);
 
       // xmlenc is using async process
       return {

@@ -14,6 +14,7 @@ import utility from './utility';
 import { tags, algorithms, wording } from './urn';
 import xpath, { select } from 'xpath';
 import * as camel from 'camelcase';
+import { MetadataInterface } from './metadata'
 
 const nrsa = require('node-rsa');
 const xml = require('xml');
@@ -26,6 +27,22 @@ const urlParams = wording.urlParams;
 const dom = DOMParser;
 
 let { SignedXml, FileKeyInfo } = require('xml-crypto');
+
+export interface SignatureConstructor {
+  rawSamlMessage: string;
+  referenceTagXPath: string;
+  privateKey: string;
+  privateKeyPass: string;
+  signatureAlgorithm: string;
+  signingCert: string | Buffer;
+  isBase64Output?: boolean;
+}
+
+interface SignatureVerifierOptions {
+  cert?: MetadataInterface;
+  signatureAlgorithm?: string;
+  keyFile?: string;
+}
 
 interface ExtractorResult {
   [key: string]: any;
@@ -42,17 +59,25 @@ interface LoginResponseAttribute {
   valueTag: string;
 }
 
-export interface LoginResponseTemplate {
+export interface BaseSamlTemplate {
   context: string;
+}
+
+export interface LoginResponseTemplate extends BaseSamlTemplate {
   attributes?: Array<LoginResponseAttribute>;
 }
+export interface LoginRequestTemplate extends BaseSamlTemplate {}
+
+export interface LogoutRequestTemplate extends BaseSamlTemplate {}
+
+export interface LogoutResponseTemplate extends BaseSamlTemplate {}
 
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
   attributeStatementBuilder: (attributes: Array<LoginResponseAttribute>) => string;
-  constructSAMLSignature: (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) => string;
+  constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, signature, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: string, cert: string | Buffer) => {};
@@ -72,10 +97,10 @@ export interface LibSamlInterface {
   getInnerText: (xmlDoc, localName: string) => string | [string];
 
   nrsaAliasMapping: any;
-  defaultLoginRequestTemplate: string;
-  defaultLogoutRequestTemplate: string;
+  defaultLoginRequestTemplate: LoginRequestTemplate;
   defaultLoginResponseTemplate: LoginResponseTemplate;
-  defaultLogoutResponseTemplate: string;
+  defaultLogoutRequestTemplate: LogoutRequestTemplate;
+  defaultLogoutResponseTemplate: LogoutResponseTemplate;
 }
 
 const libSaml = function () {
@@ -102,17 +127,21 @@ const libSaml = function () {
   };
   /**
   * @desc Default login request template
-  * @type {string}
+  * @type {LoginRequestTemplate}
   */
-  const defaultLoginRequestTemplate = '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>';
+  const defaultLoginRequestTemplate = {
+    context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>'
+  };
   /**
   * @desc Default logout request template
-  * @type {string}
+  * @type {LogoutRequestTemplate}
   */
-  const defaultLogoutRequestTemplate = '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID SPNameQualifier="{EntityID}" Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>';
+  const defaultLogoutRequestTemplate = {
+    context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID SPNameQualifier="{EntityID}" Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>'
+  };
   /**
   * @desc Default login response template
-  * @type {String}
+  * @type {LoginResponseTemplate}
   */
   const defaultLoginResponseTemplate = {
     context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AuthnStatement}{AttributeStatement}</saml:Assertion></samlp:Response>',
@@ -120,9 +149,11 @@ const libSaml = function () {
   };
   /**
   * @desc Default logout response template
-  * @type {String}
+  * @type {LogoutResponseTemplate}
   */
-  const defaultLogoutResponseTemplate = '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>';
+  const defaultLogoutResponseTemplate = {
+    context: '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>'
+  };
   /**
   * @private
   * @desc Get the signing scheme alias by signature algorithms, used by the node-rsa module
@@ -354,53 +385,51 @@ const libSaml = function () {
     },
     /**
     * @desc Construct the XML signature for POST binding
-    * @param  {string} xmlString            request/response xml string
-    * @param  {string} referenceXPath       reference uri
-    * @param  {string} key                  declares the private key
+    * @param  {string} rawSamlMessage      request/response xml string
+    * @param  {string} referenceTagXPath    reference uri
+    * @param  {string} privateKey           declares the private key
     * @param  {string} passphrase           passphrase of the private key [optional]
+    * @param  {string|buffer} signingCert   signing certificate
     * @param  {string} signatureAlgorithm   signature algorithm (SS-1.1)
     * @return {string} base64 encoded string
     */
-    constructSAMLSignature: function (xmlString: string, referenceXPath: string, x509: string, key: string | Buffer, passphrase: string, signatureAlgorithm: string, isBase64Output?: boolean) {
+    constructSAMLSignature: function (opts: SignatureConstructor) {
+      const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true } = opts;
       let sig = new SignedXml();
       // Add assertion sections as reference
-      if (referenceXPath && referenceXPath !== '') {
-        sig.addReference(referenceXPath, null, getDigestMethod(signatureAlgorithm)); // SS-1.1
+      if (referenceTagXPath && referenceTagXPath !== '') {
+        sig.addReference(referenceTagXPath, null, getDigestMethod(signatureAlgorithm)); // SS-1.1
       }
       sig.signatureAlgorithm = signatureAlgorithm; // SS-1.1
-      sig.keyInfoProvider = new this.getKeyInfo(x509);
-      sig.signingKey = utility.readPrivateKey(key, passphrase, true);
-      sig.computeSignature(xmlString);
+      sig.keyInfoProvider = new this.getKeyInfo(signingCert);
+      sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
+      sig.computeSignature(rawSamlMessage);
       return isBase64Output !== false ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
     /**
     * @desc Verify the XML signature
-    * @param  {string} xml                  xml
-    * @param  {signature} signature         context of XML signature
-    * @param  {object} opts                 cert declares the X509 certificate
+    * @param  {string} xml xml
+    * @param  {signature} signature context of XML signature
+    * @param  {SignatureVerifierOptions} opts cert declares the X509 certificate
     * @return {boolean} verification result
     */
-    verifySignature: function (xml: string, signature, opts) {
-      let options = opts || {};
-      let refXPath = options.referenceXPath;
-      let signatureAlgorithm = options.signatureAlgorithm || signatureAlgorithms.RSA_SHA1; // SS1.1
+    verifySignature: function (xml: string, signature, opts: SignatureVerifierOptions) {
+      let signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA1;
       let sig = new SignedXml();
-      sig.signatureAlgorithm = signatureAlgorithm; // SS1.1
+      sig.signatureAlgorithm = signatureAlgorithm;
       // Add assertion sections as reference
-      if (options.keyFile) {
-        sig.keyInfoProvider = new FileKeyInfo(options.keyFile);
-      } else if (options.cert) {
-        sig.keyInfoProvider = new this.getKeyInfo(options.cert.getX509Certificate(certUse.signing));
+      if (opts.keyFile) {
+        sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
+      } else if (opts.cert) {
+        sig.keyInfoProvider = new this.getKeyInfo(opts.cert.getX509Certificate(certUse.signing));
       } else {
         throw new Error('Undefined certificate in \'opts\' object');
       }
       sig.loadSignature(signature.toString());
-      let res = sig.checkSignature(xml);
-      if (!res) {
-        throw new Error(sig.validationErrors);
-      } else {
+      if (sig.checkSignature(xml)) {
         return true;
       }
+      throw new Error(sig.validationErrors);
     },
     /**
     * @desc High-level XML extractor
@@ -600,7 +629,6 @@ const libSaml = function () {
           return reject(new Error('Empty or undefined xml string'));
         }
       });
-
     }
   };
 }

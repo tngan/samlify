@@ -2,9 +2,6 @@
 * @file binding-redirect.ts
 * @author tngan
 * @desc Binding-level API, declare the functions using Redirect binding
-*
-* CHANGELOG keyword
-* v1.1  SS-1.1
 */
 import utility from './utility';
 import libsaml from './libsaml';
@@ -56,10 +53,10 @@ function buildRedirectURL(type: string, isSigned: boolean, rawSamlRequest: strin
 /**
 * @desc Redirect URL for login request
 * @param  {object} entity                       object includes both idp and sp
-* @param  {function} rcallback      used when developers have their own login response template
+* @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} redirect URL
 */
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, rcallback?: (template: string) => string): string {
+function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => string): string {
   let metadata: any = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta
@@ -69,9 +66,9 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, rcallback?: (temp
     let base = metadata.idp.getSingleSignOnService(binding.redirect);
     let rawSamlRequest;
     if (spSetting.loginRequestTemplate) {
-      rawSamlRequest = rcallback(spSetting.loginRequestTemplate);
+      rawSamlRequest = customTagReplacement(spSetting.loginRequestTemplate);
     } else {
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
         ID: spSetting.generateID ? spSetting.generateID() : uuid.v4(),
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -90,10 +87,10 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, rcallback?: (temp
 * @desc Redirect URL for logout request
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {object} entity                      object includes both idp and sp
-* @param  {function} rcallback     used when developers have their own login response template
+* @param  {function} customTagReplacement     used when developers have their own login response template
 * @return {string} redirect URL
 */
-function logoutRequestRedirectURL(user, entity, relayState?: string, rcallback?: (template: string) => string): string {
+function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string) => string): string {
   let metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta
@@ -104,9 +101,9 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, rcallback?:
     let rawSamlRequest;
 
     if (initSetting.logoutRequestTemplate) {
-      rawSamlRequest = rcallback(initSetting.logoutRequestTemplate);
+      rawSamlRequest = customTagReplacement(initSetting.logoutRequestTemplate);
     } else {
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, <any>{
         ID: initSetting.generateID ? initSetting.generateID() : uuid.v4(),
         Destination: base,
         EntityID: metadata.init.getEntityID(),
@@ -125,9 +122,9 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, rcallback?:
 * @desc Redirect URL for logout response
 * @param  {object} requestInfo                 corresponding request, used to obtain the id
 * @param  {object} entity                      object includes both idp and sp
-* @param  {function} rcallback     used when developers have their own login response template
+* @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, rcallback?: (template: string) => string): string {
+function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => string): string {
   let metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta
@@ -139,7 +136,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
     let rawSamlResponse;
 
     if (initSetting.logoutResponseTemplate) {
-      rawSamlResponse = rcallback(initSetting.logoutResponseTemplate);
+      rawSamlResponse = customTagReplacement(initSetting.logoutResponseTemplate);
     } else {
       let tvalue: any = {
         ID: initSetting.generateID ? initSetting.generateID() : uuid.v4(),
@@ -152,7 +149,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
       if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
         tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
       }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate, tvalue);
+      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
     return base + buildRedirectURL(urlParams.logoutResponse, entity.target.entitySetting.wantLogoutResponseSigned, rawSamlResponse, initSetting, relayState);
   }

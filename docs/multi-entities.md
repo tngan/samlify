@@ -29,7 +29,7 @@ router.get('/spinitsso-post/:idp', (req, res) => {
       break;
     }
   }
-  return sp.sendLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', req));
+  return sp.createLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', req));
 });
 ```
 
@@ -72,6 +72,6 @@ router.get('/spinitsso-post/:idp', function(req, res) {
       break;
     }
   }
-  return sourceSP.sendLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', request));
+  return sourceSP.createLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', request));
 });
 ```
