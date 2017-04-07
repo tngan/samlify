@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import { pki, util, asn1 } from 'node-forge';
 import { inflate, deflate } from 'deflate-js';
-import * as _ from 'lodash';
+import { isArray, assign } from 'lodash';
 
 const BASE64_STR = 'base64';
 const ASCII_STR = 'ascii';
@@ -94,7 +94,7 @@ function parseString(str, defaultValue = '') {
 * @return {object} result object
 */
 function applyDefault(obj1, obj2) {
-  return _.assign({}, obj1, obj2);
+  return assign({}, obj1, obj2);
 }
 /**
 * @desc Get public key in pem format from the certificate included in the metadata
@@ -123,6 +123,12 @@ function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutput
 function convertToString(input, isOutputString) {
   return Boolean(isOutputString) ? String(input) : input;
 }
+/**
+ * @desc Check if the input is an array with non-zero size
+ */
+export function isNonEmptyArray(a) {
+  return isArray(a) && a.length > 0;
+}
 
 const utility = {
   base64Encode,
@@ -136,7 +142,8 @@ const utility = {
   applyDefault,
   getPublicKeyPemFromCertificate,
   readPrivateKey,
-  convertToString
+  convertToString,
+  isNonEmptyArray
 };
 
 export default utility;

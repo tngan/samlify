@@ -4,13 +4,24 @@
 * @desc  Metadata of service provider
 */
 import Metadata, { MetadataInterface } from './metadata';
-import { namespace } from './urn';
+import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
+import { isString, isArray, forEach, map, filter } from 'lodash';
+import { isNonEmptyArray } from './utility';
 
 const xml = require('xml');
 
 export interface SpMetadataInterface extends MetadataInterface {
 
+}
+
+// https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
+interface MetaElement {
+  KeyDescriptor?: Array<any>;
+  NameIDFormat?: Array<any>;
+  SingleLogoutService?: Array<any>;
+  AssertionConsumerService?: Array<any>;
+  AttributeConsumingService?: Array<any>;
 }
 
 /*
@@ -31,73 +42,93 @@ export class SpMetadata extends Metadata {
   */
   constructor(meta) {
 
-    let byMetadata = (typeof meta === 'string' || meta instanceof Buffer);
+    let isFile = isString(meta) || meta instanceof Buffer;
 
-    if (!byMetadata) {
-      let entityID = meta.entityID;
-      let authnRequestsSigned = meta.authnRequestsSigned === true;
-      let wantAssertionsSigned = meta.wantAssertionsSigned === true;
-      let signingCert = meta.signingCert;
-      let encryptCert = meta.encryptCert;
-      let nameIDFormat = meta.nameIDFormat || [];
-      let singleLogoutService = meta.singleLogoutService || [];
-      let assertionConsumerService = meta.assertionConsumerService || [];
+    // use object configuation instead of importing metadata file directly
+    if (!isFile) {
+
+      const {
+        elementsOrder = order.default,
+        entityID,
+        signingCert,
+        encryptCert,
+        authnRequestsSigned = false,
+        wantAssertionsSigned = false,
+        nameIDFormat = [],
+        singleLogoutService = [],
+        assertionConsumerService = []
+      } = meta;
+
+      let descriptors: MetaElement = {
+        KeyDescriptor: [],
+        NameIDFormat: [],
+        SingleLogoutService: [],
+        AssertionConsumerService: [],
+        AttributeConsumingService: []
+      };
 
       let SPSSODescriptor: Array<any> = [{
         _attr: {
-          AuthnRequestsSigned: authnRequestsSigned.toString(),
-          WantAssertionsSigned: wantAssertionsSigned.toString(),
+          AuthnRequestsSigned: String(authnRequestsSigned),
+          WantAssertionsSigned: String(wantAssertionsSigned),
           protocolSupportEnumeration: namespace.names.protocol
         }
       }];
 
       if (signingCert) {
-        SPSSODescriptor.push(libsaml.createKeySection('signing', signingCert));
+        descriptors.KeyDescriptor.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing signing certificate');
       }
 
       if (encryptCert) {
-        SPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCert));
+        descriptors.KeyDescriptor.push(libsaml.createKeySection('encrypt', encryptCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }
 
-      if (nameIDFormat && nameIDFormat.length > 0) {
-        nameIDFormat.forEach(f => SPSSODescriptor.push({ NameIDFormat: f }));
+      if (isNonEmptyArray(nameIDFormat)) {
+        forEach(nameIDFormat, f => descriptors.NameIDFormat.push(f));
       }
 
-      if (singleLogoutService && singleLogoutService.length > 0) {
+      if (isNonEmptyArray(singleLogoutService)) {
         let indexCount = 0;
-        singleLogoutService.forEach(function (a) {
-          let attr: any = {};
+        forEach(singleLogoutService, a => {
+          let attr: any = {
+            index: String(indexCount++),
+            Binding: a.Binding,
+            Location: a.Location
+          };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.index = (indexCount++).toString();
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          SPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
+          descriptors.SingleLogoutService.push([{ _attr: attr }]);
         });
       }
 
-      if (assertionConsumerService && assertionConsumerService.length > 0) {
+      if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
-        assertionConsumerService.forEach(a => {
-          let attr: any = {};
+        forEach(assertionConsumerService, a => {
+          let attr: any = {
+            index: String(indexCount++),
+            Binding: a.Binding,
+            Location: a.Location
+          };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.index = (indexCount++).toString();
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          SPSSODescriptor.push({ AssertionConsumerService: [{ _attr: attr }] });
+          descriptors.AssertionConsumerService.push([{ _attr: attr }]);
         });
       } else {
-        throw new Error('Missing endpoint of AssertionConsumerService');
+        // console.warn('Missing endpoint of AssertionConsumerService');
       }
 
-      // Create a new metadata by setting
+      // handle element order
+      const existedElements = filter(elementsOrder, name => isNonEmptyArray(descriptors[name]));
+      forEach(existedElements, name => {
+        forEach(descriptors[name], e => SPSSODescriptor.push({ [name]: e }));
+      });
+
       meta = xml([{
         EntityDescriptor: [{
           _attr: {
@@ -108,7 +139,9 @@ export class SpMetadata extends Metadata {
           }
         }, { SPSSODescriptor }]
       }]);
+
     }
+
     /**
     * @desc  Initialize with creating a new metadata object
     * @param {string/objects} meta     metadata XML
@@ -122,6 +155,7 @@ export class SpMetadata extends Metadata {
       localName: 'AssertionConsumerService',
       attributes: ['Binding', 'Location', 'isDefault', 'index']
     }]);
+
   }
 
   /**
@@ -144,11 +178,11 @@ export class SpMetadata extends Metadata {
   * @return {string/[string]} URL of endpoint(s)
   */
   public getAssertionConsumerService(binding: string): string | Array<string> {
-    if (typeof binding === 'string') {
+    if (isString(binding)) {
       let location;
       let bindName = namespace.binding[binding];
       if (this.meta.assertionconsumerservice.length > 0) {
-        this.meta.assertionconsumerservice.forEach(obj => {
+        forEach(this.meta.assertionconsumerservice, obj => {
           if (obj.binding === bindName) {
             location = obj.location;
             return;

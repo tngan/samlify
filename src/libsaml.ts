@@ -2,9 +2,6 @@
 * @file SamlLib.js
 * @author tngan
 * @desc  A simple library including some common functions
-*
-* v2.0
-* v1.1  SS-1.1
 */
 
 import { DOMParser } from 'xmldom';
@@ -81,7 +78,7 @@ export interface LibSamlInterface {
   verifySignature: (xml: string, signature, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: string, cert: string | Buffer) => {};
-  constructMessageSignature: (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
+  constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
@@ -505,7 +502,7 @@ const libSaml = function () {
     * @param  {string} signingAlgorithm          signing algorithm (SS-1.1)
     * @return {string} message signature
     */
-    constructMessageSignature: function (octetString: string, key: string | Buffer, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
+    constructMessageSignature: function (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
       let decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
