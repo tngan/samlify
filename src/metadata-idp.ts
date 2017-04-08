@@ -6,6 +6,8 @@
 import Metadata, { MetadataInterface } from './metadata';
 import { namespace } from './urn';
 import libsaml from './libsaml';
+import { isString, isUndefined, forEach } from 'lodash';
+import { isNonEmptyArray } from './utility';
 
 const xml = require('xml');
 
@@ -24,16 +26,20 @@ export class IdpMetadata extends Metadata {
 
   constructor(meta) {
 
-    const byMetadata = (typeof meta === 'string' || meta instanceof Buffer);
+    const isFile = isString(meta) || meta instanceof Buffer;
 
-    if (!byMetadata) {
-      let entityID = meta.entityID;
-      let wantAuthnRequestsSigned = meta.wantAuthnRequestsSigned === true;
-      let signingCert = meta.signingCert;
-      let encryptCert = meta.encryptCert;
-      let nameIDFormat = meta.nameIDFormat || [];
-      let singleSignOnService = meta.singleSignOnService || [];
-      let singleLogoutService = meta.singleLogoutService || [];
+    if (!isFile) {
+
+      const {
+        entityID,
+        signingCert,
+        encryptCert,
+        wantAuthnRequestsSigned = false,
+        nameIDFormat = [],
+        singleSignOnService = [],
+        singleLogoutService = []
+      } = meta;
+
       let IDPSSODescriptor: Array<any> = [{
         _attr: {
           WantAuthnRequestsSigned: String(wantAuthnRequestsSigned),
@@ -44,40 +50,37 @@ export class IdpMetadata extends Metadata {
       if (signingCert) {
         IDPSSODescriptor.push(libsaml.createKeySection('signing', signingCert));
       } else {
-        //logging
         //console.warn('Construct identity provider - missing signing certificate');
       }
 
       if (encryptCert) {
         IDPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCert));
       } else {
-        //logging
         //console.warn('Construct identity provider - missing encrypt certificate');
       }
 
-      if (nameIDFormat && nameIDFormat.length > 0) {
+      if (isNonEmptyArray(nameIDFormat)) {
         nameIDFormat.forEach(f => IDPSSODescriptor.push({ NameIDFormat: f }));
       }
 
-      if (singleSignOnService && singleSignOnService.length > 0) {
+      if (isNonEmptyArray(singleSignOnService)) {
         let indexCount = 0;
-        singleSignOnService.forEach(a => {
-          let attr: any = {};
+        forEach(singleSignOnService, a => {
+          let attr: any = {
+            index: String(indexCount++),
+            Binding: a.Binding,
+            LOcation: a.Location
+          };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.index = (indexCount++).toString();
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          IDPSSODescriptor.push({
-            SingleSignOnService: [{ _attr: attr }]
-          });
+          IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
         });
       } else {
         throw new Error('Missing endpoint of SingleSignOnService');
       }
 
-      if (singleLogoutService && singleLogoutService.length > 0) {
+      if (isNonEmptyArray(singleLogoutService)) {
         let indexCount = 0;
         singleLogoutService.forEach(a => {
           let attr: any = {};
@@ -120,7 +123,7 @@ export class IdpMetadata extends Metadata {
   */
   isWantAuthnRequestsSigned(): boolean {
     let was = this.meta.idpssodescriptor.wantauthnrequestssigned;
-    if (was === undefined) {
+    if (isUndefined(was)) {
       return false;
     }
     return String(was) === 'true';
@@ -131,10 +134,10 @@ export class IdpMetadata extends Metadata {
   * @return {string/object} location
   */
   getSingleSignOnService(binding: string): string | Object {
-    if (typeof binding === 'string') {
+    if (isString(binding)) {
       let location;
       let bindName = namespace.binding[binding];
-      this.meta.singlesignonservice.forEach(function (obj) {
+      forEach(this.meta.singlesignonservice, obj => {
         if (obj[bindName]) {
           location = obj[bindName];
           return;

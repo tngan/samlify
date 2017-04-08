@@ -12,6 +12,7 @@ import { tags, algorithms, wording } from './urn';
 import xpath, { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata'
+import { isString, isObject, isUndefined } from 'lodash';
 
 const nrsa = require('node-rsa');
 const xml = require('xml');
@@ -159,7 +160,7 @@ const libSaml = function () {
   */
   function getSigningScheme(sigAlg?: string): string | null {
     const algAlias = nrsaAliasMapping[sigAlg];
-    if (algAlias !== undefined) {
+    if (!isUndefined(algAlias)) {
       return algAlias;
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
@@ -172,7 +173,7 @@ const libSaml = function () {
   */
   function getDigestMethod(sigAlg: string): string | null {
     let digestAlg = digestAlgorithms[sigAlg];
-    if (digestAlg !== undefined) {
+    if (!isUndefined(digestAlg)) {
       return digestAlg;
     }
     return null; // default value
@@ -242,7 +243,7 @@ const libSaml = function () {
       let value = select("//*[local-name(.)='" + valueTag + "']/text()", xd);
       let res;
 
-      if (key && key.length == 1 && value && value.length > 0) {
+      if (key && key.length == 1 && utility.isNonEmptyArray(value)) {
         if (value.length == 1) {
           res = value[0].nodeValue.toString();
         } else {
@@ -331,7 +332,7 @@ const libSaml = function () {
   * @return {string} xpath
   */
   function createXPath(local, isExtractAll?: boolean): string {
-    if (typeof local == 'object') {
+    if (isObject(local)) {
       return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
     }
     return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
@@ -439,7 +440,7 @@ const libSaml = function () {
       fields.forEach(field => {
         let objKey;
         let res;
-        if (typeof field === 'string') {
+        if (isString(field)) {
           meta[field.toLowerCase()] = getInnerText(doc, field);
         } else if (typeof field === 'object') {
           let localName = field.localName;
@@ -447,7 +448,7 @@ const libSaml = function () {
           let attributes = field.attributes || [];
           let customKey = field.customKey || '';
 
-          if (typeof localName === 'string') {
+          if (isString(localName)) {
             objKey = localName;
             if (extractEntireBody) {
               res = getEntireBody(doc, localName);
@@ -557,10 +558,10 @@ const libSaml = function () {
           let sourceEntityMetadata = sourceEntity.entityMeta;
           let targetEntityMetadata = targetEntity.entityMeta;
           let assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
-          let assertion = assertionNode !== undefined ? utility.parseString(assertionNode.toString()) : '';
+          let assertion = !isUndefined(assertionNode) ? utility.parseString(assertionNode.toString()) : '';
 
           if (assertion === '') {
-            return reject(new Error('Undefined assertion or invalid syntax'));
+            return reject(new Error('undefined assertion or invalid syntax'));
           }
           // Perform encryption depends on the setting, default is false
           if (sourceEntitySetting.isAssertionEncrypted) {
@@ -572,10 +573,10 @@ const libSaml = function () {
               keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm
             }, (err, res) => {
               if (err) {
-                return reject(new Error('Exception in encrpytedAssertion ' + err));
+                return reject(new Error('exception in encrpytedAssertion ' + err));
               }
               if (!res) {
-                return reject(new Error('Undefined encrypted assertion'));
+                return reject(new Error('undefined encrypted assertion'));
               }
               return resolve(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
             });
@@ -583,7 +584,7 @@ const libSaml = function () {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
           }
         } else {
-          return reject(new Error('Empty or undefined xml string'));
+          return reject(new Error('empty or undefined xml string'));
         }
       })
     },
@@ -604,18 +605,18 @@ const libSaml = function () {
             let hereSetting = here.entitySetting;
             let parseEntireXML = new dom().parseFromString(String(entireXML));
             let encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
-            let encryptedData = encryptedDataNode !== undefined ? utility.parseString(encryptedDataNode.toString()) : '';
+            let encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
             if (encryptedData === '') {
-              return reject(new Error('Undefined assertion or invalid syntax'));
+              return reject(new Error('undefined assertion or invalid syntax'));
             }
             return xmlenc.decrypt(encryptedData, {
               key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass)
             }, (err, res) => {
               if (err) {
-                return reject(new Error('Exception in decryptAssertion ' + err));
+                return reject(new Error('exception in decryptAssertion ' + err));
               }
               if (!res) {
-                return reject(new Error('Undefined encrypted assertion'));
+                return reject(new Error('undefined encrypted assertion'));
               }
               return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
             });
@@ -623,7 +624,7 @@ const libSaml = function () {
             return resolve(entireXML); // No need to do encrpytion
           }
         } else {
-          return reject(new Error('Empty or undefined xml string'));
+          return reject(new Error('empty or undefined xml string'));
         }
       });
     }

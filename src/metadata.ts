@@ -7,6 +7,7 @@ import libsaml from './libsaml';
 import utility from './utility';
 import * as fs from 'fs';
 import { namespace, wording } from './urn';
+import { isString } from 'lodash';
 
 const certUse = wording.certUse;
 
@@ -93,7 +94,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string/object} location
   */
   public getSingleLogoutService(binding: string | undefined): string | Object {
-    if (typeof binding === 'string') {
+    if (isString(binding)) {
       let location;
       let bindType = namespace.binding[binding];
       this.meta.singlelogoutservice.forEach(obj => {

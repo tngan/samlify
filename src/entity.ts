@@ -6,7 +6,7 @@
 * v2.0
 * v1.1  SS-1.1
 */
-import utility from './utility';
+import { base64Decode, isNonEmptyArray, inflateString } from './utility';
 import { namespace, wording, algorithms } from './urn';
 import * as uuid from 'uuid';
 import libsaml from './libsaml';
@@ -15,7 +15,7 @@ import IdpMetadata from './metadata-idp';
 import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import * as _ from 'lodash';
+import { isString, isUndefined, assign } from 'lodash';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data; // SS1.1
 const keyEncryptionAlgorithm = algorithms.encryption.key; // SS1.1
@@ -47,7 +47,7 @@ export default class Entity {
   * @param {string} entityMeta is the entity metadata, deprecated after 2.0
   */
   constructor(entitySetting, entityType) {
-    this.entitySetting = _.assign({}, defaultEntitySetting, entitySetting);
+    this.entitySetting = assign({}, defaultEntitySetting, entitySetting);
     const metadata = entitySetting.metadata ? entitySetting.metadata : entitySetting;
     switch (entityType) {
       case 'idp':
@@ -97,10 +97,10 @@ export default class Entity {
   * @return {boolean} True/False
   */
   verifyFields(field: string | Array<string>, metaField: string): boolean {
-    if (typeof field === 'string') {
+    if (isString(field)) {
       return field === metaField;
     }
-    if (field && field.length > 0) {
+    if (isNonEmptyArray(field)) {
       let res = true;
       field.forEach(f => {
         if (f != metaField) {
@@ -120,13 +120,13 @@ export default class Entity {
   */
   verifyTime(notBefore: Date, notOnOrAfter: Date): boolean {
     const now = new Date();
-    if (notBefore === undefined && notOnOrAfter === undefined) {
+    if (isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
       return true; // throw exception todo
     }
-    if (notBefore !== undefined && notOnOrAfter === undefined) {
+    if (!isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
       return +notBefore <= +now;
     }
-    if (notBefore === undefined && notOnOrAfter !== undefined) {
+    if (isUndefined(notBefore) && !isUndefined(notOnOrAfter)) {
       return now < notOnOrAfter;
     }
     return +notBefore <= +now && now < notOnOrAfter;
@@ -175,7 +175,7 @@ export default class Entity {
       if (samlContent === undefined) {
         throw new Error('Bad request');
       }
-      let xmlString = utility.inflateString(decodeURIComponent(samlContent));
+      let xmlString = inflateString(decodeURIComponent(samlContent));
       if (checkSignature) {
         let { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
@@ -206,7 +206,7 @@ export default class Entity {
     if (binding == bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
-      let decodedRequest = String(utility.base64Decode(encodedRequest));
+      let decodedRequest = String(base64Decode(encodedRequest));
       let issuer = targetEntityMetadata.getEntityID();
       //SS-1.1
       const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);

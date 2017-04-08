@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import { pki, util, asn1 } from 'node-forge';
 import { inflate, deflate } from 'deflate-js';
-import { isArray, assign } from 'lodash';
+import { isString, isArray, assign } from 'lodash';
 
 const BASE64_STR = 'base64';
 const ASCII_STR = 'ascii';
@@ -24,7 +24,7 @@ function base64Encode(message: string) {
 * @param  {boolean} isBytes                      determine the return value type (True: bytes False: string)
 * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
 */
-function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
+export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
   const bytes = new Buffer(base64Message, BASE64_STR);
   return Boolean(isBytes) ? bytes : bytes.toString(ASCII_STR);
 }
@@ -41,7 +41,7 @@ function deflateString(message: string): string {
 * @param  {string} compressedString
 * @return {string} decompressed string
 */
-function inflateString(compressedString: string): string {
+export function inflateString(compressedString: string): string {
   return inflate(Array.prototype.map.call(new Buffer(compressedString, BASE64_STR).toString('binary'), char => char.charCodeAt(0)))
     .map(byte => String.fromCharCode(byte))
     .join('');
@@ -114,8 +114,8 @@ function getPublicKeyPemFromCertificate(x509Certificate: string) {
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem content (recommend)
 */
-function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean) {
-  return typeof passphrase === 'string' ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
+export function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean) {
+  return isString(passphrase) ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
 }
 /**
 * @desc Inline syntax sugar

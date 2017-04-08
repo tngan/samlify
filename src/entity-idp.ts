@@ -9,7 +9,7 @@ import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import * as _ from 'lodash';
+import { assign, isString, isArray } from 'lodash';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
@@ -51,10 +51,10 @@ export class IdentityProvider extends Entity {
   * @param  {string} meta
   */
   constructor(idpSetting) {
-    let entitySetting = _.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    let entitySetting = assign({ wantAuthnRequestsSigned: false }, idpSetting);
     // build attribute part
     if (idpSetting.loginResponseTemplate) {
-      if(_.isString(idpSetting.loginResponseTemplate.context) && _.isArray(idpSetting.loginResponseTemplate.attributes)) {
+      if(isString(idpSetting.loginResponseTemplate.context) && isArray(idpSetting.loginResponseTemplate.attributes)) {
         let replacement = {
           AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes)
         };

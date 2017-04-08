@@ -181,7 +181,7 @@ export class SpMetadata extends Metadata {
     if (isString(binding)) {
       let location;
       let bindName = namespace.binding[binding];
-      if (this.meta.assertionconsumerservice.length > 0) {
+      if (isNonEmptyArray(this.meta.assertionconsumerservice)) {
         forEach(this.meta.assertionconsumerservice, obj => {
           if (obj.binding === bindName) {
             location = obj.location;
