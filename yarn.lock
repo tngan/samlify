@@ -208,7 +208,13 @@ async@^2.0.1:
   dependencies:
     lodash "^4.14.0"
 
-async@~0.2.6, async@~0.2.7:
+async@^2.1.5:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/async/-/async-2.4.0.tgz#4990200f18ea5b837c2cc4f8c031a6985c385611"
+  dependencies:
+    lodash "^4.14.0"
+
+async@~0.2.6:
   version "0.2.10"
   resolved "https://registry.yarnpkg.com/async/-/async-0.2.10.tgz#b6bbe0b0674b9d719708ca38de8c237cb526c3d1"
 
@@ -1114,9 +1120,9 @@ ee-first@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
 
-ejs@~0.8.3:
-  version "0.8.8"
-  resolved "https://registry.yarnpkg.com/ejs/-/ejs-0.8.8.tgz#ffdc56dcc35d02926dd50ad13439bbc54061d598"
+ejs@^2.5.6:
+  version "2.5.6"
+  resolved "https://registry.yarnpkg.com/ejs/-/ejs-2.5.6.tgz#479636bfa3fe3b1debd52087f0acb204b4f19c88"
 
 empower-core@^0.6.1:
   version "0.6.1"
@@ -2295,13 +2301,13 @@ negotiator@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.1.tgz#2b327184e8992101177b28563fb5e7102acd0ca9"
 
-node-forge@0.2.24:
-  version "0.2.24"
-  resolved "https://registry.yarnpkg.com/node-forge/-/node-forge-0.2.24.tgz#fa6f846f42fa93f63a0a30c9fbff7b4e130e0858"
-
 node-forge@^0.6.34:
   version "0.6.44"
   resolved "https://registry.yarnpkg.com/node-forge/-/node-forge-0.6.44.tgz#7058595c2d42821c6a3ace6e5a2ec47a24ac8733"
+
+node-forge@^0.7.0:
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/node-forge/-/node-forge-0.7.1.tgz#9da611ea08982f4b94206b3beb4cc9665f20c300"
 
 node-pre-gyp@^0.6.29:
   version "0.6.33"
@@ -3523,15 +3529,15 @@ xml-crypto@^0.9.0:
     xmldom "=0.1.19"
     xpath.js ">=0.0.3"
 
-xml-encryption@^0.7.2:
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/xml-encryption/-/xml-encryption-0.7.4.tgz#42791ec64d556d2455dcb9da0a54123665ac65c7"
+xml-encryption@^0.11.0:
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/xml-encryption/-/xml-encryption-0.11.0.tgz#458c2cb7d0300ff62d304c74eb3ded08ca97456b"
   dependencies:
-    async "~0.2.7"
-    ejs "~0.8.3"
-    node-forge "0.2.24"
+    async "^2.1.5"
+    ejs "^2.5.6"
+    node-forge "^0.7.0"
     xmldom "~0.1.15"
-    xpath "0.0.5"
+    xpath "0.0.24"
 
 xml@^1.0.0:
   version "1.0.1"
@@ -3549,9 +3555,9 @@ xpath.js@>=0.0.3:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/xpath.js/-/xpath.js-1.0.6.tgz#fe4b81c1b152ebd8e1395265fedc5b00fca29b90"
 
-xpath@0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.5.tgz#454036f6ef0f3df5af5d4ba4a119fb75674b3e6c"
+xpath@0.0.24:
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.24.tgz#1ade162e1cc523c8d39fc7d06afc16ea216f29fb"
 
 xpath@0.0.9:
   version "0.0.9"
