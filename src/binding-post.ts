@@ -125,7 +125,7 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
     if (idpSetting.isAssertionEncrypted) {
       return await libsaml.encryptAssertion(entity.idp, entity.sp, resXml);
     }
-    return resXml;
+    return utility.base64Encode(resXml);
   }
   throw new Error('Missing declaration of metadata');
 }
