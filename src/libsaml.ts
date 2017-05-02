@@ -578,7 +578,7 @@ const libSaml = function () {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              return resolve(utility.base64Encode(entireXML.replace(assertion, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
+              return resolve(utility.base64Encode(entireXML.replace(/<saml:Assertion(.*)<\/saml:Assertion>/g, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
             });
           } else {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
