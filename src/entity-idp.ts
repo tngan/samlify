@@ -89,7 +89,7 @@ export class IdentityProvider extends Entity {
       };
 
     } else {
-      // Will support arifact in the next release
+      // Will support artifact in the next release
       throw new Error('This binding is not support');
     }
   }

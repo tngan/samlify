@@ -231,7 +231,7 @@ export default class Entity {
       return parseResult;
 
     }
-    // Will support arifact in the next release
+    // Will support artifact in the next release
     throw new Error('this binding is not support');
   };
 
@@ -259,7 +259,7 @@ export default class Entity {
         actionType: 'SAMLRequest'
       };
     }
-    // Will support arifact in the next release
+    // Will support artifact in the next release
     throw new Error('The binding is not support');
   }
   /**

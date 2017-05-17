@@ -113,7 +113,7 @@ test('getAssertionConsumerService with two bindings', t => {
       Binding: binding.post,
       Location: expectedPostLocation
     }, {
-      Binding: binding.arifact,
+      Binding: binding.artifact,
       Location: expectedArtifactLocation
     }],
     singleLogoutService: [{
@@ -125,7 +125,7 @@ test('getAssertionConsumerService with two bindings', t => {
     }]
   });
   t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
-  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.arifact), expectedArtifactLocation);
+  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.artifact), expectedArtifactLocation);
 });
 
 // Test suite

@@ -7,7 +7,7 @@ const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
     post: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-    arifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-ARIFACT'
+    artifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'
   },
   names: {
     protocol: 'urn:oasis:names:tc:SAML:2.0:protocol',
@@ -129,7 +129,7 @@ const wording = {
   binding: {
     redirect: 'redirect',
     post: 'post',
-    arifact: 'arifact'
+    artifact: 'artifact'
   },
   certUse: {
     signing: 'signing',

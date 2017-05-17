@@ -64,7 +64,7 @@ export class ServiceProvider extends Entity {
         actionType: 'SAMLRequest'
       };
     } else {
-      // Will support arifact in the next release
+      // Will support artifact in the next release
       throw new Error('The binding is not support');
     }
   }
