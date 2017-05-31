@@ -119,8 +119,8 @@ router.all('/:action/:id', function (req, res, next) {
       if (req.method.toLowerCase() == 'post') {
         url = '/login/external.esaml?METHOD=post&TARGET=' + utility.base64Encode(JSON.stringify({
           entityEndpoint: req.originalUrl,
-          actionType: 'SAMLRequest',
-          actionValue: req.body.SAMLRequest,
+          type: 'SAMLRequest',
+          context: req.body.SAMLRequest,
           relayState: req.body.relayState
         }));
       } else if (req.method.toLowerCase() == 'get') {
@@ -130,8 +130,8 @@ router.all('/:action/:id', function (req, res, next) {
       if (req.method.toLowerCase() == 'post') {
         url = '/logout/external.esaml?METHOD=post&TARGET=' + utility.base64Encode(JSON.stringify({
           entityEndpoint: req.originalUrl,
-          actionType: 'LogoutRequest',
-          actionValue: req.body.LogoutRequest,
+          type: 'LogoutRequest',
+          context: req.body.LogoutRequest,
           relayState: req.body.relayState
         }));
       } else if (req.method.toLowerCase() == 'get') {
@@ -167,9 +167,14 @@ router.get('/SingleSignOnService/:id', function (req, res) {
 });
 
 router.post('/SingleSignOnService/:id', function (req, res) {
+
+  console.log('flag 1', req.body, req.params);
+
   var entity = entityPair(req.params.id);
   var assoIdp = entity.assoIdp;
   var targetSP = entity.targetSP;
+
+  console.log('flag 2');
 
   var tagReplacement = function(template) {
     var now = new Date();
@@ -180,8 +185,9 @@ router.post('/SingleSignOnService/:id', function (req, res) {
     var fiveMinutesLater = new Date(fiveMinutesLater).toISOString();
     var now = now.toISOString();
     const acl = targetSP.entityMeta.getAssertionConsumerService(binding.post);
+    var id = uuid.v4();
     var tvalue = {
-      ID: uuid.v4(),
+      ID: id,
       AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
       Destination: acl,
       Audience: spEntityID,
@@ -203,18 +209,23 @@ router.post('/SingleSignOnService/:id', function (req, res) {
       attrUserLogin: req.user.login
     };
     response = SamlLib.replaceTagsByValue(template, tvalue);
-    console.log(response);
+    console.log('***********', response);
     // replace tag
-    return response;
+    return {
+      id,
+      context: response
+    };
   }
 
   assoIdp.parseLoginRequest(targetSP, 'post', req)
   .then(parseResult => {
+    console.log('flag 3', parseResult);
     const user = epn[req.user.sysEmail].app[req.params.id.toString()];
     req.user.email = user.email;
     req.user.firstname = user.firstname;
     req.user.lastname = user.lastname;
     req.user.login = user.login;
+    console.log('[debug]', req.user);
     return assoIdp.createLoginResponse(targetSP, parseResult, 'post', req.user, tagReplacement);
   }).then(response => {
     res.render('actions', response);

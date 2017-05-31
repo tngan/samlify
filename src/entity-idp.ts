@@ -76,16 +76,15 @@ export class IdentityProvider extends Entity {
   public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.post) {
-      const res = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
+      const context = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
         idp: this,
         sp: sp
       }, user, customTagReplacement);
-
       // xmlenc is using async process
       return {
-        actionValue: res,
+        ...context,
         entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
-        actionType: 'SAMLResponse'
+        type: 'SAMLResponse'
       };
 
     } else {
@@ -113,7 +112,7 @@ export class IdentityProvider extends Entity {
         }],
       checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
-      actionType: 'login'
+      type: 'login'
     }, binding, req, sp.entityMeta);
   };
 }

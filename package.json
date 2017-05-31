@@ -30,7 +30,7 @@
   "dependencies": {
     "@types/camelcase": "^0.0.30",
     "@types/lodash": "^4.14.37",
-    "@types/node": "^6.0.45",
+    "@types/node": "^7.0.22",
     "@types/node-forge": "^0.6.5",
     "@types/uuid": "^2.0.29",
     "@types/xmldom": "^0.1.28",

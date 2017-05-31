@@ -74,7 +74,7 @@ You can simply change the second argument from 'redirect' to 'post'. This time t
 
 ```html
 <form id="saml-form" method="post" action="{{entityEndpoint}}" autocomplete="off">
-    <input type="hidden" name="{{actionType}}" value="{{actionValue}}" />
+    <input type="hidden" name="{{type}}" value="{{context}}" />
     {{#if relayState}}
         <input type="hidden" name="RelayState" value="{{relayState}}" />
     {{/if}}

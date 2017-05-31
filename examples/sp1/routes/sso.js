@@ -1,37 +1,3 @@
-// Polyfill
-if (!Object.assign) {
-  Object.defineProperty(Object, 'assign', {
-    enumerable: false,
-    configurable: true,
-    writable: true,
-    value: function (target) {
-      'use strict';
-      if (target === undefined || target === null) {
-        throw new TypeError('Cannot convert first argument to object');
-      }
-
-      var to = Object(target);
-      for (var i = 1; i < arguments.length; i++) {
-        var nextSource = arguments[i];
-        if (nextSource === undefined || nextSource === null) {
-          continue;
-        }
-        nextSource = Object(nextSource);
-
-        var keysArray = Object.keys(nextSource);
-        for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
-          var nextKey = keysArray[nextIndex];
-          var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
-          if (desc !== undefined && desc.enumerable) {
-            to[nextKey] = nextSource[nextKey];
-          }
-        }
-      }
-      return to;
-    }
-  });
-}
-
 var fs = require('fs');
 var express = require('express');
 var router = express.Router();
@@ -96,13 +62,14 @@ router.get('/spinitsso-post', function (req, res) {
   }
 
   const request = fromSP.createLoginRequest(toIdP, 'post')
+  console.log('[request] for post request', request);
   res.render('actions', request);
 
 });
 
 router.get('/spinitsso-redirect', function (req, res) {
-  const url = sp.createLoginRequest(idp, 'redirect');
-  res.redirect(url);
+  const request = sp.createLoginRequest(idp, 'redirect');
+  res.redirect(request.context);
 });
 
 router.post('/acs/:idp?', function (req, res, next) {
@@ -142,8 +109,8 @@ function slo (req, res, binding, relayState) {
     .then(parseResult => {
       // Check before logout
       req.logout();
-      const url = sp.createLogoutResponse(idp, parseResult, 'redirect', relayState);
-      res.redirect(url);
+      const response = sp.createLogoutResponse(idp, parseResult, 'redirect', relayState);
+      res.redirect(response.context);
     })
     .catch(err => {
       res.render('error', {

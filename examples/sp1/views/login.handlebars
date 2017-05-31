@@ -30,7 +30,7 @@
     <script>
         function spInitSSO(binding,idp){
             var id = idp || '';
-            window.location.href = '/sso/spinitsso-' + (binding === 0 ? 'redirect' : 'post') + '?id=' + idp ;
+            window.location.href = `/sso/spinitsso-${(binding === 0 ? 'redirect' : 'post')}?id=${id}`;
         }
     </script>
 {{/if}}
