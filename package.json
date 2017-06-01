@@ -16,7 +16,7 @@
     "pretest": "make pretest",
     "test": "tsc && nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "postinstall": "git config --local include.path ../.gitconfig"
+    "postinstall": "node postinstall"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
