@@ -12,7 +12,7 @@ import IdpMetadata from './metadata-idp';
 import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { isString, isUndefined, assign } from 'lodash';
+import { isString, isUndefined } from 'lodash';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -60,7 +60,7 @@ export default class Entity {
   * @param {string} entityMeta is the entity metadata, deprecated after 2.0
   */
   constructor(entitySetting, entityType) {
-    this.entitySetting = assign({}, defaultEntitySetting, entitySetting);
+    this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);
     const metadata = entitySetting.metadata ? entitySetting.metadata : entitySetting;
     switch (entityType) {
       case 'idp':

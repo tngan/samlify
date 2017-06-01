@@ -9,7 +9,6 @@ import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { assign } from 'lodash';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
@@ -34,7 +33,7 @@ export class ServiceProvider extends Entity {
   * @param {string} meta		     metadata
   */
   constructor(spSetting) {
-    const entitySetting = assign({
+    const entitySetting = Object.assign({
       authnRequestsSigned: false,
       wantAssertionsSigned: false
     }, spSetting);
