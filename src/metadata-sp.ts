@@ -6,7 +6,7 @@
 import Metadata, { MetadataInterface } from './metadata';
 import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
-import { isString, isArray, forEach, map, filter } from 'lodash';
+import { isString } from 'lodash';
 import { isNonEmptyArray } from './utility';
 
 const xml = require('xml');
@@ -88,12 +88,12 @@ export class SpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        forEach(nameIDFormat, f => descriptors.NameIDFormat.push(f));
+        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
         let indexCount = 0;
-        forEach(singleLogoutService, a => {
+        singleLogoutService.forEach(a => {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
@@ -108,7 +108,7 @@ export class SpMetadata extends Metadata {
 
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
-        forEach(assertionConsumerService, a => {
+        assertionConsumerService.forEach(a => {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
@@ -124,9 +124,9 @@ export class SpMetadata extends Metadata {
       }
 
       // handle element order
-      const existedElements = filter(elementsOrder, name => isNonEmptyArray(descriptors[name]));
-      forEach(existedElements, name => {
-        forEach(descriptors[name], e => SPSSODescriptor.push({ [name]: e }));
+      const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
+      existedElements.forEach(name => {
+        descriptors[name].forEach(e => SPSSODescriptor.push({ [name]: e }));
       });
 
       meta = xml([{
@@ -182,7 +182,7 @@ export class SpMetadata extends Metadata {
       let location;
       let bindName = namespace.binding[binding];
       if (isNonEmptyArray(this.meta.assertionconsumerservice)) {
-        forEach(this.meta.assertionconsumerservice, obj => {
+        this.meta.assertionconsumerservice.forEach(obj => {
           if (obj.binding === bindName) {
             location = obj.location;
             return;

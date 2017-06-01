@@ -6,7 +6,7 @@
 import Metadata, { MetadataInterface } from './metadata';
 import { namespace } from './urn';
 import libsaml from './libsaml';
-import { isString, isUndefined, forEach } from 'lodash';
+import { isString, isUndefined } from 'lodash';
 import { isNonEmptyArray } from './utility';
 
 const xml = require('xml');
@@ -65,7 +65,7 @@ export class IdpMetadata extends Metadata {
 
       if (isNonEmptyArray(singleSignOnService)) {
         let indexCount = 0;
-        forEach(singleSignOnService, a => {
+        singleSignOnService.forEach(a => {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
@@ -137,7 +137,7 @@ export class IdpMetadata extends Metadata {
     if (isString(binding)) {
       let location;
       let bindName = namespace.binding[binding];
-      forEach(this.meta.singlesignonservice, obj => {
+      this.meta.singlesignonservice.forEach(obj => {
         if (obj[bindName]) {
           location = obj[bindName];
           return;
