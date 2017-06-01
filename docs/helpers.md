@@ -1,6 +1,6 @@
 # Helper functions
 
-?> This module does basic validation for request and response, for example signature verfication and decrpytion, the rest is left to the developers. Some useful functions are also exported, this section if for the specification of those functions.
+This module does basic validation for request and response, for example signature verfication and decrpytion, the rest is left to the developers. Some useful functions are also exported, this section if for the specification of those functions.
 
 
 ## verifyTime (notBefore: string, notOnOrAfter: string)
@@ -29,4 +29,4 @@ sp.parseLoginResponse(idp, 'post', req)
 .catch(console.err);
 ```
 
-?> [Reference P.19](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf)
+[Reference P.19](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf)
