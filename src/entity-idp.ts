@@ -76,7 +76,7 @@ export class IdentityProvider extends Entity {
   public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol == namespace.binding.post) {
-      const context = await postBinding.base64LoginResponse(requestInfo, libsaml.createXPath('Assertion'), {
+      const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
         sp: sp
       }, user, customTagReplacement);

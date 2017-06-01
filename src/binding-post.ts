@@ -74,12 +74,11 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 /**
 * @desc Generate a base64 encoded login response
 * @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {string} referenceTagXPath           reference uri
 * @param  {object} entity                      object includes both idp and sp
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
   let idpSetting = entity.idp.entitySetting;
   let resXml = undefined;
   let id = idpSetting.generateID ? idpSetting.generateID() : uuid.v4();
@@ -131,15 +130,37 @@ async function base64LoginResponse(requestInfo: any, referenceTagXPath: string, 
     }
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
 
-    resXml = metadata.sp.isWantAssertionsSigned() ? libsaml.constructSAMLSignature({
-      referenceTagXPath,
-      privateKey,
-      privateKeyPass,
-      signatureAlgorithm,
-      rawSamlMessage: rawSamlResponse,
-      signingCert: metadata.idp.getX509Certificate('signing'),
-      isBase64Output: false
-    }) : rawSamlResponse;
+    if (metadata.sp.isWantAssertionsSigned()) {
+      resXml = libsaml.constructSAMLSignature({
+        referenceTagXPath: libsaml.createXPath('Assertion'),
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm,
+        rawSamlMessage: rawSamlResponse,
+        signingCert: metadata.idp.getX509Certificate('signing'),
+        isBase64Output: false
+      });
+    }
+
+    // SAML response must be signed
+    if (idpSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
+      resXml = libsaml.constructSAMLSignature({
+        referenceTagXPath: libsaml.createXPath('Response'),
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm,
+        rawSamlMessage: rawSamlResponse,
+        signingCert: metadata.idp.getX509Certificate('signing'),
+        isBase64Output: false,
+        messageSignatureConfig: idpSetting.messageSignatureConfig
+        /*
+        {
+          prefix: 'ds',
+          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
+        }
+        */
+      });
+    }
 
     if (idpSetting.isAssertionEncrypted) {
       return Promise.resolve({
@@ -215,7 +236,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
+function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
   let metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta
@@ -249,7 +270,7 @@ function base64LogoutResponse(requestInfo: any, referenceTagXPath: string, entit
       return {
         id,
         context: libsaml.constructSAMLSignature({
-          referenceTagXPath,
+          referenceTagXPath: libsaml.createXPath('Issuer'),
           privateKey,
           privateKeyPass,
           signatureAlgorithm,

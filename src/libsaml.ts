@@ -34,6 +34,7 @@ export interface SignatureConstructor {
   signatureAlgorithm: string;
   signingCert: string | Buffer;
   isBase64Output?: boolean;
+  messageSignatureConfig?: any;
 }
 
 interface SignatureVerifierOptions {
@@ -392,7 +393,7 @@ const libSaml = function () {
     * @return {string} base64 encoded string
     */
     constructSAMLSignature: function (opts: SignatureConstructor) {
-      const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true } = opts;
+      const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true, messageSignatureConfig } = opts;
       let sig = new SignedXml();
       // Add assertion sections as reference
       if (referenceTagXPath && referenceTagXPath !== '') {
@@ -401,7 +402,11 @@ const libSaml = function () {
       sig.signatureAlgorithm = signatureAlgorithm;
       sig.keyInfoProvider = new this.getKeyInfo(signingCert);
       sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
-      sig.computeSignature(rawSamlMessage);
+      if (messageSignatureConfig) {
+        sig.computeSignature(rawSamlMessage, messageSignatureConfig);
+      } else {
+        sig.computeSignature(rawSamlMessage);
+      }
       return isBase64Output !== false ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
     /**

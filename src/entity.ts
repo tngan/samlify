@@ -289,7 +289,7 @@ export default class Entity {
       }, relayState, customTagReplacement);
     }
     if (binding === namespace.binding.post) {
-      const context = postBinding.base64LogoutResponse(requestInfo, libsaml.createXPath('Issuer'), {
+      const context = postBinding.base64LogoutResponse(requestInfo, {
           init: this,
           target,
         }, customTagReplacement)
