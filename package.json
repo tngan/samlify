@@ -2,7 +2,7 @@
   "name": "express-saml2",
   "version": "2.0.0-beta",
   "description": "High-level API for Single Sign On (SAML 2.0)",
-  "main": "index.js",
+  "main": "build/index.js",
   "keywords": [
     "nodejs",
     "express",
@@ -16,7 +16,7 @@
     "pretest": "make pretest",
     "test": "tsc && nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "postinstall": "git config --local include.path ../.gitconfig"
+    "postinstall": "node postinstall"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"

@@ -12,7 +12,7 @@ import IdpMetadata from './metadata-idp';
 import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { isString, isUndefined, assign } from 'lodash';
+import { isString, isUndefined, isArray } from 'lodash';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -60,7 +60,7 @@ export default class Entity {
   * @param {string} entityMeta is the entity metadata, deprecated after 2.0
   */
   constructor(entitySetting, entityType) {
-    this.entitySetting = assign({}, defaultEntitySetting, entitySetting);
+    this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);
     const metadata = entitySetting.metadata ? entitySetting.metadata : entitySetting;
     switch (entityType) {
       case 'idp':
@@ -200,7 +200,7 @@ export default class Entity {
             };
           } else {
             // Fail to verify message signature
-            throw new Error('fail to verify message signature');
+            throw new Error('fail to verify message signature in request');
           }
         } else {
           // Missing signature or signature algorithm
@@ -226,20 +226,25 @@ export default class Entity {
         extract: libsaml.extractor(res, fields)
       };
       if (checkSignature) {
-        // verify the signature
-        if (!libsaml.verifySignature(res, parseResult.extract.signature, {
-          cert: targetEntityMetadata,
-          signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
-        })) {
-          throw new Error('incorrect signature');
-        }
+        // verify the signatures (for both assertion/message)
+        // sigantures[0] is message signature
+        // sigantures[1] is assertion signature
+        [...parseResult.extract.signature].reverse().forEach(s => {
+          if (!libsaml.verifySignature(res, parseResult.extract.signature, {
+            cert: targetEntityMetadata,
+            signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
+          })) {
+            throw new Error('incorrect signature');
+          }
+          // in order to get the raw xml
+          // remove assertion signature because the assertion signature is later than the message signature
+          res.replace(s, '');
+        });
       }
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
         throw new Error('incorrect issuer');
       }
-
       return parseResult;
-
     }
     // Will support artifact in the next release
     throw new Error('this binding is not support');

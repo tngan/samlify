@@ -11,6 +11,7 @@
     "paths": {},
     "lib": [
       "dom",
+      "es2015.core",
       "es2015.promise",
       "es2015.iterable",
       "es5"

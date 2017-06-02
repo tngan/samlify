@@ -581,7 +581,7 @@ const libSaml = function () {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              return resolve(utility.base64Encode(entireXML.replace(/<saml:Assertion(.*)<\/saml:Assertion>/g, '<saml:EncryptedAssertion>' + res + '</saml:EncryptedAssertion>')));
+              return resolve(utility.base64Encode(entireXML.replace(/<(.*?)Assertion(.*?)>(.*?)<\/(.*?)Assertion>/g, `<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`)));
             });
           } else {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
@@ -621,7 +621,7 @@ const libSaml = function () {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
+              return resolve(String(parseEntireXML).replace(/<(.*?)EncryptedAssertion(.*?)>/g, '').replace(encryptedData, res));
             });
           } else {
             return resolve(entireXML); // No need to do encrpytion

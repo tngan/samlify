@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import { pki, util, asn1 } from 'node-forge';
 import { inflate, deflate } from 'deflate-js';
-import { isString, isArray, assign } from 'lodash';
+import { isString } from 'lodash';
 
 const BASE64_STR = 'base64';
 const ASCII_STR = 'ascii';
@@ -94,7 +94,7 @@ function parseString(str, defaultValue = '') {
 * @return {object} result object
 */
 function applyDefault(obj1, obj2) {
-  return assign({}, obj1, obj2);
+  return Object.assign({}, obj1, obj2);
 }
 /**
 * @desc Get public key in pem format from the certificate included in the metadata
@@ -127,7 +127,7 @@ function convertToString(input, isOutputString) {
  * @desc Check if the input is an array with non-zero size
  */
 export function isNonEmptyArray(a) {
-  return isArray(a) && a.length > 0;
+  return Array.isArray(a) && a.length > 0;
 }
 
 const utility = {
