@@ -227,13 +227,18 @@ export default class Entity {
       };
       if (checkSignature) {
         // verify the signatures (for both assertion/message)
-        [...parseResult.extract.signature].forEach(s => {
+        // sigantures[0] is message signature
+        // sigantures[1] is assertion signature
+        [...parseResult.extract.signature].reverse().forEach(s => {
           if (!libsaml.verifySignature(res, parseResult.extract.signature, {
             cert: targetEntityMetadata,
             signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
           })) {
             throw new Error('incorrect signature');
           }
+          // in order to get the raw xml
+          // remove assertion signature because the assertion signature is later than the message signature
+          res.replace(s, '');
         });
       }
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {

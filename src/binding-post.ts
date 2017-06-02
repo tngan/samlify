@@ -81,7 +81,6 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
   let idpSetting = entity.idp.entitySetting;
   let spSetting = entity.sp.entitySetting;
-  let resXml = undefined;
   let id = idpSetting.generateID ? idpSetting.generateID() : uuid.v4();
   let context: string = '';
   let metadata = {
@@ -133,22 +132,15 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
         privateKey,
         privateKeyPass,
         signatureAlgorithm,
-        rawSamlMessage: rawSamlResponse,
         signingCert: metadata.idp.getX509Certificate('signing'),
         isBase64Output: false
     };
 
-    if (metadata.sp.isWantAssertionsSigned()) {
-      resXml = libsaml.constructSAMLSignature({
-        ...signatureConfig,
-        referenceTagXPath: libsaml.createXPath('Assertion'),
-      });
-    }
-
     // SAML response must be signed
     if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
-      resXml = libsaml.constructSAMLSignature({
+      rawSamlResponse = libsaml.constructSAMLSignature({
         ...signatureConfig,
+        rawSamlMessage: rawSamlResponse,
         referenceTagXPath: libsaml.createXPath('Response'),
         messageSignatureConfig: spSetting.messageSignatureConfig
         /*
@@ -160,15 +152,23 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       });
     }
 
+    if (metadata.sp.isWantAssertionsSigned()) {
+      rawSamlResponse = libsaml.constructSAMLSignature({
+        ...signatureConfig,
+        rawSamlMessage: rawSamlResponse,
+        referenceTagXPath: libsaml.createXPath('Assertion'),
+      });
+    }
+
     if (idpSetting.isAssertionEncrypted) {
       return Promise.resolve({
         id,
-        context: await libsaml.encryptAssertion(entity.idp, entity.sp, resXml)
+        context: await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse)
       });
     }
     return Promise.resolve({
       id,
-      context: utility.base64Encode(resXml)
+      context: utility.base64Encode(rawSamlResponse)
     });
 
   }
@@ -207,7 +207,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature
-      const { privateKey, privateKeyPass, signatureAlgorithm } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
@@ -264,7 +264,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutResponseSigned) {
-      const { privateKey, privateKeyPass, signatureAlgorithm } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
