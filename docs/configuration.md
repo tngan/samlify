@@ -30,6 +30,8 @@ Currently, we suggest developers to use other 3rd party IdP even though we provi
 * @param {string} signingCertFile : It is required if `authnRequestsSigned` is set to `true`
 * @param {array} singleLogoutService : Default is an empty array
 * @param {boolean} wantAssertionsSigned : Default is false
+* @param {boolean} wantMessageSigned : Default is false
+* @param {object} messageSignatureConfig: Contains information of prefix and location (xml-crypto)
 * @param {boolean} wantLogoutResponseSigned : Default is false
 * @param {boolean} wantLogoutRequestSigned : Default is false
 * @param {string} metadata : Entity metadata

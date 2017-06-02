@@ -54,6 +54,8 @@ export class SpMetadata extends Metadata {
         encryptCert,
         authnRequestsSigned = false,
         wantAssertionsSigned = false,
+        wantMessageSigned = false,
+        messageSignatureConfig = undefined,
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = []
@@ -74,6 +76,10 @@ export class SpMetadata extends Metadata {
           protocolSupportEnumeration: namespace.names.protocol
         }
       }];
+
+      if (wantMessageSigned && messageSignatureConfig === undefined) {
+        console.warn('Construct service provider - missing messageSignatureConfig');
+      }
 
       if (signingCert) {
         descriptors.KeyDescriptor.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);

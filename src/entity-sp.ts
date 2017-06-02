@@ -35,7 +35,8 @@ export class ServiceProvider extends Entity {
   constructor(spSetting) {
     const entitySetting = Object.assign({
       authnRequestsSigned: false,
-      wantAssertionsSigned: false
+      wantAssertionsSigned: false,
+      wantMessageSigned: false
     }, spSetting);
     super(entitySetting, 'sp');
   }
@@ -86,8 +87,8 @@ export class ServiceProvider extends Entity {
         },
         valueTag: 'AttributeValue'
       }],
-      checkSignature: this.entityMeta.isWantAssertionsSigned(),
       from: idp,
+      checkSiganture: true, // saml response must have signature
       supportBindings: ['post'],
       parserType: 'SAMLResponse',
       type: 'login'

@@ -80,6 +80,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 */
 async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
   let idpSetting = entity.idp.entitySetting;
+  let spSetting = entity.sp.entitySetting;
   let resXml = undefined;
   let id = idpSetting.generateID ? idpSetting.generateID() : uuid.v4();
   let context: string = '';
@@ -114,7 +115,6 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
-      // future features
       AuthnStatement: '',
       AttributeStatement: ''
     };
@@ -129,35 +129,33 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
-
-    if (metadata.sp.isWantAssertionsSigned()) {
-      resXml = libsaml.constructSAMLSignature({
-        referenceTagXPath: libsaml.createXPath('Assertion'),
+    const signatureConfig = {
         privateKey,
         privateKeyPass,
         signatureAlgorithm,
         rawSamlMessage: rawSamlResponse,
         signingCert: metadata.idp.getX509Certificate('signing'),
         isBase64Output: false
+    };
+
+    if (metadata.sp.isWantAssertionsSigned()) {
+      resXml = libsaml.constructSAMLSignature({
+        ...signatureConfig,
+        referenceTagXPath: libsaml.createXPath('Assertion'),
       });
     }
 
     // SAML response must be signed
-    if (idpSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
+    if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
       resXml = libsaml.constructSAMLSignature({
+        ...signatureConfig,
         referenceTagXPath: libsaml.createXPath('Response'),
-        privateKey,
-        privateKeyPass,
-        signatureAlgorithm,
-        rawSamlMessage: rawSamlResponse,
-        signingCert: metadata.idp.getX509Certificate('signing'),
-        isBase64Output: false,
-        messageSignatureConfig: idpSetting.messageSignatureConfig
+        messageSignatureConfig: spSetting.messageSignatureConfig
         /*
-        {
-          prefix: 'ds',
-          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
-        }
+          {
+            prefix: 'ds',
+            location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
+          }
         */
       });
     }
