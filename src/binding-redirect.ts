@@ -5,7 +5,6 @@
 */
 import utility from './utility';
 import libsaml from './libsaml';
-import * as uuid from 'uuid';
 import Entity, { BindingContext } from './entity';
 import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
@@ -71,7 +70,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       id = get<string>(info, 'id');
       rawSamlRequest = get<string>(info, 'context');
     } else {
-      id = spSetting.generateID ? spSetting.generateID() : uuid.v4();
+      id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
         ID: id,
         Destination: base,
@@ -110,7 +109,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       id = get<string>(info, 'id');
       rawSamlRequest = get<string>(info, 'context');
     } else {
-      id = initSetting.generateID ? initSetting.generateID() : uuid.v4();
+      id = initSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, <any>{
         ID: id,
         Destination: base,
@@ -152,7 +151,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
       id = get<string>(template, 'id');
       rawSamlResponse = get<string>(template, 'context');
     } else {
-      id = initSetting.generateID ? initSetting.generateID() : uuid.v4();
+      id = initSetting.generateID();
       let tvalue: any = {
         ID: id,
         Destination: base,

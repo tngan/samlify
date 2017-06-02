@@ -6,7 +6,6 @@
 
 import { wording, tags, namespace } from './urn';
 import { BindingContext } from './entity';
-import * as uuid from 'uuid';
 import libsaml from './libsaml';
 import utility from './utility';
 import { get } from 'lodash';
@@ -37,7 +36,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       id = get<string>(info, 'id');
       rawSamlRequest = get<string>(info, 'context');
     } else {
-      id = spSetting.generateID ? spSetting.generateID() : uuid.v4();
+      id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
         ID: id,
         Destination: base,
@@ -61,7 +60,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.sp.getX509Certificate('signing'),
         }),
-      }
+      };
     }
     // No need to embeded XML signature
     return {
@@ -81,7 +80,8 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
   let idpSetting = entity.idp.entitySetting;
   let spSetting = entity.sp.entitySetting;
-  let id = idpSetting.generateID ? idpSetting.generateID() : uuid.v4();
+  let resXml = undefined;
+  let id = idpSetting.generateID();
   let context: string = '';
   let metadata = {
     idp: entity.idp.entityMeta,
@@ -99,7 +99,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
     let tvalue: any = {
       ID: id,
-      AssertionID: idpSetting.generateID ? idpSetting.generateID() : uuid.v4(),
+      AssertionID: idpSetting.generateID(),
       Destination: base,
       Audience: spEntityID,
       EntityID: spEntityID,
@@ -193,7 +193,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       id = get<string>(template, 'id');
       rawSamlRequest = get<string>(template, 'context');
     } else {
-      id = initSetting.generateID ? initSetting.generateID() : uuid.v4();
+      id = initSetting.generateID();
       let tvalue: any = {
         ID: id,
         Destination: metadata.target.getSingleLogoutService(binding.redirect),
@@ -249,7 +249,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       id = template.id;
       rawSamlResponse = template.context;
     } else {
-      id = initSetting.generateID ? initSetting.generateID() : uuid.v4();
+      id = initSetting.generateID();
       let tvalue: any = {
         ID: id,
         Destination: metadata.target.getAssertionConsumerService(binding.post),
