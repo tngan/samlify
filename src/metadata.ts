@@ -32,6 +32,7 @@ export default class Metadata implements MetadataInterface {
   */
   constructor(xml: string | Buffer, extraParse) {
     this.xmlString = xml.toString();
+
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
       attributes: ['entityID']
@@ -48,6 +49,10 @@ export default class Metadata implements MetadataInterface {
       },
       attributeTag: 'Location'
     }, 'NameIDFormat'], extraParse || []));
+
+    if (!this.meta.entitydescriptor || Array.isArray(this.meta.entitydescriptor)){
+      throw new Error('metadata must contain exactly one entity descriptor');
+    }
   }
   /**
   * @desc Get the metadata in xml format
