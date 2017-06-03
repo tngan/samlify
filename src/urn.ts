@@ -7,18 +7,18 @@ const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
     post: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-    artifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'
+    artifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
   },
   names: {
     protocol: 'urn:oasis:names:tc:SAML:2.0:protocol',
     assertion: 'urn:oasis:names:tc:SAML:2.0:assertion',
     metadata: 'urn:oasis:names:tc:SAML:2.0:metadata',
     userLogout: 'urn:oasis:names:tc:SAML:2.0:logout:user',
-    adminLogout: 'urn:oasis:names:tc:SAML:2.0:logout:admin'
+    adminLogout: 'urn:oasis:names:tc:SAML:2.0:logout:admin',
   },
   authnContextClassRef: {
     password: 'urn:oasis:names:tc:SAML:2.0:ac:classes:Password',
-    passwordProtectedTransport: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport'
+    passwordProtectedTransport: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
   },
   format: {
     emailAddress: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
@@ -28,7 +28,7 @@ const namespace = {
     unspecified: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
     kerberos: 'urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos',
     windowsDomainQualifiedName: 'urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName',
-    x509SubjectName: 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName'
+    x509SubjectName: 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName',
   },
   statusCode: {
     // permissible top-level status codes
@@ -55,8 +55,8 @@ const namespace = {
     tooManyResponses: 'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
     unknownAttrProfile: 'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
     unknownPrincipal: 'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
-    unsupportedBinding: 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding'
-  }
+    unsupportedBinding: 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding',
+  },
 };
 
 const tags = {
@@ -82,38 +82,38 @@ const tags = {
     SessionIndex: '{SessionIndex}',
     SubjectRecipient: '{SubjectRecipient}',
     SubjectConfirmationDataNotOnOrAfter: '{SubjectConfirmationDataNotOnOrAfter}',
-    StatusCode: '{StatusCode}'
+    StatusCode: '{StatusCode}',
   },
   xmlTag: {
     loginRequest: 'AuthnRequest',
     logoutRequest: 'LogoutRequest',
     loginResponse: 'Response',
-    logoutResponse: 'LogoutResponse'
-  }
+    logoutResponse: 'LogoutResponse',
+  },
 };
 
 const algorithms = {
   signature: {
     RSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
     RSA_SHA256: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
-    RSA_SHA512: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
+    RSA_SHA512: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
   },
   encryption: {
     data: {
       AES_128: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
       AES_256: 'http://www.w3.org/2001/04/xmlenc#aes256-cbc',
-      TRI_DEC: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'
+      TRI_DEC: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc',
     },
     key: {
       RSA_OAEP_MGF1P: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
-      RSA_1_5: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5'
-    }
+      RSA_1_5: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+    },
   },
   digest: {
     'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'http://www.w3.org/2000/09/xmldsig#sha1',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512' // support hashing algorithm sha512 in xml-crypto after 0.8.0
-  }
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
+  },
 };
 
 const wording = {
@@ -124,21 +124,21 @@ const wording = {
     logoutResponse: 'LogoutResponse',
     sigAlg: 'SigAlg',
     signature: 'Signature',
-    relayState: 'RelayState'
+    relayState: 'RelayState',
   },
   binding: {
     redirect: 'redirect',
     post: 'post',
-    artifact: 'artifact'
+    artifact: 'artifact',
   },
   certUse: {
     signing: 'signing',
-    encrypt: 'encryption'
+    encrypt: 'encryption',
   },
   metadata: {
     sp: 'metadata-sp',
-    idp: 'metadata-idp'
-  }
+    idp: 'metadata-idp',
+  },
 };
 
 // https://wiki.shibboleth.net/confluence/display/CONCEPT/MetadataForSP
@@ -146,7 +146,7 @@ const wording = {
 const elementsOrder = {
   default: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
   onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
-  shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService']
+  shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService'],
 };
 
 export { namespace, tags, algorithms, wording, elementsOrder };

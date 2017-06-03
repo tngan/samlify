@@ -17,9 +17,9 @@ export interface MetadataInterface {
   exportMetadata: (exportFile: string) => void;
   getEntityID: () => string;
   getX509Certificate: (certType: string) => string;
-  getNameIDFormat: () => Array<any>;
+  getNameIDFormat: () => any[];
   getSingleLogoutService: (binding: string | undefined) => string | Object;
-  getSupportBindings: (services: Array<string>) => Array<string>;
+  getSupportBindings: (services: string[]) => string[];
 }
 
 export default class Metadata implements MetadataInterface {
@@ -35,19 +35,19 @@ export default class Metadata implements MetadataInterface {
 
     this.meta = libsaml.extractor(this.xmlString, Array.prototype.concat([{
       localName: 'EntityDescriptor',
-      attributes: ['entityID']
+      attributes: ['entityID'],
     }, {
       localName: {
         tag: 'KeyDescriptor',
-        key: 'use'
+        key: 'use',
       },
-      valueTag: 'X509Certificate'
+      valueTag: 'X509Certificate',
     }, {
       localName: {
         tag: 'SingleLogoutService',
-        key: 'Binding'
+        key: 'Binding',
       },
-      attributeTag: 'Location'
+      attributeTag: 'Location',
     }, 'NameIDFormat'], extraParse || []));
 
     if (!this.meta.entitydescriptor || Array.isArray(this.meta.entitydescriptor)){
@@ -90,7 +90,7 @@ export default class Metadata implements MetadataInterface {
   * @desc Get the support NameID format declared in entity metadata
   * @return {array} support NameID format
   */
-  public getNameIDFormat(): Array<any> {
+  public getNameIDFormat(): any[] {
     return this.meta.nameidformat;
   }
   /**
@@ -117,7 +117,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {[string]} services
   * @return {[string]} support bindings
   */
-  public getSupportBindings(services: Array<string>): Array<string> {
+  public getSupportBindings(services: string[]): string[] {
     let supportBindings = [];
     if (services) {
       services.forEach(service => supportBindings.push(Object.keys(service)[0]));

@@ -17,11 +17,11 @@ export interface SpMetadataInterface extends MetadataInterface {
 
 // https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
 interface MetaElement {
-  KeyDescriptor?: Array<any>;
-  NameIDFormat?: Array<any>;
-  SingleLogoutService?: Array<any>;
-  AssertionConsumerService?: Array<any>;
-  AttributeConsumingService?: Array<any>;
+  KeyDescriptor?: any[];
+  NameIDFormat?: any[];
+  SingleLogoutService?: any[];
+  AssertionConsumerService?: any[];
+  AttributeConsumingService?: any[];
 }
 
 /*
@@ -58,7 +58,7 @@ export class SpMetadata extends Metadata {
         messageSignatureConfig = undefined,
         nameIDFormat = [],
         singleLogoutService = [],
-        assertionConsumerService = []
+        assertionConsumerService = [],
       } = meta;
 
       let descriptors: MetaElement = {
@@ -66,15 +66,15 @@ export class SpMetadata extends Metadata {
         NameIDFormat: [],
         SingleLogoutService: [],
         AssertionConsumerService: [],
-        AttributeConsumingService: []
+        AttributeConsumingService: [],
       };
 
-      let SPSSODescriptor: Array<any> = [{
+      let SPSSODescriptor: any[] = [{
         _attr: {
           AuthnRequestsSigned: String(authnRequestsSigned),
           WantAssertionsSigned: String(wantAssertionsSigned),
-          protocolSupportEnumeration: namespace.names.protocol
-        }
+          protocolSupportEnumeration: namespace.names.protocol,
+        },
       }];
 
       if (wantMessageSigned && messageSignatureConfig === undefined) {
@@ -103,7 +103,7 @@ export class SpMetadata extends Metadata {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
-            Location: a.Location
+            Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
@@ -118,7 +118,7 @@ export class SpMetadata extends Metadata {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
-            Location: a.Location
+            Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
@@ -141,9 +141,9 @@ export class SpMetadata extends Metadata {
             entityID,
             'xmlns:md': namespace.names.metadata,
             'xmlns:assertion': namespace.names.assertion,
-            'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#'
-          }
-        }, { SPSSODescriptor }]
+            'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
+          },
+        }, { SPSSODescriptor }],
       }]);
 
     }
@@ -156,10 +156,10 @@ export class SpMetadata extends Metadata {
 
     super(meta, [{
       localName: 'SPSSODescriptor',
-      attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned']
+      attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
     }, {
       localName: 'AssertionConsumerService',
-      attributes: ['Binding', 'Location', 'isDefault', 'index']
+      attributes: ['Binding', 'Location', 'isDefault', 'index'],
     }]);
 
   }
@@ -183,7 +183,7 @@ export class SpMetadata extends Metadata {
   * @param  {string} binding         protocol binding (e.g. redirect, post)
   * @return {string/[string]} URL of endpoint(s)
   */
-  public getAssertionConsumerService(binding: string): string | Array<string> {
+  public getAssertionConsumerService(binding: string): string | string[] {
     if (isString(binding)) {
       let location;
       let bindName = namespace.binding[binding];

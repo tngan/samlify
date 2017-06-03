@@ -13,6 +13,8 @@
   ],
   "scripts": {
     "build": "tsc",
+    "lint": "tslint --project tsconfig.json",
+    "lint:fix": "tslint --fix --project tsconfig.json",
     "pretest": "make pretest",
     "test": "tsc && nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
