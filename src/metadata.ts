@@ -50,7 +50,7 @@ export default class Metadata implements MetadataInterface {
       attributeTag: 'Location',
     }, 'NameIDFormat'], extraParse || []));
 
-    if (!this.meta.entitydescriptor || Array.isArray(this.meta.entitydescriptor)){
+    if (!this.meta.entitydescriptor || Array.isArray(this.meta.entitydescriptor)) {
       throw new Error('metadata must contain exactly one entity descriptor');
     }
   }

@@ -10,11 +10,12 @@ import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
+import * as xml from 'xml';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
-const xml = require('xml');
+
 
 /*
  * @desc interface function
@@ -75,10 +76,10 @@ export class IdentityProvider extends Entity {
   */
   public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
-    if (protocol == namespace.binding.post) {
+    if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
-        sp: sp,
+        sp,
       }, user, customTagReplacement);
       // xmlenc is using async process
       return {

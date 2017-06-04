@@ -8,8 +8,7 @@ import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
 import { isString } from 'lodash';
 import { isNonEmptyArray } from './utility';
-
-const xml = require('xml');
+import * as xml from 'xml';
 
 export interface SpMetadataInterface extends MetadataInterface {
 

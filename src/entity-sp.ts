@@ -9,11 +9,11 @@ import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
+import * as xml from 'xml';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
-const xml = require('xml');
 
 /*
  * @desc interface function

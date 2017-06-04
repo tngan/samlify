@@ -8,8 +8,7 @@ import { namespace } from './urn';
 import libsaml from './libsaml';
 import { isString, isUndefined } from 'lodash';
 import { isNonEmptyArray } from './utility';
-
-const xml = require('xml');
+import * as xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
 

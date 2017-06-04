@@ -13,10 +13,10 @@ import xpath, { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined } from 'lodash';
+import * as nrsa from 'node-rsa';
+import { SignedXml, FileKeyInfo } from 'xml-crypto';
+const xmlenc = require('xml-encryption'); // tslint:disable-line
 
-const nrsa = require('node-rsa');
-const xml = require('xml');
-const xmlenc = require('xml-encryption');
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
@@ -24,7 +24,6 @@ const requestTags = tags.request;
 const urlParams = wording.urlParams;
 const dom = DOMParser;
 
-let { SignedXml, FileKeyInfo } = require('xml-crypto');
 
 export interface SignatureConstructor {
   rawSamlMessage: string;
@@ -102,7 +101,7 @@ export interface LibSamlInterface {
   defaultLogoutResponseTemplate: LogoutResponseTemplate;
 }
 
-const libSaml = function () {
+const libSaml = () => {
   /**
   * @desc helper function to get back the query param for redirect binding for SLO/SSO
   * @type {string}
@@ -238,14 +237,14 @@ const libSaml = function () {
     let selection = select(xpathStr, xmlDoc);
     let obj = {};
 
-    selection.forEach(function (_s) {
+    selection.forEach(_s => {
       let xd = new dom().parseFromString(_s.toString());
       let key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
       let value = select("//*[local-name(.)='" + valueTag + "']/text()", xd);
       let res;
 
-      if (key && key.length == 1 && utility.isNonEmptyArray(value)) {
-        if (value.length == 1) {
+      if (key && key.length === 1 && utility.isNonEmptyArray(value)) {
+        if (value.length === 1) {
           res = value[0].nodeValue.toString();
         } else {
           let dat = [];
@@ -271,12 +270,12 @@ const libSaml = function () {
     let selection = select(xpathStr, xmlDoc);
     let data = [];
 
-    selection.forEach(function (_s) {
+    selection.forEach(_s => {
       let xd = new dom().parseFromString(_s.toString());
       let key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
       let value = select("//*[local-name(.)='" + localName + "']/@" + attributeTag, xd);
 
-      if (value && value.length == 1 && key && key.length == 1) {
+      if (value && value.length === 1 && key && key.length === 1) {
         let obj = {};
         obj[key[0].nodeValue.toString()] = value[0].nodeValue.toString();
         data.push(obj);
@@ -301,7 +300,7 @@ const libSaml = function () {
       return undefined;
     }
     let data = [];
-    selection.forEach(function (_s) {
+    selection.forEach(_s => {
       data.push(utility.convertToString(_s, isOutputString !== false));
     });
     return data.length === 1 ? data[0] : data;
@@ -320,7 +319,7 @@ const libSaml = function () {
       return undefined;
     }
     let data = [];
-    selection.forEach(function (_s) {
+    selection.forEach(_s => {
       data.push(_s.nodeValue.toString());
     });
     return data.length === 1 ? data[0] : data;
@@ -365,7 +364,7 @@ const libSaml = function () {
     * @param  {array} tagValues    tag values
     * @return {string}
     */
-    replaceTagsByValue: function (rawXML: string, tagValues: any): string {
+    replaceTagsByValue(rawXML: string, tagValues: any): string {
       Object.keys(tagValues).forEach(t => {
         rawXML = rawXML.replace(new RegExp(`{${t}}`, 'g'), tagValues[t]);
       });
@@ -376,7 +375,7 @@ const libSaml = function () {
     * @param  {LoginResponseAttribute} attributes    an array of attribute configuration
     * @return {string}
     */
-    attributeStatementBuilder: function (attributes: LoginResponseAttribute[]): string {
+    attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
       const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType }) => {
         return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
       }).join('');
@@ -392,7 +391,7 @@ const libSaml = function () {
     * @param  {string} signatureAlgorithm   signature algorithm
     * @return {string} base64 encoded string
     */
-    constructSAMLSignature: function (opts: SignatureConstructor) {
+    constructSAMLSignature(opts: SignatureConstructor) {
       const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true, messageSignatureConfig } = opts;
       let sig = new SignedXml();
       // Add assertion sections as reference
@@ -416,7 +415,7 @@ const libSaml = function () {
     * @param  {SignatureVerifierOptions} opts cert declares the X509 certificate
     * @return {boolean} verification result
     */
-    verifySignature: function (xml: string, signature, opts: SignatureVerifierOptions) {
+    verifySignature(xml: string, signature, opts: SignatureVerifierOptions) {
       let signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA1;
       let sig = new SignedXml();
       sig.signatureAlgorithm = signatureAlgorithm;
@@ -439,7 +438,7 @@ const libSaml = function () {
     * @param  {string} xmlString
     * @param  {object} fields
     */
-    extractor: function (xmlString: string, fields) {
+    extractor(xmlString: string, fields) {
       let doc = new dom().parseFromString(xmlString);
       let meta = {};
       fields.forEach(field => {
@@ -483,7 +482,7 @@ const libSaml = function () {
     * @param  {string} certString    declares the certificate String
     * @return {object} object used in xml module
     */
-    createKeySection: function (use: string, certString: string | Buffer) {
+    createKeySection(use: string, certString: string | Buffer) {
       return {
         KeyDescriptor: [{
           _attr: { use },
@@ -508,7 +507,7 @@ const libSaml = function () {
     * @param  {string} signingAlgorithm          signing algorithm
     * @return {string} message signature
     */
-    constructMessageSignature: function (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
+    constructMessageSignature(octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
       let decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
@@ -526,7 +525,7 @@ const libSaml = function () {
     * @param  {string} verifyAlgorithm            algorithm used to verify
     * @return {boolean} verification result
     */
-    verifyMessageSignature: function (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
+    verifyMessageSignature(metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
       let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUse.signing)), {
         signingScheme: getSigningScheme(verifyAlgorithm),
       });
@@ -537,11 +536,11 @@ const libSaml = function () {
     * @param  {string} x509Certificate certificate
     * @return {string} public key
     */
-    getKeyInfo: function (x509Certificate: string) {
-      this.getKeyInfo = function (key) {
+    getKeyInfo(x509Certificate: string) {
+      this.getKeyInfo = key => {
         return '<X509Data><X509Certificate>' + x509Certificate + '</X509Certificate></X509Data>';
       };
-      this.getKey = function (keyInfo) {
+      this.getKey = keyInfo => {
         return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
       };
     },
@@ -552,7 +551,7 @@ const libSaml = function () {
     * @param {string} entireXML                 response in xml string format
     * @return {Promise} a promise to resolve the finalized xml
     */
-    encryptAssertion: function (sourceEntity, targetEntity, entireXML: string) {
+    encryptAssertion(sourceEntity, targetEntity, entireXML: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
         if (entireXML) {
@@ -599,7 +598,7 @@ const libSaml = function () {
     * @param {string} entireXML         response in xml string format
     * @return {function} a promise to get back the entire xml with decrypted assertion
     */
-    decryptAssertion: function (type: string, here, from, entireXML: string) {
+    decryptAssertion(type: string, here, from, entireXML: string) {
       return new Promise<string>((resolve, reject) => {
         // Implement decryption first then check the signature
         if (entireXML) {

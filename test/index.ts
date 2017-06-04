@@ -2,6 +2,9 @@ import esaml2 = require('../index');
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
 import { assign } from 'lodash';
+import xpath from 'xpath';
+import { DOMParser as dom } from 'xmldom';
+import { xpath as select } from 'xml-crypto';
 
 const {
   IdentityProvider: identityProvider,
@@ -18,10 +21,6 @@ const binding = ref.namespace.binding;
 const algorithms = ref.algorithms;
 const wording = ref.wording;
 const signatureAlgorithms = algorithms.signature;
-
-const xpath = require('xpath');
-const dom = require('xmldom').DOMParser;
-const select = require('xml-crypto').xpath;
 
 // Define of metadata
 const _spKeyFolder = './test/key/sp/';
@@ -83,7 +82,7 @@ test('normalize pem key returns clean string', t => {
 });
 test('getAssertionConsumerService with one binding', t => {
   const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
-  const sp = serviceProvider({
+  const _sp = serviceProvider({
     privateKeyFile: './test/key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     isAssertionEncrypted: true, // for logout purpose
@@ -98,12 +97,12 @@ test('getAssertionConsumerService with one binding', t => {
       Location: 'https://sp.example.org/sp/slo',
     }],
   });
-  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
+  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
 });
 test('getAssertionConsumerService with two bindings', t => {
   const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
   const expectedArtifactLocation = 'https://sp.example.org/sp/sso/artifact';
-  const sp = serviceProvider({
+  const _sp = serviceProvider({
     privateKeyFile: './test/key/sp/privkey.pem',
     privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     isAssertionEncrypted: true, // for logout purpose
@@ -124,8 +123,8 @@ test('getAssertionConsumerService with two bindings', t => {
       Location: 'https://sp.example.org/sp/slo',
     }],
   });
-  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
-  t.is(sp.entityMeta.getAssertionConsumerService(wording.binding.artifact), expectedArtifactLocation);
+  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
+  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.artifact), expectedArtifactLocation);
 });
 
 // Test suite
@@ -231,20 +230,20 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
     let xml = String(readFileSync('./test/misc/SignSAMLRequest.xml'));
-    let _decodedResponseDoc = new dom().parseFromString(xml);
-    let signature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
+    let decodedResponseDoc = new dom().parseFromString(xml);
+    let signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, signature, { keyFile: './test/key/sp/cert.cer' }), true);
   });
   test('verify a XML signature signed by RSA-SHA256 with .cer keyFile', t => {
     let xml = String(readFileSync('./test/misc/SignSAMLRequestSHA256.xml'));
-    let _decodedResponseDoc = new dom().parseFromString(xml);
-    let signature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
+    let decodedResponseDoc = new dom().parseFromString(xml);
+    let signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, signature, { keyFile: './test/key/sp/cert.cer' }), true);
   });
   test('verify a XML signature signed by RSA-SHA512 with .cer keyFile', t => {
     let xml = String(readFileSync('./test/misc/SignSAMLRequestSHA512.xml'));
-    let _decodedResponseDoc = new dom().parseFromString(xml);
-    let signature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
+    let decodedResponseDoc = new dom().parseFromString(xml);
+    let signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, signature, { keyFile: './test/key/sp/cert.cer' }), true);
   });
   /** high-level extractor */

@@ -48,6 +48,12 @@ export interface PostResponseInfo extends BindingContext {
   type: string;
 }
 
+export interface ParseResult {
+  samlContent: string;
+  extract: any;
+  sigAlg?: string;
+}
+
 export default class Entity {
 
   entitySetting: any;
@@ -116,7 +122,7 @@ export default class Entity {
     if (isNonEmptyArray(field)) {
       let res = true;
       field.forEach(f => {
-        if (f != metaField) {
+        if (f !== metaField) {
           res = false;
           return;
         }
@@ -156,7 +162,7 @@ export default class Entity {
     const here = this;
     const entityMeta: any = this.entityMeta;
     let options = opts || {};
-    let parseResult = {};
+    let parseResult: ParseResult;
     let supportBindings = [nsBinding.redirect, nsBinding.post];
     let { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
 
@@ -172,7 +178,7 @@ export default class Entity {
           supportBindings = [];
         }
       }
-    } else if (type == 'logout') {
+    } else if (type === 'logout') {
       let singleLogoutServices = entityMeta.getSingleLogoutService(binding);
       if (!singleLogoutServices) {
         supportBindings = [];
@@ -215,13 +221,13 @@ export default class Entity {
       return parseResult;
     }
 
-    if (binding == bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
+    if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
       let decodedRequest = String(base64Decode(encodedRequest));
       let issuer = targetEntityMetadata.getEntityID();
       const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
-      let parseResult = {
+      parseResult = {
         samlContent: res,
         extract: libsaml.extractor(res, fields),
       };
