@@ -37,7 +37,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any> {
         ID: id,
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -65,7 +65,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
     // No need to embeded XML signature
     return {
       id,
-      context: utility.base64Encode(rawSamlRequest)
+      context: utility.base64Encode(rawSamlRequest),
     };
   }
   throw new Error('Missing declaration of metadata');
@@ -85,7 +85,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
   let context: string = '';
   let metadata = {
     idp: entity.idp.entityMeta,
-    sp: entity.sp.entityMeta
+    sp: entity.sp.entityMeta,
   };
   if (metadata && metadata.idp && metadata.sp) {
     let base = metadata.sp.getAssertionConsumerService(binding.post);
@@ -115,12 +115,12 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
       AuthnStatement: '',
-      AttributeStatement: ''
+      AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate);
       id = get<string>(template, 'id');
-      rawSamlResponse = get<string>(template, 'context')
+      rawSamlResponse = get<string>(template, 'context');
     } else {
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
@@ -133,7 +133,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
         privateKeyPass,
         signatureAlgorithm,
         signingCert: metadata.idp.getX509Certificate('signing'),
-        isBase64Output: false
+        isBase64Output: false,
     };
 
     // SAML response must be signed
@@ -142,7 +142,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
         ...signatureConfig,
         rawSamlMessage: rawSamlResponse,
         referenceTagXPath: libsaml.createXPath('Response'),
-        messageSignatureConfig: spSetting.messageSignatureConfig
+        messageSignatureConfig: spSetting.messageSignatureConfig,
         /*
           {
             prefix: 'ds',
@@ -163,12 +163,12 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
     if (idpSetting.isAssertionEncrypted) {
       return Promise.resolve({
         id,
-        context: await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse)
+        context: await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse),
       });
     }
     return Promise.resolve({
       id,
-      context: utility.base64Encode(rawSamlResponse)
+      context: utility.base64Encode(rawSamlResponse),
     });
 
   }
@@ -201,7 +201,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
         NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.transient,
-        NameID: user.logoutNameID
+        NameID: user.logoutNameID,
       };
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
@@ -217,13 +217,13 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
           signatureAlgorithm,
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.init.getX509Certificate('signing'),
-        })
-      }
+        }),
+      };
     }
     return {
       id,
-      context: utility.base64Encode(rawSamlRequest)
-    }
+      context: utility.base64Encode(rawSamlRequest),
+    };
   }
   throw new Error('Missing declaration of metadata');
 }
@@ -237,7 +237,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
 function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
   let metadata = {
     init: entity.init.entityMeta,
-    target: entity.target.entityMeta
+    target: entity.target.entityMeta,
   };
   let id: string = '';
   let context: string = '';
@@ -256,7 +256,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        StatusCode: namespace.statusCode.success
+        StatusCode: namespace.statusCode.success,
       };
       if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
         tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
@@ -274,12 +274,12 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
           signatureAlgorithm,
           rawSamlMessage: rawSamlResponse,
           signingCert: metadata.init.getX509Certificate('signing'),
-        })
+        }),
       };
     }
     return {
       id,
-      context: utility.base64Encode(rawSamlResponse)
+      context: utility.base64Encode(rawSamlResponse),
     };
   }
   throw new Error('Missing declaration of metadata');
@@ -289,7 +289,7 @@ const postBinding = {
   base64LoginRequest,
   base64LoginResponse,
   base64LogoutRequest,
-  base64LogoutResponse
+  base64LogoutResponse,
 };
 
 export default postBinding;

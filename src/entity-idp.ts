@@ -10,11 +10,12 @@ import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
+import * as xml from 'xml';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
-const xml = require('xml');
+
 
 /*
  * @desc interface function
@@ -54,9 +55,9 @@ export class IdentityProvider extends Entity {
     let entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
     // build attribute part
     if (idpSetting.loginResponseTemplate) {
-      if(isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
+      if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
         let replacement = {
-          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes)
+          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes),
         };
         entitySetting.loginResponseTemplate = libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement);
       } else {
@@ -75,16 +76,16 @@ export class IdentityProvider extends Entity {
   */
   public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
-    if (protocol == namespace.binding.post) {
+    if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
-        sp: sp
+        sp,
       }, user, customTagReplacement);
       // xmlenc is using async process
       return {
         ...context,
         entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
-        type: 'SAMLResponse'
+        type: 'SAMLResponse',
       };
 
     } else {
@@ -102,17 +103,17 @@ export class IdentityProvider extends Entity {
     return this.abstractBindingParser({
       parserFormat: ['AuthnContextClassRef', 'Issuer', {
         localName: 'Signature',
-        extractEntireBody: true
+        extractEntireBody: true,
       }, {
           localName: 'AuthnRequest',
-          attributes: ['ID']
+          attributes: ['ID'],
         }, {
           localName: 'NameIDPolicy',
-          attributes: ['Format', 'AllowCreate']
+          attributes: ['Format', 'AllowCreate'],
         }],
       checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
-      type: 'login'
+      type: 'login',
     }, binding, req, sp.entityMeta);
   };
 }

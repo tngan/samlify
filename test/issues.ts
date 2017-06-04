@@ -35,39 +35,39 @@ test('#31 query param for sso/slo returns error', t => {
 (() => {
   const spcfg = {
     entityID: 'sp.example.com',
-    nameIDFormat: ["urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"],
+    nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
     assertionConsumerService: [{
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
       Location: 'sp.example.com/acs',
     }, {
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
       Location: 'sp.example.com/acs',
     }],
     singleLogoutService: [{
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
       Location: 'sp.example.com/slo',
     }, {
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
       Location: 'sp.example.com/slo',
-    }]
+    }],
   };
   const idpcfg = {
     entityID: 'idp.example.com',
-    nameIDFormat: ["urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"],
+    nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
     singleSignOnService: [{
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
       Location: 'idp.example.com/sso',
     }, {
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
       Location: 'idp.example.com/sso',
     }],
     singleLogoutService: [{
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
       Location: 'idp.example.com/sso/slo',
     }, {
-      Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
       Location: 'idp.example.com/sso/slo',
-    }]
+    }],
   };
   const idp = identityProvider(idpcfg);
   const sp = serviceProvider(spcfg);
@@ -80,23 +80,23 @@ test('#31 query param for sso/slo returns error', t => {
 
   test('#33 sp metadata acs index should be increased by 1', t => {
     t.is(acs.length, 2);
-    t.is(acs[0].index, "0");
-    t.is(acs[1].index, "1");
+    t.is(acs[0].index, '0');
+    t.is(acs[1].index, '1');
   });
   test('#33 sp metadata slo index should be increased by 1', t => {
     t.is(spslo.length, 2);
-    t.is(spslo[0].index, "0");
-    t.is(spslo[1].index, "1");
+    t.is(spslo[0].index, '0');
+    t.is(spslo[1].index, '1');
   });
   test('#33 idp metadata sso index should be increased by 1', t => {
     t.is(sso.length, 2);
-    t.is(sso[0].index, "0");
-    t.is(sso[1].index, "1");
+    t.is(sso[0].index, '0');
+    t.is(sso[1].index, '1');
   });
   test('#33 idp metadata slo index should be increased by 1', t => {
     t.is(idpslo.length, 2);
-    t.is(idpslo[0].index, "0");
-    t.is(idpslo[1].index, "1");
+    t.is(idpslo[0].index, '0');
+    t.is(idpslo[1].index, '1');
   });
 
 })();

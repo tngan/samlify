@@ -71,7 +71,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any> {
         ID: id,
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -79,13 +79,13 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         NameIDFormat: namespace.format[spSetting.loginNameIDFormat] || namespace.format.emailAddress,
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.redirect),
         EntityID: metadata.sp.getEntityID(),
-        AllowCreate: spSetting.allowCreate
+        AllowCreate: spSetting.allowCreate,
       });
     }
     return {
       id,
       context: base + buildRedirectURL(urlParams.samlRequest, metadata.sp.isAuthnRequestSigned(), rawSamlRequest, spSetting),
-    }
+    };
   }
   throw new Error('Missing declaration of metadata');
 }
@@ -110,7 +110,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = initSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, <any>{
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, <any> {
         ID: id,
         Destination: base,
         EntityID: metadata.init.getEntityID(),
@@ -118,13 +118,13 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
         IssueInstant: new Date().toISOString(),
         NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
         NameID: user.logoutNameID,
-        SessionIndex: user.sessionIndex
+        SessionIndex: user.sessionIndex,
       });
     }
     return {
       id,
       context: base + buildRedirectURL(urlParams.logoutRequest, entity.target.entitySetting.wantLogoutRequestSigned, rawSamlRequest, initSetting, relayState),
-    }
+    };
   }
   throw new Error('Missing declaration of metadata');
 }
@@ -139,7 +139,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
   let context: string = '';
   let metadata = {
     init: entity.init.entityMeta,
-    target: entity.target.entityMeta
+    target: entity.target.entityMeta,
   };
   let initSetting = entity.init.entitySetting;
   if (metadata && metadata.init && metadata.target) {
@@ -158,7 +158,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         Issuer: metadata.init.getEntityID(),
         EntityID: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        StatusCode: namespace.statusCode.success
+        StatusCode: namespace.statusCode.success,
       };
       if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
         tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
@@ -167,8 +167,8 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
     }
     return {
       id,
-      context: base + buildRedirectURL(urlParams.logoutResponse, entity.target.entitySetting.wantLogoutResponseSigned, rawSamlResponse, initSetting, relayState)
-    }
+      context: base + buildRedirectURL(urlParams.logoutResponse, entity.target.entitySetting.wantLogoutResponseSigned, rawSamlResponse, initSetting, relayState),
+    };
   }
   throw new Error('Missing declaration of metadata');
 }
@@ -176,7 +176,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
 const redirectBinding = {
   loginRequestRedirectURL,
   logoutRequestRedirectURL,
-  logoutResponseRedirectURL
+  logoutResponseRedirectURL,
 };
 
 export default redirectBinding;

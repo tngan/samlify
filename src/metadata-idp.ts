@@ -8,8 +8,7 @@ import { namespace } from './urn';
 import libsaml from './libsaml';
 import { isString, isUndefined } from 'lodash';
 import { isNonEmptyArray } from './utility';
-
-const xml = require('xml');
+import * as xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
 
@@ -37,14 +36,14 @@ export class IdpMetadata extends Metadata {
         wantAuthnRequestsSigned = false,
         nameIDFormat = [],
         singleSignOnService = [],
-        singleLogoutService = []
+        singleLogoutService = [],
       } = meta;
 
-      let IDPSSODescriptor: Array<any> = [{
+      let IDPSSODescriptor: any[] = [{
         _attr: {
           WantAuthnRequestsSigned: String(wantAuthnRequestsSigned),
-          protocolSupportEnumeration: namespace.names.protocol
-        }
+          protocolSupportEnumeration: namespace.names.protocol,
+        },
       }];
 
       if (signingCert) {
@@ -69,7 +68,7 @@ export class IdpMetadata extends Metadata {
           let attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
-            LOcation: a.Location
+            LOcation: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
@@ -102,18 +101,18 @@ export class IdpMetadata extends Metadata {
             'xmlns:md': namespace.names.metadata,
             'xmlns:assertion': namespace.names.assertion,
             'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
-            entityID
-          }
-        }, { IDPSSODescriptor }]
+            entityID,
+          },
+        }, { IDPSSODescriptor }],
       }]);
     }
 
     super(meta, [{
       localName: 'IDPSSODescriptor',
-      attributes: ['WantAuthnRequestsSigned']
+      attributes: ['WantAuthnRequestsSigned'],
     }, {
       localName: { tag: 'SingleSignOnService', key: 'Binding' },
-      attributeTag: 'Location'
+      attributeTag: 'Location',
     }]);
 
   }

@@ -143,7 +143,7 @@ const utility = {
   getPublicKeyPemFromCertificate,
   readPrivateKey,
   convertToString,
-  isNonEmptyArray
+  isNonEmptyArray,
 };
 
 export default utility;

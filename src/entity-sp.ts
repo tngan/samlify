@@ -9,11 +9,11 @@ import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
+import * as xml from 'xml';
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
-const xml = require('xml');
 
 /*
  * @desc interface function
@@ -36,7 +36,7 @@ export class ServiceProvider extends Entity {
     const entitySetting = Object.assign({
       authnRequestsSigned: false,
       wantAssertionsSigned: false,
-      wantMessageSigned: false
+      wantMessageSigned: false,
     }, spSetting);
     super(entitySetting, 'sp');
   }
@@ -57,9 +57,9 @@ export class ServiceProvider extends Entity {
         ...context,
         relayState: this.entitySetting.relayState,
         entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
-        type: 'SAMLRequest'
+        type: 'SAMLRequest',
       };
-    } 
+    }
     // Will support artifact in the next release
     throw new Error('The binding is not support');
   }
@@ -73,25 +73,25 @@ export class ServiceProvider extends Entity {
     return this.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',
-        attributes: ['Value']
+        attributes: ['Value'],
       }, {
         localName: 'Conditions',
-        attributes: ['NotBefore', 'NotOnOrAfter']
+        attributes: ['NotBefore', 'NotOnOrAfter'],
       }, 'Audience', 'Issuer', 'NameID', {
         localName: 'Signature',
-        extractEntireBody: true
+        extractEntireBody: true,
       }, {
         localName: {
           tag: 'Attribute',
-          key: 'Name'
+          key: 'Name',
         },
-        valueTag: 'AttributeValue'
+        valueTag: 'AttributeValue',
       }],
       from: idp,
       checkSiganture: true, // saml response must have signature
       supportBindings: ['post'],
       parserType: 'SAMLResponse',
-      type: 'login'
+      type: 'login',
     }, binding, req, idp.entityMeta);
   };
 

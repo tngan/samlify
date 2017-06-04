@@ -29,7 +29,7 @@ const defaultEntitySetting = {
   dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
   keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_1_5,
   generateID: (): string => ('_' + uuid.v4()),
-  relayState: ''
+  relayState: '',
 };
 
 export interface BindingContext {
@@ -46,6 +46,12 @@ export interface PostRequestInfo extends BindingContext {
 export interface PostResponseInfo extends BindingContext {
   entityEndpoint: string;
   type: string;
+}
+
+export interface ParseResult {
+  samlContent: string;
+  extract: any;
+  sigAlg?: string;
 }
 
 export default class Entity {
@@ -109,14 +115,14 @@ export default class Entity {
   * @param  {string} metaField is a string indicating the same field specified in metadata
   * @return {boolean} True/False
   */
-  verifyFields(field: string | Array<string>, metaField: string): boolean {
+  verifyFields(field: string | string[], metaField: string): boolean {
     if (isString(field)) {
       return field === metaField;
     }
     if (isNonEmptyArray(field)) {
       let res = true;
       field.forEach(f => {
-        if (f != metaField) {
+        if (f !== metaField) {
           res = false;
           return;
         }
@@ -156,7 +162,7 @@ export default class Entity {
     const here = this;
     const entityMeta: any = this.entityMeta;
     let options = opts || {};
-    let parseResult = {};
+    let parseResult: ParseResult;
     let supportBindings = [nsBinding.redirect, nsBinding.post];
     let { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
 
@@ -172,7 +178,7 @@ export default class Entity {
           supportBindings = [];
         }
       }
-    } else if (type == 'logout') {
+    } else if (type === 'logout') {
       let singleLogoutServices = entityMeta.getSingleLogoutService(binding);
       if (!singleLogoutServices) {
         supportBindings = [];
@@ -192,11 +198,11 @@ export default class Entity {
       if (checkSignature) {
         let { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
-          if (libsaml.verifyMessageSignature(targetEntityMetadata, <string>req._parsedOriginalUrl.query.split('&Signature=')[0], new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
+          if (libsaml.verifyMessageSignature(targetEntityMetadata, <string> req._parsedOriginalUrl.query.split('&Signature=')[0], new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
             parseResult = {
               samlContent: xmlString,
               sigAlg: decodeURIComponent(sigAlg),
-              extract: libsaml.extractor(xmlString, fields)
+              extract: libsaml.extractor(xmlString, fields),
             };
           } else {
             // Fail to verify message signature
@@ -209,21 +215,21 @@ export default class Entity {
       } else {
         parseResult = {
           samlContent: xmlString,
-          extract: libsaml.extractor(xmlString, fields)
+          extract: libsaml.extractor(xmlString, fields),
         };
       }
       return parseResult;
     }
 
-    if (binding == bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
+    if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
       let decodedRequest = String(base64Decode(encodedRequest));
       let issuer = targetEntityMetadata.getEntityID();
       const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
-      let parseResult = {
+      parseResult = {
         samlContent: res,
-        extract: libsaml.extractor(res, fields)
+        extract: libsaml.extractor(res, fields),
       };
       if (checkSignature) {
         // verify the signatures (for both assertion/message)
@@ -232,7 +238,7 @@ export default class Entity {
         [...parseResult.extract.signature].reverse().forEach(s => {
           if (!libsaml.verifySignature(res, parseResult.extract.signature, {
             cert: targetEntityMetadata,
-            signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm
+            signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm,
           })) {
             throw new Error('incorrect signature');
           }
@@ -261,7 +267,7 @@ export default class Entity {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
-        target: targetEntity
+        target: targetEntity,
       }, customTagReplacement, relayState);
     }
     if (binding === wording.binding.post) {
@@ -271,7 +277,7 @@ export default class Entity {
         ...context,
         relayState,
         entityEndpoint,
-        type: 'SAMLRequest'
+        type: 'SAMLRequest',
       };
     }
     // Will support artifact in the next release
@@ -297,12 +303,12 @@ export default class Entity {
       const context = postBinding.base64LogoutResponse(requestInfo, {
           init: this,
           target,
-        }, customTagReplacement)
+        }, customTagReplacement);
       return {
         ...context,
         relayState,
         entityEndpoint: target.entityMeta.getSingleLogoutService(binding),
-        type: 'SAMLResponse'
+        type: 'SAMLResponse',
       };
     }
     throw new Error('This binding is not support');
@@ -318,14 +324,14 @@ export default class Entity {
     return this.abstractBindingParser({
       parserFormat: ['NameID', 'Issuer', {
         localName: 'Signature',
-        extractEntireBody: true
+        extractEntireBody: true,
       }, {
           localName: 'LogoutRequest',
-          attributes: ['ID', 'Destination']
+          attributes: ['ID', 'Destination'],
         }],
       checkSignature: this.entitySetting.wantLogoutRequestSigned,
       parserType: 'LogoutRequest',
-      type: 'logout'
+      type: 'logout',
     }, binding, req, targetEntity.entityMeta);
   };
   /**
@@ -339,18 +345,18 @@ export default class Entity {
     return this.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',
-        attributes: ['Value']
+        attributes: ['Value'],
       }, 'Issuer', {
         localName: 'Signature',
-        extractEntireBody: true
+        extractEntireBody: true,
       }, {
         localName: 'LogoutResponse',
-        attributes: ['ID', 'Destination', 'InResponseTo']
+        attributes: ['ID', 'Destination', 'InResponseTo'],
       }],
       checkSignature: this.entitySetting.wantLogoutResponseSigned,
       supportBindings: ['post'],
       parserType: 'LogoutResponse',
-      type: 'logout'
+      type: 'logout',
     }, binding, req, targetEntity.entityMeta);
   }
 }
