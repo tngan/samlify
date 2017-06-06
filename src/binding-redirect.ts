@@ -8,12 +8,22 @@ import libsaml from './libsaml';
 import Entity, { BindingContext } from './entity';
 import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
+import * as url from 'url';
 
 import { wording, namespace } from './urn';
 import { get } from 'lodash';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
+
+export interface BuildRedirectConfig {
+  baseUrl: string;
+  type: string;
+  isSigned: boolean;
+  context: string;
+  entitySetting: any;
+  relayState?: string;
+}
 
 /**
 * @private
@@ -35,19 +45,28 @@ function pvPair(param: string, value: string, first?: boolean): string {
 * @param  {object} entitySetting
 * @return {string}
 */
-function buildRedirectURL(type: string, isSigned: boolean, rawSamlRequest: string, entitySetting: any, relayState: string = ''): string {
+function buildRedirectURL(opts: BuildRedirectConfig) {
+  let {
+    baseUrl,
+    type, 
+    isSigned,
+    context,
+    entitySetting,
+    relayState = ''
+  } = opts;
+  const noParams = url.parse(baseUrl).query.length === 0; 
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
-  let samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(rawSamlRequest)));
+  let samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
   if (relayState !== '') {
     relayState = pvPair(urlParams.relayState, encodeURIComponent(relayState));
   }
   if (isSigned) {
     let sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
     let octetString = samlRequest + sigAlg + relayState;
-    return pvPair(queryParam, octetString, true) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(type + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
+    return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(type + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
   }
-  return pvPair(queryParam, samlRequest + relayState, true);
+  return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
 /**
 * @desc Redirect URL for login request
@@ -84,7 +103,13 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
     }
     return {
       id,
-      context: base + buildRedirectURL(urlParams.samlRequest, metadata.sp.isAuthnRequestSigned(), rawSamlRequest, spSetting),
+      context: buildRedirectURL({
+        context: rawSamlRequest,
+        type: urlParams.samlRequest,
+        isSigned: metadata.sp.isAuthnRequestSigned(),
+        entitySetting: spSetting,
+        baseUrl: base
+      }),
     };
   }
   throw new Error('Missing declaration of metadata');
@@ -123,7 +148,14 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
     }
     return {
       id,
-      context: base + buildRedirectURL(urlParams.logoutRequest, entity.target.entitySetting.wantLogoutRequestSigned, rawSamlRequest, initSetting, relayState),
+      context: buildRedirectURL({
+        context: rawSamlRequest,
+        relayState,
+        type: urlParams.logoutRequest,
+        isSigned: entity.target.entitySetting.wantLogoutRequestSigned,
+        entitySetting: initSetting,
+        baseUrl: base
+      }),
     };
   }
   throw new Error('Missing declaration of metadata');
@@ -167,7 +199,14 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
     }
     return {
       id,
-      context: base + buildRedirectURL(urlParams.logoutResponse, entity.target.entitySetting.wantLogoutResponseSigned, rawSamlResponse, initSetting, relayState),
+      context: buildRedirectURL({
+        baseUrl: base,
+        type: urlParams.logoutResponse,
+        isSigned: entity.target.entitySetting.wantLogoutResponseSigned,
+        context: rawSamlResponse,
+        entitySetting: initSetting,
+        relayState
+      }),
     };
   }
   throw new Error('Missing declaration of metadata');
