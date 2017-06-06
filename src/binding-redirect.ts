@@ -48,13 +48,13 @@ function pvPair(param: string, value: string, first?: boolean): string {
 function buildRedirectURL(opts: BuildRedirectConfig) {
   let {
     baseUrl,
-    type, 
+    type,
     isSigned,
     context,
     entitySetting,
-    relayState = ''
+    relayState = '',
   } = opts;
-  const noParams = url.parse(baseUrl).query.length === 0; 
+  const noParams = url.parse(baseUrl).query.length === 0;
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
   let samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
@@ -108,7 +108,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         type: urlParams.samlRequest,
         isSigned: metadata.sp.isAuthnRequestSigned(),
         entitySetting: spSetting,
-        baseUrl: base
+        baseUrl: base,
       }),
     };
   }
@@ -154,7 +154,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
         type: urlParams.logoutRequest,
         isSigned: entity.target.entitySetting.wantLogoutRequestSigned,
         entitySetting: initSetting,
-        baseUrl: base
+        baseUrl: base,
       }),
     };
   }
@@ -205,7 +205,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         isSigned: entity.target.entitySetting.wantLogoutResponseSigned,
         context: rawSamlResponse,
         entitySetting: initSetting,
-        relayState
+        relayState,
       }),
     };
   }
