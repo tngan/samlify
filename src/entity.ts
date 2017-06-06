@@ -32,6 +32,12 @@ const defaultEntitySetting = {
   relayState: '',
 };
 
+export interface ESamlHttpRequest {
+  query: any;
+  body: any;
+  originalUrlQuery: any;
+}
+
 export interface BindingContext {
   context: string;
   id: string;
@@ -164,7 +170,7 @@ export default class Entity {
   * @param  {Metadata} targetEntityMetadata either IDP metadata or SP metadata
   * @return {ParseResult} parseResult
   */
-  async abstractBindingParser(opts, binding: string, req, targetEntityMetadata) {
+  async abstractBindingParser(opts, binding: string, { query, body, originalUrlQuery }, targetEntityMetadata) {
     const here = this;
     const entityMeta: any = this.entityMeta;
     const options = opts || {};
@@ -194,7 +200,7 @@ export default class Entity {
     }
 
     if (binding === bindDict.redirect && supportBindings.indexOf(nsBinding[binding]) !== -1) {
-      const reqQuery: { SigAlg: string, Signature: string } = req.query;
+      const reqQuery: { SigAlg: string, Signature: string } = query;
       const samlContent = reqQuery[libsaml.getQueryParamByType(parserType)];
 
       if (samlContent === undefined) {
@@ -204,7 +210,7 @@ export default class Entity {
       if (checkSignature) {
         const { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
-          if (libsaml.verifyMessageSignature(targetEntityMetadata, req._parsedOriginalUrl.query.split('&Signature=')[0] as string, new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
+          if (libsaml.verifyMessageSignature(targetEntityMetadata, originalUrlQuery.split('&Signature=')[0], new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
             parseResult = {
               samlContent: xmlString,
               sigAlg: decodeURIComponent(sigAlg),
@@ -229,7 +235,7 @@ export default class Entity {
 
     if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
-      const encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
+      const encodedRequest = body[libsaml.getQueryParamByType(parserType)];
       const decodedRequest = String(base64Decode(encodedRequest));
       const issuer = targetEntityMetadata.getEntityID();
       const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
@@ -265,7 +271,7 @@ export default class Entity {
   /** @desc   Generates the logout request for developers to design their own method
   * @param  {ServiceProvider} sp     object of service provider
   * @param  {string}   binding       protocol binding
-  * @param  {object}   user          current logged user (e.g. req.user)
+  * @param  {object}   user          current logged user (e.g. user)
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
@@ -328,7 +334,7 @@ export default class Entity {
   * @param  {request}   req                      request
   * @return {Promise}
   */
-  parseLogoutRequest(targetEntity, binding, req) {
+  parseLogoutRequest(targetEntity, binding, req: ESamlHttpRequest) {
     return this.abstractBindingParser({
       parserFormat: ['NameID', 'Issuer', {
         localName: 'Signature',
@@ -350,7 +356,7 @@ export default class Entity {
   * @param  {ServiceProvider}   sp               object of service provider
   * @return {Promise}
   */
-  parseLogoutResponse(targetEntity, binding, req) {
+  parseLogoutResponse(targetEntity, binding, req: ESamlHttpRequest) {
     return this.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',

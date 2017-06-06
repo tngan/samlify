@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Declares the actions taken by service provider
 */
-import Entity, { BindingContext, PostRequestInfo } from './entity';
+import Entity, { BindingContext, PostRequestInfo, ESamlHttpRequest } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -72,7 +72,7 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   */
-  public parseLoginResponse(idp, binding, req) {
+  public parseLoginResponse(idp, binding, req: ESamlHttpRequest) {
     return this.abstractBindingParser({
       parserFormat: [{
         localName: 'StatusCode',

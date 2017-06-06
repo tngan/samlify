@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Declares the actions taken by identity provider
 */
-import Entity from './entity';
+import Entity, { ESamlHttpRequest } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -73,7 +73,7 @@ export class IdentityProvider extends Entity {
   * @param  {object}   requestInfo               corresponding request, used to obtain the id
   * @param  {string}   binding                   protocol binding
   * @param  {object}   user                      current logged user (e.g. req.user)
-  * @param  {function} customTagReplacement                 used when developers have their own login response template
+  * @param  {function} customTagReplacement      used when developers have their own login response template
   */
   public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
@@ -101,7 +101,7 @@ export class IdentityProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   */
-  public parseLoginRequest(sp, binding, req) {
+  public parseLoginRequest(sp, binding, req: ESamlHttpRequest) {
     return this.abstractBindingParser({
       parserFormat: ['AuthnContextClassRef', 'Issuer', {
         localName: 'Signature',
