@@ -34,7 +34,7 @@
     "@types/lodash": "^4.14.37",
     "@types/node": "^7.0.22",
     "@types/node-forge": "^0.6.5",
-    "@types/uuid": "^3.0.0",
+    "@types/uuid": "3.0.0",
     "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
