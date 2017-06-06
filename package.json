@@ -51,7 +51,7 @@
     "xpath": "0.0.24"
   },
   "devDependencies": {
-    "ava": "^0.18.1",
+    "ava": "^0.19.1",
     "coveralls": "^2.11.16",
     "nyc": "^11.0.2",
     "tslint": "5.4.2"

@@ -435,47 +435,29 @@ test('getAssertionConsumerService with two bindings', t => {
     }])['slo']), '[{"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect":"https://sp.example.org/sp/slo"},{"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST":"https://sp.example.org/sp/slo"}]');
   });
 
-  test('encrypt assertion test passes', t => {
-    libsaml
-      .encryptAssertion(idp, sp, sampleSignedResponse)
-      .then(res => t.pass())
-      .catch(err => t.fail());
+  test('encrypt assertion test passes', async t => {
+    await t.notThrows(libsaml.encryptAssertion(idp, sp, sampleSignedResponse));
   });
-  test('encrypt assertion response without assertion returns error', t => {
-    libsaml
-      .encryptAssertion(idp, sp, wrongResponse)
-      .then(res => t.fail())
-      .catch(({ message }) => {
-        return message === 'Undefined assertion or invalid syntax' ? t.pass() : t.fail();
-      });
+  test('encrypt assertion response without assertion returns error', async t => {
+    const error = await t.throws(libsaml.encryptAssertion(idp, sp, wrongResponse));
+    t.is(error.message, 'undefined assertion or invalid syntax');
   });
-  test('encrypt assertion with invalid xml syntax returns error', t => {
-    libsaml.encryptAssertion(idp, sp, 'This is not a xml format string')
-      .then(res => t.fail())
-      .catch(({ message }) => {
-        return message === 'Undefined assertion or invalid syntax' ? t.pass() : t.fail();
-      });
+  test('encrypt assertion with invalid xml syntax returns error', async t => {
+    const error = await t.throws(libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
+    t.is(error.message, 'undefined assertion or invalid syntax');
   });
-  test('encrypt assertion with empty string returns error', t => {
-    libsaml.encryptAssertion(idp, sp, '')
-      .then(res => t.fail())
-      .catch(({ message }) => {
-        return message === 'Empty or undefined xml string' ? t.pass() : t.fail();
-      });
+  test('encrypt assertion with empty string returns error', async t => {
+    const error = await t.throws(libsaml.encryptAssertion(idp, sp, ''));
+    t.is(error.message, 'empty or undefined xml string during encryption');
   });
-  test('encrypt assertion with undefined string returns error', t => {
-    libsaml.encryptAssertion(idp, sp, undefined)
-      .then(res => t.fail())
-      .catch(({ message }) => {
-        return message === 'Empty or undefined xml string' ? t.pass() : t.fail();
-      });
+  test('encrypt assertion with undefined string returns error', async t => {
+    const error = await t.throws(libsaml.encryptAssertion(idp, sp, undefined));
+    t.is(error.message, 'empty or undefined xml string during encryption');
   });
 
-  test('decrypt assertion test passes', t => {
+  test('decrypt assertion test passes', async t => {
     const signEncryptSAMLResponse = String(readFileSync('./test/misc/SignEncryptSAMLResponse.xml'));
-    libsaml.decryptAssertion('SAMLResponse', sp, idp, signEncryptSAMLResponse)
-      .then(res => t.pass())
-      .catch(err => t.fail());
+    await t.notThrows(libsaml.decryptAssertion('SAMLResponse', sp, idp, signEncryptSAMLResponse));
   });
   test('building attribute statement with one attribute', t => {
     const attributes = [{
