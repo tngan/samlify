@@ -15,7 +15,7 @@ import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import xmlenc from 'xml-encryption';
+import * as xmlenc from 'xml-encryption';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
