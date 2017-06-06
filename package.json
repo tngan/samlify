@@ -34,14 +34,13 @@
     "@types/lodash": "^4.14.37",
     "@types/node": "^7.0.22",
     "@types/node-forge": "^0.6.5",
-    "@types/uuid": "^2.0.29",
+    "@types/uuid": "^3.0.0",
     "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
-
-    "lodash": "^3.10.0",
-    "node-forge": "^0.6.34",
-    "node-rsa": "^0.2.24",
+    "lodash": "^4.17.4",
+    "node-forge": "^0.7.1",
+    "node-rsa": "^0.4.2",
     "superagent": "^3.5.2",
     "typescript": "^2.1.6",
     "uuid": "^3.0.1",
@@ -49,15 +48,12 @@
     "xml-crypto": "^0.9.0",
     "xml-encryption": "^0.11.0",
     "xmldom": "^0.1.19",
-    "xpath": "0.0.9"
+    "xpath": "0.0.24"
   },
   "devDependencies": {
     "ava": "^0.18.1",
-  
     "coveralls": "^2.11.16",
-   
-    "nyc": "^10.1.2",
-   
+    "nyc": "^11.0.2",
     "tslint": "4.4.2"
   }
 }
