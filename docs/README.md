@@ -1,4 +1,4 @@
-## express-saml2
+## samlify
 
 > High-level API library for Single Sign On with SAML 2.0
 
@@ -15,13 +15,13 @@ We provide a simple interface that's highly configurable.
 To install the stable version
 
 ```bash
-$ npm install express-saml2
+$ npm install samlify
 ```
 
 or
 
 ```bash
-$ yarn add express-saml2
+$ yarn add samlify
 ```
 
 ### Use cases
@@ -40,7 +40,7 @@ Simple solution of Identity Provider is provided in this module for test and edu
 !> **The constructor of entity is also modified to accept a single configuration object instead of putting metadata and advanced configurations in separate arguments.**
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 // configure a service provider
 const sp = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')

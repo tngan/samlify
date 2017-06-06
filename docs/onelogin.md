@@ -58,7 +58,7 @@ $ npm install
 Add a file `sso.js` under `/routes` folder
 ```javascript
 // This is /routes/sso.js
-const saml = require('express-saml2');
+const saml = require('samlify');
 const express = require('express');
 const router = express.Router();
 const ServiceProvider = saml.ServiceProvider;

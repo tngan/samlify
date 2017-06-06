@@ -43,7 +43,7 @@ If IdP doesn't provide the metadata for you, 1) you may ask them 2) import an ob
 Metadata stores the preferences only. To sign a XML document, we still need our **private key** and **signature algorithm**. We can configure our SP here:
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 // Define the setting
 const setting = {
 	privateKeyFile: fs.readFileSync('./key/sp_key.pem'),

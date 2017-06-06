@@ -7,7 +7,7 @@
 Display the Metadata in a specific URL. Everyone has the URL can watch the Metadata. Therefore, the Metadata is distributed publicly. We provide an API to do it once you've configure your SP.
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 const sp = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')
 });

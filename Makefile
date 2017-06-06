@@ -1,4 +1,4 @@
-PROJECT = "express-saml2"
+PROJECT = "samlify"
 
 install: ;@echo "install ${PROJECT}"; \
 				 yarn;

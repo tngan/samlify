@@ -3,7 +3,7 @@
 Let's get started to get the entry point.
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 ```
 
 You should have prepared the metadata of service provider.

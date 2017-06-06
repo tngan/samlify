@@ -3,7 +3,7 @@
 According to the guideline of SAML, our module leaves some security options for developers. If the assertion contains some sensitive information, Identity Provider may want to do encryption. In IdP's construction, add the following settings as follow:
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 const setting = {
   isAssertionEncrypted: true,
   encPrivateKeyFile: fs.readFileSync('./key/idp/encryptKey.pem'),

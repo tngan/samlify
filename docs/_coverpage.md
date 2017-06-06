@@ -1,6 +1,6 @@
 ![logo](_media/lock.png)
 
-# express-saml2 <small>2.0.0 alpha</small>
+# samlify <small>2.0.0</small>
 
 > Node.js SAML2 API
 
@@ -8,8 +8,8 @@
 - Includes Identity and Service Provider
 - Highly configurable
 
-[GitHub](https://github.com/tngan/express-saml2)
-[Get Started](#express-saml2)
+[GitHub](https://github.com/tngan/samlify)
+[Get Started](#samlify)
 
 <!-- background image -->
 ![](_media/bg.jpg)

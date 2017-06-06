@@ -3,7 +3,7 @@
 Developer can design their own request and response template for log-in and log-out respectively. There are optional parameters in setting object.
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 
 // Load the template every time before each request/response is sent
 const sp = saml.ServiceProvider({
@@ -63,7 +63,7 @@ router.get('/spinitsso-redirect', (req, res) => {
 Developers may want to use our default tag replacement `saml.SamlLib.replaceTagsByValue` instead of writing their own `replaceTagFromTemplate`. It replaces all defined tags in the input XML string. This method is supported with version >= 1.1.6.
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 const lib = saml.SamlLib;
 const requestTags = saml.Constants.tags.request;
 // ...

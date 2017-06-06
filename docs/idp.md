@@ -4,7 +4,7 @@ This module provides API of Identity Provider for internal test purpose. Even th
 
 Let's get started with entry point:
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 ```
 
 The following metadata is provided by the target identity provider.

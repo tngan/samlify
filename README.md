@@ -1,4 +1,4 @@
-# express-saml2 &middot; [![Build Status](https://travis-ci.org/tngan/express-saml2.svg?branch=master)](https://travis-ci.org/tngan/express-saml2) [![npm version](https://img.shields.io/npm/v/express-saml2.svg?style=flat)](https://www.npmjs.com/package/express-saml2) [![Join the chat at https://gitter.im/tngan/express-saml2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/express-saml2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Coverage Status](https://coveralls.io/repos/github/tngan/express-saml2/badge.svg?branch=2.0.0-alpha)](https://coveralls.io/github/tngan/express-saml2?branch=2.0.0-alpha)
+# samlify &middot; [![Build Status](https://travis-ci.org/tngan/samlify.svg?branch=master)](https://travis-ci.org/tngan/samlify) [![npm version](https://img.shields.io/npm/v/samlify.svg?style=flat)](https://www.npmjs.com/package/samlify) [![Join the chat at https://gitter.im/tngan/samlify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tngan/samlify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Coverage Status](https://coveralls.io/repos/github/tngan/samlify/badge.svg?branch=2.0.0-alpha)](https://coveralls.io/github/tngan/samlify?branch=2.0.0-alpha)
 
 High-level Node.js API for Single Sign On (SAML 2.0)
 
@@ -13,7 +13,7 @@ This module provides high-level API for scalable Single Sign On (SSO) implementa
 ### Installation
 To install the stable version
 ```bash
-$ npm install express-saml2
+$ npm install samlify
 ```
 
 ### Development
@@ -29,9 +29,9 @@ yarn install
 
 ### Get Started
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 ```
-See full documentation [here](https://github.com/tngan/express-saml2/wiki)
+See full documentation [here](https://github.com/tngan/samlify/wiki)
 
 ### Support algorithms
 Signature algorithms

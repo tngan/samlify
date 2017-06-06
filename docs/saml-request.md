@@ -29,7 +29,7 @@ Different bindings can be used to send this request, we support Redirect-Binding
 It means that the XML is embedded as an URL parameter and redirect to the SSO endpoint of IdP. Because of different length limitation in different browsers, it's required to deflate Request.
 
 ```javascript
-const saml = require('express-saml2');
+const saml = require('samlify');
 const sp = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')
 });

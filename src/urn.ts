@@ -1,7 +1,7 @@
 /**
 * @file urn.ts
 * @author tngan
-* @desc  Includes all keywords need in express-saml2
+* @desc  Includes all keywords need in samlify
 */
 const namespace = {
   binding: {
