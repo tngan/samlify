@@ -26,7 +26,7 @@ interface MetaElement {
 /*
  * @desc interface function
  */
-export default function (meta) {
+export default function(meta) {
   return new SpMetadata(meta);
 }
 
@@ -41,7 +41,7 @@ export class SpMetadata extends Metadata {
   */
   constructor(meta) {
 
-    let isFile = isString(meta) || meta instanceof Buffer;
+    const isFile = isString(meta) || meta instanceof Buffer;
 
     // use object configuation instead of importing metadata file directly
     if (!isFile) {
@@ -54,13 +54,13 @@ export class SpMetadata extends Metadata {
         authnRequestsSigned = false,
         wantAssertionsSigned = false,
         wantMessageSigned = false,
-        messageSignatureConfig = undefined,
+        messageSignatureConfig,
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
       } = meta;
 
-      let descriptors: MetaElement = {
+      const descriptors: MetaElement = {
         KeyDescriptor: [],
         NameIDFormat: [],
         SingleLogoutService: [],
@@ -68,7 +68,7 @@ export class SpMetadata extends Metadata {
         AttributeConsumingService: [],
       };
 
-      let SPSSODescriptor: any[] = [{
+      const SPSSODescriptor: any[] = [{
         _attr: {
           AuthnRequestsSigned: String(authnRequestsSigned),
           WantAssertionsSigned: String(wantAssertionsSigned),
@@ -99,7 +99,7 @@ export class SpMetadata extends Metadata {
       if (isNonEmptyArray(singleLogoutService)) {
         let indexCount = 0;
         singleLogoutService.forEach(a => {
-          let attr: any = {
+          const attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
             Location: a.Location,
@@ -114,7 +114,7 @@ export class SpMetadata extends Metadata {
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
         assertionConsumerService.forEach(a => {
-          let attr: any = {
+          const attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
             Location: a.Location,
@@ -185,7 +185,7 @@ export class SpMetadata extends Metadata {
   public getAssertionConsumerService(binding: string): string | string[] {
     if (isString(binding)) {
       let location;
-      let bindName = namespace.binding[binding];
+      const bindName = namespace.binding[binding];
       if (isNonEmptyArray(this.meta.assertionconsumerservice)) {
         this.meta.assertionconsumerservice.forEach(obj => {
           if (obj.binding === bindName) {

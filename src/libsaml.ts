@@ -15,7 +15,7 @@ import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import xmlenc from 'xml-encryption';
+import * as xmlenc from 'xml-encryption';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -172,7 +172,7 @@ const libSaml = () => {
   * @return {string/null} digest algorithm
   */
   function getDigestMethod(sigAlg: string): string | null {
-    let digestAlg = digestAlgorithms[sigAlg];
+    const digestAlg = digestAlgorithms[sigAlg];
     if (!isUndefined(digestAlg)) {
       return digestAlg;
     }
@@ -187,11 +187,11 @@ const libSaml = () => {
   * @return {string} attribute value
   */
   function getAttribute(xmlDoc, localName: string, attribute: string): string {
-    let xpathStr = createXPath({
+    const xpathStr = createXPath({
       name: localName,
       attr: attribute,
     });
-    let selection = select(xpathStr, xmlDoc);
+    const selection = select(xpathStr, xmlDoc);
 
     if (selection.length !== 1) {
       return undefined;
@@ -208,15 +208,15 @@ const libSaml = () => {
   * @return {string/array}
   */
   function getAttributes(xmlDoc, localName: string, attributes: string[]) {
-    let xpathStr = createXPath(localName);
-    let selection = select(xpathStr, xmlDoc);
-    let data = [];
+    const xpathStr = createXPath(localName);
+    const selection = select(xpathStr, xmlDoc);
+    const data = [];
     if (selection.length === 0) {
       return undefined;
     }
     selection.forEach(s => {
-      let dat = {};
-      let doc = new dom().parseFromString(String(s));
+      const dat = {};
+      const doc = new dom().parseFromString(String(s));
       attributes.forEach(attr => {
         dat[attr.toLowerCase()] = getAttribute(doc, localName, attr);
       });
@@ -233,21 +233,21 @@ const libSaml = () => {
   * @param  {string} valueTag         tag of the value
   */
   function getInnerTextWithOuterKey(xmlDoc, localName: string, localNameKey: string, valueTag: string) {
-    let xpathStr = createXPath(localName);
-    let selection = select(xpathStr, xmlDoc);
-    let obj = {};
+    const xpathStr = createXPath(localName);
+    const selection = select(xpathStr, xmlDoc);
+    const obj = {};
 
     selection.forEach(_s => {
-      let xd = new dom().parseFromString(_s.toString());
-      let key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
-      let value = select("//*[local-name(.)='" + valueTag + "']/text()", xd);
+      const xd = new dom().parseFromString(_s.toString());
+      const key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
+      const value = select("//*[local-name(.)='" + valueTag + "']/text()", xd);
       let res;
 
       if (key && key.length === 1 && utility.isNonEmptyArray(value)) {
         if (value.length === 1) {
           res = value[0].nodeValue.toString();
         } else {
-          let dat = [];
+          const dat = [];
           value.forEach(v => dat.push(String(v.nodeValue)));
           res = dat;
         }
@@ -266,17 +266,17 @@ const libSaml = () => {
   * @param  {string} attributeTag         tag of the attribute
   */
   function getAttributeKey(xmlDoc, localName: string, localNameKey: string, attributeTag: string) {
-    let xpathStr = createXPath(localName);
-    let selection = select(xpathStr, xmlDoc);
-    let data = [];
+    const xpathStr = createXPath(localName);
+    const selection = select(xpathStr, xmlDoc);
+    const data = [];
 
     selection.forEach(_s => {
-      let xd = new dom().parseFromString(_s.toString());
-      let key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
-      let value = select("//*[local-name(.)='" + localName + "']/@" + attributeTag, xd);
+      const xd = new dom().parseFromString(_s.toString());
+      const key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
+      const value = select("//*[local-name(.)='" + localName + "']/@" + attributeTag, xd);
 
       if (value && value.length === 1 && key && key.length === 1) {
-        let obj = {};
+        const obj = {};
         obj[key[0].nodeValue.toString()] = value[0].nodeValue.toString();
         data.push(obj);
       } else {
@@ -294,12 +294,12 @@ const libSaml = () => {
   * @return {string/array}
   */
   function getEntireBody(xmlDoc, localName: string, isOutputString?: boolean) {
-    let xpathStr = createXPath(localName);
-    let selection = select(xpathStr, xmlDoc);
+    const xpathStr = createXPath(localName);
+    const selection = select(xpathStr, xmlDoc);
     if (selection.length === 0) {
       return undefined;
     }
-    let data = [];
+    const data = [];
     selection.forEach(_s => {
       data.push(utility.convertToString(_s, isOutputString !== false));
     });
@@ -313,17 +313,18 @@ const libSaml = () => {
   * @return {string/array} value
   */
   function getInnerText(xmlDoc, localName: string) {
-    let xpathStr = createXPath(localName, true);
-    let selection = select(xpathStr, xmlDoc);
+    const xpathStr = createXPath(localName, true);
+    const selection = select(xpathStr, xmlDoc);
     if (selection.length === 0) {
       return undefined;
     }
-    let data = [];
+    const data = [];
     selection.forEach(_s => {
       data.push(_s.nodeValue.toString());
     });
     return data.length === 1 ? data[0] : data;
   }
+
   /**
   * @public
   * @desc Create XPath
@@ -337,6 +338,7 @@ const libSaml = () => {
     }
     return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
   }
+
   /**
    * @private
    * @desc Tag normalization
@@ -345,7 +347,7 @@ const libSaml = () => {
    * @return {string}
    */
   function tagging(prefix: string, content: string): string {
-    let camelContent = camel(content);
+    const camelContent = camel(content);
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
@@ -393,7 +395,7 @@ const libSaml = () => {
     */
     constructSAMLSignature(opts: SignatureConstructor) {
       const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true, messageSignatureConfig } = opts;
-      let sig = new SignedXml();
+      const sig = new SignedXml();
       // Add assertion sections as reference
       if (referenceTagXPath && referenceTagXPath !== '') {
         sig.addReference(referenceTagXPath, null, getDigestMethod(signatureAlgorithm));
@@ -416,8 +418,8 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifySignature(xml: string, signature, opts: SignatureVerifierOptions) {
-      let signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA1;
-      let sig = new SignedXml();
+      const signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA1;
+      const sig = new SignedXml();
       sig.signatureAlgorithm = signatureAlgorithm;
       // Add assertion sections as reference
       if (opts.keyFile) {
@@ -439,18 +441,18 @@ const libSaml = () => {
     * @param  {object} fields
     */
     extractor(xmlString: string, fields) {
-      let doc = new dom().parseFromString(xmlString);
-      let meta = {};
+      const doc = new dom().parseFromString(xmlString);
+      const meta = {};
       fields.forEach(field => {
         let objKey;
         let res;
         if (isString(field)) {
           meta[field.toLowerCase()] = getInnerText(doc, field);
         } else if (typeof field === 'object') {
-          let localName = field.localName;
-          let extractEntireBody = field.extractEntireBody === true;
-          let attributes = field.attributes || [];
-          let customKey = field.customKey || '';
+          const localName = field.localName;
+          const extractEntireBody = field.extractEntireBody === true;
+          const attributes = field.attributes || [];
+          const customKey = field.customKey || '';
 
           if (isString(localName)) {
             objKey = localName;
@@ -474,7 +476,7 @@ const libSaml = () => {
           meta[customKey === '' ? objKey.toLowerCase() : customKey] = res;
         }
       });
-      return <ExtractorResult> meta;
+      return meta as ExtractorResult;
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
@@ -510,10 +512,10 @@ const libSaml = () => {
     constructMessageSignature(octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
-      let decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
+      const decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
         signingScheme: getSigningScheme(signingAlgorithm),
       });
-      let signature = decryptedKey.sign(octetString);
+      const signature = decryptedKey.sign(octetString);
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
     },
@@ -526,7 +528,7 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifyMessageSignature(metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
-      let key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUse.signing)), {
+      const key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUse.signing)), {
         signingScheme: getSigningScheme(verifyAlgorithm),
       });
       return key.verify(new Buffer(octetString), signature);
@@ -555,12 +557,12 @@ const libSaml = () => {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
         if (entireXML) {
-          let sourceEntitySetting = sourceEntity.entitySetting;
-          let targetEntitySetting = targetEntity.entitySetting;
-          let sourceEntityMetadata = sourceEntity.entityMeta;
-          let targetEntityMetadata = targetEntity.entityMeta;
-          let assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
-          let assertion = !isUndefined(assertionNode) ? utility.parseString(assertionNode.toString()) : '';
+          const sourceEntitySetting = sourceEntity.entitySetting;
+          const targetEntitySetting = targetEntity.entitySetting;
+          const sourceEntityMetadata = sourceEntity.entityMeta;
+          const targetEntityMetadata = targetEntity.entityMeta;
+          const assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
+          const assertion = !isUndefined(assertionNode) ? utility.parseString(assertionNode.toString()) : '';
 
           if (assertion === '') {
             return reject(new Error('undefined assertion or invalid syntax'));
@@ -604,10 +606,10 @@ const libSaml = () => {
         if (entireXML) {
           // Perform encryption depends on the setting of where the message is sent, default is false
           if (type === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-            let hereSetting = here.entitySetting;
-            let parseEntireXML = new dom().parseFromString(String(entireXML));
-            let encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
-            let encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
+            const hereSetting = here.entitySetting;
+            const parseEntireXML = new dom().parseFromString(String(entireXML));
+            const encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
+            const encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
             if (encryptedData === '') {
               return reject(new Error('undefined assertion or invalid syntax'));
             }

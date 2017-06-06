@@ -17,7 +17,7 @@ export interface IdpMetadataInterface extends MetadataInterface {
 /*
  * @desc interface function
  */
-export default function (meta) {
+export default function(meta) {
   return new IdpMetadata(meta);
 }
 
@@ -39,7 +39,7 @@ export class IdpMetadata extends Metadata {
         singleLogoutService = [],
       } = meta;
 
-      let IDPSSODescriptor: any[] = [{
+      const IDPSSODescriptor: any[] = [{
         _attr: {
           WantAuthnRequestsSigned: String(wantAuthnRequestsSigned),
           protocolSupportEnumeration: namespace.names.protocol,
@@ -65,7 +65,7 @@ export class IdpMetadata extends Metadata {
       if (isNonEmptyArray(singleSignOnService)) {
         let indexCount = 0;
         singleSignOnService.forEach(a => {
-          let attr: any = {
+          const attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
             LOcation: a.Location,
@@ -82,7 +82,7 @@ export class IdpMetadata extends Metadata {
       if (isNonEmptyArray(singleLogoutService)) {
         let indexCount = 0;
         singleLogoutService.forEach(a => {
-          let attr: any = {};
+          const attr: any = {};
           if (a.isDefault) {
             attr.isDefault = true;
           }
@@ -116,33 +116,31 @@ export class IdpMetadata extends Metadata {
     }]);
 
   }
+
   /**
   * @desc Get the preference whether it wants a signed request
   * @return {boolean} WantAuthnRequestsSigned
   */
   isWantAuthnRequestsSigned(): boolean {
-    let was = this.meta.idpssodescriptor.wantauthnrequestssigned;
+    const was = this.meta.idpssodescriptor.wantauthnrequestssigned;
     if (isUndefined(was)) {
       return false;
     }
     return String(was) === 'true';
-  };
+  }
+
   /**
   * @desc Get the entity endpoint for single sign on service
   * @param  {string} binding      protocol binding (e.g. redirect, post)
   * @return {string/object} location
   */
-  getSingleSignOnService(binding: string): string | Object {
+  getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
-      let location;
-      let bindName = namespace.binding[binding];
-      this.meta.singlesignonservice.forEach(obj => {
-        if (obj[bindName]) {
-          location = obj[bindName];
-          return;
-        }
-      });
-      return location;
+      const bindName = namespace.binding[binding];
+      const service = this.meta.singlelogoutservice.find(obj => obj[bindName]);
+      if (service) {
+        return service[bindName];
+      }
     }
     return this.meta.singlesignonservice;
   }

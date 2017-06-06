@@ -20,13 +20,12 @@ const binding = wording.binding;
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
 function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
-  let metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
-  let spSetting = entity.sp.entitySetting;
+  const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+  const spSetting = entity.sp.entitySetting;
   let id: string = '';
-  let context: string = '';
 
   if (metadata && metadata.idp && metadata.sp) {
-    let base = metadata.idp.getSingleSignOnService(binding.post);
+    const base = metadata.idp.getSingleSignOnService(binding.post);
     let rawSamlRequest;
     if (metadata.sp.isAuthnRequestSigned() !== metadata.idp.isWantAuthnRequestsSigned()) {
       throw new Error('Conflict of metadata - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
@@ -37,7 +36,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any> {
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
         ID: id,
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -46,7 +45,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
         NameIDFormat: namespace.format[spSetting.logoutNameIDFormat] || namespace.format.emailAddress,
-      });
+      } as any);
     }
     if (metadata.idp.isWantAuthnRequestsSigned()) {
       const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = spSetting;
@@ -78,26 +77,24 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
 async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
-  let idpSetting = entity.idp.entitySetting;
-  let spSetting = entity.sp.entitySetting;
-  let resXml = undefined;
+  const idpSetting = entity.idp.entitySetting;
+  const spSetting = entity.sp.entitySetting;
   let id = idpSetting.generateID();
-  let context: string = '';
-  let metadata = {
+  const metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
   };
   if (metadata && metadata.idp && metadata.sp) {
-    let base = metadata.sp.getAssertionConsumerService(binding.post);
-    let rawSamlResponse = undefined;
-    let nowTime = new Date();
-    let spEntityID = metadata.sp.getEntityID();
-    let fiveMinutesLaterTime = new Date(nowTime.getTime());
+    const base = metadata.sp.getAssertionConsumerService(binding.post);
+    let rawSamlResponse;
+    const nowTime = new Date();
+    const spEntityID = metadata.sp.getEntityID();
+    const fiveMinutesLaterTime = new Date(nowTime.getTime());
     fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
-    let fiveMinutesLater = fiveMinutesLaterTime.toISOString();
-    let now = nowTime.toISOString();
+    const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
+    const now = nowTime.toISOString();
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
-    let tvalue: any = {
+    const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
       Destination: base,
@@ -183,8 +180,8 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
 * @return {string} base64 encoded request
 */
 function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
-  let metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
-  let initSetting = entity.init.entitySetting;
+  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const initSetting = entity.init.entitySetting;
   let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest;
@@ -194,7 +191,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       rawSamlRequest = get<string>(template, 'context');
     } else {
       id = initSetting.generateID();
-      let tvalue: any = {
+      const tvalue: any = {
         ID: id,
         Destination: metadata.target.getSingleLogoutService(binding.redirect),
         Issuer: metadata.init.getEntityID(),
@@ -235,13 +232,12 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
 function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
-  let metadata = {
+  const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,
   };
   let id: string = '';
-  let context: string = '';
-  let initSetting = entity.init.entitySetting;
+  const initSetting = entity.init.entitySetting;
   if (metadata && metadata.init && metadata.target) {
     let rawSamlResponse;
     if (initSetting.logoutResponseTemplate) {
@@ -250,7 +246,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       rawSamlResponse = template.context;
     } else {
       id = initSetting.generateID();
-      let tvalue: any = {
+      const tvalue: any = {
         ID: id,
         Destination: metadata.target.getAssertionConsumerService(binding.post),
         EntityID: metadata.init.getEntityID(),
