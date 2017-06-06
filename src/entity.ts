@@ -82,6 +82,7 @@ export default class Entity {
         throw new Error('undefined entity type');
     }
   }
+
   /**
   * @desc  getEntityID
   * @return {string} ID of entitiy
@@ -89,6 +90,7 @@ export default class Entity {
   getEntityId(): string {
     return this.entityMeta.getEntityId();
   }
+
   /**
   * @desc  Returns the setting of entity
   * @return {object}
@@ -102,14 +104,16 @@ export default class Entity {
   */
   getMetadata(): string {
     return this.entityMeta.getMetadata();
-  };
+  }
+
   /**
   * @desc  Exports the entity metadata into specified folder
   * @param  {string} exportFile indicates the file name
   */
   exportMetadata(exportFile: string) {
     return this.entityMeta.exportMetadata(exportFile);
-  };
+  }
+
   /** * @desc  Verify fields with the one specified in metadata
   * @param  {string/[string]} field is a string or an array of string indicating the field value in SAML message
   * @param  {string} metaField is a string indicating the same field specified in metadata
@@ -130,7 +134,8 @@ export default class Entity {
       return res;
     }
     return false;
-  };
+  }
+
   /**
   * @desc  Verify time stamp
   * @param  {date} notBefore
@@ -149,7 +154,8 @@ export default class Entity {
       return now < notOnOrAfter;
     }
     return +notBefore <= +now && now < notOnOrAfter;
-  };
+  }
+
   /**
   * @desc  Validate and parse the request/response with different bindings
   * @param  {object} opts is the options for abstraction
@@ -161,25 +167,25 @@ export default class Entity {
   async abstractBindingParser(opts, binding: string, req, targetEntityMetadata) {
     const here = this;
     const entityMeta: any = this.entityMeta;
-    let options = opts || {};
+    const options = opts || {};
     let parseResult: ParseResult;
     let supportBindings = [nsBinding.redirect, nsBinding.post];
-    let { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
+    const { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
 
     if (type === 'login') {
       if (entityMeta.getAssertionConsumerService) {
-        let assertionConsumerService = entityMeta.getAssertionConsumerService(binding);
+        const assertionConsumerService = entityMeta.getAssertionConsumerService(binding);
         if (!assertionConsumerService) {
           supportBindings = [];
         }
       } else if (entityMeta.getSingleSignOnService) {
-        let singleSignOnService = entityMeta.getSingleSignOnService(binding);
+        const singleSignOnService = entityMeta.getSingleSignOnService(binding);
         if (!singleSignOnService) {
           supportBindings = [];
         }
       }
     } else if (type === 'logout') {
-      let singleLogoutServices = entityMeta.getSingleLogoutService(binding);
+      const singleLogoutServices = entityMeta.getSingleLogoutService(binding);
       if (!singleLogoutServices) {
         supportBindings = [];
       }
@@ -188,17 +194,17 @@ export default class Entity {
     }
 
     if (binding === bindDict.redirect && supportBindings.indexOf(nsBinding[binding]) !== -1) {
-      let reqQuery: { SigAlg: string, Signature: string } = req.query;
-      let samlContent = reqQuery[libsaml.getQueryParamByType(parserType)];
+      const reqQuery: { SigAlg: string, Signature: string } = req.query;
+      const samlContent = reqQuery[libsaml.getQueryParamByType(parserType)];
 
       if (samlContent === undefined) {
         throw new Error('Bad request');
       }
-      let xmlString = inflateString(decodeURIComponent(samlContent));
+      const xmlString = inflateString(decodeURIComponent(samlContent));
       if (checkSignature) {
-        let { SigAlg: sigAlg, Signature: signature } = reqQuery;
+        const { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
-          if (libsaml.verifyMessageSignature(targetEntityMetadata, <string> req._parsedOriginalUrl.query.split('&Signature=')[0], new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
+          if (libsaml.verifyMessageSignature(targetEntityMetadata, req._parsedOriginalUrl.query.split('&Signature=')[0] as string, new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
             parseResult = {
               samlContent: xmlString,
               sigAlg: decodeURIComponent(sigAlg),
@@ -223,9 +229,9 @@ export default class Entity {
 
     if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
-      let encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
-      let decodedRequest = String(base64Decode(encodedRequest));
-      let issuer = targetEntityMetadata.getEntityID();
+      const encodedRequest = req.body[libsaml.getQueryParamByType(parserType)];
+      const decodedRequest = String(base64Decode(encodedRequest));
+      const issuer = targetEntityMetadata.getEntityID();
       const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
       parseResult = {
         samlContent: res,
@@ -254,7 +260,7 @@ export default class Entity {
     }
     // Will support artifact in the next release
     throw new Error('this binding is not support');
-  };
+  }
 
   /** @desc   Generates the logout request for developers to design their own method
   * @param  {ServiceProvider} sp     object of service provider
@@ -283,6 +289,7 @@ export default class Entity {
     // Will support artifact in the next release
     throw new Error('The binding is not support');
   }
+
   /**
   * @desc  Generates the logout response for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
@@ -313,6 +320,7 @@ export default class Entity {
     }
     throw new Error('This binding is not support');
   }
+
   /**
   * @desc   Validation of the parsed the URL parameters
   * @param  {IdentityProvider}   idp             object of identity provider
@@ -333,7 +341,8 @@ export default class Entity {
       parserType: 'LogoutRequest',
       type: 'logout',
     }, binding, req, targetEntity.entityMeta);
-  };
+  }
+
   /**
   * @desc   Validation of the parsed the URL parameters
   * @param  {string}   binding                   protocol binding

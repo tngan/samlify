@@ -18,9 +18,10 @@ const metaWord = wording.metadata;
 /*
  * @desc interface function
  */
-export default function (props) {
+export default function(props) {
   return new ServiceProvider(props);
 }
+
 /**
 * @desc Service provider can be configured using either metadata importing or spSetting
 * @param  {object} spSetting
@@ -40,6 +41,7 @@ export class ServiceProvider extends Entity {
     }, spSetting);
     super(entitySetting, 'sp');
   }
+
   /**
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
@@ -63,6 +65,7 @@ export class ServiceProvider extends Entity {
     // Will support artifact in the next release
     throw new Error('The binding is not support');
   }
+
   /**
   * @desc   Validation of the parsed the URL parameters
   * @param  {IdentityProvider}   idp             object of identity provider
@@ -93,6 +96,6 @@ export class ServiceProvider extends Entity {
       parserType: 'SAMLResponse',
       type: 'login',
     }, binding, req, idp.entityMeta);
-  };
+  }
 
 }

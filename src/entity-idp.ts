@@ -20,7 +20,7 @@ const metaWord = wording.metadata;
 /*
  * @desc interface function
  */
-export default function (props) {
+export default function(props) {
   return new IdentityProvider(props);
 }
 
@@ -52,11 +52,11 @@ export class IdentityProvider extends Entity {
   * @param  {string} meta
   */
   constructor(idpSetting) {
-    let entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
     // build attribute part
     if (idpSetting.loginResponseTemplate) {
       if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
-        let replacement = {
+        const replacement = {
           AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes),
         };
         entitySetting.loginResponseTemplate = libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement);
@@ -66,6 +66,7 @@ export class IdentityProvider extends Entity {
     }
     super(entitySetting, 'idp');
   }
+
   /**
   * @desc  Generates the login response for developers to design their own method
   * @param  {ServiceProvider}   sp               object of service provider
@@ -93,6 +94,7 @@ export class IdentityProvider extends Entity {
       throw new Error('This binding is not support');
     }
   }
+
   /**
   * @desc   Validation of the parsed URL parameters
   * @param  {ServiceProvider}   sp               object of service provider
@@ -115,5 +117,5 @@ export class IdentityProvider extends Entity {
       parserType: 'SAMLRequest',
       type: 'login',
     }, binding, req, sp.entityMeta);
-  };
+  }
 }

@@ -46,24 +46,24 @@ function pvPair(param: string, value: string, first?: boolean): string {
 * @return {string}
 */
 function buildRedirectURL(opts: BuildRedirectConfig) {
-  let {
+  const {
     baseUrl,
     type,
     isSigned,
     context,
     entitySetting,
-    relayState = '',
   } = opts;
+  let {relayState = '' } = opts;
   const noParams = url.parse(baseUrl).query.length === 0;
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
-  let samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
+  const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
   if (relayState !== '') {
     relayState = pvPair(urlParams.relayState, encodeURIComponent(relayState));
   }
   if (isSigned) {
-    let sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
-    let octetString = samlRequest + sigAlg + relayState;
+    const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
+    const octetString = samlRequest + sigAlg + relayState;
     return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(type + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
@@ -76,13 +76,12 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
 */
 function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
 
-  let metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
-  let spSetting: any = entity.sp.entitySetting;
+  const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+  const spSetting: any = entity.sp.entitySetting;
   let id: string = '';
-  let context: string = '';
 
   if (metadata && metadata.idp && metadata.sp) {
-    let base = metadata.idp.getSingleSignOnService(binding.redirect);
+    const base = metadata.idp.getSingleSignOnService(binding.redirect);
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
       const info = customTagReplacement(spSetting.logoutRequestTemplate);
@@ -90,7 +89,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, <any> {
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
         ID: id,
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
@@ -99,7 +98,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.redirect),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
-      });
+      } as any);
     }
     return {
       id,
@@ -122,12 +121,11 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 * @return {string} redirect URL
 */
 function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
-  let metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
-  let initSetting = entity.init.entitySetting;
+  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const initSetting = entity.init.entitySetting;
   let id: string = '';
-  let context: string = '';
   if (metadata && metadata.init && metadata.target) {
-    let base = metadata.target.getSingleLogoutService(binding.redirect);
+    const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlRequest: string = '';
     if (initSetting.logoutRequestTemplate) {
       const info = customTagReplacement(initSetting.logoutRequestTemplate);
@@ -135,7 +133,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       rawSamlRequest = get<string>(info, 'context');
     } else {
       id = initSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, <any> {
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, {
         ID: id,
         Destination: base,
         EntityID: metadata.init.getEntityID(),
@@ -144,7 +142,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
         NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
         NameID: user.logoutNameID,
         SessionIndex: user.sessionIndex,
-      });
+      } as any);
     }
     return {
       id,
@@ -168,14 +166,13 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
 */
 function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   let id: string = '';
-  let context: string = '';
-  let metadata = {
+  const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,
   };
-  let initSetting = entity.init.entitySetting;
+  const initSetting = entity.init.entitySetting;
   if (metadata && metadata.init && metadata.target) {
-    let base = metadata.target.getSingleLogoutService(binding.redirect);
+    const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlResponse;
 
     if (initSetting.logoutResponseTemplate) {
@@ -184,7 +181,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
       rawSamlResponse = get<string>(template, 'context');
     } else {
       id = initSetting.generateID();
-      let tvalue: any = {
+      const tvalue: any = {
         ID: id,
         Destination: base,
         Issuer: metadata.init.getEntityID(),
