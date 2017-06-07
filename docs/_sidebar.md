@@ -14,11 +14,12 @@
 - **Advanced**
   - [Introduction](/advance)
   - [Configuration](/configuration)
-  - [Custom Template](/template)
+  - [Attributes & Template](/template)
   - [Helper Functions](/helpers)
   - [Multiple Entities](/multi-entities)
   - [Metadata Distribution](/metadata-distribution)
 - **Examples**
+  - [Gitlab](/gitlab)
   - [OneLogin](/onelogin)
   - [Okta](/okta)
     - [Inbound SAML](/okta-inbound)

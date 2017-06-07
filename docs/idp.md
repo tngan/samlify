@@ -1,7 +1,5 @@
 # Identity Provider
 
-This module provides API of Identity Provider for internal test purpose. Even though the API is released in open source, we still suggest developers to use other 3rd party IdP. No matter you use our IdP solution or not, it's still needed to do configuration in order to apply its preference.
-
 Let's get started with entry point:
 ```javascript
 const saml = require('samlify');
@@ -31,7 +29,7 @@ The following metadata is provided by the target identity provider.
 </EntityDescriptor
 ```
 
-Import the above metadata and get the identity provider ready.
+Import the above metadata and get the identity provider ready. Previously, we only allow user to enter path to file and the module will read for users. Starting from v2, we have relaxed the configuration to accept string, it allows user importing their metadata, key and certificate files from different sources. For examples, read from database, file systems, online resources (public url for metadata) and even in-memory storage.
 
 !> **API is changed since v2**
 
@@ -40,6 +38,6 @@ Import the above metadata and get the identity provider ready.
 const idp = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata/onelogin_metadata_486670.xml')
 });
-// before v2 (not recommended)
-const idp = saml.IdentityProvider('./metadata/onelogin_metadata_486670.xml');
+// before v2 (deprecated)
+// const idp = saml.IdentityProvider('./metadata/onelogin_metadata_486670.xml');
 ```

@@ -1,3 +1,43 @@
+# Attributes in response
+
+?> **Starting from v2, we provide a shortcut for user to construct the attributes section efficiently instead of hard code the attribute information in template string.**
+
+```javascript
+const idp = require('samlify').IdentityProvider({
+  // ...
+  loginResponseTemplate: {
+    context: '<samlp:Response ...'>,
+    attributes: [
+      { name: "mail", valueTag: "user.email", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
+      { name: "name", valueTag: "user.name", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" }
+    ]
+  }
+});
+```
+
+then the attributes part will be included in the template string:
+
+```xml
+<saml:AttributeStatement>
+  <saml:Attribute 
+    Name="mail"
+    NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+    <saml:AttributeValue xsi:type="xs:string">
+      {attrUserEmail}
+    </saml:AttributeValue>
+  </saml:Attribute>
+  <saml:Attribute 
+    Name="name"
+    NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+    <saml:AttributeValue xsi:type="xs:string">
+      {attrUserName}
+    </saml:AttributeValue>
+  </saml:Attribute>
+</saml:AttributeStatement>
+```
+
+the tag name is auto-generated with prefix `attr` and the suffix is formatted as camel case of `valueTag` specified in the config.
+
 # Custom templates
 
 Developer can design their own request and response template for log-in and log-out respectively. There are optional parameters in setting object.
@@ -5,18 +45,12 @@ Developer can design their own request and response template for log-in and log-
 ```javascript
 const saml = require('samlify');
 
-// Load the template every time before each request/response is sent
+// load the template every time before each request/response is sent
 const sp = saml.ServiceProvider({
   //...
-  loginRequestTemplate: fs.readFileSync('./loginResponseTemplate.xml'),
-  metadata: fs.readFileSync('./metadata_sp.xml') 
-});
-
-// or hardcoded it in memory
-const sp = saml.ServiceProvider({
-  //...
-  loginRequestTemplate: '<saml:...>',
-  metadata: fs.readFileSync('./metadata_sp.xml') 
+  loginRequestTemplate: {
+    context: readFileSync('./loginResponseTemplate.xml'),
+  }
 });
 ```
 
@@ -60,48 +94,5 @@ router.get('/spinitsso-redirect', (req, res) => {
   });
 });
 ```
-Developers may want to use our default tag replacement `saml.SamlLib.replaceTagsByValue` instead of writing their own `replaceTagFromTemplate`. It replaces all defined tags in the input XML string. This method is supported with version >= 1.1.6.
 
-```javascript
-const saml = require('samlify');
-const lib = saml.SamlLib;
-const requestTags = saml.Constants.tags.request;
-// ...
-router.get('/spinitsso-redirect', function(req, res) {
-  sp.createLoginRequest(idp, 'redirect', url => {
-    // ...
-    return lib.replaceTagFromTemplate(loginRequestTemplate, requestTags);
-  });
-});
-```
-
-The default tag list includes:
-```javascript
-module.exports.tags = {
-  request: {
-    AllowCreate: '{AllowCreate}',
-    AssertionConsumerServiceURL: '{AssertionConsumerServiceURL}',
-    AuthnContextClassRef: '{AuthnContextClassRef}',
-    AssertionID: '{AssertionID}',
-    Audience: '{Audience}',
-    AuthnStatement: '{AuthnStatement}',
-    AttributeStatement: '{AttributeStatement}',
-    ConditionsNotBefore: '{ConditionsNotBefore}',
-    ConditionsNotOnOrAfter: '{ConditionsNotOnOrAfter}',
-    Destination: '{Destination}',
-    EntityID: '{EntityID}',
-    ID: '{ID}',
-    Issuer: '{Issuer}',
-    IssueInstant: '{IssueInstant}',
-    InResponseTo: '{InResponseTo}',
-    NameID: '{NameID}',
-    NameIDFormat: '{NameIDFormat}',
-    ProtocolBinding: '{ProtocolBinding}',
-    SessionIndex: '{SessionIndex}',
-    SubjectRecipient: '{SubjectRecipient}',
-    SubjectConfirmationDataNotOnOrAfter: '{SubjectConfirmationDataNotOnOrAfter}',
-    StatusCode: '{StatusCode}'
-  },
-  // ...
-};
-```
+!> `replaceTagFromTemplate` must return the object containing `id` (response id) and `context` (string)

@@ -5,4 +5,5 @@
 **Entities**
 
 - [OneLogin](/onelogin)
+- [Gitlab](/gitlab)
 - [Okta](/okta)

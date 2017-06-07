@@ -11,14 +11,14 @@ The configuration for the use case receiving signed SAML Response is very simple
 Currently, we support the following algorithms:
 
 **Signature algorithms**
-* http://www.w3.org/2000/09/xmldsig#rsa-sha1 (Default in v1)
-* http://www.w3.org/2001/04/xmldsig-more#rsa-sha256 (Default in v2)
+* http://www.w3.org/2000/09/xmldsig#rsa-sha1 (Default)
+* http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
 * http://www.w3.org/2001/04/xmldsig-more#rsa-sha512
 * http://www.w3.org/2000/09/xmldsig#hmac-sha1
 
 **Hashing Algorithms**
-* http://www.w3.org/2000/09/xmldsig#sha1 (Default in v1)
-* http://www.w3.org/2001/04/xmlenc#sha256 (Default in v2)
+* http://www.w3.org/2000/09/xmldsig#sha1 (Default)
+* http://www.w3.org/2001/04/xmlenc#sha256
 * http://www.w3.org/2001/04/xmlenc#sha512
 
 **Canonicalization and Transformation Algorithms**
@@ -27,3 +27,92 @@ Currently, we support the following algorithms:
 * http://www.w3.org/2000/09/xmldsig#enveloped-signature
 
 Credits to [yaronn/xml-crypto](https://github.com/yaronn/xml-crypto).
+
+!> SAML Response must be signed if you use our API for creating identity providers.
+
+We recommend user to accept signed response in their service provider. Therefore, our identity provider is RECOMMENDED to sign the response in order to maintain the confidentiality and message integrity [Section 4.1.3.5](http://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf).
+
+There are different examples of signing scheme supported in samlify.
+
++ **Unsigned message, Signed assertion (wo/ encryption)**
+
+To guarantee the setting in between idp-sp pair is synchronized, determination of assertion signature depends on the sp setting. Set `WantAssertionsSigned` to true in corresponding sp's metadata or `wantAssertionsSigned` in constructor if metadata is not set.
+
+```javascript
+const idp = IdentityProvider({
+  // ...
+  metadata: readFileSync('./idp-metatadata.xml'),
+  privateKeyFile: readFileSync('./mysecret.pem'),
+  privateKeyFilePass: 'zzz', // if has
+  // must have if metadata is not provided
+  // signingCertFile: readFileSync('./signing.cer') 
+});
+```
+
+The certificate of identity provider will be included in its metadata, or specify in constructor as `signingCertFile`.
+
++ **Unsigned message, Signed & Encrypted assertion**
+
+SP's preparation is same as the first case. For encrpytion part, identity provider encrypts the assertion with sp's certificate (public key) and sp can decrypt the response using sp's private key.
+
+IdP controls whether the response is encrypted or not.
+
+```javascript
+// create in sp side, private key for decryption is owned by sp only
+
+const sp = ServiceProvider({
+  // ...
+  metadata: readFileSync('./sp-metadata.xml'),
+  encPrivateKeyFile: fs.readFileSync('./encryptKey.pem'),
+  encPrivateKeyFilePass: 'yyy',
+  // must have if metadata is not provided
+  // signingCertFile: readFileSync('./signing.cer') 
+  // encryptCertFile: readFileSync('./encrypt.cer')
+});
+```
+
+```javascript
+// create in idp side
+
+const sp = ServiceProvider({
+  // ...
+  metadata: readFileSync('./sp-metadata.xml'),
+});
+
+const idp = IdentityProvider({
+  // ...
+  isAssertionEncrypted: true,
+  metadata: readFileSync('./idp-metatadata.xml'),
+  privateKeyFile: readFileSync('./mysecret.pem'),
+  privateKeyFilePass: 'xxx', // if has
+  // must have if metadata is not provided
+  // signingCertFile: readFileSync('./signing.cer') 
+});
+```
+
++ **Signed message, Unsigned assertion (w/wo encryption)**
+
+There are two new properties added into the constructor method for idp starting from v2. `wantMessageSigned` and `messageSignatureConfig` are used to enrich our signature scheme whereas `messageSignatureConfig` is same as the configuration in [xml-crypto](https://
+github.com/yaronn/xml-crypto#examples).
+
+```javascript
+const idp = IdentityProvider({
+  // ...
+  wantMessageSigned: true,
+  messageSignatureConfig: {
+    prefix: 'ds',
+    location: { 
+      reference: '/samlp:Response/saml:Issuer', 
+      action: 'after'
+    }
+  }
+});
+```
+
++ **Signed message, Signed assertion (wo/ encryption)**
+
+See above signed message and signed assertion setting.
+
++ **Signed message, Signed & Encrypted assertion**
+
+The most complex case, see above all.
