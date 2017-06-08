@@ -12,12 +12,15 @@ This module provides high-level API for scalable Single Sign On (SSO) implementa
 
 ### Installation
 To install the stable version
+
 ```bash
-$ npm install samlify
+$ npm install samlify --save
+$ yarn add samlify
 ```
 
 ### Development
 This project is now developed using TypeScript 2.0, also support Yarn which is a new package manager.
+
 ```bash
 $ npm install typescript -g
 $ yarn
