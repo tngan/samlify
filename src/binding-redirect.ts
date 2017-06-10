@@ -54,7 +54,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     entitySetting,
   } = opts;
   let {relayState = '' } = opts;
-  const noParams = url.parse(baseUrl).query.length === 0;
+  const noParams = (url.parse(baseUrl).query || []).length === 0;
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
   const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
@@ -84,7 +84,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
     const base = metadata.idp.getSingleSignOnService(binding.redirect);
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
-      const info = customTagReplacement(spSetting.logoutRequestTemplate);
+      const info = customTagReplacement(spSetting.loginRequestTemplate);
       id = get<string>(info, 'id');
       rawSamlRequest = get<string>(info, 'context');
     } else {

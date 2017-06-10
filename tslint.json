@@ -8,7 +8,7 @@
       "jsdoc-format": false,
       "max-line-length": false,
       "member-access": false,
-      "no-console": [true, "log"],
+      "no-console": [false],
       "no-consecutive-blank-lines": [true, 3],
       "no-empty-interface": false,
       "no-string-literal": false,

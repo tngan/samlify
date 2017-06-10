@@ -75,7 +75,7 @@ export class IdentityProvider extends Entity {
   * @param  {object}   user                      current logged user (e.g. req.user)
   * @param  {function} customTagReplacement      used when developers have their own login response template
   */
-  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement) {
+  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement?) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
@@ -91,7 +91,7 @@ export class IdentityProvider extends Entity {
 
     } else {
       // Will support artifact in the next release
-      throw new Error('This binding is not support');
+      throw new Error('this binding is not supported');
     }
   }
 

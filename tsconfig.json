@@ -8,6 +8,7 @@
     "sourceMap": true,
     "outDir": "./build",
     "baseUrl": "./",
+    "removeComments": false,
     "paths": {},
     "lib": [
       "dom",

@@ -5,6 +5,7 @@ import { assign } from 'lodash';
 import xpath from 'xpath';
 import { DOMParser as dom } from 'xmldom';
 import { xpath as select } from 'xml-crypto';
+import * as _ from 'lodash';
 
 const {
   IdentityProvider: identityProvider,

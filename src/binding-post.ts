@@ -27,11 +27,8 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.post);
     let rawSamlRequest;
-    if (metadata.sp.isAuthnRequestSigned() !== metadata.idp.isWantAuthnRequestsSigned()) {
-      throw new Error('Conflict of metadata - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
-    }
     if (spSetting.loginRequestTemplate) {
-      const info = customTagReplacement(spSetting.loginRequestTemplate);
+      const info = customTagReplacement(spSetting.loginRequestTemplate.context);
       id = get<string>(info, 'id');
       rawSamlRequest = get<string>(info, 'context');
     } else {
@@ -67,7 +64,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       context: utility.base64Encode(rawSamlRequest),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('missing declaration of metadata');
 }
 /**
 * @desc Generate a base64 encoded login response
@@ -115,7 +112,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate);
+      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
       id = get<string>(template, 'id');
       rawSamlResponse = get<string>(template, 'context');
     } else {
@@ -132,7 +129,6 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
         signingCert: metadata.idp.getX509Certificate('signing'),
         isBase64Output: false,
     };
-
     // SAML response must be signed
     if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
@@ -186,7 +182,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest;
     if (initSetting.loginRequestTemplate) {
-      const template = customTagReplacement(initSetting.loginRequestTemplate);
+      const template = customTagReplacement(initSetting.loginRequestTemplate.context);
       id = get<string>(template, 'id');
       rawSamlRequest = get<string>(template, 'context');
     } else {
@@ -241,7 +237,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
   if (metadata && metadata.init && metadata.target) {
     let rawSamlResponse;
     if (initSetting.logoutResponseTemplate) {
-      const template = customTagReplacement(initSetting.logoutResponseTemplate);
+      const template = customTagReplacement(initSetting.logoutResponseTemplate.context);
       id = template.id;
       rawSamlResponse = template.context;
     } else {

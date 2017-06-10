@@ -48,9 +48,12 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  public createLoginRequest(idp, binding = 'redirect', customTagReplacement): BindingContext | PostRequestInfo {
+  public createLoginRequest(idp, binding = 'redirect', customTagReplacement?): BindingContext | PostRequestInfo {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
+    if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
+      throw new Error('metadata conflict - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
+    }
     if (protocol === nsBinding.redirect) {
       return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
     } else if (protocol === nsBinding.post) {
