@@ -148,7 +148,7 @@ export default class Entity {
   * @param  {date} notOnOrAfter
   * @return {boolean}
   */
-  verifyTime(notBefore: Date, notOnOrAfter: Date): boolean {
+  verifyTime(notBefore?: Date, notOnOrAfter?: Date): boolean {
     const now = new Date();
     if (isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
       return true; // throw exception todo
@@ -265,7 +265,7 @@ export default class Entity {
       return parseResult;
     }
     // Will support artifact in the next release
-    throw new Error('this binding is not support');
+    throw new Error('this binding is not supported');
   }
 
   /** @desc   Generates the logout request for developers to design their own method
@@ -275,12 +275,12 @@ export default class Entity {
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  createLogoutRequest(targetEntity, binding, user, relayState, customTagReplacement): BindingContext | PostRequestInfo {
+  createLogoutRequest(targetEntity, binding, user, relayState = '', customTagReplacement?): BindingContext | PostRequestInfo {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
         target: targetEntity,
-      }, customTagReplacement, relayState);
+      }, relayState, customTagReplacement);
     }
     if (binding === wording.binding.post) {
       const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding);
@@ -304,15 +304,15 @@ export default class Entity {
   * @param  {string} binding                     protocol binding
   * @param  {function} customTagReplacement                 used when developers have their own login response template
   */
-  createLogoutResponse(target, requestInfo, binding, relayState, customTagReplacement): BindingContext {
-    binding = namespace.binding[binding] || namespace.binding.redirect;
-    if (binding === namespace.binding.redirect) {
+  createLogoutResponse(target, requestInfo, binding, relayState = '', customTagReplacement?): BindingContext {
+    const protocol = namespace.binding[binding];
+    if (protocol === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {
         init: this,
         target,
       }, relayState, customTagReplacement);
     }
-    if (binding === namespace.binding.post) {
+    if (protocol === namespace.binding.post) {
       const context = postBinding.base64LogoutResponse(requestInfo, {
           init: this,
           target,
@@ -324,7 +324,7 @@ export default class Entity {
         type: 'SAMLResponse',
       };
     }
-    throw new Error('This binding is not support');
+    throw new Error('this binding is not supported');
   }
 
   /**

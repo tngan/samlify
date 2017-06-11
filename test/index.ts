@@ -512,3 +512,14 @@ test('getAssertionConsumerService with two bindings', t => {
   });
 
 })();
+
+test('verify time', t => {
+  let timeAfter5Mins = new Date();
+  let timeBefore5Mins = new Date();
+  timeBefore5Mins = new Date(timeBefore5Mins.setMinutes(timeBefore5Mins.getMinutes() - 5));
+  timeAfter5Mins = new Date(timeAfter5Mins.setMinutes(timeAfter5Mins.getMinutes() + 5));
+  t.true(sp.verifyTime(timeBefore5Mins, timeAfter5Mins));
+  t.false(sp.verifyTime(undefined, timeBefore5Mins));
+  t.false(sp.verifyTime(timeAfter5Mins));
+  t.true(sp.verifyTime());
+});

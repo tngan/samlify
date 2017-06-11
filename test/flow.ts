@@ -96,9 +96,11 @@ test('signed in sp is not matched with the signed notation in idp with redirect 
 });
 
 test('create login request with redirect binding using custom template', t => {
-  const _sp = serviceProvider({ ...defaultSpConfig, loginRequestTemplate: {
-    context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
-  }});
+  const _sp = serviceProvider({
+    ...defaultSpConfig, loginRequestTemplate: {
+      context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
+    },
+  });
   const { id, context } = _sp.createLoginRequest(idp, 'redirect', template => {
     return {
       id: 'exposed_testing_id',
@@ -109,9 +111,11 @@ test('create login request with redirect binding using custom template', t => {
 });
 
 test('create login request with post binding using custom template', t => {
-  const _sp = serviceProvider({ ...defaultSpConfig, loginRequestTemplate: {
-    context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
-  }});
+  const _sp = serviceProvider({
+    ...defaultSpConfig, loginRequestTemplate: {
+      context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
+    },
+  });
   const { id, context, entityEndpoint, type, relayState } = _sp.createLoginRequest(idp, 'post', template => {
     return {
       id: 'exposed_testing_id',
@@ -133,5 +137,34 @@ test('create login response with undefined binding', async t => {
 
 test('create post login response', async t => {
   const { id, context } = await idp.createLoginResponse(sp, null, 'post', { email: 'user@esaml2.com' });
-  _.isString(id)  && _.isString(context) ? t.pass() : t.fail();
+  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+});
+
+test('create logout request with redirect binding', t => {
+  const { id, context } = sp.createLogoutRequest(idp, 'redirect', { email: 'user@esaml2' });
+  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+});
+
+test('create logout request with post binding', t => {
+  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { email: 'user@esaml2' }) as PostRequestInfo;
+  _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
+});
+
+test('create logout response with undefined binding', t => {
+  try {
+    const { id, context } = idp.createLogoutResponse(sp, {}, 'undefined');
+    t.fail();
+  } catch (e) {
+    t.is(e.message, 'this binding is not supported');
+  }
+});
+
+test('create logout response with redirect binding', t => {
+  const { id, context } = idp.createLogoutResponse(sp, {}, 'redirect');
+  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+});
+
+test('create logout response with post binding', t => {
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutResponse(sp, {}, 'post') as PostRequestInfo;
+  _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLResponse') ? t.pass() : t.fail();
 });
