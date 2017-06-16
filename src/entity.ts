@@ -12,7 +12,7 @@ import IdpMetadata from './metadata-idp';
 import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { isString, isUndefined, isArray } from 'lodash';
+import { isString, isUndefined, isArray, get } from 'lodash';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -33,9 +33,9 @@ const defaultEntitySetting = {
 };
 
 export interface ESamlHttpRequest {
-  query: any;
-  body: any;
-  originalUrlQuery: any;
+  query?: any;
+  body?: any;
+  originalUrlQuery?: any;
 }
 
 export interface BindingContext {
@@ -170,7 +170,8 @@ export default class Entity {
   * @param  {Metadata} targetEntityMetadata either IDP metadata or SP metadata
   * @return {ParseResult} parseResult
   */
-  async abstractBindingParser(opts, binding: string, { query, body, originalUrlQuery }, targetEntityMetadata) {
+  async abstractBindingParser(opts, binding: string, req, targetEntityMetadata) {
+    const { query, body, originalUrlQuery } = req;
     const here = this;
     const entityMeta: any = this.entityMeta;
     const options = opts || {};
@@ -236,9 +237,11 @@ export default class Entity {
     if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       const encodedRequest = body[libsaml.getQueryParamByType(parserType)];
-      const decodedRequest = String(base64Decode(encodedRequest));
+      let res = String(base64Decode(encodedRequest));
       const issuer = targetEntityMetadata.getEntityID();
-      const res = await libsaml.decryptAssertion(parserType, here, from, decodedRequest);
+      if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
+        res = await libsaml.decryptAssertion(here, res);
+      }
       parseResult = {
         samlContent: res,
         extract: libsaml.extractor(res, fields),
@@ -247,16 +250,17 @@ export default class Entity {
         // verify the signatures (for both assertion/message)
         // sigantures[0] is message signature
         // sigantures[1] is assertion signature
-        [...parseResult.extract.signature].reverse().forEach(s => {
-          if (!libsaml.verifySignature(res, parseResult.extract.signature, {
-            cert: targetEntityMetadata,
-            signatureAlgorithm: here.entitySetting.requestSignatureAlgorithm,
-          })) {
+        const signature = get(parseResult, 'extract.signature') || [];
+        [...(isArray(signature) ? signature : [signature])].reverse().forEach((s: string, index: number) => {
+          if (!libsaml.verifySignature(res, {
+            cert: opts.from.entityMeta,
+            signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
+          }, index)) {
             throw new Error('incorrect signature');
           }
           // in order to get the raw xml
           // remove assertion signature because the assertion signature is later than the message signature
-          res.replace(s, '');
+          // res = res.replace(s, '');
         });
       }
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {

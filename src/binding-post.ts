@@ -122,24 +122,29 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
-    const signatureConfig = {
-        privateKey,
-        privateKeyPass,
-        signatureAlgorithm,
-        signingCert: metadata.idp.getX509Certificate('signing'),
-        isBase64Output: false,
+    const config = {
+      privateKey,
+      privateKeyPass,
+      signatureAlgorithm,
+      signingCert: metadata.idp.getX509Certificate('signing'),
+      isBase64Output: false,
     };
+
     // SAML response must be signed
     if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
+
       rawSamlResponse = libsaml.constructSAMLSignature({
-        ...signatureConfig,
+        ...config,
         rawSamlMessage: rawSamlResponse,
-        referenceTagXPath: libsaml.createXPath('Response'),
-        messageSignatureConfig: spSetting.messageSignatureConfig,
+        isMessageSigned: true,
+        signatureConfig: spSetting.signatureConfig || {
+          prefix: 'ds',
+          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
+        },
         /*
           {
             prefix: 'ds',
-            location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
+            location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
           }
         */
       });
@@ -147,17 +152,19 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
 
     if (metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
-        ...signatureConfig,
+        ...config,
         rawSamlMessage: rawSamlResponse,
-        referenceTagXPath: libsaml.createXPath('Assertion'),
+        referenceTagXPath: '/samlp:Response/saml:Assertion', // libsaml.createXPath('Assertion'),
+        signatureConfig: {
+          prefix: 'ds',
+          location: { reference: '/samlp:Response/saml:Assertion/saml:Issuer', action: 'after' },
+        },
       });
     }
 
     if (idpSetting.isAssertionEncrypted) {
-      return Promise.resolve({
-        id,
-        context: await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse),
-      });
+      const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
+      return Promise.resolve({ id, context });
     }
     return Promise.resolve({
       id,

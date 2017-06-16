@@ -54,7 +54,7 @@ export class SpMetadata extends Metadata {
         authnRequestsSigned = false,
         wantAssertionsSigned = false,
         wantMessageSigned = false,
-        messageSignatureConfig,
+        signatureConfig,
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
@@ -76,8 +76,8 @@ export class SpMetadata extends Metadata {
         },
       }];
 
-      if (wantMessageSigned && messageSignatureConfig === undefined) {
-        console.warn('Construct service provider - missing messageSignatureConfig');
+      if (wantMessageSigned && signatureConfig === undefined) {
+        console.warn('Construct service provider - missing signatureConfig');
       }
 
       if (signingCert) {

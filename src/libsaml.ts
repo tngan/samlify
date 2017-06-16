@@ -5,7 +5,6 @@
 */
 
 import { DOMParser } from 'xmldom';
-import * as fs from 'fs';
 import { pki } from 'node-forge';
 import utility from './utility';
 import { tags, algorithms, wording } from './urn';
@@ -14,7 +13,7 @@ import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined } from 'lodash';
 import * as nrsa from 'node-rsa';
-import { SignedXml, FileKeyInfo } from 'xml-crypto';
+import crpyto, { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
 
 const signatureAlgorithms = algorithms.signature;
@@ -27,13 +26,14 @@ const dom = DOMParser;
 
 export interface SignatureConstructor {
   rawSamlMessage: string;
-  referenceTagXPath: string;
+  referenceTagXPath?: string;
   privateKey: string;
   privateKeyPass: string;
   signatureAlgorithm: string;
   signingCert: string | Buffer;
   isBase64Output?: boolean;
-  messageSignatureConfig?: any;
+  signatureConfig?: any;
+  isMessageSigned?: boolean;
 }
 
 interface SignatureVerifierOptions {
@@ -64,11 +64,11 @@ export interface BaseSamlTemplate {
 export interface LoginResponseTemplate extends BaseSamlTemplate {
   attributes?: LoginResponseAttribute[];
 }
-export interface LoginRequestTemplate extends BaseSamlTemplate {}
+export interface LoginRequestTemplate extends BaseSamlTemplate { }
 
-export interface LogoutRequestTemplate extends BaseSamlTemplate {}
+export interface LogoutRequestTemplate extends BaseSamlTemplate { }
 
-export interface LogoutResponseTemplate extends BaseSamlTemplate {}
+export interface LogoutResponseTemplate extends BaseSamlTemplate { }
 
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
@@ -76,14 +76,14 @@ export interface LibSamlInterface {
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
   attributeStatementBuilder: (attributes: LoginResponseAttribute[]) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
-  verifySignature: (xml: string, signature, opts) => boolean;
+  verifySignature: (xml: string, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: string, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
-  decryptAssertion: (type: string, here, from, entireXML: string) => Promise<string>;
+  decryptAssertion: (here, entireXML: string) => Promise<string>;
 
   getSigningScheme: (sigAlg: string) => string | null;
   getDigestMethod: (sigAlg: string) => string | null;
@@ -394,17 +394,43 @@ const libSaml = () => {
     * @return {string} base64 encoded string
     */
     constructSAMLSignature(opts: SignatureConstructor) {
-      const { rawSamlMessage, referenceTagXPath, privateKey, privateKeyPass, signatureAlgorithm, signingCert, isBase64Output = true, messageSignatureConfig } = opts;
+      const {
+        rawSamlMessage,
+        referenceTagXPath,
+        privateKey,
+        privateKeyPass,
+        signatureAlgorithm = signatureAlgorithms.RSA_SHA256,
+        signingCert,
+        signatureConfig,
+        isBase64Output = true,
+        isMessageSigned = false,
+      } = opts;
       const sig = new SignedXml();
       // Add assertion sections as reference
-      if (referenceTagXPath && referenceTagXPath !== '') {
+      if (referenceTagXPath) {
         sig.addReference(referenceTagXPath, null, getDigestMethod(signatureAlgorithm));
+      }
+      if (isMessageSigned) {
+        sig.addReference(
+          // reference to the root node
+          '/*',
+          [
+            'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+            'http://www.w3.org/2001/10/xml-exc-c14n#',
+          ],
+          getDigestMethod(signatureAlgorithm),
+          '',
+          '',
+          '',
+          true,
+        );
       }
       sig.signatureAlgorithm = signatureAlgorithm;
       sig.keyInfoProvider = new this.getKeyInfo(signingCert);
       sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
-      if (messageSignatureConfig) {
-        sig.computeSignature(rawSamlMessage, messageSignatureConfig);
+
+      if (signatureConfig) {
+        sig.computeSignature(rawSamlMessage, signatureConfig);
       } else {
         sig.computeSignature(rawSamlMessage);
       }
@@ -417,8 +443,30 @@ const libSaml = () => {
     * @param  {SignatureVerifierOptions} opts cert declares the X509 certificate
     * @return {boolean} verification result
     */
-    verifySignature(xml: string, signature, opts: SignatureVerifierOptions) {
-      const signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA1;
+    verifySignature(xml: string, opts: SignatureVerifierOptions, index: number = 0) {
+
+      try {
+        const doc = new dom().parseFromString(xml);
+        const selection = select("//*[local-name(.)='Signature']", doc);
+        const signature = new dom().parseFromString(selection[index].toString());
+        const sig = new SignedXml();
+        sig.signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA256;
+        if (opts.keyFile) {
+          sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
+        } else if (opts.cert) {
+          sig.keyInfoProvider = new this.getKeyInfo(opts.cert.getX509Certificate(certUse.signing));
+        } else {
+          throw new Error('Undefined certificate in \'opts\' object');
+        }
+        sig.loadSignature(signature);
+        if (sig.checkSignature(xml)) {
+          return true;
+        }
+        return true;
+      } catch (e) {
+        throw new Error(e);
+      }
+      /*
       const sig = new SignedXml();
       sig.signatureAlgorithm = signatureAlgorithm;
       // Add assertion sections as reference
@@ -429,11 +477,11 @@ const libSaml = () => {
       } else {
         throw new Error('Undefined certificate in \'opts\' object');
       }
-      sig.loadSignature(signature.toString());
-      if (sig.checkSignature(xml)) {
+      sig.loadSignature(node);
+      if (sig.checkSignature(purexml)) {
         return true;
       }
-      throw new Error(sig.validationErrors);
+      */
     },
     /**
     * @desc High-level XML extractor
@@ -540,7 +588,7 @@ const libSaml = () => {
     */
     getKeyInfo(x509Certificate: string) {
       this.getKeyInfo = key => {
-        return '<X509Data><X509Certificate>' + x509Certificate + '</X509Certificate></X509Data>';
+        return '<ds:X509Data><ds:X509Certificate>' + x509Certificate + '</ds:X509Certificate></ds:X509Data>';
       };
       this.getKey = keyInfo => {
         return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
@@ -567,8 +615,10 @@ const libSaml = () => {
           if (assertion === '') {
             return reject(new Error('undefined assertion or invalid syntax'));
           }
+
           // Perform encryption depends on the setting, default is false
           if (sourceEntitySetting.isAssertionEncrypted) {
+
             xmlenc.encrypt(assertion, {
               // use xml-encryption module
               rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
@@ -582,7 +632,7 @@ const libSaml = () => {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              return resolve(utility.base64Encode(entireXML.replace(/<(.*?)Assertion(.*?)>(.*?)<\/(.*?)Assertion>/g, `<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`)));
+              return resolve(utility.base64Encode(entireXML.replace(/<saml:Assertion(.*?)>(.*?)<\/(.*?)Assertion>/g, `<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`)));
             });
           } else {
             return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
@@ -600,36 +650,31 @@ const libSaml = () => {
     * @param {string} entireXML         response in xml string format
     * @return {function} a promise to get back the entire xml with decrypted assertion
     */
-    decryptAssertion(type: string, here, from, entireXML: string) {
+    decryptAssertion(here, entireXML: string) {
       return new Promise<string>((resolve, reject) => {
         // Implement decryption first then check the signature
-        if (entireXML) {
-          // Perform encryption depends on the setting of where the message is sent, default is false
-          if (type === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-            const hereSetting = here.entitySetting;
-            const parseEntireXML = new dom().parseFromString(String(entireXML));
-            const encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
-            const encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
-            if (encryptedData === '') {
-              return reject(new Error('undefined assertion or invalid syntax'));
-            }
-            return xmlenc.decrypt(encryptedData, {
-              key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
-            }, (err, res) => {
-              if (err) {
-                return reject(new Error('exception in decryptAssertion ' + err));
-              }
-              if (!res) {
-                return reject(new Error('undefined encrypted assertion'));
-              }
-              return resolve(String(parseEntireXML).replace(/<(.*?)EncryptedAssertion(.*?)>/g, '').replace(encryptedData, res));
-            });
-          } else {
-            return resolve(entireXML); // No need to do encrpytion
-          }
-        } else {
+        if (!entireXML) {
           return reject(new Error('empty or undefined xml string during decryption'));
         }
+        // Perform encryption depends on the setting of where the message is sent, default is false
+        const hereSetting = here.entitySetting;
+        const parseEntireXML = new dom().parseFromString(String(entireXML));
+        const encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
+        const encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
+        if (encryptedData === '') {
+          return reject(new Error('undefined assertion or invalid syntax'));
+        }
+        return xmlenc.decrypt(encryptedData, {
+          key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
+        }, (err, res) => {
+          if (err) {
+            return reject(new Error('exception in decryptAssertion ' + err));
+          }
+          if (!res) {
+            return reject(new Error('undefined encrypted assertion'));
+          }
+          return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
+        });
       });
     },
   };
