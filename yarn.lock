@@ -3286,9 +3286,9 @@ xdg-basedir@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/xdg-basedir/-/xdg-basedir-3.0.0.tgz#496b2cc109eca8dbacfe2dc72b603c17c5870ad4"
 
-xml-crypto@^0.9.0:
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-0.9.0.tgz#201068ae460e67c2d4a6b6f5ad3056d38076b74d"
+xml-crypto@^0.10.1:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-0.10.1.tgz#f832f74ccf56f24afcae1163a1fcab44d96774a8"
   dependencies:
     xmldom "=0.1.19"
     xpath.js ">=0.0.3"
