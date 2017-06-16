@@ -92,14 +92,14 @@ const idp = IdentityProvider({
 
 + **Signed message, Unsigned assertion (w/wo encryption)**
 
-There are two new properties added into the constructor method for idp starting from v2. `wantMessageSigned` and `messageSignatureConfig` are used to enrich our signature scheme whereas `messageSignatureConfig` is same as the configuration in [xml-crypto](https://
+There are two new properties added into the constructor method for idp starting from v2. `wantMessageSigned` and `signatureConfig` are used to enrich our signature scheme whereas `signatureConfig` is same as the configuration in [xml-crypto](https://
 github.com/yaronn/xml-crypto#examples).
 
 ```javascript
 const idp = IdentityProvider({
   // ...
   wantMessageSigned: true,
-  messageSignatureConfig: {
+  signatureConfig: {
     prefix: 'ds',
     location: { 
       reference: '/samlp:Response/saml:Issuer', 

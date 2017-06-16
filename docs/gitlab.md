@@ -63,7 +63,7 @@ Since there are some required attributes are required and specified in the Gitla
 
 And we need to change our metadata by setting `WantAuthnRequestsSigned` to false since the request from SP is not signed.
 
-Signed response is highly RECOMMENDED (compulsory in Gitlab's implementation), including assertion signature or/and entire message signature, so a new property `messageSignatureConfig` is introduced into constructor of identity provider to specify the location, prefix of messsage signature, this configuration is exactly the same as [xml-crypto](https://github.com/yaronn/xml-crypto#examples).
+Signed response is highly RECOMMENDED (compulsory in Gitlab's implementation), including assertion signature or/and entire message signature, so a new property `signatureConfig` is introduced into constructor of identity provider to specify the location, prefix of messsage signature, this configuration is exactly the same as [xml-crypto](https://github.com/yaronn/xml-crypto#examples).
 
 ```javascript
 const idp = require('samlify').IdentityProvider({
@@ -80,7 +80,7 @@ const idp = require('samlify').IdentityProvider({
       { name: "last_name", valueTag: "user.last", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
     ]
   },
-  messageSignatureConfig: {
+  signatureConfig: {
     prefix: 'ds',
     location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
   }
