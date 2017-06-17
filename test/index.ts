@@ -29,30 +29,33 @@ const _spPrivPem = String(readFileSync(_spKeyFolder + 'privkey.pem'));
 const _spPrivKey = _spKeyFolder + 'nocrypt.pem';
 const _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
 
-// Define an identity provider
-const idp = identityProvider({
+const defaultIdpConfig = {
   privateKey: readFileSync('./test/key/idp/privkey.pem'),
   privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
   isAssertionEncrypted: true,
   encPrivateKey: readFileSync('./test/key/idp/encryptKey.pem'),
   encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
-  metadata: readFileSync('./test/misc/IDPMetadata.xml'),
-});
+  metadata: readFileSync('./test/misc/idpmeta.xml'),
+};
 
-const sp = serviceProvider({
+const defaultSpConfig = {
   privateKey: readFileSync('./test/key/sp/privkey.pem'),
   privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
   isAssertionEncrypted: true, // for logout purpose
   encPrivateKey: readFileSync('./test/key/sp/encryptKey.pem'),
   encPrivateKeyPass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
-  metadata: readFileSync('./test/misc/SPMetadata.xml'),
-});
+  metadata: readFileSync('./test/misc/spmeta.xml'),
+};
+
+// Define an identity provider
+const idp = identityProvider(defaultIdpConfig);
+const sp = serviceProvider(defaultSpConfig);
 
 // Define metadata
-const IdPMetadata = idpMetadata(readFileSync('./test/misc/IDPMetadata.xml'));
-const SPMetadata = spMetadata(readFileSync('./test/misc/SPMetadata.xml'));
-const sampleSignedResponse = readFileSync('./test/misc/SignSAMLResponse.xml').toString();
-const wrongResponse = readFileSync('./test/misc/wrongResponse.xml').toString();
+const IdPMetadata = idpMetadata(readFileSync('./test/misc/idpmeta.xml'));
+const SPMetadata = spMetadata(readFileSync('./test/misc/spmeta.xml'));
+const sampleSignedResponse = readFileSync('./test/misc/response_signed.xml').toString();
+const wrongResponse = readFileSync('./test/misc/invalid_response.xml').toString();
 const spCertKnownGood = readFileSync('./test/key/sp/knownGoodCert.cer').toString().trim();
 const spPemKnownGood = readFileSync('./test/key/sp/knownGoodEncryptKey.pem').toString().trim();
 
@@ -132,18 +135,18 @@ test('getAssertionConsumerService with two bindings', t => {
 (() => {
 
 
-  const _originRequest: string = String(readFileSync('./test/misc/SAMLRequest.xml'));
-  const _originResponse: string = String(readFileSync('./test/misc/SAMLResponse.xml'));
+  const _originRequest: string = String(readFileSync('./test/misc/request.xml'));
+  const _originResponse: string = String(readFileSync('./test/misc/response.xml'));
 
-  const _decodedResponse: string = String(readFileSync('./test/misc/SignSAMLResponse.xml'));
+  const _decodedResponse: string = String(readFileSync('./test/misc/response_signed.xml'));
   const _decodedResponseDoc = new dom().parseFromString(_decodedResponse);
   const _decodedResponseSignature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
 
-  const _decodedRequestSHA256: string = String(readFileSync('./test/misc/SignSAMLRequestSHA256.xml'));
+  const _decodedRequestSHA256: string = String(readFileSync('./test/misc/signed_request_sha256.xml'));
   const _decodedRequestDocSHA256 = new dom().parseFromString(_decodedRequestSHA256);
   const _decodedRequestSignatureSHA256 = select(_decodedRequestDocSHA256, "/*/*[local-name(.)='Signature']")[0];
 
-  const _decodedRequestSHA512: string = String(readFileSync('./test/misc/SignSAMLRequestSHA512.xml'));
+  const _decodedRequestSHA512: string = String(readFileSync('./test/misc/signed_request_sha512.xml'));
   const _decodedRequestDocSHA512 = new dom().parseFromString(_decodedRequestSHA512);
   const _decodedRequestSignatureSHA512 = select(_decodedRequestDocSHA512, "/*/*[local-name(.)='Signature']")[0];
 
@@ -230,19 +233,19 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 }), true);
   });
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
-    const xml = String(readFileSync('./test/misc/SignSAMLRequest.xml'));
+    const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));
     const decodedResponseDoc = new dom().parseFromString(xml);
     const signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' }), true);
   });
   test('verify a XML signature signed by RSA-SHA256 with .cer keyFile', t => {
-    const xml = String(readFileSync('./test/misc/SignSAMLRequestSHA256.xml'));
+    const xml = String(readFileSync('./test/misc/signed_request_sha256.xml'));
     const decodedResponseDoc = new dom().parseFromString(xml);
     const signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' }), true);
   });
   test('verify a XML signature signed by RSA-SHA512 with .cer keyFile', t => {
-    const xml = String(readFileSync('./test/misc/SignSAMLRequestSHA512.xml'));
+    const xml = String(readFileSync('./test/misc/signed_request_sha512.xml'));
     const decodedResponseDoc = new dom().parseFromString(xml);
     const signature = select(decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
     t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' }), true);
@@ -455,11 +458,6 @@ test('getAssertionConsumerService with two bindings', t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, undefined));
     t.is(error.message, 'empty or undefined xml string during encryption');
   });
-
-  test('decrypt assertion test passes', async t => {
-    const signEncryptSAMLResponse = String(readFileSync('./test/misc/SignEncryptSAMLResponse.xml'));
-    await t.notThrows(libsaml.decryptAssertion(sp, signEncryptSAMLResponse));
-  });
   test('building attribute statement with one attribute', t => {
     const attributes = [{
       name: 'email',
@@ -522,4 +520,33 @@ test('verify time', t => {
   t.false(sp.verifyTime(undefined, timeBefore5Mins));
   t.false(sp.verifyTime(timeAfter5Mins));
   t.true(sp.verifyTime());
+});
+
+test('metadata with multiple entity descriptors is invalid', t => {
+  try {
+    identityProvider({ ...defaultIdpConfig, metadata: './test/misc/multiple_entitydescriptor' });
+    t.fail();
+  } catch ({ message }) {
+    t.is(message, 'metadata must contain exactly one entity descriptor');
+  }
+});
+
+test('undefined x509 key in metadata should throw error', t => {
+  try {
+    idp.entityMeta.getX509Certificate('undefined');
+    t.fail();
+  } catch ({ message }) {
+    t.is(message, 'undefined use of key in getX509Certificate');
+  }
+  try {
+    sp.entityMeta.getX509Certificate('undefined');
+    t.fail();
+  } catch ({ message }) {
+    t.is(message, 'undefined use of key in getX509Certificate');
+  }
+});
+
+test('get name id format in metadata', t => {
+  t.is(Array.isArray(idp.entityMeta.getNameIDFormat()), true);
+  t.is(sp.entityMeta.getNameIDFormat(), 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
 });

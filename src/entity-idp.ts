@@ -59,7 +59,10 @@ export class IdentityProvider extends Entity {
         const replacement = {
           AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes),
         };
-        entitySetting.loginResponseTemplate = libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement);
+        entitySetting.loginResponseTemplate = {
+          ...entitySetting.loginResponseTemplate,
+          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement),
+        };
       } else {
         console.warn('Invalid login response template');
       }
