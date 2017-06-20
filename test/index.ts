@@ -143,6 +143,7 @@ test('getAssertionConsumerService with two bindings', t => {
   const _decodedResponseSignature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
 
   const _decodedRequestSHA256: string = String(readFileSync('./test/misc/signed_request_sha256.xml'));
+  const _falseDecodedRequestSHA256: string = String(readFileSync('./test/misc/false_signed_request_sha256.xml'));
   const _decodedRequestDocSHA256 = new dom().parseFromString(_decodedRequestSHA256);
   const _decodedRequestSignatureSHA256 = select(_decodedRequestDocSHA256, "/*/*[local-name(.)='Signature']")[0];
 
@@ -228,6 +229,9 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('verify a XML signature signed by RSA-SHA256 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 }), true);
+  });
+  test('verify a wrong XML signature signed by RSA-SHA256 with metadata', t => {
+    t.is(libsaml.verifySignature(_falseDecodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 }), false);
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 }), true);
@@ -549,4 +553,9 @@ test('undefined x509 key in metadata should throw error', t => {
 test('get name id format in metadata', t => {
   t.is(Array.isArray(idp.entityMeta.getNameIDFormat()), true);
   t.is(sp.entityMeta.getNameIDFormat(), 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+});
+
+test('get entity setting', t => {
+  t.is(typeof idp.getEntitySetting(), 'object');
+  t.is(typeof sp.getEntitySetting(), 'object');
 });
