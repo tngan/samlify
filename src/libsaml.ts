@@ -443,7 +443,7 @@ const libSaml = () => {
     * @param  {SignatureVerifierOptions} opts cert declares the X509 certificate
     * @return {boolean} verification result
     */
-    verifySignature(xml: string, opts: SignatureVerifierOptions, index: number = 0) {
+    verifySignature(xml: string, opts: SignatureVerifierOptions) {
 
       try {
         const doc = new dom().parseFromString(xml);
@@ -459,7 +459,7 @@ const libSaml = () => {
         }
         let res = true;
         selection.forEach(s => {
-          const signature = new dom().parseFromString(selection[index].toString());
+          const signature = new dom().parseFromString(s.toString());
           xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/, '');
           sig.loadSignature(signature);
           res = res && sig.checkSignature(xml);
