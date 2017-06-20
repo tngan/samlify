@@ -35,7 +35,7 @@ $ yarn
 ```javascript
 const saml = require('samlify');
 ```
-See full documentation [here](samlify.js.org)
+See full documentation [here](https://samlify.js.org/)
 
 ### Demo
 
