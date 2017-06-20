@@ -26,7 +26,7 @@ const defaultEntitySetting = {
   wantLogoutRequestSigned: false,
   allowCreate: false,
   isAssertionEncrypted: false,
-  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA1,
+  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA256,
   dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
   keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_1_5,
   generateID: (): string => ('_' + uuid.v4()),
@@ -88,14 +88,6 @@ export default class Entity {
       default:
         throw new Error('undefined entity type');
     }
-  }
-
-  /**
-  * @desc  getEntityID
-  * @return {string} ID of entitiy
-  */
-  getEntityId(): string {
-    return this.entityMeta.getEntityId();
   }
 
   /**
@@ -250,17 +242,12 @@ export default class Entity {
       };
       if (checkSignature) {
         // verify the signatures (for both assertion/message)
-        // sigantures[0] is message signature
-        // sigantures[1] is assertion signature
-        const signature = get(parseResult, 'extract.signature') || [];
-        [...(isArray(signature) ? signature : [signature])].reverse().forEach((s: string, index: number) => {
-          if (!libsaml.verifySignature(res, {
-            cert: opts.from.entityMeta,
-            signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
-          }, index)) {
-            throw new Error('incorrect signature');
-          }
-        });
+        if (!libsaml.verifySignature(res, {
+          cert: opts.from.entityMeta,
+          signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
+        })) {
+          throw new Error('incorrect signature');
+        }
       }
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
         throw new Error('incorrect issuer');

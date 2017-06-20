@@ -448,9 +448,8 @@ const libSaml = () => {
       try {
         const doc = new dom().parseFromString(xml);
         const selection = select("//*[local-name(.)='Signature']", doc);
-        const signature = new dom().parseFromString(selection[index].toString());
         const sig = new SignedXml();
-        sig.signatureAlgorithm = opts.signatureAlgorithm || signatureAlgorithms.RSA_SHA256;
+        sig.signatureAlgorithm = opts.signatureAlgorithm;
         if (opts.keyFile) {
           sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
         } else if (opts.cert) {
@@ -458,11 +457,14 @@ const libSaml = () => {
         } else {
           throw new Error('Undefined certificate in \'opts\' object');
         }
-        sig.loadSignature(signature);
-        if (sig.checkSignature(xml)) {
-          return true;
-        }
-        return true;
+        let res = true;
+        selection.forEach(s => {
+          const signature = new dom().parseFromString(selection[index].toString());
+          xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/, '');
+          sig.loadSignature(signature);
+          res = res && sig.checkSignature(xml);
+        });
+        return res;
       } catch (e) {
         throw new Error(e);
       }

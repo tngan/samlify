@@ -132,7 +132,6 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
 
     // SAML response must be signed
     if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
-
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -141,15 +140,10 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
           prefix: 'ds',
           location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
         },
-        /*
-          {
-            prefix: 'ds',
-            location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
-          }
-        */
       });
     }
 
+    // step: sign assertion ? -> encrypted ? -> sign message ?
     if (metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
@@ -166,6 +160,7 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       return Promise.resolve({ id, context });
     }
+
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
