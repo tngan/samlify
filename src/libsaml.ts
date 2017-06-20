@@ -576,9 +576,9 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifyMessageSignature(metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(metadata.getX509Certificate(certUse.signing)), {
-        signingScheme: getSigningScheme(verifyAlgorithm),
-      });
+      const signCert = metadata.getX509Certificate(certUse.signing);
+      const signingScheme = getSigningScheme(verifyAlgorithm);
+      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), { signingScheme });
       return key.verify(new Buffer(octetString), signature);
     },
     /**

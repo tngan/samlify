@@ -13,6 +13,7 @@ import SpMetadata from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString, isUndefined, isArray, get } from 'lodash';
+import * as url from 'url';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -35,7 +36,7 @@ const defaultEntitySetting = {
 export interface ESamlHttpRequest {
   query?: any;
   body?: any;
-  originalUrlQuery?: any;
+  octetString?: string;
 }
 
 export interface BindingContext {
@@ -170,14 +171,15 @@ export default class Entity {
   * @param  {Metadata} targetEntityMetadata either IDP metadata or SP metadata
   * @return {ParseResult} parseResult
   */
-  async abstractBindingParser(opts, binding: string, req, targetEntityMetadata) {
-    const { query, body, originalUrlQuery } = req;
+  async genericParser(opts, binding: string, req) {
+    const { query, body, octetString } = req;
     const here = this;
     const entityMeta: any = this.entityMeta;
     const options = opts || {};
     let parseResult: ParseResult;
     let supportBindings = [nsBinding.redirect, nsBinding.post];
     const { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
+    const targetEntityMetadata = opts.from.entityMeta;
 
     if (type === 'login') {
       if (entityMeta.getAssertionConsumerService) {
@@ -197,21 +199,21 @@ export default class Entity {
         supportBindings = [];
       }
     } else {
-      throw new Error('Invalid type in abstractBindingParser');
+      throw new Error('Invalid type in genericParser');
     }
 
     if (binding === bindDict.redirect && supportBindings.indexOf(nsBinding[binding]) !== -1) {
-      const reqQuery: { SigAlg: string, Signature: string } = query;
+      const reqQuery: any = query;
       const samlContent = reqQuery[libsaml.getQueryParamByType(parserType)];
 
       if (samlContent === undefined) {
-        throw new Error('Bad request');
+        throw new Error('bad request');
       }
       const xmlString = inflateString(decodeURIComponent(samlContent));
       if (checkSignature) {
         const { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
-          if (libsaml.verifyMessageSignature(targetEntityMetadata, originalUrlQuery.split('&Signature=')[0], new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
+          if (libsaml.verifyMessageSignature(targetEntityMetadata, octetString, new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
             parseResult = {
               samlContent: xmlString,
               sigAlg: decodeURIComponent(sigAlg),
@@ -258,9 +260,6 @@ export default class Entity {
           }, index)) {
             throw new Error('incorrect signature');
           }
-          // in order to get the raw xml
-          // remove assertion signature because the assertion signature is later than the message signature
-          // res = res.replace(s, '');
         });
       }
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
@@ -318,9 +317,9 @@ export default class Entity {
     }
     if (protocol === namespace.binding.post) {
       const context = postBinding.base64LogoutResponse(requestInfo, {
-          init: this,
-          target,
-        }, customTagReplacement);
+        init: this,
+        target,
+      }, customTagReplacement);
       return {
         ...context,
         relayState,
@@ -338,44 +337,48 @@ export default class Entity {
   * @param  {request}   req                      request
   * @return {Promise}
   */
-  parseLogoutRequest(targetEntity, binding, req: ESamlHttpRequest) {
-    return this.abstractBindingParser({
-      parserFormat: ['NameID', 'Issuer', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-          localName: 'LogoutRequest',
-          attributes: ['ID', 'Destination'],
-        }],
-      checkSignature: this.entitySetting.wantLogoutRequestSigned,
-      parserType: 'LogoutRequest',
-      type: 'logout',
-    }, binding, req, targetEntity.entityMeta);
+  parseLogoutRequest(from, binding, req: ESamlHttpRequest) {
+    const checkSignature = this.entitySetting.wantLogoutRequestSigned;
+    const parserType = 'LogoutRequest';
+    const type = 'logout';
+    return this.genericParser({
+      from,
+      type,
+      parserType,
+      checkSignature,
+      parserFormat: [
+        'NameID',
+        'Issuer',
+        { localName: 'Signature', extractEntireBody: true },
+        { localName: 'LogoutRequest', attributes: ['ID', 'Destination'] },
+      ],
+    }, binding, req);
   }
 
   /**
   * @desc   Validation of the parsed the URL parameters
+  * @param  {object} config                      config for the parser
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
-  * @param  {ServiceProvider}   sp               object of service provider
   * @return {Promise}
   */
-  parseLogoutResponse(targetEntity, binding, req: ESamlHttpRequest) {
-    return this.abstractBindingParser({
-      parserFormat: [{
-        localName: 'StatusCode',
-        attributes: ['Value'],
-      }, 'Issuer', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-        localName: 'LogoutResponse',
-        attributes: ['ID', 'Destination', 'InResponseTo'],
-      }],
-      checkSignature: this.entitySetting.wantLogoutResponseSigned,
-      supportBindings: ['post'],
-      parserType: 'LogoutResponse',
-      type: 'logout',
-    }, binding, req, targetEntity.entityMeta);
+  parseLogoutResponse(from, binding, req: ESamlHttpRequest) {
+    const checkSignature = this.entitySetting.wantLogoutResponseSigned;
+    const supportBindings = ['post'];
+    const parserType = 'LogoutResponse';
+    const type = 'logout';
+    return this.genericParser({
+      from,
+      type,
+      parserType,
+      checkSignature,
+      supportBindings,
+      parserFormat: [
+        { localName: 'StatusCode', attributes: ['Value'] },
+        'Issuer',
+        { localName: 'Signature', extractEntireBody: true },
+        { localName: 'LogoutResponse', attributes: ['ID', 'Destination', 'InResponseTo'] },
+      ],
+    }, binding, req);
   }
 }

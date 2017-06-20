@@ -105,20 +105,21 @@ export class IdentityProvider extends Entity {
   * @param  {request}   req                      request
   */
   public parseLoginRequest(sp, binding, req: ESamlHttpRequest) {
-    return this.abstractBindingParser({
+    return this.genericParser({
       parserFormat: ['AuthnContextClassRef', 'Issuer', {
         localName: 'Signature',
         extractEntireBody: true,
       }, {
-          localName: 'AuthnRequest',
-          attributes: ['ID'],
-        }, {
-          localName: 'NameIDPolicy',
-          attributes: ['Format', 'AllowCreate'],
-        }],
+        localName: 'AuthnRequest',
+        attributes: ['ID'],
+      }, {
+        localName: 'NameIDPolicy',
+        attributes: ['Format', 'AllowCreate'],
+      }],
+      from: sp,
       checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
       type: 'login',
-    }, binding, req, sp.entityMeta);
+    }, binding, req);
   }
 }

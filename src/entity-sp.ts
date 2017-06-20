@@ -76,7 +76,7 @@ export class ServiceProvider extends Entity {
   * @param  {request}   req                      request
   */
   public parseLoginResponse(idp, binding, req: ESamlHttpRequest) {
-    return this.abstractBindingParser({
+    return this.genericParser({
       parserFormat: [{
         localName: 'StatusCode',
         attributes: ['Value'],
@@ -98,7 +98,7 @@ export class ServiceProvider extends Entity {
       supportBindings: ['post'],
       parserType: 'SAMLResponse',
       type: 'login',
-    }, binding, req, idp.entityMeta);
+    }, binding, req);
   }
 
 }

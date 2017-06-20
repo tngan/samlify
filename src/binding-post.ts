@@ -251,7 +251,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       id = initSetting.generateID();
       const tvalue: any = {
         ID: id,
-        Destination: metadata.target.getAssertionConsumerService(binding.post),
+        Destination: metadata.target.getSingleLogoutService(binding.post),
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
