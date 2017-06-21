@@ -458,9 +458,9 @@ const libSaml = () => {
           throw new Error('Undefined certificate in \'opts\' object');
         }
         let res = true;
+        xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
         selection.forEach(s => {
           const signature = new dom().parseFromString(s.toString());
-          xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/, '');
           sig.loadSignature(signature);
           res = res && sig.checkSignature(xml);
         });
