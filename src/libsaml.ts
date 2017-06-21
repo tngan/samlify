@@ -661,12 +661,12 @@ const libSaml = () => {
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
         const parseEntireXML = new dom().parseFromString(String(entireXML));
-        const encryptedDataNode = getEntireBody(parseEntireXML, 'EncryptedData');
-        const encryptedData = !isUndefined(encryptedDataNode) ? utility.parseString(String(encryptedDataNode)) : '';
-        if (encryptedData === '') {
+        const encryptedAssertionNode = getEntireBody(parseEntireXML, 'EncryptedAssertion');
+        const encryptedAssertion = !isUndefined(encryptedAssertionNode) ? utility.parseString(String(encryptedAssertionNode)) : '';
+        if (encryptedAssertion === '') {
           return reject(new Error('undefined assertion or invalid syntax'));
         }
-        return xmlenc.decrypt(encryptedData, {
+        return xmlenc.decrypt(encryptedAssertion, {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
@@ -675,7 +675,7 @@ const libSaml = () => {
           if (!res) {
             return reject(new Error('undefined encrypted assertion'));
           }
-          return resolve(String(parseEntireXML).replace('<saml:EncryptedAssertion>', '').replace('</saml:EncryptedAssertion>', '').replace(encryptedData, res));
+          return resolve(String(parseEntireXML).replace(/\r?\n/g, '').replace(/<saml:EncryptedAssertion(.*?)>(.*?)<\/(.*?)EncryptedAssertion>/g, res));
         });
       });
     },
