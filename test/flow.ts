@@ -115,14 +115,35 @@ function writer(str) {
   writeFileSync('test.txt', str);
 }
 
-test('create login request with redirect binding using default template', t => {
+test('create login request with redirect binding using default template and parse it', async t => {
   const { id, context } = sp.createLoginRequest(idp, 'redirect');
-  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+  t.is(typeof id, 'string');
+  t.is(typeof context, 'string');
+  const originalURL = url.parse(context, true);
+  const SAMLRequest = originalURL.query.SAMLRequest;
+  const Signature = originalURL.query.Signature;
+  const SigAlg = originalURL.query.SigAlg;
+  delete originalURL.query.Signature;
+  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q])).join('&');
+  const { samlContent, extract } = await idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
+  t.is(extract.issuer, 'https://sp.example.org/metadata');
+  t.is(typeof extract.authnrequest.id, 'string');
+  t.is(extract.nameidpolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+  t.is(extract.nameidpolicy.allowcreate, 'false');
 });
 
-test('create login request with post binding using default template', t => {
-  const { relayState, type, entityEndpoint, id, context } = sp.createLoginRequest(idp, 'post') as PostRequestInfo;
-  _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
+test('create login request with post binding using default template and parse it', async t => {
+  const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostRequestInfo;
+  t.is(typeof id, 'string');
+  t.is(typeof SAMLRequest, 'string');
+  t.is(typeof entityEndpoint, 'string');
+  t.is(type, 'SAMLRequest');
+  const { samlContent, extract, sigAlg } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
+  t.is(extract.issuer, 'https://sp.example.org/metadata');
+  t.is(typeof extract.authnrequest.id, 'string');
+  t.is(extract.nameidpolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+  t.is(extract.nameidpolicy.allowcreate, 'false');
+  t.is(typeof extract.signature, 'string');
 });
 
 test('signed in sp is not matched with the signed notation in idp with post request', t => {
