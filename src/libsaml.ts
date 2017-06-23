@@ -44,8 +44,8 @@ interface SignatureVerifierOptions {
 
 interface ExtractorResult {
   [key: string]: any;
-  signature?: any;
-  issuer?: string;
+  signature?: string | string[];
+  issuer?: string | string[];
   nameid?: string;
   notexist?: boolean;
 }
@@ -320,7 +320,7 @@ const libSaml = () => {
     }
     const data = [];
     selection.forEach(_s => {
-      data.push(_s.nodeValue.toString());
+      data.push(String(_s.nodeValue).trim().replace(/\r?\n/g, ''));
     });
     return data.length === 1 ? data[0] : data;
   }

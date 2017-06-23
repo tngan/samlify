@@ -98,5 +98,11 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(idpslo[0].index, '0');
     t.is(idpslo[1].index, '1');
   });
+  test('#86 duplicate issuer throws error', t => {
+    const xml = readFileSync('./test/misc/dumpes_issuer_response.xml');
+    const { issuer } = libsaml.extractor(xml.toString(), ['Issuer']);
+    t.is(issuer.length, 2);
+    t.is((issuer as string[]).every(i => i === 'http://www.okta.com/dummyIssuer'), true);
+  });
 
 })();
