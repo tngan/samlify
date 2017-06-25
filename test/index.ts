@@ -142,12 +142,16 @@ test('getAssertionConsumerService with two bindings', t => {
   const _decodedResponseDoc = new dom().parseFromString(_decodedResponse);
   const _decodedResponseSignature = select(_decodedResponseDoc, "/*/*[local-name(.)='Signature']")[0];
 
+  const _decodedRequestSHA1: string = String(readFileSync('./test/misc/signed_request_sha1.xml'));
+  const _falseDecodedRequestSHA1: string = String(readFileSync('./test/misc/false_signed_request_sha1.xml'));
+
   const _decodedRequestSHA256: string = String(readFileSync('./test/misc/signed_request_sha256.xml'));
   const _falseDecodedRequestSHA256: string = String(readFileSync('./test/misc/false_signed_request_sha256.xml'));
   const _decodedRequestDocSHA256 = new dom().parseFromString(_decodedRequestSHA256);
   const _decodedRequestSignatureSHA256 = select(_decodedRequestDocSHA256, "/*/*[local-name(.)='Signature']")[0];
 
   const _decodedRequestSHA512: string = String(readFileSync('./test/misc/signed_request_sha512.xml'));
+  const _falseDecodedRequestSHA512: string = String(readFileSync('./test/misc/false_signed_request_sha512.xml'));
   const _decodedRequestDocSHA512 = new dom().parseFromString(_decodedRequestSHA512);
   const _decodedRequestSignatureSHA512 = select(_decodedRequestDocSHA512, "/*/*[local-name(.)='Signature']")[0];
 
@@ -227,14 +231,20 @@ test('getAssertionConsumerService with two bindings', t => {
   test('verify a XML signature signed by RSA-SHA1 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedResponse, { cert: IdPMetadata }), true);
   });
+  test('integrity check for request signed with RSA-SHA1', t => {
+    t.is(libsaml.verifySignature(_falseDecodedRequestSHA1, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 }), false);
+  });
   test('verify a XML signature signed by RSA-SHA256 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 }), true);
   });
-  test('verify a wrong XML signature signed by RSA-SHA256 with metadata', t => {
+  test('integrity check for request signed with RSA-SHA256', t => {
     t.is(libsaml.verifySignature(_falseDecodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 }), false);
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 }), true);
+  });
+  test('integrity check for request signed with RSA-SHA512', t => {
+    t.is(libsaml.verifySignature(_falseDecodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 }), false);
   });
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
     const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));
