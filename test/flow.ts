@@ -91,16 +91,6 @@ const defaultSpConfig = {
   metadata: readFileSync('./test/misc/spmeta.xml'),
 };
 
-// Define an identity provider
-const idp = identityProvider(defaultIdpConfig);
-const sp = serviceProvider(defaultSpConfig);
-const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
-const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
-const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
-const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
-const spWantLogoutResSign = serviceProvider({ ...defaultSpConfig, wantLogoutResponseSigned: true });
-const idpWantLogoutResSign = identityProvider({ ...defaultIdpConfig, wantLogoutResponseSigned: true });
-
 // Define metadata
 const IdPMetadata = idpMetadata(readFileSync('./test/misc/idpmeta.xml'));
 const SPMetadata = spMetadata(readFileSync('./test/misc/spmeta.xml'));
@@ -110,6 +100,17 @@ const spCertKnownGood = readFileSync('./test/key/sp/knownGoodCert.cer').toString
 const spPemKnownGood = readFileSync('./test/key/sp/knownGoodEncryptKey.pem').toString().trim();
 const noSignedIdpMetadata = readFileSync('./test/misc/idpmeta_nosign.xml').toString().trim();
 const spmetaNoAssertSign = readFileSync('./test/misc/spmeta_noassertsign.xml').toString().trim();
+
+// Define entities
+const idp = identityProvider(defaultIdpConfig);
+const sp = serviceProvider(defaultSpConfig);
+const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
+const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
+const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
+const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
+const spWantLogoutResSign = serviceProvider({ ...defaultSpConfig, wantLogoutResponseSigned: true });
+const idpWantLogoutResSign = identityProvider({ ...defaultIdpConfig, wantLogoutResponseSigned: true });
+const spNoAssertSign = serviceProvider({ ...defaultSpConfig, metadata: spmetaNoAssertSign });
 
 function writer(str) {
   writeFileSync('test.txt', str);
@@ -286,10 +287,6 @@ test('send response with [custom template] signed assertion and parse it', async
 
 test('send response with signed message and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const spNoAssertSign = serviceProvider({
-    ...defaultSpConfig,
-    metadata: spmetaNoAssertSign,
-  });
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(spNoAssertSign, { extract: { authnrequest: { id: 'request_id' } } }, 'post', { email: 'user@esaml2.com' });
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
@@ -304,10 +301,6 @@ test('send response with signed message and parse it', async t => {
 
 test('send response with [custom template] and signed message and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const spNoAssertSign = serviceProvider({
-    ...defaultSpConfig,
-    metadata: spmetaNoAssertSign,
-  });
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
   const user = { email: 'user@esaml2.com'};
   const { id, context: SAMLResponse } = await idpcustomNoEncrypt.createLoginResponse(
@@ -372,6 +365,19 @@ test('send login response with [custom template] and signed assertion + signed m
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+});
+
+test('send login response with encrypted non-signed assertion and parse it', async t => {
+  const { id, context: SAMLResponse } = await idp.createLoginResponse(spNoAssertSign, { extract: { authnrequest: { id: 'request_id' } } }, 'post', { email: 'user@esaml2.com' });
+  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
+  // test phrase 1: samlContent is a string (parsed version)
+  t.is(typeof id, 'string');
+  t.is(samlContent.startsWith('<samlp:Response'), true);
+  t.is(samlContent.endsWith('/samlp:Response>'), true);
+  // test phrase 2: useful information is included in extract object
+  t.is(extract.nameid, 'user@esaml2.com');
+  t.is(typeof extract.signature, 'string');
 });
 
 test('send login response with encrypted signed assertion and parse it', async t => {
