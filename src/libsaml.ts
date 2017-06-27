@@ -444,46 +444,29 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
-
-      try {
-        const doc = new dom().parseFromString(xml);
-        const selection = select("//*[local-name(.)='Signature']", doc);
-        const sig = new SignedXml();
-        sig.signatureAlgorithm = opts.signatureAlgorithm;
-        if (opts.keyFile) {
-          sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
-        } else if (opts.cert) {
-          sig.keyInfoProvider = new this.getKeyInfo(opts.cert.getX509Certificate(certUse.signing));
-        } else {
-          throw new Error('Undefined certificate in \'opts\' object');
-        }
-        let res = true;
-        xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
-        selection.forEach(s => {
-          const signature = new dom().parseFromString(s.toString());
-          sig.loadSignature(signature);
-          res = res && sig.checkSignature(xml);
-        });
-        return res;
-      } catch (e) {
-        throw new Error(e);
+      const doc = new dom().parseFromString(xml);
+      const selection = select("//*[local-name(.)='Signature']", doc);
+      // guarantee to have a signature in saml response
+      if (selection.length === 0) {
+        throw new Error('no signature is found in the context');
       }
-      /*
       const sig = new SignedXml();
-      sig.signatureAlgorithm = signatureAlgorithm;
-      // Add assertion sections as reference
+      sig.signatureAlgorithm = opts.signatureAlgorithm;
       if (opts.keyFile) {
         sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
       } else if (opts.cert) {
         sig.keyInfoProvider = new this.getKeyInfo(opts.cert.getX509Certificate(certUse.signing));
       } else {
-        throw new Error('Undefined certificate in \'opts\' object');
+        throw new Error('undefined certificate in \'opts\' object');
       }
-      sig.loadSignature(node);
-      if (sig.checkSignature(purexml)) {
-        return true;
-      }
-      */
+      let res = true;
+      xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
+      selection.forEach(s => {
+        const signature = new dom().parseFromString(s.toString());
+        sig.loadSignature(signature);
+        res = res && sig.checkSignature(xml);
+      });
+      return res;
     },
     /**
     * @desc High-level XML extractor

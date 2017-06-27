@@ -104,6 +104,14 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(issuer.length, 2);
     t.is((issuer as string[]).every(i => i === 'http://www.okta.com/dummyIssuer'), true);
   });
+  test('#87 add existence check for signature verification', t => {
+    try {
+      libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
+      t.fail();
+    } catch ({ message }) {
+      t.is(message, 'no signature is found in the context');
+    }
+  });
   test('#91 idp gets single sign on service from the metadata', t => {
     t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
   });

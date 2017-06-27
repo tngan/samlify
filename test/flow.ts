@@ -515,7 +515,7 @@ test('idp sends a post logout request without signature and sp parses it', async
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
-  const { samlContent, extract, sigAlg } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
+  const { samlContent, extract, sigAlg } = await sp.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(typeof extract.logoutrequest.id, 'string');
