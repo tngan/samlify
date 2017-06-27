@@ -68,7 +68,7 @@ export class IdpMetadata extends Metadata {
           const attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
-            LOcation: a.Location,
+            Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
@@ -107,13 +107,16 @@ export class IdpMetadata extends Metadata {
       }]);
     }
 
-    super(meta, [{
-      localName: 'IDPSSODescriptor',
-      attributes: ['WantAuthnRequestsSigned'],
-    }, {
-      localName: { tag: 'SingleSignOnService', key: 'Binding' },
-      attributeTag: 'Location',
-    }]);
+    super(meta, [
+      {
+        localName: 'IDPSSODescriptor',
+        attributes: ['WantAuthnRequestsSigned'],
+      },
+      {
+        localName: { tag: 'SingleSignOnService', key: 'Binding' },
+        attributeTag: 'Location',
+      },
+    ]);
 
   }
 
@@ -137,7 +140,7 @@ export class IdpMetadata extends Metadata {
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
       const bindName = namespace.binding[binding];
-      const service = this.meta.singlelogoutservice.find(obj => obj[bindName]);
+      const service = this.meta.singlesignonservice.find(obj => obj[bindName]);
       if (service) {
         return service[bindName];
       }

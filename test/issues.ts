@@ -104,5 +104,7 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(issuer.length, 2);
     t.is((issuer as string[]).every(i => i === 'http://www.okta.com/dummyIssuer'), true);
   });
-
+  test('#91 idp gets single sign on service from the metadata', t => {
+    t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
+  });
 })();
