@@ -77,14 +77,15 @@ export class IdentityProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {object}   user                      current logged user (e.g. req.user)
   * @param  {function} customTagReplacement      used when developers have their own login response template
+  * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing)
   */
-  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement?) {
+  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement?, encryptThenSign?) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
         sp,
-      }, user, customTagReplacement);
+      }, user, customTagReplacement, encryptThenSign);
       // xmlenc is using async process
       return {
         ...context,

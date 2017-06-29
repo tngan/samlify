@@ -92,6 +92,13 @@ const tags = {
   },
 };
 
+const messageConfigurations = {
+  signingOrder: {
+    SIGN_THEN_ENCRYPT: 'sign-then-encrypt',
+    ENCRYPT_THEN_SIGN: 'encrypt-then-sign',
+  },
+};
+
 const algorithms = {
   signature: {
     RSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
@@ -149,4 +156,4 @@ const elementsOrder = {
   shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService'],
 };
 
-export { namespace, tags, algorithms, wording, elementsOrder };
+export { namespace, tags, algorithms, wording, elementsOrder, messageConfigurations };
