@@ -21,13 +21,13 @@ Currently, we suggest developers to use other 3rd party IdP even though we provi
 * @param {boolean} allowCreate : Default is false
 * @param {boolean} authnRequestsSigned : Default is false
 * @param {string} dataEncryptionAlgorithm : Default is `http://www.w3.org/2001/04/xmlenc#aes256-cbc`
-* @param {string} encryptCertFile : It is required if `isAssertionEncrypted` is set to `true`
+* @param {string} encryptCert : It is required if `isAssertionEncrypted` is set to `true`
 * @param {function} generateID : It is used to generate the id of each request to perform extra validation and avoid conflict
 * @param {boolean} isAssertionEncrypted : Default is false
 * @param {string} keyEncryptionAlgorithm : Default is `http://www.w3.org/2001/04/xmlenc#rsa-1_5`
 * @param {array} nameIDFormat : Default is an empty array
 * @param {string} requestSignatureAlgorithm : Default is `http://www.w3.org/2000/09/xmldsig#rsa-sha1` 
-* @param {string} signingCertFile : It is required if `authnRequestsSigned` is set to `true`
+* @param {string} signingCert : It is required if `authnRequestsSigned` is set to `true`
 * @param {array} singleLogoutService : Default is an empty array
 * @param {boolean} wantAssertionsSigned : Default is false
 * @param {boolean} wantMessageSigned : Default is false

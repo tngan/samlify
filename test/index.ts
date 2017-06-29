@@ -87,11 +87,11 @@ test('normalize pem key returns clean string', t => {
 test('getAssertionConsumerService with one binding', t => {
   const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
   const _sp = serviceProvider({
-    privateKeyFile: './test/key/sp/privkey.pem',
-    privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    privateKey: './test/key/sp/privkey.pem',
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     isAssertionEncrypted: true, // for logout purpose
-    encPrivateKeyFile: './test/key/sp/encryptKey.pem',
-    encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+    encPrivateKey: './test/key/sp/encryptKey.pem',
+    encPrivateKeyPass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
     assertionConsumerService: [{
       Binding: binding.post,
       Location: expectedPostLocation,
@@ -107,11 +107,11 @@ test('getAssertionConsumerService with two bindings', t => {
   const expectedPostLocation = 'https://sp.example.org/sp/sso/post';
   const expectedArtifactLocation = 'https://sp.example.org/sp/sso/artifact';
   const _sp = serviceProvider({
-    privateKeyFile: './test/key/sp/privkey.pem',
-    privateKeyFilePass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    privateKey: './test/key/sp/privkey.pem',
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
     isAssertionEncrypted: true, // for logout purpose
-    encPrivateKeyFile: './test/key/sp/encryptKey.pem',
-    encPrivateKeyFilePass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
+    encPrivateKey: './test/key/sp/encryptKey.pem',
+    encPrivateKeyPass: 'BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU',
     assertionConsumerService: [{
       Binding: binding.post,
       Location: expectedPostLocation,

@@ -46,8 +46,8 @@ Metadata stores the preferences only. To sign a XML document, we still need our 
 const saml = require('samlify');
 // Define the setting
 const setting = {
-	privateKeyFile: fs.readFileSync('./key/sp_key.pem'),
-	privateKeyFilePass: 'KCkGOSjrcAuXFwU1pVH5RUiBcrsNA8px',
+	privateKey: fs.readFileSync('./key/sp_key.pem'),
+	privateKeyPass: 'KCkGOSjrcAuXFwU1pVH5RUiBcrsNA8px',
 	requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
 	metadata: fs.readFileSync('./metadata_sp.xml')
 };
@@ -55,7 +55,7 @@ const setting = {
 const sp = saml.ServiceProvider(setting);
 ```
 
-The property `privateKeyFilePass` is optional in case you have set a passphrase when the private key is created. Also the default value of `requestSignatureAlgorithm` is RSA-SHA1.
+The property `privateKeyPass` is optional in case you have set a passphrase when the private key is created. Also the default value of `requestSignatureAlgorithm` is RSA-SHA1.
 
 All support signature algorithms:
 ```javascript

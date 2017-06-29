@@ -42,14 +42,14 @@ To guarantee the setting in between idp-sp pair is synchronized, determination o
 const idp = IdentityProvider({
   // ...
   metadata: readFileSync('./idp-metatadata.xml'),
-  privateKeyFile: readFileSync('./mysecret.pem'),
-  privateKeyFilePass: 'zzz', // if has
+  privateKey: readFileSync('./mysecret.pem'),
+  privateKeyPass: 'zzz', // if has
   // must have if metadata is not provided
-  // signingCertFile: readFileSync('./signing.cer') 
+  // signingCert: readFileSync('./signing.cer') 
 });
 ```
 
-The certificate of identity provider will be included in its metadata, or specify in constructor as `signingCertFile`.
+The certificate of identity provider will be included in its metadata, or specify in constructor as `signingCert`.
 
 + **Unsigned message, Signed & Encrypted assertion**
 
@@ -63,11 +63,11 @@ IdP controls whether the response is encrypted or not.
 const sp = ServiceProvider({
   // ...
   metadata: readFileSync('./sp-metadata.xml'),
-  encPrivateKeyFile: fs.readFileSync('./encryptKey.pem'),
-  encPrivateKeyFilePass: 'yyy',
+  encPrivateKey: fs.readFileSync('./encryptKey.pem'),
+  encPrivateKeyPass: 'yyy',
   // must have if metadata is not provided
-  // signingCertFile: readFileSync('./signing.cer') 
-  // encryptCertFile: readFileSync('./encrypt.cer')
+  // signingCert: readFileSync('./signing.cer') 
+  // encryptCert: readFileSync('./encrypt.cer')
 });
 ```
 
@@ -83,10 +83,10 @@ const idp = IdentityProvider({
   // ...
   isAssertionEncrypted: true,
   metadata: readFileSync('./idp-metatadata.xml'),
-  privateKeyFile: readFileSync('./mysecret.pem'),
-  privateKeyFilePass: 'xxx', // if has
+  privateKey: readFileSync('./mysecret.pem'),
+  privateKeyPass: 'xxx', // if has
   // must have if metadata is not provided
-  // signingCertFile: readFileSync('./signing.cer') 
+  // signingCert: readFileSync('./signing.cer') 
 });
 ```
 

@@ -11,7 +11,7 @@ const idp = IdentityProvider({
 });
 ```
 
-If you remember SP configuration for signing a request, there are two parameters in the setting object. They are `privateKeyFile` and `privateKeyFilePass`. **Warning:** If you are applying our solution instead of another 3rd party IdP, it's suggested not to use same key for both signing and encryption.
+If you remember SP configuration for signing a request, there are two parameters in the setting object. They are `privateKey` and `privateKeyPass`. **Warning:** If you are applying our solution instead of another 3rd party IdP, it's suggested not to use same key for both signing and encryption.
 
 In SP's metadata, the certificate must be included in order to allow idp to encrypt the assertion.
 
