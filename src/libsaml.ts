@@ -583,28 +583,29 @@ const libSaml = () => {
     * @desc Encrypt the assertion section in Response
     * @param  {Entity} sourceEntity             source entity
     * @param  {Entity} targetEntity             target entity
-    * @param {string} entireXML                 response in xml string format
+    * @param  {string} xml                      response in xml string format
     * @return {Promise} a promise to resolve the finalized xml
     */
-    encryptAssertion(sourceEntity, targetEntity, entireXML: string) {
+    encryptAssertion(sourceEntity, targetEntity, xml: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
-        if (entireXML) {
+        if (xml) {
           const sourceEntitySetting = sourceEntity.entitySetting;
           const targetEntitySetting = targetEntity.entitySetting;
           const sourceEntityMetadata = sourceEntity.entityMeta;
           const targetEntityMetadata = targetEntity.entityMeta;
-          const assertionNode = getEntireBody(new dom().parseFromString(entireXML), 'Assertion');
-          const assertion = !isUndefined(assertionNode) ? utility.parseString(assertionNode.toString()) : '';
-
-          if (assertion === '') {
-            return reject(new Error('undefined assertion or invalid syntax'));
+          const doc = new dom().parseFromString(xml);
+          const assertions = select("//*[local-name(.)='Assertion']", doc);
+          const assertionNode = getEntireBody(new dom().parseFromString(xml), 'Assertion');
+          if (!Array.isArray(assertions)) {
+            throw new Error('undefined assertion is found');
           }
-
+          if (assertions.length !== 1) {
+            throw new Error(`undefined number (${assertions.length}) of assertion section`);
+          }
           // Perform encryption depends on the setting, default is false
           if (sourceEntitySetting.isAssertionEncrypted) {
-
-            xmlenc.encrypt(assertion, {
+            xmlenc.encrypt(assertions[0].toString(), {
               // use xml-encryption module
               rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
               pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
@@ -617,10 +618,12 @@ const libSaml = () => {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              return resolve(utility.base64Encode(entireXML.replace(/<saml:Assertion(.*?)>(.*?)<\/(.*?)Assertion>/g, `<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`)));
+              const encryptAssertionNode = new dom().parseFromString(`<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`);
+              doc.replaceChild(encryptAssertionNode, assertions[0]);
+              return resolve(utility.base64Encode(doc.toString()));
             });
           } else {
-            return resolve(utility.base64Encode(entireXML)); // No need to do encrpytion
+            return resolve(utility.base64Encode(xml)); // No need to do encrpytion
           }
         } else {
           return reject(new Error('empty or undefined xml string during encryption'));
@@ -643,13 +646,15 @@ const libSaml = () => {
         }
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
-        const parseEntireXML = new dom().parseFromString(String(entireXML));
-        const encryptedAssertionNode = getEntireBody(parseEntireXML, 'EncryptedAssertion');
-        const encryptedAssertion = !isUndefined(encryptedAssertionNode) ? utility.parseString(String(encryptedAssertionNode)) : '';
-        if (encryptedAssertion === '') {
-          return reject(new Error('undefined assertion or invalid syntax'));
+        const xml = new dom().parseFromString(entireXML);
+        const encryptedAssertions = select("//*[local-name(.)='EncryptedAssertion']", xml);
+        if (!Array.isArray(encryptedAssertions)) {
+          throw new Error('undefined encrypted assertion is found');
         }
-        return xmlenc.decrypt(encryptedAssertion, {
+        if (encryptedAssertions.length !== 1) {
+          throw new Error(`undefined number (${encryptedAssertions.length}) of encrypted assertions section`);
+        }
+        return xmlenc.decrypt(encryptedAssertions[0].toString(), {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
@@ -658,7 +663,9 @@ const libSaml = () => {
           if (!res) {
             return reject(new Error('undefined encrypted assertion'));
           }
-          return resolve(String(parseEntireXML).replace(/\r?\n/g, '').replace(/<saml:EncryptedAssertion(.*?)>(.*?)<\/(.*?)EncryptedAssertion>/g, res));
+          const assertionNode = new dom().parseFromString(res);
+          xml.replaceChild(assertionNode, encryptedAssertions[0]);
+          return resolve(xml.toString());
         });
       });
     },

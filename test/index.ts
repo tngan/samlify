@@ -458,11 +458,11 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('encrypt assertion response without assertion returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, wrongResponse));
-    t.is(error.message, 'undefined assertion or invalid syntax');
+    t.is(error.message, 'undefined number (0) of assertion section');
   });
   test('encrypt assertion with invalid xml syntax returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
-    t.is(error.message, 'undefined assertion or invalid syntax');
+    t.is(error.message, 'undefined number (0) of assertion section');
   });
   test('encrypt assertion with empty string returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, ''));
