@@ -72,8 +72,9 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 * @param  {object} entity                      object includes both idp and sp
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {function} customTagReplacement     used when developers have their own login response template
+* @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
 */
-async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   let id = idpSetting.generateID();
@@ -130,8 +131,8 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
       isBase64Output: false,
     };
 
-    // SAML response must be signed
-    if (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned()) {
+    // SAML response must be signed sign message first, then encrypt
+    if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -158,7 +159,25 @@ async function base64LoginResponse(requestInfo: any, entity: any, user: any = {}
 
     if (idpSetting.isAssertionEncrypted) {
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
-      return Promise.resolve({ id, context });
+      if (encryptThenSign) {
+        //need to decode it
+        rawSamlResponse = utility.base64Decode(context);
+      } else {
+        return Promise.resolve({ id, context });
+      }
+    }
+
+    //sign after encrypting
+    if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
+      rawSamlResponse = libsaml.constructSAMLSignature({
+        ...config,
+        rawSamlMessage: rawSamlResponse,
+        isMessageSigned: true,
+        signatureConfig: spSetting.signatureConfig || {
+          prefix: 'ds',
+          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
+        },
+      });
     }
 
     return Promise.resolve({

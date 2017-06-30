@@ -4,7 +4,7 @@
 * @desc  An abstraction for identity provider and service provider.
 */
 import { base64Decode, isNonEmptyArray, inflateString } from './utility';
-import { namespace, wording, algorithms } from './urn';
+import { namespace, wording, algorithms, messageConfigurations } from './urn';
 import * as uuid from 'uuid';
 import libsaml from './libsaml';
 import Metadata from './metadata';
@@ -19,10 +19,12 @@ const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
 const bindDict = wording.binding;
 const signatureAlgorithms = algorithms.signature;
+const messageSigningOrders = messageConfigurations.signingOrder;
 const nsBinding = namespace.binding;
 
 const defaultEntitySetting = {
   wantLogoutResponseSigned: false,
+  messageSigningOrder: messageSigningOrders.SIGN_THEN_ENCRYPT,
   wantLogoutRequestSigned: false,
   allowCreate: false,
   isAssertionEncrypted: false,
@@ -228,6 +230,17 @@ export default class Entity {
       const encodedRequest = body[libsaml.getQueryParamByType(parserType)];
       let res = String(base64Decode(encodedRequest));
       const issuer = targetEntityMetadata.getEntityID();
+      //verify signature before decryption if IDP encrypted then signed the message
+      if (checkSignature && from.entitySetting.messageSigningOrder === messageSigningOrders.ENCRYPT_THEN_SIGN) {
+
+        // verify the signatures (for both assertion/message)
+        if (!libsaml.verifySignature(res, {
+            cert: opts.from.entityMeta,
+            signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
+          })) {
+          throw new Error('incorrect signature');
+        }
+      }
       if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
         res = await libsaml.decryptAssertion(here, res);
       }
@@ -235,7 +248,7 @@ export default class Entity {
         samlContent: res,
         extract: libsaml.extractor(res, fields),
       };
-      if (checkSignature) {
+      if (checkSignature && from.entitySetting.messageSigningOrder === messageSigningOrders.SIGN_THEN_ENCRYPT) {
         // verify the signatures (for both assertion/message)
         if (!libsaml.verifySignature(res, {
           cert: opts.from.entityMeta,

@@ -107,6 +107,7 @@ const sp = serviceProvider(defaultSpConfig);
 const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
 const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
 const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
+const idpEncryptThenSign = identityProvider({ ...defaultIdpConfig, messageSigningOrder: 'encrypt-then-sign' });
 const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
 const spWantLogoutResSign = serviceProvider({ ...defaultSpConfig, wantLogoutResponseSigned: true });
 const idpWantLogoutResSign = identityProvider({ ...defaultIdpConfig, wantLogoutResponseSigned: true });
@@ -555,3 +556,15 @@ test('sp sends a post logout response with signature and parse', async t => {
   t.is(typeof extract.logoutresponse.id, 'string');
   t.is(extract.logoutresponse.destination, 'https://idp.example.org/sso/SingleLogoutService');
 });
+
+test('send login response with  encrypted non-signed assertion with EncryptThenSign and parse it', async t => {
+  const { id, context: SAMLResponse } = await idpEncryptThenSign.createLoginResponse(spNoAssertSign, { extract: { authnrequest: { id: 'request_id' } } }, 'post', { email: 'user@esaml2.com' }, undefined, true);
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpEncryptThenSign, 'post', { body: { SAMLResponse } });
+  t.is(typeof id, 'string');
+  t.is(samlContent.startsWith('<samlp:Response'), true);
+  t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(extract.nameid, 'user@esaml2.com');
+  t.is(typeof extract.signature, 'string');
+});
+
+
