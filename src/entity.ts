@@ -44,13 +44,8 @@ export interface BindingContext {
   id: string;
 }
 
-export interface PostRequestInfo extends BindingContext {
-  relayState: string;
-  type: string;
-  entityEndpoint: string;
-}
-
-export interface PostResponseInfo extends BindingContext {
+export interface PostBindingContext extends BindingContext {
+  relayState?: string;
   entityEndpoint: string;
   type: string;
 }
@@ -265,7 +260,7 @@ export default class Entity {
   * @param  {string} relayState      the URL to which to redirect the user when logout is complete
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  createLogoutRequest(targetEntity, binding, user, relayState = '', customTagReplacement?): BindingContext | PostRequestInfo {
+  createLogoutRequest(targetEntity, binding, user, relayState = '', customTagReplacement?): BindingContext | PostBindingContext {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
@@ -294,7 +289,7 @@ export default class Entity {
   * @param  {string} binding                     protocol binding
   * @param  {function} customTagReplacement                 used when developers have their own login response template
   */
-  createLogoutResponse(target, requestInfo, binding, relayState = '', customTagReplacement?): BindingContext {
+  createLogoutResponse(target, requestInfo, binding, relayState = '', customTagReplacement?): BindingContext | PostBindingContext {
     const protocol = namespace.binding[binding];
     if (protocol === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {

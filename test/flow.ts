@@ -6,7 +6,7 @@ import xpath from 'xpath';
 import { DOMParser as dom } from 'xmldom';
 import { xpath as select } from 'xml-crypto';
 import * as _ from 'lodash';
-import { PostRequestInfo } from '../src/entity';
+import { PostBindingContext } from '../src/entity';
 import * as uuid from 'uuid';
 import * as url from 'url';
 
@@ -134,7 +134,7 @@ test('create login request with redirect binding using default template and pars
 });
 
 test('create login request with post binding using default template and parse it', async t => {
-  const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof SAMLRequest, 'string');
   t.is(typeof entityEndpoint, 'string');
@@ -193,7 +193,7 @@ test('create login request with post binding using [custom template]', t => {
       id: 'exposed_testing_id',
       context: template, // all the tags are supposed to be replaced
     };
-  }) as PostRequestInfo;
+  }) as PostBindingContext;
   id === 'exposed_testing_id' &&
     _.isString(context) &&
     _.isString(relayState) &&
@@ -218,7 +218,7 @@ test('create logout request with redirect binding', t => {
 });
 
 test('create logout request with post binding', t => {
-  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { email: 'user@esaml2' }) as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { email: 'user@esaml2' }) as PostBindingContext;
   _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
 });
 
@@ -237,7 +237,7 @@ test('create logout response with redirect binding', t => {
 });
 
 test('create logout response with post binding', t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutResponse(sp, {}, 'post') as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutResponse(sp, {}, 'post') as PostBindingContext;
   _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLResponse') ? t.pass() : t.fail();
 });
 
@@ -510,7 +510,7 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
 });
 
 test('idp sends a post logout request without signature and sp parses it', async t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com' }) as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
@@ -524,7 +524,7 @@ test('idp sends a post logout request without signature and sp parses it', async
 });
 
 test('idp sends a post logout request with signature and sp parses it', async t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'user@esaml2.com' }) as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
@@ -539,7 +539,7 @@ test('idp sends a post logout request with signature and sp parses it', async t 
 
 // simulate init-slo
 test('sp sends a post logout response without signature and parse', async t => {
-  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idp, null, 'post') as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idp, null, 'post') as PostBindingContext;
   const { samlContent, extract } = await idp.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   t.is(extract.signature, undefined);
   t.is(extract.issuer, 'https://sp.example.org/metadata');
@@ -548,7 +548,7 @@ test('sp sends a post logout response without signature and parse', async t => {
 });
 
 test('sp sends a post logout response with signature and parse', async t => {
-  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, null, 'post') as PostRequestInfo;
+  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, null, 'post') as PostBindingContext;
   const { samlContent, extract } = await idpWantLogoutResSign.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   t.is(typeof extract.signature, 'string');
   t.is(extract.issuer, 'https://sp.example.org/metadata');

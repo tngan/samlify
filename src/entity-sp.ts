@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Declares the actions taken by service provider
 */
-import Entity, { BindingContext, PostRequestInfo, ESamlHttpRequest } from './entity';
+import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -48,7 +48,7 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  public createLoginRequest(idp, binding = 'redirect', customTagReplacement?): BindingContext | PostRequestInfo {
+  public createLoginRequest(idp, binding = 'redirect', customTagReplacement?): BindingContext | PostBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
