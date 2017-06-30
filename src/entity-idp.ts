@@ -45,6 +45,7 @@ export class IdentityProvider extends Entity {
   // {boolean}      wantLogoutRequestSigned
   // {boolean}      wantAuthnRequestsSigned
   // {boolean}      wantLogoutResponseSigned
+  // {object}       tagPrefix
   //
   /**
   * @desc  Identity prvider can be configured using either metadata importing or idpSetting
@@ -52,7 +53,13 @@ export class IdentityProvider extends Entity {
   * @param  {string} meta
   */
   constructor(idpSetting) {
-    const entitySetting = Object.assign({ wantAuthnRequestsSigned: false }, idpSetting);
+    const defaultIdpEntitySetting = {
+      wantAuthnRequestsSigned: false,
+      tagPrefix: {
+        encryptedAssertion: 'saml',
+      },
+    };
+    const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
     // build attribute part
     if (idpSetting.loginResponseTemplate) {
       if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {

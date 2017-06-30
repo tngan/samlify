@@ -567,4 +567,17 @@ test('send login response with  encrypted non-signed assertion with EncryptThenS
   t.is(typeof extract.signature, 'string');
 });
 
+test('Customize prefix (saml2) for encrypted assertion tag', async t => {
+  const idpCustomizePfx = identityProvider(Object.assign(defaultIdpConfig, { tagPrefix: {
+    encryptedAssertion: 'saml2',
+  }}));
+  const { id, context: SAMLResponse } = await idpCustomizePfx.createLoginResponse(sp, null, 'post', { email: 'test@email.com' });
+  t.is((utility.base64Decode(SAMLResponse) as string).includes('saml2:EncryptedAssertion'), true);
+  const { samlContent, extract } = await sp.parseLoginResponse(idpCustomizePfx, 'post', { body: { SAMLResponse } });
+});
 
+test('Customize prefix (default is saml) for encrypted assertion tag', async t => {
+  const { id, context: SAMLResponse } = await idp.createLoginResponse(sp, null, 'post', { email: 'test@email.com' });
+  t.is((utility.base64Decode(SAMLResponse) as string).includes('saml:EncryptedAssertion'), true);
+  const { samlContent, extract } = await sp.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
+});

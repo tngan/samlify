@@ -618,7 +618,8 @@ const libSaml = () => {
               if (!res) {
                 return reject(new Error('undefined encrypted assertion'));
               }
-              const encryptAssertionNode = new dom().parseFromString(`<saml:EncryptedAssertion>${res}</saml:EncryptedAssertion>`);
+              const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
+              const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion>${res}</${encAssertionPrefix}:EncryptedAssertion>`);
               doc.replaceChild(encryptAssertionNode, assertions[0]);
               return resolve(utility.base64Encode(doc.toString()));
             });
