@@ -1,6 +1,11 @@
 import esaml2 = require('../index');
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
+import * as fs from 'fs';
+import * as url from 'url';
+import { DOMParser as dom } from 'xmldom';
+import { xpath as select } from 'xml-crypto';
+import * as _ from 'lodash';
 
 const {
   IdentityProvider: identityProvider,
@@ -77,6 +82,7 @@ test('#31 query param for sso/slo returns error', t => {
   const spslo = libsaml.extractor(spxml, [{ localName: 'SingleLogoutService', attributes: ['index'] }])['singlelogoutservice'];
   const sso = libsaml.extractor(idpxml, [{ localName: 'SingleSignOnService', attributes: ['index'] }])['singlesignonservice'];
   const idpslo = libsaml.extractor(idpxml, [{ localName: 'SingleLogoutService', attributes: ['index'] }])['singlelogoutservice'];
+  const sp98 = serviceProvider({ metadata: fs.readFileSync('./test/misc/sp_metadata_98.xml') });
 
   test('#33 sp metadata acs index should be increased by 1', t => {
     t.is(acs.length, 2);
@@ -114,5 +120,15 @@ test('#31 query param for sso/slo returns error', t => {
   });
   test('#91 idp gets single sign on service from the metadata', t => {
     t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
+  });
+  test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
+    const { id, context } = sp98.createLoginRequest(idp, 'redirect');
+    const originalURL = url.parse(context, true);
+    const request = originalURL.query.SAMLRequest;
+    const rawRequest = utility.inflateString(decodeURIComponent(request));
+    const xml = new dom().parseFromString(rawRequest);
+    const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];
+    const acsUrl = _.find(authnRequest.attributes, (a: any) => a.nodeName === 'AssertionConsumerServiceURL').nodeValue;
+    t.is(acsUrl, 'https://example.org/response');
   });
 })();

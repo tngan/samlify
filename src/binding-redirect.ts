@@ -95,7 +95,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         Issuer: metadata.sp.getEntityID(),
         IssueInstant: new Date().toISOString(),
         NameIDFormat: namespace.format[spSetting.loginNameIDFormat] || namespace.format.emailAddress,
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.redirect),
+        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
       } as any);
