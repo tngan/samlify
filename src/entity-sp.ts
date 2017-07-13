@@ -94,7 +94,7 @@ export class ServiceProvider extends Entity {
         valueTag: 'AttributeValue',
       }],
       from: idp,
-      checkSiganture: true, // saml response must have signature
+      checkSignature: true, // saml response must have signature
       supportBindings: ['post'],
       parserType: 'SAMLResponse',
       type: 'login',
