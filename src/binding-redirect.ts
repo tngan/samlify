@@ -63,7 +63,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
   }
   if (isSigned) {
     const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
-    const octetString = samlRequest + sigAlg + relayState;
+    const octetString = samlRequest + relayState + sigAlg;
     return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(queryParam + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
