@@ -251,9 +251,17 @@ const libSaml = () => {
           value.forEach(v => dat.push(String(v.nodeValue)));
           res = dat;
         }
-        obj[key[0].nodeValue.toString()] = res;
+
+        const objKey = key[0].nodeValue.toString();
+
+        if (obj[objKey]) {
+          obj[objKey] = [obj[objKey]].concat(res);
+        } else {
+          obj[objKey] = res;
+        }
+
       } else {
-        //console.warn('Multiple keys or null value is found');
+        // console.warn('Multiple keys or null value is found');
       }
     });
     return Object.keys(obj).length === 0 ? undefined : obj;
@@ -451,19 +459,31 @@ const libSaml = () => {
         throw new Error('no signature is found in the context');
       }
       const sig = new SignedXml();
-      sig.signatureAlgorithm = opts.signatureAlgorithm;
-      if (opts.keyFile) {
-        sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
-      } else if (opts.cert) {
-        sig.keyInfoProvider = new this.getKeyInfo(opts.cert.getX509Certificate(certUse.signing));
-      } else {
-        throw new Error('undefined certificate in \'opts\' object');
-      }
       let res = true;
       xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
       selection.forEach(s => {
-        const signature = new dom().parseFromString(s.toString());
-        sig.loadSignature(signature);
+        let selectedCert = '';
+        sig.signatureAlgorithm = opts.signatureAlgorithm;
+        if (opts.keyFile) {
+          sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
+        } else if (opts.cert) {
+          let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
+          if (typeof metadataCert === 'string') {
+            metadataCert = [metadataCert];
+          }
+          const x509Certificate = select("//*[local-name(.)='X509Certificate']", s)[0].firstChild.data;
+          if (metadataCert.includes(x509Certificate)) {
+            selectedCert = x509Certificate;
+          }
+          if (selectedCert === '') {
+            throw new Error('certificate in document is not matched those specified in metadata');
+          }
+          metadataCert = metadataCert.map(utility.normalizeCerString);
+          sig.keyInfoProvider = new this.getKeyInfo(selectedCert);
+        } else {
+          throw new Error('undefined certificate in \'opts\' object');
+        }
+        sig.loadSignature(s);
         res = res && sig.checkSignature(xml);
       });
       return res;
