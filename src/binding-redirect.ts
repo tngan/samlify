@@ -108,7 +108,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         isSigned: metadata.sp.isAuthnRequestSigned(),
         entitySetting: spSetting,
         baseUrl: base,
-        relayState: spSetting.relayState
+        relayState: spSetting.relayState,
       }),
     };
   }
