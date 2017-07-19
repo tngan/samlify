@@ -471,6 +471,7 @@ const libSaml = () => {
           if (typeof metadataCert === 'string') {
             metadataCert = [metadataCert];
           }
+          metadataCert = metadataCert.map(utility.normalizeCerString);
           const x509Certificate = select("//*[local-name(.)='X509Certificate']", s)[0].firstChild.data;
           if (includes(metadataCert, x509Certificate)) {
             selectedCert = x509Certificate;
@@ -478,7 +479,6 @@ const libSaml = () => {
           if (selectedCert === '') {
             throw new Error('certificate in document is not matched those specified in metadata');
           }
-          metadataCert = metadataCert.map(utility.normalizeCerString);
           sig.keyInfoProvider = new this.getKeyInfo(selectedCert);
         } else {
           throw new Error('undefined certificate in \'opts\' object');
