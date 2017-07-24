@@ -4,6 +4,10 @@
 * @desc  Declares the actions taken by identity provider
 */
 import Entity, { ESamlHttpRequest } from './entity';
+
+// This unfortunately creates a circular dependency that doesn't exist at run time
+import { ServiceProvider, ServiceProviderMetadata, IdentityProviderMetadata } from './types';
+
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -16,43 +20,49 @@ const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
 
+export interface IdentityProviderOptions {
+  metadata?: string | Buffer;
 
-/*
- * @desc interface function
+  /** signature algorithm */
+  requestSignatureAlgotithm?: string;
+
+  /** template of login response */
+  loginResponseTemplate?: { [key: string]: any };
+
+  /** template of login response */
+  logoutRequestTemplate?: { [key: string]: any };
+
+  /** customized function used for generating request ID */
+  generateID?: () => string;
+
+  entityID?: string;
+  privateKey?: string;
+  privateKeyPass?: string;
+  signingCert?: string;
+  encrpytCert?: string; /** todo */
+  nameIDFormat?: string[];
+  singleSignOnService?: Array<{ [key: string]: string }>;
+  singleLogoutService?: Array<{ [key: string]: string }>;
+  wantLogoutRequestSigned?: boolean;
+  wantAuthnRequestsSigned?: boolean;
+  wantLogoutRequestSignedResponseSigned?: boolean;
+  tagPrefix?: { [key: string]: string };
+}
+
+/**
+ * Identity prvider can be configured using either metadata importing or idpSetting
  */
-export default function(props) {
+export default function(props: IdentityProviderOptions) {
   return new IdentityProvider(props);
 }
 
+/**
+ * Identity prvider can be configured using either metadata importing or idpSetting
+ */
 export class IdentityProvider extends Entity {
-  // local variables
-  // idpSetting is an object with properties as follow:
-  // -------------------------------------------------
-  // {string}       requestSignatureAlgorithm     signature algorithm
-  // {string}       loginResponseTemplate         template of login response
-  // {string}       logoutRequestTemplate         template of logout request
-  // {function}     generateID is the customized function used for generating request ID
-  //
-  // if no metadata is provided, idpSetting includes
-  // {string}       entityID
-  // {string}       privateKey
-  // {string}       privateKeyPass
-  // {string}       signingCert
-  // {string}       encryptCert (todo)
-  // {[string]}     nameIDFormat
-  // {[object]}     singleSignOnService
-  // {[object]}     singleLogoutService
-  // {boolean}      wantLogoutRequestSigned
-  // {boolean}      wantAuthnRequestsSigned
-  // {boolean}      wantLogoutResponseSigned
-  // {object}       tagPrefix
-  //
-  /**
-  * @desc  Identity prvider can be configured using either metadata importing or idpSetting
-  * @param  {object} idpSetting
-  * @param  {string} meta
-  */
-  constructor(idpSetting) {
+  entityMeta: IdentityProviderMetadata;
+
+  constructor(idpSetting: IdentityProviderOptions) {
     const defaultIdpEntitySetting = {
       wantAuthnRequestsSigned: false,
       tagPrefix: {
@@ -79,14 +89,21 @@ export class IdentityProvider extends Entity {
 
   /**
   * @desc  Generates the login response for developers to design their own method
-  * @param  {ServiceProvider}   sp               object of service provider
-  * @param  {object}   requestInfo               corresponding request, used to obtain the id
-  * @param  {string}   binding                   protocol binding
-  * @param  {object}   user                      current logged user (e.g. req.user)
-  * @param  {function} customTagReplacement      used when developers have their own login response template
-  * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing)
+  * @param  sp                        object of service provider
+  * @param  requestInfo               corresponding request, used to obtain the id
+  * @param  binding                   protocol binding
+  * @param  user                      current logged user (e.g. req.user)
+  * @param  customTagReplacement      used when developers have their own login response template
+  * @param  encryptThenSign           whether or not to encrypt then sign first (if signing)
   */
-  public async createLoginResponse(sp, requestInfo, binding, user, customTagReplacement?, encryptThenSign?) {
+  public async createLoginResponse(
+    sp: ServiceProvider,
+    requestInfo: { [key: string]: any },
+    binding: string,
+    user: { [key: string]: any },
+    customTagReplacement?: (...args: any[]) => any,
+    encryptThenSign?: boolean,
+  ) {
     const protocol = namespace.binding[binding] || namespace.binding.redirect;
     if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
@@ -96,34 +113,33 @@ export class IdentityProvider extends Entity {
       // xmlenc is using async process
       return {
         ...context,
-        entityEndpoint: sp.entityMeta.getAssertionConsumerService(binding),
+        entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding),
         type: 'SAMLResponse',
       };
-
-    } else {
-      // Will support artifact in the next release
-      throw new Error('this binding is not supported');
     }
+
+    // Will support artifact in the next release
+    throw new Error('this binding is not supported');
   }
 
   /**
-  * @desc   Validation of the parsed URL parameters
-  * @param  {ServiceProvider}   sp               object of service provider
-  * @param  {string}   binding                   protocol binding
-  * @param  {request}   req                      request
-  */
-  public parseLoginRequest(sp, binding, req: ESamlHttpRequest) {
+   * Validation of the parsed URL parameters
+   * @param sp ServiceProvider instance
+   * @param binding Protocol binding
+   * @param req Request
+   */
+  public parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
     return this.genericParser({
       parserFormat: ['AuthnContextClassRef', 'Issuer', {
         localName: 'Signature',
         extractEntireBody: true,
       }, {
-        localName: 'AuthnRequest',
-        attributes: ['ID'],
-      }, {
-        localName: 'NameIDPolicy',
-        attributes: ['Format', 'AllowCreate'],
-      }],
+          localName: 'AuthnRequest',
+          attributes: ['ID'],
+        }, {
+          localName: 'NameIDPolicy',
+          attributes: ['Format', 'AllowCreate'],
+        }],
       from: sp,
       checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
