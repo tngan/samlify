@@ -19,13 +19,8 @@
     ]
   },
   "atom": { "rewriteTsconfig": false },
-  "typeRoots": [
-    "node_modules/@types",
-    "@types"
-  ],
-  "filesGlob": [
-    "./src/**/*.ts",
-    "index.ts"
+  "exclude": [
+    "node_modules"
   ],
   "compileOnSave": false,
   "buildOnSave": false
