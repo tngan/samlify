@@ -36,14 +36,19 @@ export interface IdentityProviderOptions {
   generateID?: () => string;
 
   entityID?: string;
-  privateKey?: string;
+  privateKey?: string | Buffer;
   privateKeyPass?: string;
   signingCert?: string;
   encrpytCert?: string; /** todo */
   nameIDFormat?: string[];
   singleSignOnService?: Array<{ [key: string]: string }>;
   singleLogoutService?: Array<{ [key: string]: string }>;
+  isAssertionEncrypted?: boolean;
+  encPrivateKey?: string | Buffer;
+  encPrivateKeyPass?: string;
+  messageSigningOrder?: string;
   wantLogoutRequestSigned?: boolean;
+  wantLogoutResponseSigned?: boolean;
   wantAuthnRequestsSigned?: boolean;
   wantLogoutRequestSignedResponseSigned?: boolean;
   tagPrefix?: { [key: string]: string };
