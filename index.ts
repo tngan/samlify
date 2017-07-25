@@ -12,4 +12,3 @@ import * as Constants from './src/urn';
 export {
   Constants,
 };
-
