@@ -59,7 +59,7 @@ export interface ParseResult {
   sigAlg?: string;
 }
 
-type EntityConstructor = (MetadataIdpConstructor | MetadataSpConstructor)
+export type EntityConstructor = (MetadataIdpConstructor | MetadataSpConstructor)
   & { metadata?: string | Buffer };
 
 export default class Entity {

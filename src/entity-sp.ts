@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Declares the actions taken by service provider
 */
-import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest } from './entity';
+import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest, ParseResult } from './entity';
 import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,

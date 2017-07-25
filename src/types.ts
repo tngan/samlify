@@ -20,7 +20,7 @@ export interface MetadataIdpOptions {
 export type MetadataIdpConstructor =
   | MetadataIdpOptions
   | MetadataFile;
-  
+
 export interface MetadataSpOptions {
   entityID?: string;
   signingCert?: string;

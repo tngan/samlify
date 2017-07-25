@@ -11,7 +11,7 @@
     "slo",
     "metadata"
   ],
-  "typings": "./types.d.ts",
+  "typings": "types/index.d.ts",
   "scripts": {
     "build": "npm run lint && tsc",
     "build:nolint": "tsc",
