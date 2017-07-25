@@ -4,7 +4,12 @@
 * @desc  Declares the actions taken by identity provider
 */
 import Entity, { ESamlHttpRequest } from './entity';
-import { ServiceProvider, ServiceProviderMetadata, IdentityProviderMetadata, IdentityProviderConstructor } from './types';
+import {
+  ServiceProviderConstructor as ServiceProvider,
+  ServiceProviderMetadata,
+  IdentityProviderMetadata,
+  IdentityProviderSettings,
+} from './types';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -20,7 +25,7 @@ const metaWord = wording.metadata;
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
-export default function(props: IdentityProviderConstructor) {
+export default function(props: IdentityProviderSettings) {
   return new IdentityProvider(props);
 }
 
@@ -30,7 +35,7 @@ export default function(props: IdentityProviderConstructor) {
 export class IdentityProvider extends Entity {
   entityMeta: IdentityProviderMetadata;
 
-  constructor(idpSetting: IdentityProviderConstructor) {
+  constructor(idpSetting: IdentityProviderSettings) {
     const defaultIdpEntitySetting = {
       wantAuthnRequestsSigned: false,
       tagPrefix: {

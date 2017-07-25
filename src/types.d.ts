@@ -1,7 +1,7 @@
-export { IdentityProvider } from './entity-idp';
+export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
 
-export { ServiceProvider } from './entity-sp';
+export { ServiceProvider as ServiceProviderConstructor } from './entity-sp';
 export { SpMetadata as ServiceProviderMetadata } from './metadata-sp';
 
 export type MetadataFile = string | Buffer;
@@ -48,7 +48,7 @@ export interface EntitySetting {
   relayState?: any;
 }
 
-export interface ServiceProviderConstructor {
+export interface ServiceProviderSettings {
   metadata?: string | Buffer;
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
@@ -62,7 +62,7 @@ export interface ServiceProviderConstructor {
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
 }
 
-export interface IdentityProviderConstructor {
+export interface IdentityProviderSettings {
   metadata?: string | Buffer;
 
   /** signature algorithm */
