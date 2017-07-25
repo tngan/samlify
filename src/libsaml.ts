@@ -473,7 +473,7 @@ const libSaml = () => {
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
           let x509Certificate = select("//*[local-name(.)='X509Certificate']", s)[0].firstChild.data;
-          x509Certificate = utility_1.default.normalizeCerString(x509Certificate);
+          x509Certificate = utility.normalizeCerString(x509Certificate);
           if (includes(metadataCert, x509Certificate)) {
             selectedCert = x509Certificate;
           }
