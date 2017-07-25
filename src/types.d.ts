@@ -47,3 +47,51 @@ export interface EntitySetting {
   wantAssertionsSigned?: boolean;
   relayState?: any;
 }
+
+export interface ServiceProviderConstructor {
+  metadata?: string | Buffer;
+  authnRequestsSigned?: boolean;
+  wantAssertionsSigned?: boolean;
+  wantMessageSigned?: boolean;
+  privateKey?: string | Buffer;
+  privateKeyPass?: string;
+  isAssertionEncrypted?: boolean;
+  encPrivateKey?: string | Buffer;
+  encPrivateKeyPass?: string | Buffer;
+  assertionConsumerService?: Array<{ Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ Binding: string, Location: string }>;
+}
+
+export interface IdentityProviderConstructor {
+  metadata?: string | Buffer;
+
+  /** signature algorithm */
+  requestSignatureAlgotithm?: string;
+
+  /** template of login response */
+  loginResponseTemplate?: { [key: string]: any };
+
+  /** template of login response */
+  logoutRequestTemplate?: { [key: string]: any };
+
+  /** customized function used for generating request ID */
+  generateID?: () => string;
+
+  entityID?: string;
+  privateKey?: string | Buffer;
+  privateKeyPass?: string;
+  signingCert?: string;
+  encrpytCert?: string; /** todo */
+  nameIDFormat?: string[];
+  singleSignOnService?: Array<{ [key: string]: string }>;
+  singleLogoutService?: Array<{ [key: string]: string }>;
+  isAssertionEncrypted?: boolean;
+  encPrivateKey?: string | Buffer;
+  encPrivateKeyPass?: string;
+  messageSigningOrder?: string;
+  wantLogoutRequestSigned?: boolean;
+  wantLogoutResponseSigned?: boolean;
+  wantAuthnRequestsSigned?: boolean;
+  wantLogoutRequestSignedResponseSigned?: boolean;
+  tagPrefix?: { [key: string]: string };
+}

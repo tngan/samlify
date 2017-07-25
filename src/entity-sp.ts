@@ -4,23 +4,13 @@
 * @desc  Declares the actions taken by service provider
 */
 import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest } from './entity';
-
-// This unfortunately creates a circular dependency that doesn't exist at run time
-import { IdentityProvider, ServiceProviderMetadata } from './types';
-
+import { IdentityProvider, ServiceProviderMetadata, ServiceProviderConstructor } from './types';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import * as xml from 'xml';
-
-export interface ServiceProviderConstructor {
-  authnRequestsSigned?: boolean;
-  wantAssertionsSigned?: boolean;
-  wantMessageSigned?: boolean;
-  // [key: string]: any;
-}
 
 const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
@@ -29,7 +19,7 @@ const metaWord = wording.metadata;
 /*
  * @desc interface function
  */
-export default function(props) {
+export default function(props: ServiceProviderConstructor) {
   return new ServiceProvider(props);
 }
 

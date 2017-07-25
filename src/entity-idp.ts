@@ -4,10 +4,7 @@
 * @desc  Declares the actions taken by identity provider
 */
 import Entity, { ESamlHttpRequest } from './entity';
-
-// This unfortunately creates a circular dependency that doesn't exist at run time
-import { ServiceProvider, ServiceProviderMetadata, IdentityProviderMetadata } from './types';
-
+import { ServiceProvider, ServiceProviderMetadata, IdentityProviderMetadata, IdentityProviderConstructor } from './types';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -20,44 +17,10 @@ const bindDict = wording.binding;
 const xmlTag = tags.xmlTag;
 const metaWord = wording.metadata;
 
-export interface IdentityProviderOptions {
-  metadata?: string | Buffer;
-
-  /** signature algorithm */
-  requestSignatureAlgotithm?: string;
-
-  /** template of login response */
-  loginResponseTemplate?: { [key: string]: any };
-
-  /** template of login response */
-  logoutRequestTemplate?: { [key: string]: any };
-
-  /** customized function used for generating request ID */
-  generateID?: () => string;
-
-  entityID?: string;
-  privateKey?: string | Buffer;
-  privateKeyPass?: string;
-  signingCert?: string;
-  encrpytCert?: string; /** todo */
-  nameIDFormat?: string[];
-  singleSignOnService?: Array<{ [key: string]: string }>;
-  singleLogoutService?: Array<{ [key: string]: string }>;
-  isAssertionEncrypted?: boolean;
-  encPrivateKey?: string | Buffer;
-  encPrivateKeyPass?: string;
-  messageSigningOrder?: string;
-  wantLogoutRequestSigned?: boolean;
-  wantLogoutResponseSigned?: boolean;
-  wantAuthnRequestsSigned?: boolean;
-  wantLogoutRequestSignedResponseSigned?: boolean;
-  tagPrefix?: { [key: string]: string };
-}
-
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
-export default function(props: IdentityProviderOptions) {
+export default function(props: IdentityProviderConstructor) {
   return new IdentityProvider(props);
 }
 
@@ -67,7 +30,7 @@ export default function(props: IdentityProviderOptions) {
 export class IdentityProvider extends Entity {
   entityMeta: IdentityProviderMetadata;
 
-  constructor(idpSetting: IdentityProviderOptions) {
+  constructor(idpSetting: IdentityProviderConstructor) {
     const defaultIdpEntitySetting = {
       wantAuthnRequestsSigned: false,
       tagPrefix: {
