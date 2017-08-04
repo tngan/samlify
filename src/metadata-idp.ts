@@ -4,6 +4,7 @@
 * @desc  Metadata of identity provider
 */
 import Metadata, { MetadataInterface } from './metadata';
+import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
 import { namespace } from './urn';
 import libsaml from './libsaml';
 import { isString, isUndefined } from 'lodash';
@@ -17,13 +18,13 @@ export interface IdpMetadataInterface extends MetadataInterface {
 /*
  * @desc interface function
  */
-export default function(meta) {
+export default function(meta: MetadataIdpConstructor) {
   return new IdpMetadata(meta);
 }
 
 export class IdpMetadata extends Metadata {
 
-  constructor(meta) {
+  constructor(meta: MetadataIdpConstructor) {
 
     const isFile = isString(meta) || meta instanceof Buffer;
 
@@ -37,7 +38,7 @@ export class IdpMetadata extends Metadata {
         nameIDFormat = [],
         singleSignOnService = [],
         singleLogoutService = [],
-      } = meta;
+      } = meta as MetadataIdpOptions;
 
       const IDPSSODescriptor: any[] = [{
         _attr: {
@@ -63,10 +64,9 @@ export class IdpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(singleSignOnService)) {
-        let indexCount = 0;
-        singleSignOnService.forEach(a => {
+        singleSignOnService.forEach((a, indexCount) => {
           const attr: any = {
-            index: String(indexCount++),
+            index: indexCount.toString(),
             Binding: a.Binding,
             Location: a.Location,
           };
@@ -80,13 +80,12 @@ export class IdpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
-        let indexCount = 0;
-        singleLogoutService.forEach(a => {
+        singleLogoutService.forEach((a, indexCount) => {
           const attr: any = {};
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.index = (indexCount++).toString();
+          attr.index = (indexCount).toString();
           attr.Binding = a.Binding;
           attr.Location = a.Location;
           IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
@@ -107,7 +106,7 @@ export class IdpMetadata extends Metadata {
       }]);
     }
 
-    super(meta, [
+    super(meta as string | Buffer, [
       {
         localName: 'IDPSSODescriptor',
         attributes: ['WantAuthnRequestsSigned'],

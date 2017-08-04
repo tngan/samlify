@@ -4,6 +4,7 @@
 * @desc  Metadata of service provider
 */
 import Metadata, { MetadataInterface } from './metadata';
+import { MetadataSpConstructor, MetadataSpOptions } from './types';
 import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
 import { isString } from 'lodash';
@@ -26,7 +27,7 @@ interface MetaElement {
 /*
  * @desc interface function
  */
-export default function(meta) {
+export default function(meta: MetadataSpConstructor) {
   return new SpMetadata(meta);
 }
 
@@ -39,7 +40,7 @@ export class SpMetadata extends Metadata {
   * @param  {object/string} meta (either xml string or configuation in object)
   * @return {object} prototypes including public functions
   */
-  constructor(meta) {
+  constructor(meta: MetadataSpConstructor) {
 
     const isFile = isString(meta) || meta instanceof Buffer;
 
@@ -58,7 +59,7 @@ export class SpMetadata extends Metadata {
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
-      } = meta;
+      } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
         KeyDescriptor: [],
@@ -134,6 +135,7 @@ export class SpMetadata extends Metadata {
         descriptors[name].forEach(e => SPSSODescriptor.push({ [name]: e }));
       });
 
+      // Re-assign the meta reference as a XML string|Buffer for use with the parent constructor
       meta = xml([{
         EntityDescriptor: [{
           _attr: {
@@ -147,13 +149,8 @@ export class SpMetadata extends Metadata {
 
     }
 
-    /**
-    * @desc  Initialize with creating a new metadata object
-    * @param {string/objects} meta     metadata XML
-    * @param {array of Objects}        high-level XML element selector
-    */
-
-    super(meta, [{
+    // Use the re-assigned meta object reference here
+    super(meta as string | Buffer, [{
       localName: 'SPSSODescriptor',
       attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
     }, {

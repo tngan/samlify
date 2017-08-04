@@ -8,12 +8,13 @@ import { namespace, wording, algorithms, messageConfigurations } from './urn';
 import * as uuid from 'uuid';
 import libsaml from './libsaml';
 import Metadata from './metadata';
-import IdpMetadata from './metadata-idp';
-import SpMetadata from './metadata-sp';
+import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
+import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString, isUndefined, isArray, get } from 'lodash';
 import * as url from 'url';
+import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -58,20 +59,21 @@ export interface ParseResult {
   sigAlg?: string;
 }
 
-export default class Entity {
+export type EntityConstructor = (MetadataIdpConstructor | MetadataSpConstructor)
+  & { metadata?: string | Buffer };
 
-  entitySetting: any;
+export default class Entity {
+  entitySetting: EntitySetting;
   entityType: string;
-  entityMeta: any;
+  entityMeta: IdpMetadataConstructor | SpMetadataConstructor;
+
   /**
-  * @desc  Constructor
-  * @param {object} entitySetting
-  * @param {object} entityMetaClass determine whether the entity is IdentityProvider or ServiceProvider
-  * @param {string} entityMeta is the entity metadata, deprecated after 2.0
+  * @param entitySetting
+  * @param entityMeta is the entity metadata, deprecated after 2.0
   */
-  constructor(entitySetting, entityType) {
+  constructor(entitySetting: EntityConstructor, entityType: 'idp' | 'sp') {
     this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);
-    const metadata = entitySetting.metadata ? entitySetting.metadata : entitySetting;
+    const metadata = entitySetting.metadata || entitySetting;
     switch (entityType) {
       case 'idp':
         this.entityMeta = IdpMetadata(metadata);
@@ -235,9 +237,9 @@ export default class Entity {
 
         // verify the signatures (for both assertion/message)
         if (!libsaml.verifySignature(res, {
-            cert: opts.from.entityMeta,
-            signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
-          })) {
+          cert: opts.from.entityMeta,
+          signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
+        })) {
           throw new Error('incorrect signature');
         }
       }

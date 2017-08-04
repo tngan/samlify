@@ -19,6 +19,7 @@ coverage
 node_modules
 
 build
+types/
 
 .yarnclean
 

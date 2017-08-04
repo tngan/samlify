@@ -88,7 +88,7 @@ export default class Metadata implements MetadataInterface {
   * @desc Get the support NameID format declared in entity metadata
   * @return {array} support NameID format
   */
-  public getNameIDFormat(): any[] {
+  public getNameIDFormat(): any {
     return this.meta.nameidformat;
   }
 

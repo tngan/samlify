@@ -3,6 +3,8 @@
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
+    "declaration": true,
+    "declarationDir": "types",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
@@ -19,13 +21,9 @@
     ]
   },
   "atom": { "rewriteTsconfig": false },
-  "typeRoots": [
-    "node_modules/@types",
-    "@types"
-  ],
-  "filesGlob": [
-    "./src/**/*.ts",
-    "index.ts"
+  "exclude": [
+    "node_modules",
+    "types/**/*.ts"
   ],
   "compileOnSave": false,
   "buildOnSave": false

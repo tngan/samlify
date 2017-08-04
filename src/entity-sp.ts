@@ -3,7 +3,12 @@
 * @author tngan
 * @desc  Declares the actions taken by service provider
 */
-import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest } from './entity';
+import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest, ParseResult } from './entity';
+import {
+  IdentityProviderConstructor as IdentityProvider,
+  ServiceProviderMetadata,
+  ServiceProviderSettings,
+} from './types';
 import libsaml from './libsaml';
 import utility from './utility';
 import { wording, namespace, tags } from './urn';
@@ -18,7 +23,7 @@ const metaWord = wording.metadata;
 /*
  * @desc interface function
  */
-export default function(props) {
+export default function(props: ServiceProviderSettings) {
   return new ServiceProvider(props);
 }
 
@@ -28,12 +33,14 @@ export default function(props) {
 * @param  {string} meta
 */
 export class ServiceProvider extends Entity {
+  entityMeta: ServiceProviderMetadata;
+
   /**
   * @desc  Inherited from Entity
   * @param {object} spSetting    setting of service provider
   * @param {string} meta		     metadata
   */
-  constructor(spSetting) {
+  constructor(spSetting: ServiceProviderSettings) {
     const entitySetting = Object.assign({
       authnRequestsSigned: false,
       wantAssertionsSigned: false,
@@ -48,15 +55,22 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
   */
-  public createLoginRequest(idp, binding = 'redirect', customTagReplacement?): BindingContext | PostBindingContext {
+  public createLoginRequest(
+    idp: IdentityProvider,
+    binding = 'redirect',
+    customTagReplacement?: (...args: any[]) => any,
+  ): BindingContext | PostBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
       throw new Error('metadata conflict - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
     }
+
     if (protocol === nsBinding.redirect) {
       return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
-    } else if (protocol === nsBinding.post) {
+    }
+
+    if (protocol === nsBinding.post) {
       const context = postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), { idp, sp: this }, customTagReplacement);
       return {
         ...context,

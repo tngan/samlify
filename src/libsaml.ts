@@ -36,13 +36,13 @@ export interface SignatureConstructor {
   isMessageSigned?: boolean;
 }
 
-interface SignatureVerifierOptions {
+export interface SignatureVerifierOptions {
   cert?: MetadataInterface;
   signatureAlgorithm?: string;
   keyFile?: string;
 }
 
-interface ExtractorResult {
+export interface ExtractorResult {
   [key: string]: any;
   signature?: string | string[];
   issuer?: string | string[];
@@ -50,7 +50,7 @@ interface ExtractorResult {
   notexist?: boolean;
 }
 
-interface LoginResponseAttribute {
+export interface LoginResponseAttribute {
   name: string;
   nameFormat: string; //
   valueXsiType: string; //
