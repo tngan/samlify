@@ -44,7 +44,6 @@
     "lodash": "^4.17.4",
     "node-forge": "^0.7.1",
     "node-rsa": "^0.4.2",
-    "superagent": "^3.5.2",
     "typescript": "^2.3.4",
     "uuid": "^3.0.1",
     "xml": "^1.0.0",
