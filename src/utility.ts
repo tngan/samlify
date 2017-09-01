@@ -53,7 +53,7 @@ export function inflateString(compressedString: string): string {
 * @return {string} A formatted certificate string
 */
 function _normalizeCerString(bin: string | Buffer, format: string) {
-  return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '');
+  return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '').replace(/ /g, '');
 }
 /**
 * @desc Parse the .cer to string format without line break, header and footer
