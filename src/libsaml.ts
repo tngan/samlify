@@ -15,6 +15,7 @@ import { isString, isObject, isUndefined, includes } from 'lodash';
 import * as nrsa from 'node-rsa';
 import crpyto, { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
+import * as xsd from 'libxml-xsd';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -28,7 +29,7 @@ export interface SignatureConstructor {
   rawSamlMessage: string;
   referenceTagXPath?: string;
   privateKey: string;
-  privateKeyPass: string;
+  privateKeyPass?: string;
   signatureAlgorithm: string;
   signingCert: string | Buffer;
   isBase64Output?: boolean;
@@ -688,6 +689,25 @@ const libSaml = () => {
           const assertionNode = new dom().parseFromString(res);
           xml.replaceChild(assertionNode, encryptedAssertions[0]);
           return resolve(xml.toString());
+        });
+      });
+    },
+    /**
+     * @desc Check if the xml string is valid and bounded
+     */
+    async isValidXml(input: string) {
+      return new Promise((resolve, reject) => {
+        xsd.parseFile('./schemas/saml-schema-protocol-2.0.xsd', (err, schema) => {
+          if (err) {
+            reject(err.message);
+          }
+          schema.validate(input, (techErrors, validationErrors) => {
+            if (techErrors !== null || validationErrors !== null) {
+              console.log(`${validationErrors}`);
+              reject('this is not a valid saml response with errors');
+            }
+            resolve(true);
+          });
         });
       });
     },

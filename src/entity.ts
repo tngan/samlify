@@ -153,7 +153,6 @@ export default class Entity {
     }
     return +notBefore <= +now && now < notOnOrAfter;
   }
-
   /**
   * @desc  Validate and parse the request/response with different bindings
   * @param  {object} opts is the options for abstraction
@@ -201,6 +200,9 @@ export default class Entity {
         throw new Error('bad request');
       }
       const xmlString = inflateString(decodeURIComponent(samlContent));
+      if (parserType === 'SAMLResponse') {
+        await libsaml.isValidXml(xmlString);
+      }
       if (checkSignature) {
         const { SigAlg: sigAlg, Signature: signature } = reqQuery;
         if (signature && sigAlg) {
@@ -245,6 +247,9 @@ export default class Entity {
       }
       if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
         res = await libsaml.decryptAssertion(here, res);
+      }
+      if (parserType === 'SAMLResponse') {
+        await libsaml.isValidXml(res);
       }
       parseResult = {
         samlContent: res,

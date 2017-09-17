@@ -98,7 +98,7 @@ In **Post-Binding**, XML digital signature is used and embedded inside the Reque
     ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
     AssertionConsumerServiceURL="https://sp.example.org/sso/acs">
     
-    <saml:Issuer Id="_0">https://sp.example.org/metadata</saml:Issuer>
+    <saml:Issuer ID="_0">https://sp.example.org/metadata</saml:Issuer>
     <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" AllowCreate="true"/>
         <samlp:RequestedAuthnContext Comparison="exact">
             <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef>

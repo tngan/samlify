@@ -41,6 +41,7 @@
     "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
+    "libxml-xsd": "^0.5.2",
     "lodash": "^4.17.4",
     "node-forge": "^0.7.1",
     "node-rsa": "^0.4.2",
