@@ -11,6 +11,7 @@ rebuild: ;
 
 pretest:	;
 					mkdir -p build/test; \
+					cp -a schemas build; \
 					cp -a test/key test/misc build/test;
 
 doc: ;@echo "prepare and serve the docs"; \

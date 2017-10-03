@@ -48,11 +48,24 @@ export interface EntitySetting {
   relayState?: any;
 }
 
+export interface SignatureConfig {
+  prefix?: string;
+  location?: {
+    reference?: string;
+    action?: 'append' | 'prepend' | 'before' | 'after';
+  };
+}
+
+export interface SAMLDocumentTemplate {
+  context?: string;
+}
 export interface ServiceProviderSettings {
   metadata?: string | Buffer;
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
   wantMessageSigned?: boolean;
+  wantLogoutResponseSigned?: boolean;
+  wantLogoutRequestSigned?: boolean;
   privateKey?: string | Buffer;
   privateKeyPass?: string;
   isAssertionEncrypted?: boolean;
@@ -60,6 +73,8 @@ export interface ServiceProviderSettings {
   encPrivateKeyPass?: string | Buffer;
   assertionConsumerService?: Array<{ Binding: string, Location: string }>;
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
+  signatureConfig?: SignatureConfig;
+  loginRequestTemplate?: SAMLDocumentTemplate;
 }
 
 export interface IdentityProviderSettings {
