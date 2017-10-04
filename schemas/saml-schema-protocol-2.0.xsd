@@ -9,9 +9,9 @@
     blockDefault="substitution"
     version="2.0">
     <import namespace="urn:oasis:names:tc:SAML:2.0:assertion"
-        schemaLocation="schemas/saml-schema-assertion-2.0.xsd"/>
+        schemaLocation="saml-schema-assertion-2.0.xsd"/>
     <import namespace="http://www.w3.org/2000/09/xmldsig#"
-        schemaLocation="schemas/xmldsig-core-schema.xsd"/>
+        schemaLocation="xmldsig-core-schema.xsd"/>
     <annotation>
         <documentation>
             Document identifier: saml-schema-protocol-2.0
