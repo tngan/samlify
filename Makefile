@@ -1,7 +1,7 @@
 PROJECT = "samlify"
 
 install: ;@echo "install ${PROJECT}"; \
-				 yarn;
+				 npm install;
 
 clean:	;
 				rm -rf node_modules
