@@ -202,8 +202,8 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest;
-    if (initSetting.loginRequestTemplate) {
-      const template = customTagReplacement(initSetting.loginRequestTemplate.context);
+    if (initSetting.logoutRequestTemplate) {
+      const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
       id = get<string>(template, 'id');
       rawSamlRequest = get<string>(template, 'context');
     } else {
