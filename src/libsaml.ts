@@ -11,7 +11,7 @@ import { tags, algorithms, wording } from './urn';
 import xpath, { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
-import { isString, isObject, isUndefined, includes } from 'lodash';
+import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
 import * as nrsa from 'node-rsa';
 import crpyto, { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
@@ -472,6 +472,9 @@ const libSaml = () => {
           let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
           if (typeof metadataCert === 'string') {
             metadataCert = [metadataCert];
+          } else if (metadataCert instanceof Array) {
+            // flattens the nested array of Certificates from each KeyDescriptor
+            metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
           let x509Certificate = select(".//*[local-name(.)='X509Certificate']", s)[0].firstChild.data;
