@@ -106,6 +106,9 @@ export class ServiceProvider extends Entity {
           key: 'Name',
         },
         valueTag: 'AttributeValue',
+      }, {
+        localName: 'AuthnStatement',
+        attributes: ['SessionIndex'],
       }],
       from: idp,
       checkSignature: true, // saml response must have signature
