@@ -705,14 +705,12 @@ const libSaml = () => {
         const currentDirectory = path.resolve('');
         process.chdir(path.resolve(__dirname, '../schemas'));
         xsd.parseFile(path.resolve('saml-schema-protocol-2.0.xsd'), (err, schema) => {
-          process.chdir(currentDirectory);
           if (err) {
             return reject(err.message);
           }
           schema.validate(input, (techErrors, validationErrors) => {
             if (techErrors !== null || validationErrors !== null) {
-              console.log(`${validationErrors}`);
-              reject('this is not a valid saml response with errors');
+              return reject(`this is not a valid saml response with errors: ${validationErrors}`);
             }
             return resolve(true);
           });
