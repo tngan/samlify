@@ -25,7 +25,6 @@ const requestTags = tags.request;
 const urlParams = wording.urlParams;
 const dom = DOMParser;
 
-
 export interface SignatureConstructor {
   rawSamlMessage: string;
   referenceTagXPath?: string;
@@ -83,7 +82,7 @@ export interface LibSamlInterface {
   createKeySection: (use: string, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
-  getKeyInfo: (x509Certificate: string) => void;
+  getKeyInfo: (x509Certificate: string, signatureConfig?: any) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
   decryptAssertion: (here, entireXML: string) => Promise<string>;
 
@@ -436,7 +435,7 @@ const libSaml = () => {
         );
       }
       sig.signatureAlgorithm = signatureAlgorithm;
-      sig.keyInfoProvider = new this.getKeyInfo(signingCert);
+      sig.keyInfoProvider = new this.getKeyInfo(signingCert, signatureConfig);
       sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
 
       if (signatureConfig) {
@@ -597,9 +596,10 @@ const libSaml = () => {
     * @param  {string} x509Certificate certificate
     * @return {string} public key
     */
-    getKeyInfo(x509Certificate: string) {
+    getKeyInfo(x509Certificate: string, signatureConfig: any = {}) {
       this.getKeyInfo = key => {
-        return '<ds:X509Data><ds:X509Certificate>' + x509Certificate + '</ds:X509Certificate></ds:X509Data>';
+        const prefix = signatureConfig.prefix ? `${signatureConfig.prefix}:` : '';
+        return `<${prefix}X509Data><${prefix}X509Certificate>${x509Certificate}</${prefix}X509Certificate></${prefix}X509Data>`;
       };
       this.getKey = keyInfo => {
         return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
