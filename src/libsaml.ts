@@ -71,6 +71,8 @@ export interface LogoutRequestTemplate extends BaseSamlTemplate { }
 
 export interface LogoutResponseTemplate extends BaseSamlTemplate { }
 
+export type KeyUse = 'signing' | 'encryption';
+
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
@@ -79,7 +81,7 @@ export interface LibSamlInterface {
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts) => boolean;
   extractor: (xmlString: string, fields) => ExtractorResult;
-  createKeySection: (use: string, cert: string | Buffer) => {};
+  createKeySection: (use: KeyUse, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string, signatureConfig?: any) => void;
@@ -542,7 +544,7 @@ const libSaml = () => {
     * @param  {string} certString    declares the certificate String
     * @return {object} object used in xml module
     */
-    createKeySection(use: string, certString: string | Buffer) {
+    createKeySection(use: KeyUse, certString: string | Buffer) {
       return {
         KeyDescriptor: [{
           _attr: { use },

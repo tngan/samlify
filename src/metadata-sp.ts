@@ -88,7 +88,7 @@ export class SpMetadata extends Metadata {
       }
 
       if (encryptCert) {
-        descriptors.KeyDescriptor.push(libsaml.createKeySection('encrypt', encryptCert).KeyDescriptor);
+        descriptors.KeyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }
