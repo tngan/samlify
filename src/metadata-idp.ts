@@ -54,7 +54,7 @@ export class IdpMetadata extends Metadata {
       }
 
       if (encryptCert) {
-        IDPSSODescriptor.push(libsaml.createKeySection('encrypt', encryptCert));
+        IDPSSODescriptor.push(libsaml.createKeySection('encryption', encryptCert));
       } else {
         //console.warn('Construct identity provider - missing encrypt certificate');
       }
