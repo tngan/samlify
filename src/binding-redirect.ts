@@ -53,7 +53,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     context,
     entitySetting,
   } = opts;
-  let {relayState = '' } = opts;
+  let { relayState = '' } = opts;
   const noParams = (url.parse(baseUrl).query || []).length === 0;
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
@@ -85,8 +85,8 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
       const info = customTagReplacement(spSetting.loginRequestTemplate);
-      id = get<string>(info, 'id');
-      rawSamlRequest = get<string>(info, 'context');
+      id = get<BindingContext, keyof BindingContext>(info, 'id');
+      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
     } else {
       id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
@@ -130,8 +130,8 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
     let rawSamlRequest: string = '';
     if (initSetting.logoutRequestTemplate) {
       const info = customTagReplacement(initSetting.logoutRequestTemplate);
-      id = get<string>(info, 'id');
-      rawSamlRequest = get<string>(info, 'context');
+      id = get<BindingContext, keyof BindingContext>(info, 'id');
+      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
     } else {
       id = initSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, {
@@ -174,12 +174,12 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
   const initSetting = entity.init.entitySetting;
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
-    let rawSamlResponse;
+    let rawSamlResponse: string;
 
     if (initSetting.logoutResponseTemplate) {
       const template = customTagReplacement(initSetting.logoutResponseTemplate);
-      id = get<string>(template, 'id');
-      rawSamlResponse = get<string>(template, 'context');
+      id = get<BindingContext, keyof BindingContext>(template, 'id');
+      rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
       id = initSetting.generateID();
       const tvalue: any = {

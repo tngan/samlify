@@ -26,11 +26,11 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.post);
-    let rawSamlRequest;
+    let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
       const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-      id = get<string>(info, 'id');
-      rawSamlRequest = get<string>(info, 'context');
+      id = get<BindingContext, keyof BindingContext>(info, 'id');
+      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
     } else {
       id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
@@ -84,7 +84,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   };
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
-    let rawSamlResponse;
+    let rawSamlResponse: string;
     const nowTime = new Date();
     const spEntityID = metadata.sp.getEntityID();
     const fiveMinutesLaterTime = new Date(nowTime.getTime());
@@ -109,13 +109,13 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
-      InResponseTo: get<string>(requestInfo, 'extract.authnrequest.id') || '',
+      InResponseTo: get(requestInfo, 'extract.authnrequest.id') || '',
       AuthnStatement: '',
       AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-      rawSamlResponse = get<string>(template, 'context');
+      rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
@@ -161,7 +161,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       if (encryptThenSign) {
         //need to decode it
-        rawSamlResponse = utility.base64Decode(context);
+        rawSamlResponse = utility.base64Decode(context) as string;
       } else {
         return Promise.resolve({ id, context });
       }
@@ -201,11 +201,11 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   const initSetting = entity.init.entitySetting;
   let id: string = '';
   if (metadata && metadata.init && metadata.target) {
-    let rawSamlRequest;
+    let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate) {
       const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
-      id = get<string>(template, 'id');
-      rawSamlRequest = get<string>(template, 'context');
+      id = get<BindingContext, keyof BindingContext>(template, 'id');
+      rawSamlRequest = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
       id = initSetting.generateID();
       const tvalue: any = {
