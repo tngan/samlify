@@ -23,7 +23,7 @@ This project is now developed using TypeScript 2.0, also support Yarn which is a
 
 ```bash
 $ npm install typescript -g
-$ yarn
+$ yarn global add typescript
 ```
 
 ### Integrations
