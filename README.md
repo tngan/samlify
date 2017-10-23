@@ -22,7 +22,7 @@ $ yarn add samlify
 This project is now developed using TypeScript 2.0, also support Yarn which is a new package manager.
 
 ```bash
-$ npm install typescript -g
+$ yarn global add typescript
 $ yarn
 ```
 
