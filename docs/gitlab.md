@@ -2,7 +2,7 @@
 
 In this tutorial, we will walk through step by step to configure self-hosted and dockerized Gitlab CE, also integrates with samlify.
 
-### Setup postegresql
+### Setup postgresql
 
 ```
 docker run --name gitlab-postgresql -d \
