@@ -25,6 +25,8 @@ function base64Encode(message: string) {
 * @param  {boolean} isBytes                      determine the return value type (True: bytes False: string)
 * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
 */
+export function base64Decode(base64Message: string): string;
+export function base64Decode(base64Message: string, isBytes: boolean): string | Buffer;
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
   const bytes = new Buffer(base64Message, BASE64_STR);
   return Boolean(isBytes) ? bytes : bytes.toString(ASCII_STR);

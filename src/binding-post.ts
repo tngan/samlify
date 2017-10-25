@@ -161,7 +161,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       if (encryptThenSign) {
         //need to decode it
-        rawSamlResponse = utility.base64Decode(context) as string;
+        rawSamlResponse = utility.base64Decode(context);
       } else {
         return Promise.resolve({ id, context });
       }
