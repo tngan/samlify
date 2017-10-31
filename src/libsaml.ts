@@ -7,7 +7,7 @@
 import { DOMParser } from 'xmldom';
 import { pki } from 'node-forge';
 import utility from './utility';
-import { tags, algorithms, wording } from './urn';
+import { tags, algorithms, wording, namespace } from './urn';
 import xpath, { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
@@ -647,7 +647,7 @@ const libSaml = () => {
                 return reject(new Error('undefined encrypted assertion'));
               }
               const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
-              const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion>${res}</${encAssertionPrefix}:EncryptedAssertion>`);
+              const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
               doc.replaceChild(encryptAssertionNode, assertions[0]);
               return resolve(utility.base64Encode(doc.toString()));
             });
