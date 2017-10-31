@@ -549,13 +549,13 @@ const libSaml = () => {
         KeyDescriptor: [{
           _attr: { use },
         }, {
-          KeyInfo: [{
+          'ds:KeyInfo': [{
             _attr: {
               'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
             },
           }, {
-            X509Data: [{
-              X509Certificate: utility.normalizeCerString(certString),
+            'ds:X509Data': [{
+              'ds:X509Certificate': utility.normalizeCerString(certString),
             }],
           }],
         }],
