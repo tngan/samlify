@@ -140,7 +140,7 @@ export class SpMetadata extends Metadata {
         EntityDescriptor: [{
           _attr: {
             entityID,
-            'xmlns:md': namespace.names.metadata,
+            'xmlns': namespace.names.metadata,
             'xmlns:assertion': namespace.names.assertion,
             'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
           },
