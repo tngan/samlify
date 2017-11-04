@@ -13,13 +13,17 @@ This module provides high-level API for scalable Single Sign On (SSO) implementa
 ### Installation
 To install the stable version
 
+For those using Windows, `windows-build-tools` should be installed globally before installing samlify.
 ```bash
-$ npm install samlify --save
+yarn global add windows-build-tools
+```
+
+```bash
 $ yarn add samlify
 ```
 
 ### Development
-This project is now developed using TypeScript 2.0, also support Yarn which is a new package manager.
+This project is now developed using TypeScript, also support Yarn which is a new package manager.
 
 ```bash
 $ yarn global add typescript
@@ -30,6 +34,8 @@ $ yarn
 + [GitLab](https://gitlab.com/)
 + [OneLogin](https://www.onelogin.com/)
 + [Okta](https://www.okta.com/)
++ [Shibboleth](https://www.shibboleth.net/)
++ [SimpleSAMLphp](https://simplesamlphp.org/)
 
 ### Get Started
 ```javascript
