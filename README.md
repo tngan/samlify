@@ -57,4 +57,4 @@ In progress
 
 ### Copyright
 
-Copyright (C) 2016-2017 Tony Ngan, released under the MIT License.
+Copyright (C) 2016-present Tony Ngan, released under the MIT License.
