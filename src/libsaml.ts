@@ -707,6 +707,7 @@ const libSaml = () => {
         const currentDirectory = path.resolve('');
         process.chdir(path.resolve(__dirname, '../schemas'));
         xsd.parseFile(path.resolve('saml-schema-protocol-2.0.xsd'), (err, schema) => {
+          process.chdir(currentDirectory);  //revert back to oem working dir
           if (err) {
             return reject(err.message);
           }
