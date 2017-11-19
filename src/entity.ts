@@ -14,6 +14,7 @@ import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString, isUndefined, isArray, get } from 'lodash';
 import * as url from 'url';
+import * as path from 'path';
 import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
@@ -201,7 +202,12 @@ export default class Entity {
       }
       const xmlString = inflateString(decodeURIComponent(samlContent));
       if (parserType === 'SAMLResponse') {
-        await libsaml.isValidXml(xmlString);
+        const currentDirectory = path.resolve('');
+        try {
+            await libsaml.isValidXml(xmlString);
+        } finally {
+          process.chdir(currentDirectory);  //revert back to oem working dir
+        }
       }
       if (checkSignature) {
         const { SigAlg: sigAlg, Signature: signature } = reqQuery;
@@ -246,7 +252,12 @@ export default class Entity {
         }
       }
       if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-        res = await libsaml.decryptAssertion(here, res);
+        const currentDirectory = path.resolve('');
+        try {
+            res = await libsaml.decryptAssertion(here, res);
+        } finally {
+          process.chdir(currentDirectory);  //revert back to oem working dir
+        }
       }
       if (parserType === 'SAMLResponse') {
         await libsaml.isValidXml(res);
