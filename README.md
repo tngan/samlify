@@ -30,13 +30,6 @@ $ yarn global add typescript
 $ yarn
 ```
 
-### Integrations
-+ [GitLab](https://gitlab.com/)
-+ [OneLogin](https://www.onelogin.com/)
-+ [Okta](https://www.okta.com/)
-+ [Shibboleth](https://www.shibboleth.net/)
-+ [SimpleSAMLphp](https://simplesamlphp.org/)
-
 ### Get Started
 ```javascript
 const saml = require('samlify');
