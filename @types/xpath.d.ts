@@ -5,7 +5,6 @@ declare module "xpath" {
 		XMLNS_NAMESPACE_URI: string;
 	}
 	export function select (e, doc, single?): string | number | boolean | any;
-	export default {
-		select
-	}
+	const _default: { select };
+	export default _default;
 }

@@ -16,10 +16,6 @@ declare module "xml-encryption" {
   export function encryptKeyInfo(symmetricKey: string, options: EncryptOptions, callback: Callback): string;
   export function decrypt(xml: string | Document, options: DecryptOptions, callback: Callback): string;
   export function decryptKeyInfo(doc: string | Document, options: DecryptOptions): string;
-  export default {
-    decrypt,
-    encrypt,
-    decryptKeyInfo,
-    encryptKeyInfo,
-  }
+	const _default: { decrypt, encrypt, decryptKeyInfo, encryptKeyInfo };
+  export default _default;
 }

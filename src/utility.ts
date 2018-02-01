@@ -10,7 +10,6 @@ import { isString } from 'lodash';
 import { DOMParser } from 'xmldom';
 
 const BASE64_STR = 'base64';
-const ASCII_STR = 'ascii';
 /**
 * @desc Encode string with base64 format
 * @param  {string} message                       plain-text message
@@ -27,7 +26,7 @@ function base64Encode(message: string) {
 */
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
   const bytes = new Buffer(base64Message, BASE64_STR);
-  return Boolean(isBytes) ? bytes : bytes.toString(ASCII_STR);
+  return Boolean(isBytes) ? bytes : bytes.toString();
 }
 /**
 * @desc Compress the string
