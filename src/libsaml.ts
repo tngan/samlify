@@ -433,7 +433,7 @@ const libSaml = () => {
           '',
           '',
           '',
-          true,
+          false,
         );
       }
       sig.signatureAlgorithm = signatureAlgorithm;
