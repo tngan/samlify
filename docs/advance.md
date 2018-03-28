@@ -8,4 +8,4 @@ Thanks for your patience. Reading documentation is a tough job, so that we keep 
 + Metadata distribution
 + Configuration of Identity/Service Provider w/o metadata
 
-If you have ideas and want more examples, please don't be hesitate to create an issue in our Github repository. 
+If you have ideas and want more examples, please don't hesitate to create an issue in our Github repository. 
