@@ -31,7 +31,7 @@ Now all you need to do is to use `sp.parseLoginResponse` again to parse and veri
 router.post('/acs', (req, res) => {
   sp.parseLoginResponse(idp, 'post', req)
   .then(parseResult => {
-    // Use the parseResult can do customized action
+    // Use the parseResult to do customized action
   })
   .catch(console.error);
 });
