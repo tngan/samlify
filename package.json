@@ -14,13 +14,14 @@
   "scripts": {
     "build": "npm run lint && tsc",
     "build:nolint": "tsc",
-    "lint": "tslint --project tsconfig.json",
-    "lint:fix": "tslint --fix --project tsconfig.json",
+    "lint": "tslint -p .",
+    "lint:fix": "tslint -p . --fix",
     "pretest": "make pretest",
     "test": "npm run build && nyc ava --verbose build/test",
     "test:pure": "nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "postinstall": "node postinstall"
+    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit",
+    "postinstall": "npm run hooks:postinstall"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
