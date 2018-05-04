@@ -67,7 +67,8 @@ Once you have configured the SP correctly, all you need to send a signed SAML Re
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-	res.redirect(sp.createLoginRequest(idp, 'redirect');
+  const { id, context } = sp.createLoginRequest(idp, 'redirect');
+  return res.redirect(context);
 });
 ```
 

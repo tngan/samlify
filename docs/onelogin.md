@@ -51,8 +51,8 @@ The above two metadata files are saved in the same directory as `sso.js`.
 **3. Add a route for SSO implementation**
 
 Make sure all dependencies are installed first:
-```bash
-$ npm install
+```console
+$ yarn
 ```
 
 Add a file `sso.js` under `/routes` folder
@@ -77,8 +77,8 @@ router.get('/metadata', (req, res) => res.header('Content-Type','text/xml').send
 
 // Access URL for implementing SP-init SSO
 router.get('/spinitsso-redirect', (req, res) => {
-	const url = sp.createLoginRequest(idp, 'redirect');
-	return res.redirect(url);
+	const { id, context } = sp.createLoginRequest(idp, 'redirect');
+	return res.redirect(context);
 });
 
 // If your application only supports IdP-initiated SSO, just make this route is enough
@@ -108,7 +108,7 @@ app.use('/sso', sso);
 ```
 
 **5. Start the server**
-```bash
+```console
 $ npm start
 ```
 and also access http://localhost:3000/spinitsso-redirect or login [OneLogin](https://esaml2.onelogin.com/login) first and click the app `esaml2-example-3000`.

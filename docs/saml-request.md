@@ -49,7 +49,8 @@ There may be more than one SSO endpoint, to support different bindings. By using
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-	res.redirect(sp.createLoginRequest(idp, 'redirect'));
+  const { id, context } = sp.createLoginRequest(idp, 'redirect');
+  return res.redirect(context);
 });
 ```
 By applying the preference of SP and IdP, `sp.createLoginRequest`returns an URL which is in following general format:

@@ -43,7 +43,7 @@ docker run --name gitlab -d \
 
 ### Get fingerprint (This is another way I found)
 
-```bash
+```console
 $ openssl x509 -in ./key/idp/cert.cer -sha1 -noout -fingerprint
 ```
 

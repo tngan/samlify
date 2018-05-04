@@ -15,18 +15,18 @@ Welcome all PRs for maintaining this project, or provide a link to the repositor
 To install the stable version
 
 For those using Windows, `windows-build-tools` should be installed globally before installing samlify.
-```bash
+```console
 yarn global add windows-build-tools
 ```
 
-```bash
+```console
 $ yarn add samlify
 ```
 
 ### Development
 This project is now developed using TypeScript, also support Yarn which is a new package manager.
 
-```bash
+```console
 $ yarn global add typescript
 $ yarn
 ```

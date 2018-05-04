@@ -14,13 +14,13 @@ We provide a simple interface that's highly configurable.
 ### Installation
 To install the stable version
 
-```bash
+```console
 $ npm install samlify
 ```
 
 or
 
-```bash
+```console
 $ yarn add samlify
 ```
 

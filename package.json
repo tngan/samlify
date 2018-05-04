@@ -12,8 +12,8 @@
   ],
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "npm run lint && tsc",
-    "build:nolint": "tsc",
+    "build": "tsc",
+    "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
     "pretest": "make pretest",

@@ -79,9 +79,8 @@ When you apply your own template, remember to do custom tag replacement when you
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
-  sp.createLoginRequest(idp, 'redirect', url => {
-    res.redirect(url);
-  }, loginRequestTemplate => {
+  
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', loginRequestTemplate => {
     // Here is the callback function for custom template
     // the input parameter is the value of loginRequestTemplate
     // The following is the input parameter of rcallback in different actions
@@ -92,6 +91,9 @@ router.get('/spinitsso-redirect', (req, res) => {
     // replaceTagFromTemplate is a function to do dynamically substitution of tags
     return replaceTagFromTemplate(loginRequestTemplate);
   });
+
+  return res.redirect(context);
+  
 });
 ```
 
