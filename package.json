@@ -33,6 +33,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@types/camelcase": "^0.0.30",
+    "@types/lodash": "^4.14.104",
+    "@types/node": "^7.0.55",
+    "@types/node-forge": "^0.7.2",
+    "@types/uuid": "3.0.0",
+    "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
     "libxml-xsd": "^0.5.2",
@@ -48,12 +54,6 @@
     "xpath": "0.0.24"
   },
   "devDependencies": {
-    "@types/camelcase": "^0.0.30",
-    "@types/lodash": "^4.14.104",
-    "@types/node": "^7.0.55",
-    "@types/node-forge": "^0.7.2",
-    "@types/uuid": "3.0.0",
-    "@types/xmldom": "^0.1.28",
     "ava": "^0.19.1",
     "coveralls": "^2.11.16",
     "nyc": "^11.5.0",
