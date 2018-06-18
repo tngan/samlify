@@ -73,6 +73,10 @@ export interface LogoutResponseTemplate extends BaseSamlTemplate { }
 
 export type KeyUse = 'signing' | 'encryption';
 
+export interface KeyComponent {
+  [key: string]: any;
+}
+
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
@@ -544,21 +548,26 @@ const libSaml = () => {
     * @param  {string} certString    declares the certificate String
     * @return {object} object used in xml module
     */
-    createKeySection(use: KeyUse, certString: string | Buffer) {
+    createKeySection(use: KeyUse, certString: string | Buffer): KeyComponent {
       return {
-        KeyDescriptor: [{
-          _attr: { use },
-        }, {
-          ['ds:KeyInfo']: [{
-            _attr: {
-              'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
-            },
-          }, {
-            ['ds:X509Data']: [{
-              'ds:X509Certificate': utility.normalizeCerString(certString),
-            }],
+        ['KeyDescriptor']: [
+          {
+            _attr: { use },
+          },
+          {
+            ['ds:KeyInfo']: [
+              {
+                _attr: {
+                  'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
+                },
+              },
+              {
+                ['ds:X509Data']: [{
+                  'ds:X509Certificate': utility.normalizeCerString(certString),
+                }],
+              },
+            ],
           }],
-        }],
       };
     },
     /**
