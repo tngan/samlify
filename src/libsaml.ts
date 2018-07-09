@@ -14,7 +14,7 @@ import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
 import * as nrsa from 'node-rsa';
 import crpyto, { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from 'xml-encryption';
+import * as xmlenc from '@passify/xml-encryption';
 import * as xsd from 'libxml-xsd';
 import * as path from 'path';
 
