@@ -33,6 +33,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@passify/xml-encryption": "^0.11.1",
     "@types/camelcase": "^0.0.30",
     "@types/lodash": "^4.14.104",
     "@types/node": "^7.0.55",
@@ -49,7 +50,6 @@
     "uuid": "^3.2.1",
     "xml": "^1.0.0",
     "xml-crypto": "^0.10.1",
-    "xml-encryption": "tngan/node-xml-encryption",
     "xmldom": "^0.1.19",
     "xpath": "0.0.24"
   },
