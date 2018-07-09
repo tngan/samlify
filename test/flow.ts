@@ -271,6 +271,8 @@ test('send response with signed assertion and parse it', async t => {
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'string');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send response with [custom template] signed assertion and parse it', async t => {
@@ -297,6 +299,8 @@ test('send response with [custom template] signed assertion and parse it', async
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send response with signed message and parse it', async t => {
@@ -312,6 +316,8 @@ test('send response with signed message and parse it', async t => {
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'string');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send response with [custom template] and signed message and parse it', async t => {
@@ -336,6 +342,8 @@ test('send response with [custom template] and signed message and parse it', asy
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with signed assertion + signed message and parse it', async t => {
@@ -354,6 +362,8 @@ test('send login response with signed assertion + signed message and parse it', 
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'object');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send login response with [custom template] and signed assertion + signed message and parse it', async t => {
@@ -381,6 +391,8 @@ test('send login response with [custom template] and signed assertion + signed m
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with encrypted non-signed assertion and parse it', async t => {
@@ -395,6 +407,8 @@ test('send login response with encrypted non-signed assertion and parse it', asy
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'string');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send login response with encrypted signed assertion and parse it', async t => {
@@ -409,6 +423,8 @@ test('send login response with encrypted signed assertion and parse it', async t
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'string');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send login response with [custom template] and encrypted signed assertion and parse it', async t => {
@@ -432,6 +448,8 @@ test('send login response with [custom template] and encrypted signed assertion 
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with encrypted signed assertion + signed message and parse it', async t => {
@@ -450,6 +468,8 @@ test('send login response with encrypted signed assertion + signed message and p
   // test phrase 2: useful information is included in extract object
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(typeof extract.signature, 'object');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, 'request_id');
 });
 
 test('send login response with [custom template] encrypted signed assertion + signed message and parse it', async t => {
@@ -477,6 +497,8 @@ test('send login response with [custom template] encrypted signed assertion + si
   // test phrase 3: check if attribute is parsed properly
   t.is(extract.attribute.name, 'mynameinsp');
   t.is(extract.attribute.mail, 'myemailassociatedwithsp@sp.com');
+  // Ensure that inresponseto was added to the response
+  t.is(extract.response.inresponseto, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 // simulate idp-init slo

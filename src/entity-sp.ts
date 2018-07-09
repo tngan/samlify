@@ -109,7 +109,10 @@ export class ServiceProvider extends Entity {
       }, {
         localName: 'AuthnStatement',
         attributes: ['SessionIndex'],
-      }],
+      }, {
+        localName: 'Response',
+        attributes: ['InResponseTo'] },
+      ],
       from: idp,
       checkSignature: true, // saml response must have signature
       supportBindings: ['post'],
