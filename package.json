@@ -41,7 +41,6 @@
     "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
-    "libxml-xsd": "^0.5.2",
     "lodash": "^4.17.5",
     "node-forge": "^0.7.4",
     "node-rsa": "^0.4.2",
@@ -51,7 +50,8 @@
     "xml-crypto": "^0.10.1",
     "xml-encryption": "tngan/node-xml-encryption",
     "xmldom": "^0.1.19",
-    "xpath": "0.0.24"
+    "xpath": "0.0.24",
+    "xsd-schema-validator": "^0.6.0"
   },
   "devDependencies": {
     "ava": "^0.19.1",

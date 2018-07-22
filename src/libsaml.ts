@@ -5,23 +5,22 @@
 */
 
 import { DOMParser } from 'xmldom';
-import { pki } from 'node-forge';
 import utility from './utility';
 import { tags, algorithms, wording, namespace } from './urn';
-import xpath, { select } from 'xpath';
+import { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
 import * as nrsa from 'node-rsa';
-import crpyto, { SignedXml, FileKeyInfo } from 'xml-crypto';
+import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
-import * as xsd from 'libxml-xsd';
 import * as path from 'path';
+import * as validator from 'xsd-schema-validator';
+
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
-const requestTags = tags.request;
 const urlParams = wording.urlParams;
 const dom = DOMParser;
 
@@ -712,19 +711,15 @@ const libSaml = () => {
      */
     async isValidXml(input: string) {
       return new Promise((resolve, reject) => {
-        // https://github.com/albanm/node-libxml-xsd/issues/11
-        const currentDirectory = path.resolve('');
         process.chdir(path.resolve(__dirname, '../schemas'));
-        xsd.parseFile(path.resolve('saml-schema-protocol-2.0.xsd'), (err, schema) => {
+        validator.validateXML(input, path.resolve('saml-schema-protocol-2.0.xsd'), (err, result) => {
           if (err) {
             return reject(err.message);
           }
-          schema.validate(input, (techErrors, validationErrors) => {
-            if (techErrors !== null || validationErrors !== null) {
-              return reject(`this is not a valid saml response with errors: ${validationErrors}`);
-            }
+          if (result.valid) {
             return resolve(true);
-          });
+          }
+          return reject('this is not a valid saml response with errors');
         });
       });
     },
