@@ -6,14 +6,14 @@
 
 import { DOMParser } from 'xmldom';
 import utility from './utility';
-import { tags, algorithms, wording, namespace } from './urn';
+import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
 import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from 'xml-encryption';
+import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as validator from 'xsd-schema-validator';
 
