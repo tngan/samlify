@@ -146,12 +146,17 @@ export default class Entity {
       return true; // throw exception todo
     }
     if (!isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
-      return +notBefore <= +now;
+      const notBeforeLocal = new Date(notBefore.toUTCString());
+      return +notBeforeLocal <= +now;
     }
     if (isUndefined(notBefore) && !isUndefined(notOnOrAfter)) {
-      return now < notOnOrAfter;
+      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
+      return now < notOnOrAfterLocal;
+    } else {
+      const notBeforeLocal = new Date(notBefore.toUTCString());
+      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
+      return +notBeforeLocal <= +now && now < notOnOrAfterLocal;
     }
-    return +notBefore <= +now && now < notOnOrAfter;
   }
   /**
   * @desc  Validate and parse the request/response with different bindings
