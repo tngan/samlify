@@ -142,18 +142,21 @@ export default class Entity {
   */
   verifyTime(notBefore?: Date, notOnOrAfter?: Date): boolean {
     const now = new Date();
-    const notBeforeLocal = new Date(notBefore.toUTCString());
-    const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
     if (isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
       return true; // throw exception todo
     }
     if (!isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
+      const notBeforeLocal = new Date(notBefore.toUTCString());
       return +notBeforeLocal <= +now;
     }
     if (isUndefined(notBefore) && !isUndefined(notOnOrAfter)) {
+      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
       return now < notOnOrAfterLocal;
+    } else {
+      const notBeforeLocal = new Date(notBefore.toUTCString());
+      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
+      return +notBeforeLocal <= +now && now < notOnOrAfterLocal;
     }
-    return +notBeforeLocal <= +now && now < notOnOrAfterLocal;
   }
   /**
   * @desc  Validate and parse the request/response with different bindings
