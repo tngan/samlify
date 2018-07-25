@@ -20,8 +20,7 @@
     "test": "npm run build && nyc ava --verbose build/test",
     "test:pure": "nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit",
-    "postinstall": "npm run hooks:postinstall"
+    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
