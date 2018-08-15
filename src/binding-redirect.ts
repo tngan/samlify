@@ -121,29 +121,30 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 * @param  {function} customTagReplacement     used when developers have their own login response template
 * @return {string} redirect URL
 */
-function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlRequest: string = '';
+    const requiredTags = {
+      ID: id,
+      Destination: base,
+      EntityID: metadata.init.getEntityID(),
+      Issuer: metadata.init.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
+      NameID: user.logoutNameID,
+      SessionIndex: user.sessionIndex,
+    }
     if (initSetting.logoutRequestTemplate) {
-      const info = customTagReplacement(initSetting.logoutRequestTemplate);
+      const info = customTagReplacement(initSetting.logoutRequestTemplate, requiredTags);
       id = get<BindingContext, keyof BindingContext>(info, 'id');
       rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
     } else {
       id = initSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, {
-        ID: id,
-        Destination: base,
-        EntityID: metadata.init.getEntityID(),
-        Issuer: metadata.init.getEntityID(),
-        IssueInstant: new Date().toISOString(),
-        NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
-        NameID: user.logoutNameID,
-        SessionIndex: user.sessionIndex,
-      } as any);
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as any);
     }
     return {
       id,
