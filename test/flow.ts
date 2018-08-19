@@ -214,12 +214,12 @@ test('create post login response', async t => {
 });
 
 test('create logout request with redirect binding', t => {
-  const { id, context } = sp.createLogoutRequest(idp, 'redirect', { email: 'user@esaml2' });
+  const { id, context } = sp.createLogoutRequest(idp, 'redirect', { logoutNameID: 'user@esaml2' });
   _.isString(id) && _.isString(context) ? t.pass() : t.fail();
 });
 
 test('create logout request with post binding', t => {
-  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { email: 'user@esaml2' }) as PostBindingContext;
+  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { logoutNameID: 'user@esaml2' }) as PostBindingContext;
   _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
 });
 
