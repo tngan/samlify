@@ -10,13 +10,12 @@ import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
-import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
+import { isObject, isUndefined, includes, flattenDeep } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as validator from 'xsd-schema-validator';
-
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -93,12 +92,6 @@ export interface LibSamlInterface {
 
   getSigningScheme: (sigAlg: string) => string | null;
   getDigestMethod: (sigAlg: string) => string | null;
-  getAttribute: (xmlDoc, localName: string, attribute: string) => string;
-  getAttributes: (xmlDoc, localName: string, attributes: string[]) => string | [string];
-  getInnerTextWithOuterKey: (xmlDoc, localName: string, localNameKey: string, valueTag: string) => any;
-  getAttributeKey: (xmlDoc, localName: string, localNameKey: string, attributeTag: string) => any;
-  getEntireBody: (xmlDoc, localName: string, isOutputString?: boolean) => any;
-  getInnerText: (xmlDoc, localName: string) => string | [string];
 
   nrsaAliasMapping: any;
   defaultLoginRequestTemplate: LoginRequestTemplate;
@@ -184,161 +177,6 @@ const libSaml = () => {
     }
     return null; // default value
   }
-  /**
-  * @private
-  * @desc Helper function used by another private function: getAttributes
-  * @param  {xml} xmlDoc          used xml document
-  * @param  {string} localName    tag name without prefix
-  * @param  {string} attribute    name of attribute
-  * @return {string} attribute value
-  */
-  function getAttribute(xmlDoc, localName: string, attribute: string): string {
-    const xpathStr = createXPath({
-      name: localName,
-      attr: attribute,
-    });
-    const selection = select(xpathStr, xmlDoc);
-
-    if (selection.length !== 1) {
-      return undefined;
-    } else {
-      return selection[0].nodeValue.toString();
-    }
-  }
-  /**
-  * @private
-  * @desc Get the attibutes
-  * @param  {xml} xmlDoc              used xml document
-  * @param  {string} localName        tag name without prefix
-  * @param  {[string]} attributes     array consists of name of attributes
-  * @return {string/array}
-  */
-  function getAttributes(xmlDoc, localName: string, attributes: string[]) {
-    const xpathStr = createXPath(localName);
-    const selection = select(xpathStr, xmlDoc);
-    const data = [];
-    if (selection.length === 0) {
-      return undefined;
-    }
-    selection.forEach(s => {
-      const dat = {};
-      const doc = new dom().parseFromString(String(s));
-      attributes.forEach(attr => {
-        dat[attr.toLowerCase()] = getAttribute(doc, localName, attr);
-      });
-      data.push(dat);
-    });
-    return data.length === 1 ? data[0] : data;
-  }
-  /**
-  * @private
-  * @desc Helper function used to return result with complex format
-  * @param  {xml} xmlDoc              used xml document
-  * @param  {string} localName        tag name without prefix
-  * @param  {string} localNameKey     key associated with tag name
-  * @param  {string} valueTag         tag of the value
-  */
-  function getInnerTextWithOuterKey(xmlDoc, localName: string, localNameKey: string, valueTag: string) {
-    const xpathStr = createXPath(localName);
-    const selection = select(xpathStr, xmlDoc);
-    const obj = {};
-
-    selection.forEach(_s => {
-      const xd = new dom().parseFromString(_s.toString());
-      const key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
-      const value = select("//*[local-name(.)='" + valueTag + "']/text()", xd);
-      let res;
-
-      if (key && key.length === 1 && utility.isNonEmptyArray(value)) {
-        if (value.length === 1) {
-          res = value[0].nodeValue.toString();
-        } else {
-          const dat = [];
-          value.forEach(v => dat.push(String(v.nodeValue)));
-          res = dat;
-        }
-
-        const objKey = key[0].nodeValue.toString();
-
-        if (obj[objKey]) {
-          obj[objKey] = [obj[objKey]].concat(res);
-        } else {
-          obj[objKey] = res;
-        }
-
-      } else {
-        // console.warn('Multiple keys or null value is found');
-      }
-    });
-    return Object.keys(obj).length === 0 ? undefined : obj;
-  }
-  /**
-  * @private
-  * @desc  Get the attribute according to the key
-  * @param  {string} localName            tag name without prefix
-  * @param  {string} localNameKey         key associated with tag name
-  * @param  {string} attributeTag         tag of the attribute
-  */
-  function getAttributeKey(xmlDoc, localName: string, localNameKey: string, attributeTag: string) {
-    const xpathStr = createXPath(localName);
-    const selection = select(xpathStr, xmlDoc);
-    const data = [];
-
-    selection.forEach(_s => {
-      const xd = new dom().parseFromString(_s.toString());
-      const key = select("//*[local-name(.)='" + localName + "']/@" + localNameKey, xd);
-      const value = select("//*[local-name(.)='" + localName + "']/@" + attributeTag, xd);
-
-      if (value && value.length === 1 && key && key.length === 1) {
-        const obj = {};
-        obj[key[0].nodeValue.toString()] = value[0].nodeValue.toString();
-        data.push(obj);
-      } else {
-        //console.warn('Multiple keys or null value is found');
-      }
-    });
-    return data.length === 0 ? undefined : data;
-  }
-  /**
-  * @private
-  * @desc Get the entire body according to the XPath
-  * @param  {xml} xmlDoc              used xml document
-  * @param  {string} localName        tag name without prefix
-  * @param  {boolean} isOutputString  output is string format (default is true)
-  * @return {string/array}
-  */
-  function getEntireBody(xmlDoc, localName: string, isOutputString?: boolean) {
-    const xpathStr = createXPath(localName);
-    const selection = select(xpathStr, xmlDoc);
-    if (selection.length === 0) {
-      return undefined;
-    }
-    const data = [];
-    selection.forEach(_s => {
-      data.push(utility.convertToString(_s, isOutputString !== false));
-    });
-    return data.length === 1 ? data[0] : data;
-  }
-  /**
-  * @private
-  * @desc  Get the inner xml according to the XPath
-  * @param  {xml} xmlDoc          used xml document
-  * @param  {string} localName    tag name without prefix
-  * @return {string/array} value
-  */
-  function getInnerText(xmlDoc, localName: string) {
-    const xpathStr = createXPath(localName, true);
-    const selection = select(xpathStr, xmlDoc);
-    if (selection.length === 0) {
-      return undefined;
-    }
-    const data = [];
-    selection.forEach(_s => {
-      data.push(String(_s.nodeValue).trim().replace(/\r?\n/g, ''));
-    });
-    return data.length === 1 ? data[0] : data;
-  }
-
   /**
   * @public
   * @desc Create XPath
@@ -459,7 +297,15 @@ const libSaml = () => {
     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const doc = new dom().parseFromString(xml);
-      const selection = select("//*[local-name(.)='Signature']", doc);
+      // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
+      // message signature
+      const messageSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Signature']";
+      // assertion signature
+      const assertionSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
+      // todo: wrapping attack detection
+      let selection = [];
+      selection = selection.concat(select(assertionSignatureXpath, doc));
+      selection = selection.concat(select(messageSignatureXpath, doc));
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
         throw new Error('no signature is found in the context');
@@ -497,49 +343,6 @@ const libSaml = () => {
         res = res && sig.checkSignature(xml);
       });
       return res;
-    },
-    /**
-    * @desc High-level XML extractor
-    * @param  {string} xmlString
-    * @param  {object} fields
-    */
-    extractor(xmlString: string, fields) {
-      const doc = new dom().parseFromString(xmlString);
-      const meta = {};
-      fields.forEach(field => {
-        let objKey;
-        let res;
-        if (isString(field)) {
-          meta[field.toLowerCase()] = getInnerText(doc, field);
-        } else if (typeof field === 'object') {
-          const localName = field.localName;
-          const extractEntireBody = field.extractEntireBody === true;
-          const attributes = field.attributes || [];
-          const customKey = field.customKey || '';
-
-          if (isString(localName)) {
-            objKey = localName;
-            if (extractEntireBody) {
-              res = getEntireBody(doc, localName);
-            } else {
-              if (attributes.length !== 0) {
-                res = getAttributes(doc, localName, attributes);
-              } else {
-                res = getInnerText(doc, localName);
-              }
-            }
-          } else {
-            objKey = localName.tag;
-            if (field.attributeTag) {
-              res = getAttributeKey(doc, objKey, localName.key, field.attributeTag);
-            } else if (field.valueTag) {
-              res = getInnerTextWithOuterKey(doc, objKey, localName.key, field.valueTag);
-            }
-          }
-          meta[customKey === '' ? objKey.toLowerCase() : customKey] = res;
-        }
-      });
-      return meta as ExtractorResult;
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
@@ -627,12 +430,9 @@ const libSaml = () => {
       return new Promise<string>((resolve, reject) => {
         if (xml) {
           const sourceEntitySetting = sourceEntity.entitySetting;
-          const targetEntitySetting = targetEntity.entitySetting;
-          const sourceEntityMetadata = sourceEntity.entityMeta;
           const targetEntityMetadata = targetEntity.entityMeta;
           const doc = new dom().parseFromString(xml);
           const assertions = select("//*[local-name(.)='Assertion']", doc);
-          const assertionNode = getEntireBody(new dom().parseFromString(xml), 'Assertion');
           if (!Array.isArray(assertions)) {
             throw new Error('undefined assertion is found');
           }

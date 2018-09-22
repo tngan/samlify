@@ -11,16 +11,10 @@ import {
   IdentityProviderSettings,
 } from './types';
 import libsaml from './libsaml';
-import utility from './utility';
-import { wording, namespace, tags } from './urn';
-import redirectBinding from './binding-redirect';
+import { namespace } from './urn';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
-import * as xml from 'xml';
 
-const bindDict = wording.binding;
-const xmlTag = tags.xmlTag;
-const metaWord = wording.metadata;
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
@@ -103,20 +97,40 @@ export class IdentityProvider extends Entity {
    */
   public parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
     return this.genericParser({
-      parserFormat: ['AuthnContextClassRef', 'Issuer', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-          localName: 'AuthnRequest',
-          attributes: ['ID'],
-        }, {
-          localName: 'NameIDPolicy',
-          attributes: ['Format', 'AllowCreate'],
-        }],
+      extractorFields: [
+        {
+          key: 'request',
+          localPath: ['AuthnRequest'],
+          attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
+        },
+        {
+          key: 'issuer',
+          localPath: ['AuthnRequest', 'Issuer'],
+          attributes: []
+        },
+        {
+          key: 'nameIDPolicy',
+          localPath: ['AuthnRequest', 'NameIDPolicy'],
+          attributes: ['Format', 'AllowCreate']
+        },
+        {
+          key: 'authnContextClassRef',
+          localPath: ['AuthnRequest', 'AuthnContextClassRef'],
+          attributes: []
+        },
+        {
+          key: 'signature',
+          localPath: ['AuthnRequest', 'Signature'],
+          attributes: [],
+          context: true
+        }
+      ],
       from: sp,
       checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
       type: 'login',
-    }, binding, req);
+      binding: binding,
+      request: req 
+    });
   }
 }

@@ -10,15 +10,9 @@ import {
   ServiceProviderSettings,
 } from './types';
 import libsaml from './libsaml';
-import utility from './utility';
-import { wording, namespace, tags } from './urn';
+import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import * as xml from 'xml';
-
-const bindDict = wording.binding;
-const xmlTag = tags.xmlTag;
-const metaWord = wording.metadata;
 
 /*
  * @desc interface function
@@ -91,34 +85,76 @@ export class ServiceProvider extends Entity {
   */
   public parseLoginResponse(idp, binding, req: ESamlHttpRequest) {
     return this.genericParser({
-      parserFormat: [{
-        localName: 'StatusCode',
-        attributes: ['Value'],
-      }, {
-        localName: 'Conditions',
-        attributes: ['NotBefore', 'NotOnOrAfter'],
-      }, 'Audience', 'Issuer', 'NameID', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-        localName: {
-          tag: 'Attribute',
-          key: 'Name',
+      extractorFields: [
+        {
+          key: 'statusCode',
+          localPath: ['Response', 'Status', 'StatusCode'],
+          attributes: ['Value'],
+          // if attributes only has 1, append string
+          // xpath: "string(/*[local-name(.)='Response']/*[local-name(.)='Status']/*[local-name(.)='StatusCode']/@Value)"
         },
-        valueTag: 'AttributeValue',
-      }, {
-        localName: 'AuthnStatement',
-        attributes: ['SessionIndex'],
-      }, {
-        localName: 'Response',
-        attributes: ['InResponseTo'] },
+        {
+          key: 'conditions',
+          localPath: ['Response', 'Assertion', 'Conditions'],
+          attributes: ['NotBefore', 'NotOnOrAfter'],
+          // if attributes only has more than 1, no need to append string
+          // xpath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Conditions']/@*[name()='NotBefore' or name()='NotOnOrAfter']",
+        },
+        {
+          key: 'response',
+          localPath: ['Response'],
+          attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo'],
+          // xpath: "/*[local-name(.)='Response']/@*[name()='ID' or name()='IssueInstant' or name()='Destination' or name()='InResponseTo']"
+        },
+        {
+          key: 'audience',
+          localPath: ['Response', 'Assertion', 'Conditions', 'AudienceRestriction', 'Audience'],
+          attributes: [],
+          // if attributes has nothing, get the text
+          // xpath: "string(/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Conditions']/*[local-name(.)='AudienceRestriction']/*[local-name(.)='Audience']/text())",
+        },
+        {
+          key: 'issuer',
+          localPath: [
+            ['Response', 'Issuer'],
+            ['Response', 'Assertion', 'Issuer']
+          ],
+          attributes: []
+          // if attributes has nothing and localPath is multiple arrays, get the node value
+          // xpath: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']/text() | /*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']/text()"
+        },
+        {
+          key: 'nameID',
+          localPath: ['Response', 'Assertion', 'Subject', 'NameID'],
+          attributes: []
+          // if attributes has nothing, get the text
+          // xpath: "string(/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='NameID']/text())" 
+        },
+        {
+          key: 'sessionIndex',
+          localPath: ['Response', 'Assertion', 'AuthnStatement'],
+          attributes: ['AuthnInstant', 'SessionNotOnOrAfter', 'SessionIndex'],
+          // xpath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='AuthnStatement']/@*[name()='AuthnInstant' or name()='SessionNotOnOrAfter' or name()='SessionIndex']"  
+        },
+        {
+          key: 'attributes',
+          localPath: ['Response', 'Assertion', 'AttributeStatement', 'Attribute'],
+          index: ['Name'],
+          attributePath: ['AttributeValue'],
+          attributes: []
+          // find the index in localpath
+          // find the attributes/text in attributePath which appends after the localPath
+          // output: { name: '', value: '' }
+        }
       ],
       from: idp,
       checkSignature: true, // saml response must have signature
       supportBindings: ['post'],
       parserType: 'SAMLResponse',
       type: 'login',
-    }, binding, req);
+      binding: binding,
+      request: req
+    });
   }
 
 }

@@ -17,11 +17,11 @@ export interface SpMetadataInterface extends MetadataInterface {
 
 // https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
 interface MetaElement {
-  KeyDescriptor?: any[];
-  NameIDFormat?: any[];
-  SingleLogoutService?: any[];
-  AssertionConsumerService?: any[];
-  AttributeConsumingService?: any[];
+  keyDescriptor?: any[];
+  nameIDFormat?: any[];
+  singleLogoutService?: any[];
+  assertionConsumerService?: any[];
+  attributeConsumingService?: any[];
 }
 
 /*
@@ -62,17 +62,17 @@ export class SpMetadata extends Metadata {
       } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
-        KeyDescriptor: [],
-        NameIDFormat: [],
-        SingleLogoutService: [],
-        AssertionConsumerService: [],
-        AttributeConsumingService: [],
+        keyDescriptor: [],
+        nameIDFormat: [],
+        singleLogoutService: [],
+        assertionConsumerService: [],
+        attributeConsumingService: [],
       };
 
       const SPSSODescriptor: any[] = [{
         _attr: {
-          AuthnRequestsSigned: String(authnRequestsSigned),
-          WantAssertionsSigned: String(wantAssertionsSigned),
+          authnRequestsSigned: String(authnRequestsSigned),
+          wantAssertionsSigned: String(wantAssertionsSigned),
           protocolSupportEnumeration: namespace.names.protocol,
         },
       }];
@@ -82,19 +82,19 @@ export class SpMetadata extends Metadata {
       }
 
       if (signingCert) {
-        descriptors.KeyDescriptor.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
+        descriptors.keyDescriptor.push(libsaml.createKeySection('signing', signingCert).keyDescriptor);
       } else {
         //console.warn('Construct service provider - missing signing certificate');
       }
 
       if (encryptCert) {
-        descriptors.KeyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
+        descriptors.keyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).keyDescriptor);
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
+        nameIDFormat.forEach(f => descriptors.nameIDFormat.push(f));
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
@@ -102,13 +102,13 @@ export class SpMetadata extends Metadata {
         singleLogoutService.forEach(a => {
           const attr: any = {
             index: String(indexCount++),
-            Binding: a.Binding,
-            Location: a.Location,
+            Binding: a.binding,
+            Location: a.location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.SingleLogoutService.push([{ _attr: attr }]);
+          descriptors.singleLogoutService.push([{ _attr: attr }]);
         });
       }
 
@@ -117,13 +117,13 @@ export class SpMetadata extends Metadata {
         assertionConsumerService.forEach(a => {
           const attr: any = {
             index: String(indexCount++),
-            Binding: a.Binding,
-            Location: a.Location,
+            Binding: a.binding,
+            Location: a.location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.AssertionConsumerService.push([{ _attr: attr }]);
+          descriptors.assertionConsumerService.push([{ _attr: attr }]);
         });
       } else {
         // console.warn('Missing endpoint of AssertionConsumerService');
@@ -150,13 +150,17 @@ export class SpMetadata extends Metadata {
     }
 
     // Use the re-assigned meta object reference here
-    super(meta as string | Buffer, [{
-      localName: 'SPSSODescriptor',
-      attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
-    }, {
-      localName: 'AssertionConsumerService',
-      attributes: ['Binding', 'Location', 'isDefault', 'index'],
-    }]);
+    super(meta as string | Buffer, [
+      {
+        key: 'spSSODescriptor',
+        localPath: ['EntityDescriptor', 'SPSSODescriptor'],
+        attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
+      }, {
+        key: 'assertionConsumerService',
+        localPath: ['EntityDescriptor', 'AssertionConsumerService'],
+        attributes: ['Binding', 'Location', 'isDefault', 'index'],
+      }
+    ]);
 
   }
 
@@ -165,14 +169,14 @@ export class SpMetadata extends Metadata {
   * @return {boolean} Wantassertionssigned
   */
   public isWantAssertionsSigned(): boolean {
-    return this.meta.spssodescriptor.wantassertionssigned === 'true';
+    return this.meta.spSSODescriptor.wantAssertionsSigned === 'true';
   }
   /**
   * @desc Get the preference whether it signs request
   * @return {boolean} Authnrequestssigned
   */
   public isAuthnRequestSigned(): boolean {
-    return this.meta.spssodescriptor.authnrequestssigned === 'true';
+    return this.meta.spSSODescriptor.authnRequestsSigned === 'true';
   }
   /**
   * @desc Get the entity endpoint for assertion consumer service
@@ -183,20 +187,20 @@ export class SpMetadata extends Metadata {
     if (isString(binding)) {
       let location;
       const bindName = namespace.binding[binding];
-      if (isNonEmptyArray(this.meta.assertionconsumerservice)) {
-        this.meta.assertionconsumerservice.forEach(obj => {
+      if (isNonEmptyArray(this.meta.assertionConsumerService)) {
+        this.meta.assertionConsumerService.forEach(obj => {
           if (obj.binding === bindName) {
             location = obj.location;
             return;
           }
         });
       } else {
-        if (this.meta.assertionconsumerservice.binding === bindName) {
-          location = this.meta.assertionconsumerservice.location;
+        if (this.meta.assertionConsumerService.binding === bindName) {
+          location = this.meta.assertionConsumerService.location;
         }
       }
       return location;
     }
-    return this.meta.assertionconsumerservice;
+    return this.meta.assertionConsumerService;
   }
 }

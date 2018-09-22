@@ -8,7 +8,9 @@ export { default as SamlLib } from './src/libsaml';
 // roadmap
 // new name convention in version >= 3.0
 import * as Constants from './src/urn';
+import * as Extractor from './src/extractor';
 
 export {
   Constants,
+  Extractor
 };

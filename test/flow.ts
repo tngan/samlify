@@ -138,7 +138,7 @@ test('create login request with post binding using default template and parse it
   t.is(typeof SAMLRequest, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
-  const { samlContent, extract, sigAlg } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
+  const { extract } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
   t.is(extract.issuer, 'https://sp.example.org/metadata');
   t.is(typeof extract.authnrequest.id, 'string');
   t.is(extract.nameidpolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
@@ -500,8 +500,9 @@ test('idp sends a redirect logout request without signature and sp parses it', a
   // const SAMLRequest = originURL.searchParams.get('SAMLRequest');
   const originalURL = url.parse(context, true);
   const SAMLRequest = encodeURIComponent(originalURL.query.SAMLRequest);
-  const { samlContent, extract, sigAlg } = await sp.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest }});
-  t.is(sigAlg, undefined);
+  let result;
+  const { samlContent, extract } = result = await sp.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest }});
+  t.is(result.sigAlg, undefined);
   t.is(typeof samlContent, 'string');
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(extract.signature, undefined);
@@ -530,7 +531,7 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
   const SigAlg = originalURL.query.SigAlg;
   delete originalURL.query.Signature;
   const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q])).join('&');
-  const { samlContent, extract, sigAlg } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
+  const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(typeof extract.logoutrequest.id, 'string');
@@ -544,7 +545,7 @@ test('idp sends a post logout request without signature and sp parses it', async
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
-  const { samlContent, extract, sigAlg } = await sp.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
+  const { extract } = await sp.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(typeof extract.logoutrequest.id, 'string');
@@ -558,7 +559,7 @@ test('idp sends a post logout request with signature and sp parses it', async t 
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
-  const { samlContent, extract, sigAlg } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
+  const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
   t.is(extract.nameid, 'user@esaml2.com');
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(extract.logoutrequest.destination, 'https://sp.example.org/sp/slo');
@@ -620,4 +621,30 @@ test('avoid mitm attack', async t => {
   const rawResponse = String(utility.base64Decode(SAMLResponse, true));
   const attackResponse = `<NameID>evil@evil.com${rawResponse}</NameID>`;
   const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
+});
+
+test('should reject signature wrapped response', async t => {
+  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const user = { email: 'user@esaml2.com' };
+  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
+  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  //Decode
+  const buffer = new Buffer(SAMLResponse, 'base64');
+  const xml = buffer.toString();
+  //Create version of response without signature
+  const stripped = xml
+    .replace(/<ds:Signature[\s\S]*ds:Signature>/, '');
+  //Create version of response with altered IDs and new username
+  const outer = xml
+    .replace(/assertion" ID="_[0-9a-f]{3}/g, 'assertion" ID="_000')
+    .replace('user@esaml2.com', 'admin@esaml2.com');
+  //Put stripped version under SubjectConfirmationData of modified version
+  const xmlWrapped = outer.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '<saml:SubjectConfirmationData>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:SubjectConfirmationData>');
+
+  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+
+  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
+  //should probalby be like this -> const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } }));
+  //This tampering goes undetected....and only fails because there are now two names
+  t.is(extract.nameid, 'user@esaml2.com');
 });
