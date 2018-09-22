@@ -1,21 +1,21 @@
 // This test file includes all the units related to the extractor
 import test from 'ava';
 import esaml2 = require('../index');
-import { readFileSync, readFile } from 'fs';
+import { readFileSync } from 'fs';
+import { extract } from '../src/extractor';
 
 const {
   SamlLib: libsaml,
   SPMetadata: spMetadata
 } = esaml2;
 
-const SPMetadata = spMetadata(readFileSync('./test/misc/spmeta.xml'));
 const _decodedResponse: string = String(readFileSync('./test/misc/response_signed.xml'));
 const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
 
 (() => {
 
   test('fetch multiple attributes', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result = extract(_decodedResponse, [
       {
         key: 'response',
         localPath: ['Response'],
@@ -27,7 +27,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch single attributes', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'statusCode',
         localPath: ['Response', 'Status', 'StatusCode'],
@@ -38,7 +38,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the inner context of leaf node', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'audience',
         localPath: ['Response', 'Assertion', 'Conditions', 'AudienceRestriction', 'Audience'],
@@ -49,7 +49,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the entire context of a non-existing node ', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'assertionSignature',
         localPath: ['Response', 'Assertion', 'Signature'],
@@ -61,7 +61,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the entire context of an existed node', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'messageSignature',
         localPath: ['Response', 'Signature'],
@@ -73,7 +73,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the inner context of multiple nodes', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'issuer',
         localPath: [
@@ -88,7 +88,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the attribute with wildcard local path', t => {
-    const result = libsaml.extractor(_spmeta, [
+    const result =  extract(_spmeta, [
       {
         key: 'certificate',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
@@ -102,7 +102,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch the attribute with non-wildcard local path', t => {
-    const result = libsaml.extractor(_decodedResponse, [
+    const result =  extract(_decodedResponse, [
       {
         key: 'attributes',
         localPath: ['Response', 'Assertion', 'AttributeStatement', 'Attribute'],
@@ -117,7 +117,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
   test('fetch with one attribute as key, another as value', t => {
-    const result = libsaml.extractor(_spmeta, [
+    const result =  extract(_spmeta, [
       {
         key: 'singleSignOnService',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'AssertionConsumerService'],

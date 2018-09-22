@@ -3,10 +3,10 @@
 * @author tngan
 * @desc An abstraction for metadata of identity provider and service provider
 */
-import libsaml from './libsaml';
 import * as fs from 'fs';
 import { namespace } from './urn';
 import { isString } from 'lodash';
+import { extract } from './extractor';
 
 export interface MetadataInterface {
   xmlString: string;
@@ -30,7 +30,7 @@ export default class Metadata implements MetadataInterface {
   */
   constructor(xml: string | Buffer, extraParse = []) {
     this.xmlString = xml.toString();
-    this.meta = libsaml.extractor(this.xmlString, extraParse.concat([
+    this.meta = extract(this.xmlString, extraParse.concat([
       {
         key: 'entityDescriptor',
         localPath: ['EntityDescriptor'],
@@ -48,8 +48,6 @@ export default class Metadata implements MetadataInterface {
         index: ['use'],
         attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
         attributes: []
-        // select("/*[local-name(.)='EntityDescriptor']/*[contains(local-name(), 'SSODescriptor')]", docu).toString()
-        // output { [use]: attributeValue }
       },
       {
         key: 'singleLogoutService',

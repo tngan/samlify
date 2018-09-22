@@ -13,6 +13,7 @@ import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import { isString, isUndefined } from 'lodash';
 import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
+import { extract } from './extractor';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -220,7 +221,7 @@ export default class Entity {
       const parseResult: { samlContent: string, extract: any, sigAlg: string } = {
         samlContent: xmlString,
         sigAlg: undefined,
-        extract: libsaml.extractor(xmlString, extractorFields),
+        extract: extract(xmlString, extractorFields),
       };
 
       // see if signature check is required
@@ -267,7 +268,7 @@ export default class Entity {
 
       const parseResult = {
         samlContent: samlContent,
-        extract: libsaml.extractor(samlContent, extractorFields),
+        extract: extract(samlContent, extractorFields),
       };
 
       // verify the signatures (for both assertion/message)
