@@ -7,13 +7,11 @@ import { base64Decode, isNonEmptyArray, inflateString } from './utility';
 import { namespace, wording, algorithms, messageConfigurations } from './urn';
 import * as uuid from 'uuid';
 import libsaml from './libsaml';
-import Metadata from './metadata';
 import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
 import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { isString, isUndefined, isArray, get } from 'lodash';
-import * as url from 'url';
+import { isString, isUndefined } from 'lodash';
 import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
@@ -56,7 +54,7 @@ export interface PostBindingContext extends BindingContext {
 export interface ParseResult {
   samlContent: string;
   extract: any;
-  sigAlg?: string;
+  sigAlg: string;
 }
 
 export type EntityConstructor = (MetadataIdpConstructor | MetadataSpConstructor)
@@ -166,116 +164,129 @@ export default class Entity {
   * @param  {Metadata} targetEntityMetadata either IDP metadata or SP metadata
   * @return {ParseResult} parseResult
   */
-  async genericParser(opts, binding: string, req) {
-    const { query, body, octetString } = req;
+  async genericParser(opts) {
+    const binding = opts.binding;
+    const { query, body, octetString } = opts.req;
     const here = this;
     const entityMeta: any = this.entityMeta;
-    const options = opts || {};
-    let parseResult: ParseResult;
     let supportBindings = [nsBinding.redirect, nsBinding.post];
-    const { parserFormat: fields, parserType, type, from, checkSignature = true, decryptAssertion = false } = options;
+    const options = opts || {};
+    const { extractorFields, parserType, type, from, checkSignature = true } = options;
     const targetEntityMetadata = opts.from.entityMeta;
 
-    if (type === 'login') {
-      if (entityMeta.getAssertionConsumerService) {
-        const assertionConsumerService = entityMeta.getAssertionConsumerService(binding);
-        if (!assertionConsumerService) {
-          supportBindings = [];
-        }
-      } else if (entityMeta.getSingleSignOnService) {
-        const singleSignOnService = entityMeta.getSingleSignOnService(binding);
-        if (!singleSignOnService) {
-          supportBindings = [];
-        }
-      }
-    } else if (type === 'logout') {
-      const singleLogoutServices = entityMeta.getSingleLogoutService(binding);
-      if (!singleLogoutServices) {
-        supportBindings = [];
-      }
-    } else {
-      throw new Error('Invalid type in genericParser');
+    // define the support bindings
+    if (type === 'login' && entityMeta.getAssertionConsumerService && !entityMeta.getAssertionConsumerService(binding)) {
+      supportBindings = [];
     }
 
-    if (binding === bindDict.redirect && supportBindings.indexOf(nsBinding[binding]) !== -1) {
+    if (type === 'login' && entityMeta.getSingleSignOnService && !entityMeta.getSingleSignOnService(binding)) {
+      supportBindings = [];
+    }
+
+    if (type === 'logout' && !entityMeta.getSingleLogoutService(binding)) {
+      supportBindings = [];
+    }
+
+    // with redirect binding no matter login or logout
+    if (
+      binding === bindDict.redirect &&
+      supportBindings.indexOf(nsBinding[binding]) !== -1
+    ) {
+
       const reqQuery: any = query;
       const samlContent = reqQuery[libsaml.getQueryParamByType(parserType)];
 
       if (samlContent === undefined) {
         throw new Error('bad request');
       }
+
       const xmlString = inflateString(decodeURIComponent(samlContent));
+
+      // passing through the parser
       if (parserType === 'SAMLResponse') {
-        await libsaml.isValidXml(xmlString);
-      }
-      if (checkSignature) {
-        const { SigAlg: sigAlg, Signature: signature } = reqQuery;
-        if (signature && sigAlg) {
-          if (libsaml.verifyMessageSignature(targetEntityMetadata, octetString, new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
-            parseResult = {
-              samlContent: xmlString,
-              sigAlg: decodeURIComponent(sigAlg),
-              extract: libsaml.extractor(xmlString, fields),
-            };
-          } else {
-            // Fail to verify message signature
-            throw new Error('fail to verify message signature in request');
-          }
-        } else {
-          // Missing signature or signature algorithm
-          throw new Error('missing signature or signature algorithm');
+        try {
+          await libsaml.isValidXml(xmlString);
+        } catch (e) {
+          throw new Error('ERR_INVALID_XML');
         }
-      } else {
-        parseResult = {
-          samlContent: xmlString,
-          extract: libsaml.extractor(xmlString, fields),
-        };
       }
+
+      const { SigAlg: sigAlg, Signature: signature } = reqQuery;
+      // Throw error when missing signature or signature algorithm
+      if (!signature || !sigAlg) {
+        throw new Error('ERR_MISSING_SIG_ALG');
+      }
+
+      const parseResult: { samlContent: string, extract: any, sigAlg: string } = {
+        samlContent: xmlString,
+        sigAlg: undefined,
+        extract: libsaml.extractor(xmlString, extractorFields),
+      };
+
+      // see if signature check is required
+      if (checkSignature) {
+
+        if (libsaml.verifyMessageSignature(targetEntityMetadata, octetString, new Buffer(decodeURIComponent(signature), 'base64'), sigAlg)) {
+          parseResult.sigAlg = decodeURIComponent(sigAlg);
+        }
+
+        // Fail to verify message signature
+        throw new Error('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+
+      }
+
       return parseResult;
     }
 
+    // with post binding no matter login or logout
     if (binding === bindDict.post && supportBindings.indexOf(nsBinding[binding]) !== -1) {
       // make sure express.bodyParser() has been used
       const encodedRequest = body[libsaml.getQueryParamByType(parserType)];
-      let res = String(base64Decode(encodedRequest));
+      let samlContent = String(base64Decode(encodedRequest));
       const issuer = targetEntityMetadata.getEntityID();
+      const verificationOptions = {
+        cert: opts.from.entityMeta,
+        signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
+      };
+
       //verify signature before decryption if IDP encrypted then signed the message
       if (checkSignature && from.entitySetting.messageSigningOrder === messageSigningOrders.ENCRYPT_THEN_SIGN) {
+        // verify the signatures (for both assertion/message)
+        if (!libsaml.verifySignature(samlContent, verificationOptions)) {
+          throw new Error('ERR_INVALID_SIGNATURE_ETS');
+        }
+      }
 
-        // verify the signatures (for both assertion/message)
-        if (!libsaml.verifySignature(res, {
-          cert: opts.from.entityMeta,
-          signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
-        })) {
-          throw new Error('incorrect signature');
-        }
-      }
       if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-        res = await libsaml.decryptAssertion(here, res);
+        samlContent = await libsaml.decryptAssertion(here, samlContent);
       }
+
       if (parserType === 'SAMLResponse') {
-        await libsaml.isValidXml(res);
+        await libsaml.isValidXml(samlContent);
       }
-      parseResult = {
-        samlContent: res,
-        extract: libsaml.extractor(res, fields),
+
+      const parseResult = {
+        samlContent: samlContent,
+        extract: libsaml.extractor(samlContent, extractorFields),
       };
-      if (checkSignature && from.entitySetting.messageSigningOrder === messageSigningOrders.SIGN_THEN_ENCRYPT) {
-        // verify the signatures (for both assertion/message)
-        if (!libsaml.verifySignature(res, {
-          cert: opts.from.entityMeta,
-          signatureAlgorithm: opts.from.entitySetting.requestSignatureAlgorithm,
-        })) {
-          throw new Error('incorrect signature');
-        }
+
+      // verify the signatures (for both assertion/message)
+      if (
+        checkSignature &&
+        from.entitySetting.messageSigningOrder === messageSigningOrders.SIGN_THEN_ENCRYPT &&
+        !libsaml.verifySignature(samlContent, verificationOptions)
+      ) {
+        throw new Error('ERR_INVALID_SIGNATURE_STE');
       }
+
       if (!here.verifyFields(parseResult.extract.issuer, issuer)) {
-        throw new Error('incorrect issuer');
+        throw new Error('ERR_UNMATCHED_ISSUER');
       }
+
       return parseResult;
     }
-    // Will support artifact in the next release
-    throw new Error('this binding is not supported');
+
+    throw new Error('ERR_UNSUPPORTED_BINDING');
   }
 
   /** @desc   Generates the logout request for developers to design their own method
@@ -353,13 +364,32 @@ export default class Entity {
       type,
       parserType,
       checkSignature,
-      parserFormat: [
-        'NameID',
-        'Issuer',
-        { localName: 'Signature', extractEntireBody: true },
-        { localName: 'LogoutRequest', attributes: ['ID', 'Destination'] },
+      binding: binding,
+      request: req,
+      extractorFields: [
+        {
+          key: 'request',
+          localPath: ['LogoutRequest'],
+          attributes: ['ID', 'IssueInstant', 'Destination']
+        },
+        {
+          key: 'issuer',
+          localPath: ['LogoutRequest', 'Issuer'],
+          attributes: []
+        },
+        {
+          key: 'nameID',
+          localPath: ['LogoutRequest', 'NameID'],
+          attributes: []
+        },
+        {
+          key: 'signature',
+          localPath: ['AuthnRequest', 'Signature'],
+          attributes: [],
+          context: true
+        }
       ],
-    }, binding, req);
+    });
   }
 
   /**
@@ -380,12 +410,31 @@ export default class Entity {
       parserType,
       checkSignature,
       supportBindings,
-      parserFormat: [
-        { localName: 'StatusCode', attributes: ['Value'] },
-        'Issuer',
-        { localName: 'Signature', extractEntireBody: true },
-        { localName: 'LogoutResponse', attributes: ['ID', 'Destination', 'InResponseTo'] },
+      binding: binding,
+      request: req,
+      extractorFields: [
+        {
+          key: 'response',
+          localPath: ['LogoutResponse'],
+          attributes: ['ID', 'Destination', 'InResponseTo']
+        },
+        {
+          key: 'statusCode',
+          localPath: ['LogoutResponse', 'Status', 'StatusCode'],
+          attributes: ['Value']
+        },
+        {
+          key: 'issuer',
+          localPath: ['LogoutResponse', 'Issuer'],
+          attributes: []
+        },
+        {
+          key: 'signature',
+          localPath: ['LogoutResponse', 'Signature'],
+          attributes: [],
+          context: true
+        }
       ],
-    }, binding, req);
+    });
   }
 }

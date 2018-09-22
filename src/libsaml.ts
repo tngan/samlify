@@ -10,12 +10,13 @@ import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
-import { isString, isObject, isUndefined, includes, flattenDeep } from 'lodash';
+import { isObject, isUndefined, includes, flattenDeep, zipObject } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as validator from 'xsd-schema-validator';
+import { V4MAPPED } from 'dns';
 
 
 const signatureAlgorithms = algorithms.signature;
@@ -459,7 +460,15 @@ const libSaml = () => {
     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const doc = new dom().parseFromString(xml);
-      const selection = select("//*[local-name(.)='Signature']", doc);
+      // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
+      // message signature
+      const messageSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Signature']";
+      // assertion signature
+      const assertionSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
+      // todo: wrapping attack detection
+      let selection = [];
+      selection = selection.concat(select(assertionSignatureXpath, doc));
+      selection = selection.concat(select(messageSignatureXpath, doc));
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
         throw new Error('no signature is found in the context');
@@ -500,46 +509,177 @@ const libSaml = () => {
     },
     /**
     * @desc High-level XML extractor
-    * @param  {string} xmlString
+    * @param  {string} context 
     * @param  {object} fields
     */
-    extractor(xmlString: string, fields) {
-      const doc = new dom().parseFromString(xmlString);
-      const meta = {};
-      fields.forEach(field => {
-        let objKey;
-        let res;
-        if (isString(field)) {
-          meta[field.toLowerCase()] = getInnerText(doc, field);
-        } else if (typeof field === 'object') {
-          const localName = field.localName;
-          const extractEntireBody = field.extractEntireBody === true;
-          const attributes = field.attributes || [];
-          const customKey = field.customKey || '';
+    buildAbsoluteXPath(paths) {
+      return paths.reduce((currentPath, name) => {
 
-          if (isString(localName)) {
-            objKey = localName;
-            if (extractEntireBody) {
-              res = getEntireBody(doc, localName);
-            } else {
-              if (attributes.length !== 0) {
-                res = getAttributes(doc, localName, attributes);
-              } else {
-                res = getInnerText(doc, localName);
-              }
-            }
-          } else {
-            objKey = localName.tag;
-            if (field.attributeTag) {
-              res = getAttributeKey(doc, objKey, localName.key, field.attributeTag);
-            } else if (field.valueTag) {
-              res = getInnerTextWithOuterKey(doc, objKey, localName.key, field.valueTag);
-            }
-          }
-          meta[customKey === '' ? objKey.toLowerCase() : customKey] = res;
+        let appendedPath = currentPath;
+        const isWildcard = name.startsWith('~');
+
+        if (isWildcard) {
+          appendedPath = currentPath + `/*[contains(local-name(), '${name}')]`;
         }
-      });
-      return meta as ExtractorResult;
+        if (!isWildcard) {
+          appendedPath = currentPath + `/*[local-name(.)='${name}']`;
+        }
+
+        return appendedPath;
+
+      }, '');
+    },
+
+    buildAttributeXPath(attributes) {
+      if (attributes.length === 0) {
+        return '/text()';
+      }
+      const filters = attributes.map(attribute => `name()='${attribute}'`).join(' or ');
+      return `/@*[${filters}]`;
+    },
+
+    extractor(context: string, fields) {
+
+      const doc = new dom().parseFromString(context);
+
+      return fields.reduce((result: any, field) => {
+
+        // get essential fields
+        const key = field.key;
+        const localPath = field.localPath;
+        const attributes = field.attributes;
+        const isEntire = field.context;
+
+        // get optional fields
+        const index = field.index;
+        const attributePath = field.attributePath;
+
+        const baseXPath = this.buildAbsoluteXPath(localPath);
+        const attributeXPath = this.buildAttributeXPath(attributes);
+
+        // special case: multiple path
+        /*
+          {
+            key: 'issuer',
+            localPath: [
+              ['Response', 'Issuer'],
+              ['Response', 'Assertion', 'Issuer']
+            ],
+            attributes: []
+          }
+         */
+        if (localPath.every(path => Array.isArray(path))) {
+          const multiXPaths = localPath
+            .map(path => {
+              // not support attribute yet, so ignore it
+              return `${this.buildAbsoluteXPath(path)}`;
+            })
+            .join(' | ');
+
+          return {
+            ...result,
+            [key]: select(multiXPaths, doc).map(n => n.nodeValue)
+          };
+        }
+        // eo special case: multiple path
+        // special case: get attributes where some are in child, some are in parent
+        /*
+          {
+            key: 'attributes',
+            localPath: ['Response', 'Assertion', 'AttributeStatement', 'Attribute'],
+            index: ['Name'],
+            attributePath: ['AttributeValue'],
+            attributes: []
+
+            // output: { parentAttr1: '', parentAttr2: '', childAttr1: '' }
+          } 
+        */
+        if (index && attributePath) {
+          // find the index in localpath
+          const indexPath = this.buildAttributeXPath(index);
+          const fullLocalXPath = `${baseXPath}${indexPath}`;
+          const parentNodes = select(baseXPath, doc);
+          // [attribute, attributevalue]
+          const childXPath = this.buildAbsoluteXPath(attributePath);
+          const childAttributeXPath = this.buildAttributeXPath(attributes);
+          const fullChildPath = `${childXPath}${childAttributeXPath}`;
+
+          // [uid, mail, edupersonaffiliation], ready for aggregate
+          const parentAttributes = select(fullLocalXPath, doc).map(n => n.value);
+          // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
+          const childAttributes = parentNodes.map(node => {
+            const nodeDoc = new dom().parseFromString(node);
+            const value = select(fullChildPath, nodeDoc).map(n => n.nodeValue);
+            if (value.length === 1) {
+              return value[0];
+            }
+            return value;
+          });
+
+          // aggregation
+          const obj = zipObject(parentAttributes, childAttributes);
+          return {
+            ...result,
+            [key]: obj
+          };
+
+        }
+
+        // case: fetch entire content, only allow one existence
+        /*
+          {
+            key: 'signature',
+            localPath: ['AuthnRequest', 'Signature'],
+            attributes: [],
+            context: true
+          }
+        */
+        if (isEntire) {
+          const innerContext = select(baseXPath, doc)[0].toString();
+          return {
+            ...result,
+            [key]: innerContext
+          };
+        }
+
+        // case: multiple attribute
+        /*
+          {
+            key: 'nameIDPolicy',
+            localPath: ['AuthnRequest', 'NameIDPolicy'],
+            attributes: ['Format', 'AllowCreate']
+          }
+        */
+        if (attributes.length > 0) {
+          const fullPath = `${baseXPath}${attributeXPath}`;
+          const attributeValues = select(fullPath, doc).map(n => n.value);
+          return {
+            ...result,
+            [key]: zipObject(attributes, attributeValues)
+          };
+        }
+
+        // case: single attribute
+        /*
+          {
+            key: 'issuer',
+            localPath: ['AuthnRequest', 'Issuer'],
+            attributes: []
+          }
+        */
+        if (attributes.length === 0) {
+          const fullPath = `string(${baseXPath}${attributeXPath})`;
+          const attributeValue = select(fullPath, doc);
+          return {
+            ...result,
+            [key]: attributeValue
+          };
+        }
+
+        return result;
+
+      }, {});
+
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)

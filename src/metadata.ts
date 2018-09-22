@@ -4,12 +4,9 @@
 * @desc An abstraction for metadata of identity provider and service provider
 */
 import libsaml from './libsaml';
-import utility from './utility';
 import * as fs from 'fs';
-import { namespace, wording } from './urn';
+import { namespace } from './urn';
 import { isString } from 'lodash';
-
-const certUse = wording.certUse;
 
 export interface MetadataInterface {
   xmlString: string;
@@ -26,26 +23,48 @@ export default class Metadata implements MetadataInterface {
 
   xmlString: string;
   meta: any;
+
   /**
   * @param  {string | Buffer} metadata xml
   * @param  {object} extraParse for custom metadata extractor
   */
   constructor(xml: string | Buffer, extraParse = []) {
     this.xmlString = xml.toString();
+    this.meta = libsaml.extractor(this.xmlString, extraParse.concat([
+      {
+        key: 'entityDescriptor',
+        localPath: ['EntityDescriptor'],
+        attributes: [],
+        context: true
+      },
+      {
+        key: 'entityID',
+        localPath: ['EntityDescriptor'],
+        attributes: ['entityID']
+      },
+      {
+        key: 'certificate',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
+        index: ['use'],
+        attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
+        attributes: []
+        // select("/*[local-name(.)='EntityDescriptor']/*[contains(local-name(), 'SSODescriptor')]", docu).toString()
+        // output { [use]: attributeValue }
+      },
+      {
+        key: 'singleLogoutService',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'SingleLogoutService'],
+        attributes: ['Binding', 'Location']
+      }
+    ]));
 
-    this.meta = libsaml.extractor(this.xmlString, extraParse.concat(['NameIDFormat', {
-      localName: 'EntityDescriptor', attributes: ['entityID'],
-    }, {
-      localName: { tag: 'KeyDescriptor', key: 'use' },
-      valueTag: 'X509Certificate',
-    }, {
-      localName: { tag: 'SingleLogoutService', key: 'Binding' },
-      attributeTag: 'Location',
-    }]));
-
-    if (!this.meta.entitydescriptor || Array.isArray(this.meta.entitydescriptor)) {
-      throw new Error('metadata must contain exactly one entity descriptor');
+    if (
+      Array.isArray(this.meta.entityDescriptor) &&
+      this.meta.entityDescriptor.length !== 1
+    ) {
+      throw new Error('ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
     }
+
   }
 
   /**
@@ -78,10 +97,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string} certificate in string format
   */
   public getX509Certificate(use: string): string {
-    if (use === certUse.signing || use === certUse.encrypt) {
-      return this.meta.keydescriptor[use];
-    }
-    throw new Error('undefined use of key in getX509Certificate');
+    return this.meta.keyDescriptor[use];
   }
 
   /**
@@ -89,7 +105,7 @@ export default class Metadata implements MetadataInterface {
   * @return {array} support NameID format
   */
   public getNameIDFormat(): any {
-    return this.meta.nameidformat;
+    return this.meta.nameIDFormat;
   }
 
   /**
@@ -100,12 +116,12 @@ export default class Metadata implements MetadataInterface {
   public getSingleLogoutService(binding: string | undefined): string | object {
     if (isString(binding)) {
       const bindType = namespace.binding[binding];
-      const service = this.meta.singlelogoutservice.find(obj => obj[bindType]);
+      const service = this.meta.singleLogoutService.find(obj => obj[bindType]);
       if (service) {
         return service[bindType];
       }
     }
-    return this.meta.singlelogoutservice;
+    return this.meta.singleLogoutService;
   }
 
   /**
@@ -114,9 +130,12 @@ export default class Metadata implements MetadataInterface {
   * @return {[string]} support bindings
   */
   public getSupportBindings(services: string[]): string[] {
-    const supportBindings = [];
+    let supportBindings = [];
     if (services) {
-      services.forEach(service => supportBindings.push(Object.keys(service)[0]));
+      supportBindings = services.reduce((acc: any, service) => {
+        const supportBinding = Object.keys(service)[0];
+        return acc.push(supportBinding);
+      }, []);
     }
     return supportBindings;
   }
