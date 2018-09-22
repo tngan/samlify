@@ -67,8 +67,8 @@ export class IdpMetadata extends Metadata {
         singleSignOnService.forEach((a, indexCount) => {
           const attr: any = {
             index: indexCount.toString(),
-            Binding: a.Binding,
-            Location: a.Location,
+            Binding: a.binding,
+            Location: a.location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
@@ -86,8 +86,8 @@ export class IdpMetadata extends Metadata {
             attr.isDefault = true;
           }
           attr.index = (indexCount).toString();
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
+          attr.Binding = a.binding;
+          attr.Location = a.location;
           IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
         });
       } else {
@@ -108,12 +108,16 @@ export class IdpMetadata extends Metadata {
 
     super(meta as string | Buffer, [
       {
-        localName: 'IDPSSODescriptor',
+        key: 'wantAuthnRequestsSigned',
+        localPath: ['EntityDescriptor', 'IDPSSODescriptor'],
         attributes: ['WantAuthnRequestsSigned'],
       },
       {
-        localName: { tag: 'SingleSignOnService', key: 'Binding' },
-        attributeTag: 'Location',
+        key: 'singleSignOnService',
+        localPath: ['EntityDescriptor', 'SingleSignOnService'],
+        index: ['Binding'],
+        attributePath: [],
+        attributes: ['Location']
       },
     ]);
 
@@ -124,7 +128,7 @@ export class IdpMetadata extends Metadata {
   * @return {boolean} WantAuthnRequestsSigned
   */
   isWantAuthnRequestsSigned(): boolean {
-    const was = this.meta.idpssodescriptor.wantauthnrequestssigned;
+    const was = this.meta.wantAuthnRequestsSigned;
     if (isUndefined(was)) {
       return false;
     }
@@ -139,7 +143,7 @@ export class IdpMetadata extends Metadata {
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
       const bindName = namespace.binding[binding];
-      const service = this.meta.singlesignonservice.find(obj => obj[bindName]);
+      const service = this.meta.singleSignOnService.find(obj => obj[bindName]);
       if (service) {
         return service[bindName];
       }

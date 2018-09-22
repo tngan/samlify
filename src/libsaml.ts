@@ -10,14 +10,12 @@ import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
-import { isObject, isUndefined, includes, flattenDeep, zipObject } from 'lodash';
+import { isObject, isUndefined, includes, flattenDeep, zipObject, camelCase, last } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as validator from 'xsd-schema-validator';
-import { V4MAPPED } from 'dns';
-
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -340,6 +338,37 @@ const libSaml = () => {
     return data.length === 1 ? data[0] : data;
   }
 
+  function buildAbsoluteXPath(paths) {
+
+    return paths.reduce((currentPath, name) => {
+
+      let appendedPath = currentPath;
+      const isWildcard = name.startsWith('~');
+
+      if (isWildcard) {
+        const pathName = name.replace('~', '');
+        appendedPath = currentPath + `/*[contains(local-name(), '${pathName}')]`;
+      }
+      if (!isWildcard) {
+        appendedPath = currentPath + `/*[local-name(.)='${name}']`;
+      }
+
+      return appendedPath;
+
+    }, '');
+  }
+
+  function buildAttributeXPath(attributes) {
+    if (attributes.length === 0) {
+      return '/text()';
+    }
+    if (attributes.length === 1) {
+      return `/@${attributes[0]}`;
+    }
+    const filters = attributes.map(attribute => `name()='${attribute}'`).join(' or ');
+    return `/@*[${filters}]`;
+  }
+
   /**
   * @public
   * @desc Create XPath
@@ -512,32 +541,6 @@ const libSaml = () => {
     * @param  {string} context 
     * @param  {object} fields
     */
-    buildAbsoluteXPath(paths) {
-      return paths.reduce((currentPath, name) => {
-
-        let appendedPath = currentPath;
-        const isWildcard = name.startsWith('~');
-
-        if (isWildcard) {
-          appendedPath = currentPath + `/*[contains(local-name(), '${name}')]`;
-        }
-        if (!isWildcard) {
-          appendedPath = currentPath + `/*[local-name(.)='${name}']`;
-        }
-
-        return appendedPath;
-
-      }, '');
-    },
-
-    buildAttributeXPath(attributes) {
-      if (attributes.length === 0) {
-        return '/text()';
-      }
-      const filters = attributes.map(attribute => `name()='${attribute}'`).join(' or ');
-      return `/@*[${filters}]`;
-    },
-
     extractor(context: string, fields) {
 
       const doc = new dom().parseFromString(context);
@@ -554,8 +557,7 @@ const libSaml = () => {
         const index = field.index;
         const attributePath = field.attributePath;
 
-        const baseXPath = this.buildAbsoluteXPath(localPath);
-        const attributeXPath = this.buildAttributeXPath(attributes);
+        console.log(field);
 
         // special case: multiple path
         /*
@@ -572,7 +574,7 @@ const libSaml = () => {
           const multiXPaths = localPath
             .map(path => {
               // not support attribute yet, so ignore it
-              return `${this.buildAbsoluteXPath(path)}`;
+              return `${buildAbsoluteXPath(path)}/text()`;
             })
             .join(' | ');
 
@@ -582,6 +584,10 @@ const libSaml = () => {
           };
         }
         // eo special case: multiple path
+
+        const baseXPath = buildAbsoluteXPath(localPath);
+        const attributeXPath = buildAttributeXPath(attributes);
+
         // special case: get attributes where some are in child, some are in parent
         /*
           {
@@ -590,30 +596,43 @@ const libSaml = () => {
             index: ['Name'],
             attributePath: ['AttributeValue'],
             attributes: []
-
-            // output: { parentAttr1: '', parentAttr2: '', childAttr1: '' }
           } 
         */
         if (index && attributePath) {
           // find the index in localpath
-          const indexPath = this.buildAttributeXPath(index);
+          const indexPath = buildAttributeXPath(index);
           const fullLocalXPath = `${baseXPath}${indexPath}`;
           const parentNodes = select(baseXPath, doc);
-          // [attribute, attributevalue]
-          const childXPath = this.buildAbsoluteXPath(attributePath);
-          const childAttributeXPath = this.buildAttributeXPath(attributes);
-          const fullChildPath = `${childXPath}${childAttributeXPath}`;
-
           // [uid, mail, edupersonaffiliation], ready for aggregate
           const parentAttributes = select(fullLocalXPath, doc).map(n => n.value);
+
+          // [attribute, attributevalue]
+          const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
+          const childAttributeXPath = buildAttributeXPath(attributes);
+          const fullChildXPath = `${childXPath}${childAttributeXPath}`;
+
           // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
           const childAttributes = parentNodes.map(node => {
-            const nodeDoc = new dom().parseFromString(node);
-            const value = select(fullChildPath, nodeDoc).map(n => n.nodeValue);
-            if (value.length === 1) {
-              return value[0];
+            const nodeDoc = new dom().parseFromString(node.toString());
+
+            if (attributes.length === 0) {
+              const childValues = select(fullChildXPath, nodeDoc).map(n => n.nodeValue);
+              if (childValues.length === 1) {
+                return childValues[0];
+              }
+              return childValues;
             }
-            return value;
+
+            if (attributes.length > 0) {
+              const childValues = select(fullChildXPath, nodeDoc).map(n => n.value);
+              if (childValues.length === 1) {
+                return childValues[0];
+              }
+              return childValues;
+            }
+
+            return null;
+
           });
 
           // aggregation
@@ -635,10 +654,10 @@ const libSaml = () => {
           }
         */
         if (isEntire) {
-          const innerContext = select(baseXPath, doc)[0].toString();
+          const node = select(baseXPath, doc);
           return {
             ...result,
-            [key]: innerContext
+            [key]: node.length === 1 ? node[0].toString() : null
           };
         }
 
@@ -650,16 +669,34 @@ const libSaml = () => {
             attributes: ['Format', 'AllowCreate']
           }
         */
-        if (attributes.length > 0) {
+        if (attributes.length > 1) {
           const fullPath = `${baseXPath}${attributeXPath}`;
           const attributeValues = select(fullPath, doc).map(n => n.value);
           return {
             ...result,
-            [key]: zipObject(attributes, attributeValues)
+            [key]: zipObject(attributes.map(a => camelCase(a)), attributeValues)
           };
         }
 
         // case: single attribute
+        /*
+          {
+            key: 'statusCode',
+            localPath: ['Response', 'Status', 'StatusCode'],
+            attributes: ['Value'],
+          }
+        */
+        if (attributes.length === 1) {
+          const fullPath = `${baseXPath}${attributeXPath}`;
+          const attributeValues = select(fullPath, doc).map(n => n.value);
+          return {
+            ...result,
+            [key]: attributeValues[0]
+          };
+        }
+
+
+        // case: zero attribute
         /*
           {
             key: 'issuer',

@@ -623,7 +623,7 @@ test('avoid mitm attack', async t => {
   const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
 });
 
-test.only('should reject signature wrapped response', async t => {
+test('should reject signature wrapped response', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
