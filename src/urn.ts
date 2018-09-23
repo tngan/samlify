@@ -3,6 +3,18 @@
 * @author tngan
 * @desc  Includes all keywords need in samlify
 */
+
+export enum BindingNamespace {
+  Redirect = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+  Post = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+  Artifact = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'
+}
+
+export enum MessageSignatureOrder {
+  STE = 'sign-then-encrypt',
+  ETS = 'encrypt-then-sign'
+}
+
 const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
@@ -122,6 +134,13 @@ const algorithms = {
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
   },
 };
+
+export enum ParserType {
+  SAMLRequest = 'SAMLRequest',
+  SAMLResponse = 'SAMLResponse',
+  LogoutRequest = 'LogoutRequest',
+  LogoutResponse = 'LogoutResponse'
+}
 
 const wording = {
   urlParams: {
