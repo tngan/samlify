@@ -1,12 +1,12 @@
 import { inflateString, base64Decode } from './utility';
-const bindDict = wording.binding;
 import libsaml from './libsaml';
 import {
   extract,
   loginRequestFields,
   loginResponseFields,
   logoutRequestFields,
-  logoutResponseFields
+  logoutResponseFields,
+  ExtractorFields
 } from './extractor';
 
 import {
@@ -16,15 +16,21 @@ import {
   MessageSignatureOrder
 } from './urn';
 
+const bindDict = wording.binding;
 const urlParams = wording.urlParams;
 
+export interface FlowResult {
+  samlContent: string;
+  extract: any;
+}
+
 // get the default extractor fields based on the parserType
-function getDefaultExtractorFields(parserType: ParserType, assertion?: any) {
+function getDefaultExtractorFields(parserType: ParserType, assertion?: any): ExtractorFields {
   switch (parserType) {
     case ParserType.SAMLRequest:
       return loginRequestFields;
     case ParserType.SAMLResponse:
-      if (assertion) {
+      if (!assertion) {
         // unexpected hit
         throw new Error('ERR_EMPTY_ASSERTION');
       }
@@ -53,7 +59,7 @@ async function redirectFlow(options) {
 
   // query must contain the saml content
   if (content === undefined) {
-    throw new Error('ERR_REDIRECT_FLOW_BAD_ARGS');
+    return Promise.reject('ERR_REDIRECT_FLOW_BAD_ARGS');
   }
 
   const xmlString = inflateString(decodeURIComponent(content));
@@ -62,7 +68,7 @@ async function redirectFlow(options) {
     try {
       await libsaml.isValidXml(xmlString);
     } catch (e) {
-      throw new Error('ERR_INVALID_XML');
+      return Promise.reject('ERR_INVALID_XML');
     }
   }
 
@@ -77,9 +83,8 @@ async function redirectFlow(options) {
   // see if signature check is required
   // only verify message signature is enough
   if (checkSignature) {
-    // Throw error when missing signature or signature algorithm
     if (!signature || !sigAlg) {
-      throw new Error('ERR_MISSING_SIG_ALG');
+      return Promise.reject('ERR_MISSING_SIG_ALG');
     }
 
     // put the below two assignemnts into verifyMessageSignature function
@@ -92,14 +97,14 @@ async function redirectFlow(options) {
       parseResult.sigAlg = decodeSigAlg;
     }
     // Fail to verify message signature
-    throw new Error('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+    return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
   }
 
-  return parseResult;
+  return Promise.resolve(parseResult);
 }
 
 // proceed the post flow
-async function postFlow(options) {
+async function postFlow(options): Promise<FlowResult> {
 
   let extractorFields = [];
 
@@ -123,7 +128,7 @@ async function postFlow(options) {
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
 
-  //verify signature before decryption if IDP encrypted then signed the message
+  // verify the signatures (the repsonse is encrypted then signed, then verify first then decrypt)
   if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
@@ -131,8 +136,9 @@ async function postFlow(options) {
     const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
     if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+    } else {
+      return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE'); 
     }
-    return [false, null];
   }
 
   if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
@@ -143,21 +149,18 @@ async function postFlow(options) {
     await libsaml.isValidXml(samlContent);
   }
 
-  // verify the signatures (for both assertion/message)
+  // verify the signatures (the repsonse is signed then encrypted, then decrypt first then verify)
   if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
   ) {
-
     const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
-
     if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+    } else {
+      return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE'); 
     }
-    
-    return [false, null];
   }
-
 
   const parseResult = {
     samlContent: samlContent,
@@ -168,10 +171,10 @@ async function postFlow(options) {
   // const targetEntityMetadata = from.entityMeta;
   // const issuer = targetEntityMetadata.getEntityID();
 
-  return parseResult;
+  return Promise.resolve(parseResult);
 }
 
-export async function flow(options) {
+export function flow(options): Promise<FlowResult> {
 
   const binding = options.binding;
   const parserType = options.parserType;
@@ -189,5 +192,7 @@ export async function flow(options) {
   if (binding === bindDict.redirect) {
     return redirectFlow(options);
   }
+
+  return Promise.reject('ERR_UNEXPECTED_FLOW');
 
 }

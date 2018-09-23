@@ -86,7 +86,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string} entityID
   */
   public getEntityID(): string {
-    return this.meta.entitydescriptor.entityid;
+    return this.meta.entityID;
   }
 
   /**
@@ -95,7 +95,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string} certificate in string format
   */
   public getX509Certificate(use: string): string {
-    return this.meta.keyDescriptor[use];
+    return this.meta.certificate[use];
   }
 
   /**

@@ -3,6 +3,17 @@ import { select } from 'xpath';
 import { zipObject, camelCase, last } from 'lodash';
 const dom = DOMParser;
 
+interface ExtractorField {
+  key: string;
+  localPath: string[];
+  attributes: string[];
+  index?: string[];
+  attributePath?: string[];
+  context?: boolean;
+}
+
+export type ExtractorFields = ExtractorField[];
+
 function buildAbsoluteXPath(paths) {
   return paths.reduce((currentPath, name) => {
     let appendedPath = currentPath;
@@ -29,7 +40,7 @@ function buildAttributeXPath(attributes) {
   return `/@*[${filters}]`;
 }
 
-export const loginRequestFields = [
+export const loginRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['AuthnRequest'],
@@ -58,7 +69,7 @@ export const loginRequestFields = [
   }
 ];
 
-export const loginResponseFields = assertion => [
+export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
   {
     key: 'statusCode',
     localPath: ['Response', 'Status', 'StatusCode'],
@@ -114,7 +125,7 @@ export const loginResponseFields = assertion => [
   }
 ];
 
-export const logoutRequestFields = [
+export const logoutRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['LogoutRequest'],
@@ -138,7 +149,7 @@ export const logoutRequestFields = [
   }
 ];
 
-export const logoutResponseFields = [
+export const logoutResponseFields: ExtractorFields = [
   {
     key: 'response',
     localPath: ['LogoutResponse'],
@@ -164,7 +175,7 @@ export const logoutResponseFields = [
 
 export function extract(context: string, fields) {
 
-  let doc = new dom().parseFromString(context);
+  const rootDoc = new dom().parseFromString(context);
 
   return fields.reduce((result: any, field) => {
     // get essential fields
@@ -177,10 +188,13 @@ export function extract(context: string, fields) {
     const index = field.index;
     const attributePath = field.attributePath;
 
+    // set allowing overriding if there is a shortcut injected
+    let targetDoc = rootDoc;
+
     // if shortcut is used, then replace the doc
     // it's a design for overriding the doc used during runtime
     if (shortcut) {
-      doc = new dom().parseFromString(shortcut);
+      targetDoc = new dom().parseFromString(shortcut);
     }
 
     // special case: multiple path
@@ -204,7 +218,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
-        [key]: select(multiXPaths, doc).map(n => n.nodeValue)
+        [key]: select(multiXPaths, targetDoc).map(n => n.nodeValue)
       };
     }
     // eo special case: multiple path
@@ -226,9 +240,9 @@ export function extract(context: string, fields) {
       // find the index in localpath
       const indexPath = buildAttributeXPath(index);
       const fullLocalXPath = `${baseXPath}${indexPath}`;
-      const parentNodes = select(baseXPath, doc);
+      const parentNodes = select(baseXPath, targetDoc);
       // [uid, mail, edupersonaffiliation], ready for aggregate
-      const parentAttributes = select(fullLocalXPath, doc).map(n => n.value);
+      const parentAttributes = select(fullLocalXPath, targetDoc).map(n => n.value);
       // [attribute, attributevalue]
       const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
       const childAttributeXPath = buildAttributeXPath(attributes);
@@ -269,12 +283,13 @@ export function extract(context: string, fields) {
       }
     */
     if (isEntire) {
-      const node = select(baseXPath, doc);
+      const node = select(baseXPath, targetDoc);
       return {
         ...result,
         [key]: node.length === 1 ? node[0].toString() : null
       };
     }
+
     // case: multiple attribute
     /*
       {
@@ -284,11 +299,19 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length > 1) {
-      const fullPath = `${baseXPath}${attributeXPath}`;
-      const attributeValues = select(fullPath, doc).map(n => n.value);
+      const baseNode = select(baseXPath, targetDoc).map(n => n.toString());
+      const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
+      const attributeValues = baseNode.map((node: string) => {
+        const nodeDoc = new dom().parseFromString(node);
+        const values = select(childXPath, nodeDoc).reduce((r: any, n: any) => { 
+          r[camelCase(n.name)] = n.value;
+          return r;
+        }, {});
+        return values;
+      });
       return {
         ...result,
-        [key]: zipObject(attributes.map(a => camelCase(a)), attributeValues)
+        [key]: attributeValues.length === 1 ? attributeValues[0] : attributeValues
       };
     }
     // case: single attribute
@@ -301,7 +324,7 @@ export function extract(context: string, fields) {
     */
     if (attributes.length === 1) {
       const fullPath = `${baseXPath}${attributeXPath}`;
-      const attributeValues = select(fullPath, doc).map(n => n.value);
+      const attributeValues = select(fullPath, targetDoc).map(n => n.value);
       return {
         ...result,
         [key]: attributeValues[0]
@@ -317,7 +340,7 @@ export function extract(context: string, fields) {
     */
     if (attributes.length === 0) {
       const fullPath = `string(${baseXPath}${attributeXPath})`;
-      const attributeValue = select(fullPath, doc);
+      const attributeValue = select(fullPath, targetDoc);
       return {
         ...result,
         [key]: attributeValue

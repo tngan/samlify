@@ -313,13 +313,16 @@ const libSaml = () => {
       selection = selection.concat(messageSignatureNode);
 
       if (assertionSignatureNode.length === 1) {
-        assertionNode = assertionSignatureNode[0].parentNode;         
+        assertionNode = assertionSignatureNode[0].parentNode.toString();
       }
+
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
-        throw new Error('no signature is found in the context');
+        throw new Error('ERR_ZERO_SIGNATURE');
       }
+
       // TODO: wrapping attack detection
+      
       const sig = new SignedXml();
       let verified = true;
       // remove all the signature

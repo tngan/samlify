@@ -1,3 +1,4 @@
+/*
 import esaml2 = require('../index');
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
@@ -133,3 +134,4 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(acsUrl, 'https://example.org/response');
   });
 })();
+*/

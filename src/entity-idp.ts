@@ -28,6 +28,7 @@ export default function(props: IdentityProviderSettings) {
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
 export class IdentityProvider extends Entity {
+  
   entityMeta: IdentityProviderMetadata;
 
   constructor(idpSetting: IdentityProviderSettings) {
@@ -72,22 +73,20 @@ export class IdentityProvider extends Entity {
     customTagReplacement?: (...args: any[]) => any,
     encryptThenSign?: boolean,
   ) {
-    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    const protocol = namespace.binding[binding];
+    // can only support post binding for login response
     if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
         sp,
       }, user, customTagReplacement, encryptThenSign);
-      // xmlenc is using async process
-      return {
+     return {
         ...context,
         entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding),
-        type: 'SAMLResponse',
+        type: 'SAMLResponse'
       };
     }
-
-    // Will support artifact in the next release
-    throw new Error('this binding is not supported');
+    throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
   }
 
   /**

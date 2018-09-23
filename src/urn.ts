@@ -15,6 +15,32 @@ export enum MessageSignatureOrder {
   ETS = 'encrypt-then-sign'
 }
 
+export enum StatusCode {
+  Success = 'urn:oasis:names:tc:SAML:2.0:status:Success',
+  Requester = 'urn:oasis:names:tc:SAML:2.0:status:Requester',
+  Responder = 'urn:oasis:names:tc:SAML:2.0:status:Responder',
+  VersionMismatch = 'urn:oasis:names:tc:SAML:2.0:status:VersionMismatch',
+  AuthFailed = 'urn:oasis:names:tc:SAML:2.0:status:AuthnFailed',
+  InvalidAttrNameOrValue = 'urn:oasis:names:tc:SAML:2.0:status:InvalidAttrNameOrValue',
+  InvalidNameIDPolicy = 'urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy',
+  NoAuthnContext = 'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
+  NoAvailableIDP = 'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
+  NoPassive = 'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
+  NoSupportedIDP = 'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
+  PartialLogout = 'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
+  ProxyCountExceeded = 'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
+  RequestDenied = 'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
+  RequestUnsupported = 'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
+  RequestVersionDeprecated = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
+  RequestVersionTooHigh = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
+  RequestVersionTooLow = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
+  ResourceNotRecognized = 'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
+  TooManyResponses = 'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
+  UnknownAttrProfile = 'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
+  UnknownPrincipal = 'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
+  UnsupportedBinding = 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding',
+}
+
 const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',

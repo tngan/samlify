@@ -157,7 +157,7 @@ export class SpMetadata extends Metadata {
         attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
       }, {
         key: 'assertionConsumerService',
-        localPath: ['EntityDescriptor', 'AssertionConsumerService'],
+        localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
         attributes: ['Binding', 'Location', 'isDefault', 'index'],
       }
     ]);
