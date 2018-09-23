@@ -81,7 +81,7 @@ export interface LibSamlInterface {
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
   attributeStatementBuilder: (attributes: LoginResponseAttribute[]) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
-  verifySignature: (xml: string, opts) => boolean;
+  verifySignature: (xml: string, opts) => [boolean, any];
   extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
@@ -107,10 +107,10 @@ const libSaml = () => {
   */
   function getQueryParamByType(type: string) {
     if ([urlParams.logoutRequest, urlParams.samlRequest].indexOf(type) !== -1) {
-      return urlParams.samlRequest;
+      return 'SAMLRequest';
     }
     if ([urlParams.logoutResponse, urlParams.samlResponse].indexOf(type) !== -1) {
-      return urlParams.samlResponse;
+      return 'SAMLResponse';
     }
     throw new Error('undefined parserType');
   }
@@ -302,16 +302,27 @@ const libSaml = () => {
       const messageSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Signature']";
       // assertion signature
       const assertionSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
-      // todo: wrapping attack detection
+
+      // select the signature node
       let selection = [];
-      selection = selection.concat(select(assertionSignatureXpath, doc));
-      selection = selection.concat(select(messageSignatureXpath, doc));
+      let assertionNode = null;
+      const messageSignatureNode = select(messageSignatureXpath, doc);
+      const assertionSignatureNode = select(assertionSignatureXpath, doc);
+
+      selection = selection.concat(assertionSignatureNode);
+      selection = selection.concat(messageSignatureNode);
+
+      if (assertionSignatureNode.length === 1) {
+        assertionNode = assertionSignatureNode[0].parentNode;         
+      }
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
         throw new Error('no signature is found in the context');
       }
+      // TODO: wrapping attack detection
       const sig = new SignedXml();
-      let res = true;
+      let verified = true;
+      // remove all the signature
       xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
       selection.forEach(s => {
         let selectedCert = '';
@@ -340,9 +351,10 @@ const libSaml = () => {
           throw new Error('undefined certificate in \'opts\' object');
         }
         sig.loadSignature(s);
-        res = res && sig.checkSignature(xml);
+        verified = verified && sig.checkSignature(xml);
       });
-      return res;
+
+      return [verified, assertionNode];
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)

@@ -14,6 +14,7 @@ import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
+import { flow } from './flow';
 
 
 /**
@@ -93,40 +94,14 @@ export class IdentityProvider extends Entity {
    * Validation of the parsed URL parameters
    * @param sp ServiceProvider instance
    * @param binding Protocol binding
-   * @param req Request
+   * @param req RequesmessageSigningOrderst
    */
   public parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
-    return this.genericParser({
-      extractorFields: [
-        {
-          key: 'request',
-          localPath: ['AuthnRequest'],
-          attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
-        },
-        {
-          key: 'issuer',
-          localPath: ['AuthnRequest', 'Issuer'],
-          attributes: []
-        },
-        {
-          key: 'nameIDPolicy',
-          localPath: ['AuthnRequest', 'NameIDPolicy'],
-          attributes: ['Format', 'AllowCreate']
-        },
-        {
-          key: 'authnContextClassRef',
-          localPath: ['AuthnRequest', 'AuthnContextClassRef'],
-          attributes: []
-        },
-        {
-          key: 'signature',
-          localPath: ['AuthnRequest', 'Signature'],
-          attributes: [],
-          context: true
-        }
-      ],
+    const self = this;
+    return flow({
       from: sp,
-      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
+      self: self,
+      checkSignature: self.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
       type: 'login',
       binding: binding,

@@ -29,14 +29,142 @@ function buildAttributeXPath(attributes) {
   return `/@*[${filters}]`;
 }
 
-/**
- * @desc High-level XML extractor
- * @param  {string} context 
- * @param  {object} fields
- */
+export const loginRequestFields = [
+  {
+    key: 'request',
+    localPath: ['AuthnRequest'],
+    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
+  },
+  {
+    key: 'issuer',
+    localPath: ['AuthnRequest', 'Issuer'],
+    attributes: []
+  },
+  {
+    key: 'nameIDPolicy',
+    localPath: ['AuthnRequest', 'NameIDPolicy'],
+    attributes: ['Format', 'AllowCreate']
+  },
+  {
+    key: 'authnContextClassRef',
+    localPath: ['AuthnRequest', 'AuthnContextClassRef'],
+    attributes: []
+  },
+  {
+    key: 'signature',
+    localPath: ['AuthnRequest', 'Signature'],
+    attributes: [],
+    context: true
+  }
+];
+
+export const loginResponseFields = assertion => [
+  {
+    key: 'statusCode',
+    localPath: ['Response', 'Status', 'StatusCode'],
+    attributes: ['Value'],
+  },
+  {
+    key: 'conditions',
+    localPath: ['Assertion', 'Conditions'],
+    attributes: ['NotBefore', 'NotOnOrAfter'],
+    shortcut: assertion
+  },
+  {
+    key: 'response',
+    localPath: ['Response'],
+    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo'],
+  },
+  {
+    key: 'audience',
+    localPath: ['Assertion', 'Conditions', 'AudienceRestriction', 'Audience'],
+    attributes: [],
+    shortcut: assertion
+  },
+  // {
+  //   key: 'issuer',
+  //   localPath: ['Response', 'Issuer'],
+  //   attributes: []
+  // },
+  {
+    key: 'issuer',
+    localPath: ['Assertion', 'Issuer'],
+    attributes: [],
+    shortcut: assertion
+  },
+  {
+    key: 'nameID',
+    localPath: ['Assertion', 'Subject', 'NameID'],
+    attributes: [],
+    shortcut: assertion
+  },
+  {
+    key: 'sessionIndex',
+    localPath: ['Assertion', 'AuthnStatement'],
+    attributes: ['AuthnInstant', 'SessionNotOnOrAfter', 'SessionIndex'],
+    shortcut: assertion
+  },
+  {
+    key: 'attributes',
+    localPath: ['Assertion', 'AttributeStatement', 'Attribute'],
+    index: ['Name'],
+    attributePath: ['AttributeValue'],
+    attributes: [],
+    shortcut: assertion
+  }
+];
+
+export const logoutRequestFields = [
+  {
+    key: 'request',
+    localPath: ['LogoutRequest'],
+    attributes: ['ID', 'IssueInstant', 'Destination']
+  },
+  {
+    key: 'issuer',
+    localPath: ['LogoutRequest', 'Issuer'],
+    attributes: []
+  },
+  {
+    key: 'nameID',
+    localPath: ['LogoutRequest', 'NameID'],
+    attributes: []
+  },
+  {
+    key: 'signature',
+    localPath: ['LogoutRequest', 'Signature'],
+    attributes: [],
+    context: true
+  }
+];
+
+export const logoutResponseFields = [
+  {
+    key: 'response',
+    localPath: ['LogoutResponse'],
+    attributes: ['ID', 'Destination', 'InResponseTo']
+  },
+  {
+    key: 'statusCode',
+    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
+    attributes: ['Value']
+  },
+  {
+    key: 'issuer',
+    localPath: ['LogoutResponse', 'Issuer'],
+    attributes: []
+  },
+  {
+    key: 'signature',
+    localPath: ['LogoutResponse', 'Signature'],
+    attributes: [],
+    context: true
+  }
+];
+
 export function extract(context: string, fields) {
 
-  const doc = new dom().parseFromString(context);
+  let doc = new dom().parseFromString(context);
 
   return fields.reduce((result: any, field) => {
     // get essential fields
@@ -44,11 +172,16 @@ export function extract(context: string, fields) {
     const localPath = field.localPath;
     const attributes = field.attributes;
     const isEntire = field.context;
+    const shortcut = field.shortcut;
     // get optional fields
     const index = field.index;
     const attributePath = field.attributePath;
 
-    console.log(field);
+    // if shortcut is used, then replace the doc
+    // it's a design for overriding the doc used during runtime
+    if (shortcut) {
+      doc = new dom().parseFromString(shortcut);
+    }
 
     // special case: multiple path
     /*
