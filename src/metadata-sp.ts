@@ -17,11 +17,11 @@ export interface SpMetadataInterface extends MetadataInterface {
 
 // https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
 interface MetaElement {
-  keyDescriptor?: any[];
-  nameIDFormat?: any[];
-  singleLogoutService?: any[];
-  assertionConsumerService?: any[];
-  attributeConsumingService?: any[];
+  KeyDescriptor?: any[];
+  NameIDFormat?: any[];
+  SingleLogoutService?: any[];
+  AssertionConsumerService?: any[];
+  AttributeConsumingService?: any[];
 }
 
 /*
@@ -62,17 +62,17 @@ export class SpMetadata extends Metadata {
       } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
-        keyDescriptor: [],
-        nameIDFormat: [],
-        singleLogoutService: [],
-        assertionConsumerService: [],
-        attributeConsumingService: [],
+        KeyDescriptor: [],
+        NameIDFormat: [],
+        SingleLogoutService: [],
+        AssertionConsumerService: [],
+        AttributeConsumingService: [],
       };
 
       const SPSSODescriptor: any[] = [{
         _attr: {
-          authnRequestsSigned: String(authnRequestsSigned),
-          wantAssertionsSigned: String(wantAssertionsSigned),
+          AuthnRequestsSigned: String(authnRequestsSigned),
+          WantAssertionsSigned: String(wantAssertionsSigned),
           protocolSupportEnumeration: namespace.names.protocol,
         },
       }];
@@ -82,19 +82,19 @@ export class SpMetadata extends Metadata {
       }
 
       if (signingCert) {
-        descriptors.keyDescriptor.push(libsaml.createKeySection('signing', signingCert).keyDescriptor);
+        descriptors.KeyDescriptor.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing signing certificate');
       }
 
       if (encryptCert) {
-        descriptors.keyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).keyDescriptor);
+        descriptors.KeyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.nameIDFormat.push(f));
+        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
@@ -102,13 +102,13 @@ export class SpMetadata extends Metadata {
         singleLogoutService.forEach(a => {
           const attr: any = {
             index: String(indexCount++),
-            Binding: a.binding,
-            Location: a.location,
+            Binding: a.Binding,
+            Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.singleLogoutService.push([{ _attr: attr }]);
+          descriptors.SingleLogoutService.push([{ _attr: attr }]);
         });
       }
 
@@ -117,13 +117,13 @@ export class SpMetadata extends Metadata {
         assertionConsumerService.forEach(a => {
           const attr: any = {
             index: String(indexCount++),
-            Binding: a.binding,
-            Location: a.location,
+            Binding: a.Binding,
+            Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.assertionConsumerService.push([{ _attr: attr }]);
+          descriptors.AssertionConsumerService.push([{ _attr: attr }]);
         });
       } else {
         // console.warn('Missing endpoint of AssertionConsumerService');
@@ -155,7 +155,8 @@ export class SpMetadata extends Metadata {
         key: 'spSSODescriptor',
         localPath: ['EntityDescriptor', 'SPSSODescriptor'],
         attributes: ['WantAssertionsSigned', 'AuthnRequestsSigned'],
-      }, {
+      },
+      {
         key: 'assertionConsumerService',
         localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
         attributes: ['Binding', 'Location', 'isDefault', 'index'],

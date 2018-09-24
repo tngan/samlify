@@ -556,7 +556,6 @@ test('avoid mitm attack', async t => {
   const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
 });
 
-
 test('should reject signature wrapped response', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const user = { email: 'user@esaml2.com' };
@@ -574,13 +573,8 @@ test('should reject signature wrapped response', async t => {
     .replace('user@esaml2.com', 'admin@esaml2.com');
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '<saml:SubjectConfirmationData>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:SubjectConfirmationData>');
-
   const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
-
   const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-
-  // ignore the tampering value
+  // throw an error for wrapping detection
   t.is(result.extract.nameID, 'admin@esaml2.com');
-  
-  //should probalby be like this -> const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } }));
 });

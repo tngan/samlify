@@ -53,12 +53,17 @@ export default class Metadata implements MetadataInterface {
         key: 'singleLogoutService',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'SingleLogoutService'],
         attributes: ['Binding', 'Location']
+      },
+      {
+        key: 'nameIDFormat',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'NameIDFormat'],
+        attributes: [],
       }
     ]));
 
     if (
       Array.isArray(this.meta.entityDescriptor) &&
-      this.meta.entityDescriptor.length !== 1
+      this.meta.entityDescriptor.length > 1
     ) {
       throw new Error('ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
     }
@@ -95,7 +100,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string} certificate in string format
   */
   public getX509Certificate(use: string): string {
-    return this.meta.certificate[use];
+    return this.meta.certificate[use] || null;
   }
 
   /**

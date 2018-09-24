@@ -12,8 +12,8 @@ export interface MetadataIdpOptions {
   encryptCert?: string;
   wantAuthnRequestsSigned?: boolean;
   nameIDFormat?: string[];
-  singleSignOnService?: Array<{ isDefault?: boolean, binding: string, location: string }>;
-  singleLogoutService?: Array<{ isDefault?: boolean, binding: string, location: string }>;
+  singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   requestSignatureAlgorithm?: string;
 }
 
@@ -30,8 +30,8 @@ export interface MetadataSpOptions {
   wantMessageSigned?: boolean;
   signatureConfig?: { [key: string]: any };
   nameIDFormat?: string[];
-  singleLogoutService?: Array<{ isDefault?: boolean, binding: string, location: string }>;
-  assertionConsumerService?: Array<{ isDefault?: boolean, binding: string, location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  assertionConsumerService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   elementsOrder?: string[];
 }
 

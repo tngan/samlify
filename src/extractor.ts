@@ -284,9 +284,16 @@ export function extract(context: string, fields) {
     */
     if (isEntire) {
       const node = select(baseXPath, targetDoc);
+      let value = null;
+      if (node.length === 1) {
+        value = node[0].toString();
+      }
+      if (node.length > 1) {
+        value = node.map(n => n.toString()); 
+      }
       return {
         ...result,
-        [key]: node.length === 1 ? node[0].toString() : null
+        [key]: value
       };
     }
 
@@ -339,8 +346,16 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length === 0) {
-      const fullPath = `string(${baseXPath}${attributeXPath})`;
-      const attributeValue = select(fullPath, targetDoc);
+
+      let attributeValue = null;
+      const node = select(baseXPath, targetDoc);
+      if (node.length === 1) {
+        const fullPath = `string(${baseXPath}${attributeXPath})`;
+        attributeValue = select(fullPath, targetDoc);
+      }
+      if (node.length > 1) {
+        attributeValue = node.map(n => n.nodeValue);
+      }
       return {
         ...result,
         [key]: attributeValue

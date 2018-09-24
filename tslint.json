@@ -13,6 +13,7 @@
       "no-empty-interface": false,
       "no-string-literal": false,
       "object-literal-sort-keys": false,
+      "object-literal-key-quotes": false,
       "object-literal-shorthand": false,
       "trailing-comma": false,
       "eofline": false,
