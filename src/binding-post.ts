@@ -109,7 +109,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
-      InResponseTo: get(requestInfo, 'extract.authnrequest.id') || '',
+      InResponseTo: get(requestInfo, 'extract.request.id') || '',
       AuthnStatement: '',
       AttributeStatement: '',
     };
@@ -118,7 +118,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
+        tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -267,10 +267,10 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        StatusCode: namespace.statusCode.success,
+        StatusCode: StatusCode.Success,
       };
-      if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
-        tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
+      if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
+        tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }

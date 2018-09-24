@@ -211,7 +211,7 @@ export default class Entity {
         type: 'SAMLResponse',
       };
     }
-    throw new Error('this binding is not supported');
+    throw new Error('ERR_CREATE_LOGOUT_RESPONSE_UNDEFINED_BINDING');
   }
 
   /**

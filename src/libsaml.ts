@@ -82,13 +82,12 @@ export interface LibSamlInterface {
   attributeStatementBuilder: (attributes: LoginResponseAttribute[]) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts) => [boolean, any];
-  extractor: (xmlString: string, fields) => ExtractorResult;
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string, signatureConfig?: any) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
-  decryptAssertion: (here, entireXML: string) => Promise<string>;
+  decryptAssertion: (here, entireXML: string) => Promise<[string, any]>;
 
   getSigningScheme: (sigAlg: string) => string | null;
   getDigestMethod: (sigAlg: string) => string | null;
@@ -298,10 +297,10 @@ const libSaml = () => {
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const doc = new dom().parseFromString(xml);
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
-      // message signature
-      const messageSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Signature']";
-      // assertion signature
-      const assertionSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
+      // message signature (logout response / saml response)
+      const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
+      // assertion signature (logout response / saml response)
+      const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
 
       // select the signature node
       let selection = [];
@@ -311,6 +310,15 @@ const libSaml = () => {
 
       selection = selection.concat(assertionSignatureNode);
       selection = selection.concat(messageSignatureNode);
+
+      // response must be signed, either entire document or assertion
+      // default we will take the assertion section under root
+      if (messageSignatureNode.length === 1) {
+        const node = select("/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']", doc);
+        if (node.length === 1) {
+          assertionNode = node[0].toString(); 
+        }
+      }
 
       if (assertionSignatureNode.length === 1) {
         assertionNode = assertionSignatureNode[0].parentNode.toString();
@@ -491,7 +499,7 @@ const libSaml = () => {
     * @return {function} a promise to get back the entire xml with decrypted assertion
     */
     decryptAssertion(here, entireXML: string) {
-      return new Promise<string>((resolve, reject) => {
+      return new Promise<[string, any]>((resolve, reject) => {
         // Implement decryption first then check the signature
         if (!entireXML) {
           return reject(new Error('empty or undefined xml string during decryption'));
@@ -499,7 +507,7 @@ const libSaml = () => {
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
         const xml = new dom().parseFromString(entireXML);
-        const encryptedAssertions = select("//*[local-name(.)='EncryptedAssertion']", xml);
+        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", xml);
         if (!Array.isArray(encryptedAssertions)) {
           throw new Error('undefined encrypted assertion is found');
         }
@@ -517,7 +525,7 @@ const libSaml = () => {
           }
           const assertionNode = new dom().parseFromString(res);
           xml.replaceChild(assertionNode, encryptedAssertions[0]);
-          return resolve(xml.toString());
+          return resolve([xml.toString(), res]);
         });
       });
     },

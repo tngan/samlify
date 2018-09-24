@@ -1,5 +1,6 @@
 import { inflateString, base64Decode } from './utility';
 import libsaml from './libsaml';
+import { DOMParser as dom } from 'xmldom';
 import {
   extract,
   loginRequestFields,
@@ -50,7 +51,7 @@ async function redirectFlow(options) {
   const { request, parserType, checkSignature = true, from } = options;
   const { query, octetString } = request;
   const { SigAlg: sigAlg, Signature: signature } = query;
-
+  
   const targetEntityMetadata = from.entityMeta;
 
   // ?SAMLRequest= or ?SAMLResponse=
@@ -76,7 +77,7 @@ async function redirectFlow(options) {
 
   const parseResult: { samlContent: string, extract: any, sigAlg: string } = {
     samlContent: xmlString,
-    sigAlg: undefined,
+    sigAlg: null,
     extract: extract(xmlString, extractorFields),
   };
 
@@ -93,11 +94,12 @@ async function redirectFlow(options) {
     
     const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);
 
-    if (verified) {
-      parseResult.sigAlg = decodeSigAlg;
+    if (!verified) {
+      // Fail to verify message signature
+      return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
     }
-    // Fail to verify message signature
-    return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+
+    parseResult.sigAlg = decodeSigAlg;
   }
 
   return Promise.resolve(parseResult);
@@ -105,8 +107,6 @@ async function redirectFlow(options) {
 
 // proceed the post flow
 async function postFlow(options): Promise<FlowResult> {
-
-  let extractorFields = [];
 
   const { 
     request,
@@ -128,21 +128,32 @@ async function postFlow(options): Promise<FlowResult> {
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
 
+  const decryptRequired = from.entitySetting.isAssertionEncrypted;
+
+  let extractorFields = [];
+
+  if (parserType !== 'SAMLResponse') {
+    extractorFields = getDefaultExtractorFields(parserType, null);
+  }
+
   // verify the signatures (the repsonse is encrypted then signed, then verify first then decrypt)
   if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
   ) {
     const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
-    if (verified) {
-      extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-    } else {
+    if (!verified) {
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE'); 
+    } 
+    if (!decryptRequired) {
+      extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
   }
 
-  if (parserType === 'SAMLResponse' && from.entitySetting.isAssertionEncrypted) {
-    samlContent = await libsaml.decryptAssertion(self, samlContent);
+  if (parserType === 'SAMLResponse' && decryptRequired) {
+    const result = await libsaml.decryptAssertion(self, samlContent);
+    samlContent = result[0];
+    extractorFields = getDefaultExtractorFields(parserType, result[1]);
   }
 
   if (parserType === 'SAMLResponse') {

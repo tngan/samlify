@@ -114,7 +114,7 @@ export class IdpMetadata extends Metadata {
       },
       {
         key: 'singleSignOnService',
-        localPath: ['EntityDescriptor', 'SingleSignOnService'],
+        localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
         index: ['Binding'],
         attributePath: [],
         attributes: ['Location']
@@ -143,11 +143,11 @@ export class IdpMetadata extends Metadata {
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
       const bindName = namespace.binding[binding];
-      const service = this.meta.singleSignOnService.find(obj => obj[bindName]);
+      const service = this.meta.singleSignOnService[bindName];
       if (service) {
-        return service[bindName];
+        return service;
       }
     }
-    return this.meta.singlesignonservice;
+    return this.meta.singleSignOnService;
   }
 }
