@@ -1,4 +1,3 @@
-/*
 import esaml2 = require('../index');
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
@@ -7,7 +6,7 @@ import * as url from 'url';
 import { DOMParser as dom } from 'xmldom';
 import { xpath as select } from 'xml-crypto';
 import * as _ from 'lodash';
-import { extract } from 'src/extractor';
+import { extract } from '../src/extractor';
 
 const {
   IdentityProvider: identityProvider,
@@ -80,49 +79,82 @@ test('#31 query param for sso/slo returns error', t => {
   const sp = serviceProvider(spcfg);
   const spxml = sp.getMetadata();
   const idpxml = idp.getMetadata();
-  // const acs = extract(spxml, [{ localName: 'AssertionConsumerService', attributes: ['index'] }])['assertionconsumerservice'];
-  // const spslo = extract(spxml, [{ localName: 'SingleLogoutService', attributes: ['index'] }])['singlelogoutservice'];
-  // const sso = extract(idpxml, [{ localName: 'SingleSignOnService', attributes: ['index'] }])['singlesignonservice'];
-  // const idpslo = extract(idpxml, [{ localName: 'SingleLogoutService', attributes: ['index'] }])['singlelogoutservice'];
+  const acs = extract(spxml, [
+    {
+      key: 'assertionConsumerService',
+      localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
+      attributes: ['Binding', 'Location', 'isDefault', 'index'],
+    }
+  ]);
+  const spslo = extract(spxml, [
+    {
+      key: 'singleLogoutService',
+      localPath: ['EntityDescriptor', 'SPSSODescriptor', 'SingleLogoutService'],
+      attributes: ['Binding', 'Location', 'isDefault', 'index'],
+    }
+  ]);
+  const sso = extract(idpxml, [
+    {
+      key: 'singleSignOnService',
+      localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
+      attributes: ['Binding', 'Location', 'isDefault', 'index'],
+    }
+  ]);
+  const idpslo = extract(idpxml, [
+    {
+      key: 'singleLogoutService',
+      localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleLogoutService'],
+      attributes: ['Binding', 'Location', 'isDefault', 'index'],
+    }
+  ]);
   const sp98 = serviceProvider({ metadata: fs.readFileSync('./test/misc/sp_metadata_98.xml') });
-
- //  test('#33 sp metadata acs index should be increased by 1', t => {
- //    t.is(acs.length, 2);
- //    t.is(acs[0].index, '0');
- //    t.is(acs[1].index, '1');
- //  });
- //  test('#33 sp metadata slo index should be increased by 1', t => {
- //    t.is(spslo.length, 2);
- //    t.is(spslo[0].index, '0');
- //    t.is(spslo[1].index, '1');
- //  });
- //  test('#33 idp metadata sso index should be increased by 1', t => {
- //    t.is(sso.length, 2);
- //    t.is(sso[0].index, '0');
- //    t.is(sso[1].index, '1');
- //  });
- //  test('#33 idp metadata slo index should be increased by 1', t => {
- //    t.is(idpslo.length, 2);
- //    t.is(idpslo[0].index, '0');
- //    t.is(idpslo[1].index, '1');
- //  });
+  test('#33 sp metadata acs index should be increased by 1', t => {
+    t.is(acs.assertionConsumerService.length, 2);
+    t.is(acs.assertionConsumerService[0].index, '0');
+    t.is(acs.assertionConsumerService[1].index, '1');
+  });
+  test('#33 sp metadata slo index should be increased by 1', t => {
+    t.is(spslo.singleLogoutService.length, 2);
+    t.is(spslo.singleLogoutService[0].index, '0');
+    t.is(spslo.singleLogoutService[1].index, '1');
+  });
+  test('#33 idp metadata sso index should be increased by 1', t => {
+    t.is(sso.singleSignOnService.length, 2);
+    t.is(sso.singleSignOnService[0].index, '0');
+    t.is(sso.singleSignOnService[1].index, '1');
+  });
+  test('#33 idp metadata slo index should be increased by 1', t => {
+    t.is(idpslo.singleLogoutService.length, 2);
+    t.is(idpslo.singleLogoutService[0].index, '0');
+    t.is(idpslo.singleLogoutService[1].index, '1');
+  });
   test('#86 duplicate issuer throws error', t => {
     const xml = readFileSync('./test/misc/dumpes_issuer_response.xml');
-    const { issuer } = extract(xml.toString(), ['Issuer']);
-    t.is(issuer.length, 2);
-    t.is((issuer as string[]).every(i => i === 'http://www.okta.com/dummyIssuer'), true);
+    const { issuer } = extract(xml.toString(), [{
+      key: 'issuer',
+      localPath: [
+        ['Response', 'Issuer'],
+        ['Response', 'Assertion', 'Issuer']
+      ],
+      attributes: []
+    }]);
+    t.is(issuer.length, 1);
+    t.is(issuer.every(i => i === 'http://www.okta.com/dummyIssuer'), true);
   });
+
   test('#87 add existence check for signature verification', t => {
     try {
       libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
       t.fail();
     } catch ({ message }) {
-      t.is(message, 'no signature is found in the context');
+      t.is(message, 'ERR_ZERO_SIGNATURE');
     }
   });
+
   test('#91 idp gets single sign on service from the metadata', t => {
     t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
   });
+  
   test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
     const { id, context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
@@ -134,4 +166,3 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(acsUrl, 'https://example.org/response');
   });
 })();
-*/

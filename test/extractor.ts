@@ -72,7 +72,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
     t.not(result.messageSignature, null);
   });
 
-  test('fetch the inner context of multiple nodes', t => {
+  test('fetch the unique inner context of multiple nodes', t => {
     const result =  extract(_decodedResponse, [
       {
         key: 'issuer',
@@ -83,7 +83,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: []
       }
     ]);
-    t.is(result.issuer.length, 2);
+    t.is(result.issuer.length, 1);
     t.is(result.issuer.every(i => i === 'https://idp.example.com/metadata'), true);
   });
 

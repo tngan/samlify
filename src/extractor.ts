@@ -1,6 +1,6 @@
 import { DOMParser } from 'xmldom';
 import { select } from 'xpath';
-import { zipObject, camelCase, last } from 'lodash';
+import { zipObject, camelCase, last, uniq } from 'lodash';
 const dom = DOMParser;
 
 interface ExtractorField {
@@ -218,7 +218,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
-        [key]: select(multiXPaths, targetDoc).map(n => n.nodeValue)
+        [key]: uniq(select(multiXPaths, targetDoc).map(n => n.nodeValue))
       };
     }
     // eo special case: multiple path
@@ -346,7 +346,6 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length === 0) {
-
       let attributeValue = null;
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {

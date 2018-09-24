@@ -2,9 +2,7 @@
 <saml2p:Response xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol"
                  Destination="http://url" ID="id38182156294813031696642212"
                  IssueInstant="2017-06-23T01:20:36.039Z" Version="2.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <saml2:Issuer xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"
-                  Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://www.okta.com/dummyIssuer
-    </saml2:Issuer>
+    <saml2:Issuer xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://www.okta.com/dummyIssuer</saml2:Issuer>
     <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
         <ds:SignedInfo>
             <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
@@ -35,9 +33,7 @@
     </saml2p:Status>
     <saml2:Assertion xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" ID="id38182156295091671873011670"
                      IssueInstant="2017-06-23T01:20:36.039Z" Version="2.0">
-        <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">
-            http://www.okta.com/dummyIssuer
-        </saml2:Issuer>
+        <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://www.okta.com/dummyIssuer</saml2:Issuer>
         <saml2:Subject>
             <saml2:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">email@email.com
             </saml2:NameID>
