@@ -318,6 +318,7 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
+
       const doc = new dom().parseFromString(xml);
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
       // message signature (logout response / saml response)
@@ -341,10 +342,14 @@ const libSaml = () => {
         if (node.length === 1) {
           assertionNode = node[0].toString(); 
         }
+        // remove message signature
+        doc.removeChild(messageSignatureNode[0]);
       }
 
       if (assertionSignatureNode.length === 1) {
         assertionNode = assertionSignatureNode[0].parentNode.toString();
+        // remove assertion signature
+        doc.removeChild(assertionSignatureNode[0]);
       }
 
       // guarantee to have a signature in saml response
@@ -356,8 +361,6 @@ const libSaml = () => {
       
       const sig = new SignedXml();
       let verified = true;
-      // remove all the signature
-      xml = xml.replace(/<ds:Signature(.*?)>(.*?)<\/(.*?)ds:Signature>/g, '');
       selection.forEach(s => {
         let selectedCert = '';
         sig.signatureAlgorithm = opts.signatureAlgorithm;
@@ -385,7 +388,7 @@ const libSaml = () => {
           throw new Error('undefined certificate in \'opts\' object');
         }
         sig.loadSignature(s);
-        verified = verified && sig.checkSignature(xml);
+        verified = verified && sig.checkSignature(doc.toString());
       });
 
       return [verified, assertionNode];
