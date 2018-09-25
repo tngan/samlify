@@ -557,10 +557,9 @@ test('avoid mitm attack', async t => {
 });
 
 test('should reject signature wrapped response', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  // 
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
   //Decode
   const buffer = new Buffer(SAMLResponse, 'base64');
   const xml = buffer.toString();
@@ -574,7 +573,9 @@ test('should reject signature wrapped response', async t => {
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '<saml:SubjectConfirmationData>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:SubjectConfirmationData>');
   const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
-  const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-  // throw an error for wrapping detection
-  t.is(result.extract.nameID, 'admin@esaml2.com');
+  try {
+    await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
+  } catch (e) {
+    t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
+  }
 });

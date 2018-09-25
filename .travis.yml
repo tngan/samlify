@@ -9,5 +9,6 @@ branches:
   - master
   - /^.*-alpha$/
   - /^.*-beta$/
+  - /^.*-rc*$/
 
 after_success: npm run coverage

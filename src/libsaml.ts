@@ -325,16 +325,23 @@ const libSaml = () => {
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
       // assertion signature (logout response / saml response)
       const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
+      // check if there is a potential malicious wrapping signature
+      const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
 
       // select the signature node
       let selection = [];
       let assertionNode = null;
       const messageSignatureNode = select(messageSignatureXpath, doc);
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
+      const wrappingElementNode = select(wrappingElementsXPath, doc);
 
       selection = selection.concat(assertionSignatureNode);
       selection = selection.concat(messageSignatureNode);
 
+      // try to catch potential wrapping attack
+      if (wrappingElementNode.length !== 0) {
+        throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+      }
       // response must be signed, either entire document or assertion
       // default we will take the assertion section under root
       if (messageSignatureNode.length === 1) {
@@ -356,8 +363,6 @@ const libSaml = () => {
       if (selection.length === 0) {
         throw new Error('ERR_ZERO_SIGNATURE');
       }
-
-      // TODO: wrapping attack detection
       
       const sig = new SignedXml();
       let verified = true;
