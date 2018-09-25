@@ -120,6 +120,7 @@ const libSaml = () => {
     }
     // set schema directory
     validator.cwd = schemaDir;
+    validator.debug = process.env.NODE_ENV === 'test';
   }
   setSchemaDir();
 
