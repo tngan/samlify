@@ -15,7 +15,8 @@ import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
-import * as validator from 'xsd-schema-validator';
+import * as fs from 'fs';
+import * as Validator from 'xsd-schema-validator';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -100,6 +101,28 @@ export interface LibSamlInterface {
 }
 
 const libSaml = () => {
+  const validator = new Validator();
+  function setSchemaDir() {
+    let schemaDir;
+    try {
+      schemaDir = path.resolve(__dirname, '../schemas');
+      fs.accessSync(schemaDir, fs.constants.F_OK);
+    } catch (err) {
+      // for built-from git folder layout
+      try {
+        schemaDir = path.resolve(__dirname, '../../schemas');
+        fs.accessSync(schemaDir, fs.constants.F_OK);
+      } catch (err) {
+        //console.warn('Unable to specify schema directory', err);
+        // QUESTION should this be swallowed?
+        throw err;
+      }
+    }
+    // set schema directory
+    validator.cwd = schemaDir;
+  }
+  setSchemaDir();
+
   /**
   * @desc helper function to get back the query param for redirect binding for SLO/SSO
   * @type {string}
@@ -534,8 +557,7 @@ const libSaml = () => {
      */
     async isValidXml(input: string) {
       return new Promise((resolve, reject) => {
-        process.chdir(path.resolve(__dirname, '../schemas'));
-        validator.validateXML(input, path.resolve('saml-schema-protocol-2.0.xsd'), (err, result) => {
+        validator.validateXML(input, 'saml-schema-protocol-2.0.xsd', (err, result) => {
           if (err) {
             return reject(err.message);
           }
