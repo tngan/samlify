@@ -3,22 +3,21 @@
 * @author tngan
 * @desc  Declares the actions taken by service provider
 */
-import Entity, { BindingContext, PostBindingContext, ESamlHttpRequest, ParseResult } from './entity';
+import Entity, {
+  BindingContext,
+  PostBindingContext,
+  ESamlHttpRequest,
+} from './entity';
 import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
 } from './types';
 import libsaml from './libsaml';
-import utility from './utility';
-import { wording, namespace, tags } from './urn';
+import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import * as xml from 'xml';
-
-const bindDict = wording.binding;
-const xmlTag = tags.xmlTag;
-const metaWord = wording.metadata;
+import { flow } from './flow';
 
 /*
  * @desc interface function
@@ -30,7 +29,6 @@ export default function(props: ServiceProviderSettings) {
 /**
 * @desc Service provider can be configured using either metadata importing or spSetting
 * @param  {object} spSetting
-* @param  {string} meta
 */
 export class ServiceProvider extends Entity {
   entityMeta: ServiceProviderMetadata;
@@ -38,7 +36,6 @@ export class ServiceProvider extends Entity {
   /**
   * @desc  Inherited from Entity
   * @param {object} spSetting    setting of service provider
-  * @param {string} meta		     metadata
   */
   constructor(spSetting: ServiceProviderSettings) {
     const entitySetting = Object.assign({
@@ -89,36 +86,17 @@ export class ServiceProvider extends Entity {
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
   */
-  public parseLoginResponse(idp, binding, req: ESamlHttpRequest) {
-    return this.genericParser({
-      parserFormat: [{
-        localName: 'StatusCode',
-        attributes: ['Value'],
-      }, {
-        localName: 'Conditions',
-        attributes: ['NotBefore', 'NotOnOrAfter'],
-      }, 'Audience', 'Issuer', 'NameID', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-        localName: {
-          tag: 'Attribute',
-          key: 'Name',
-        },
-        valueTag: 'AttributeValue',
-      }, {
-        localName: 'AuthnStatement',
-        attributes: ['SessionIndex'],
-      }, {
-        localName: 'Response',
-        attributes: ['InResponseTo'] },
-      ],
+  public parseLoginResponse(idp, binding, request: ESamlHttpRequest) {
+    const self = this;
+    return flow({
       from: idp,
+      self: self,
       checkSignature: true, // saml response must have signature
-      supportBindings: ['post'],
       parserType: 'SAMLResponse',
       type: 'login',
-    }, binding, req);
+      binding: binding,
+      request: request
+    });
   }
 
 }

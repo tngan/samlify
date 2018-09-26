@@ -4,7 +4,7 @@
 * @desc Binding-level API, declare the functions using POST binding
 */
 
-import { wording, tags, namespace } from './urn';
+import { wording, tags, namespace, StatusCode } from './urn';
 import { BindingContext } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
@@ -102,14 +102,14 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       Issuer: metadata.idp.getEntityID(),
       IssueInstant: now,
       AssertionConsumerServiceURL: acl,
-      StatusCode: namespace.statusCode.success,
+      StatusCode: StatusCode.Success,
       // can be customized
       ConditionsNotBefore: now,
       ConditionsNotOnOrAfter: fiveMinutesLater,
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
-      InResponseTo: get(requestInfo, 'extract.authnrequest.id') || '',
+      InResponseTo: get(requestInfo, 'extract.request.id') || '',
       AuthnStatement: '',
       AttributeStatement: '',
     };
@@ -118,7 +118,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.authnrequest.id;
+        tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -130,7 +130,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       signingCert: metadata.idp.getX509Certificate('signing'),
       isBase64Output: false,
     };
-
     // SAML response must be signed sign message first, then encrypt
     if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       rawSamlResponse = libsaml.constructSAMLSignature({
@@ -143,7 +142,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }
-
     // step: sign assertion ? -> encrypted ? -> sign message ?
     if (metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
@@ -269,10 +267,10 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        StatusCode: namespace.statusCode.success,
+        StatusCode: StatusCode.Success,
       };
-      if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
-        tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
+      if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
+        tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }

@@ -3,6 +3,44 @@
 * @author tngan
 * @desc  Includes all keywords need in samlify
 */
+
+export enum BindingNamespace {
+  Redirect = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+  Post = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+  Artifact = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'
+}
+
+export enum MessageSignatureOrder {
+  STE = 'sign-then-encrypt',
+  ETS = 'encrypt-then-sign'
+}
+
+export enum StatusCode {
+  Success = 'urn:oasis:names:tc:SAML:2.0:status:Success',
+  Requester = 'urn:oasis:names:tc:SAML:2.0:status:Requester',
+  Responder = 'urn:oasis:names:tc:SAML:2.0:status:Responder',
+  VersionMismatch = 'urn:oasis:names:tc:SAML:2.0:status:VersionMismatch',
+  AuthFailed = 'urn:oasis:names:tc:SAML:2.0:status:AuthnFailed',
+  InvalidAttrNameOrValue = 'urn:oasis:names:tc:SAML:2.0:status:InvalidAttrNameOrValue',
+  InvalidNameIDPolicy = 'urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy',
+  NoAuthnContext = 'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
+  NoAvailableIDP = 'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
+  NoPassive = 'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
+  NoSupportedIDP = 'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
+  PartialLogout = 'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
+  ProxyCountExceeded = 'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
+  RequestDenied = 'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
+  RequestUnsupported = 'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
+  RequestVersionDeprecated = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
+  RequestVersionTooHigh = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
+  RequestVersionTooLow = 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
+  ResourceNotRecognized = 'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
+  TooManyResponses = 'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
+  UnknownAttrProfile = 'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
+  UnknownPrincipal = 'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
+  UnsupportedBinding = 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding',
+}
+
 const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
@@ -122,6 +160,13 @@ const algorithms = {
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
   },
 };
+
+export enum ParserType {
+  SAMLRequest = 'SAMLRequest',
+  SAMLResponse = 'SAMLResponse',
+  LogoutRequest = 'LogoutRequest',
+  LogoutResponse = 'LogoutResponse'
+}
 
 const wording = {
   urlParams: {

@@ -108,12 +108,16 @@ export class IdpMetadata extends Metadata {
 
     super(meta as string | Buffer, [
       {
-        localName: 'IDPSSODescriptor',
+        key: 'wantAuthnRequestsSigned',
+        localPath: ['EntityDescriptor', 'IDPSSODescriptor'],
         attributes: ['WantAuthnRequestsSigned'],
       },
       {
-        localName: { tag: 'SingleSignOnService', key: 'Binding' },
-        attributeTag: 'Location',
+        key: 'singleSignOnService',
+        localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
+        index: ['Binding'],
+        attributePath: [],
+        attributes: ['Location']
       },
     ]);
 
@@ -124,7 +128,7 @@ export class IdpMetadata extends Metadata {
   * @return {boolean} WantAuthnRequestsSigned
   */
   isWantAuthnRequestsSigned(): boolean {
-    const was = this.meta.idpssodescriptor.wantauthnrequestssigned;
+    const was = this.meta.wantAuthnRequestsSigned;
     if (isUndefined(was)) {
       return false;
     }
@@ -139,11 +143,11 @@ export class IdpMetadata extends Metadata {
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
       const bindName = namespace.binding[binding];
-      const service = this.meta.singlesignonservice.find(obj => obj[bindName]);
+      const service = this.meta.singleSignOnService[bindName];
       if (service) {
-        return service[bindName];
+        return service;
       }
     }
-    return this.meta.singlesignonservice;
+    return this.meta.singleSignOnService;
   }
 }

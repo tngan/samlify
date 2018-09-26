@@ -11,16 +11,11 @@ import {
   IdentityProviderSettings,
 } from './types';
 import libsaml from './libsaml';
-import utility from './utility';
-import { wording, namespace, tags } from './urn';
-import redirectBinding from './binding-redirect';
+import { namespace } from './urn';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
-import * as xml from 'xml';
+import { flow } from './flow';
 
-const bindDict = wording.binding;
-const xmlTag = tags.xmlTag;
-const metaWord = wording.metadata;
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
@@ -33,6 +28,7 @@ export default function(props: IdentityProviderSettings) {
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
 export class IdentityProvider extends Entity {
+  
   entityMeta: IdentityProviderMetadata;
 
   constructor(idpSetting: IdentityProviderSettings) {
@@ -77,46 +73,38 @@ export class IdentityProvider extends Entity {
     customTagReplacement?: (...args: any[]) => any,
     encryptThenSign?: boolean,
   ) {
-    const protocol = namespace.binding[binding] || namespace.binding.redirect;
+    const protocol = namespace.binding[binding];
+    // can only support post binding for login response
     if (protocol === namespace.binding.post) {
       const context = await postBinding.base64LoginResponse(requestInfo, {
         idp: this,
         sp,
       }, user, customTagReplacement, encryptThenSign);
-      // xmlenc is using async process
-      return {
+     return {
         ...context,
         entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding),
-        type: 'SAMLResponse',
+        type: 'SAMLResponse'
       };
     }
-
-    // Will support artifact in the next release
-    throw new Error('this binding is not supported');
+    throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
   }
 
   /**
    * Validation of the parsed URL parameters
    * @param sp ServiceProvider instance
    * @param binding Protocol binding
-   * @param req Request
+   * @param req RequesmessageSigningOrderst
    */
   public parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
-    return this.genericParser({
-      parserFormat: ['AuthnContextClassRef', 'Issuer', {
-        localName: 'Signature',
-        extractEntireBody: true,
-      }, {
-          localName: 'AuthnRequest',
-          attributes: ['ID'],
-        }, {
-          localName: 'NameIDPolicy',
-          attributes: ['Format', 'AllowCreate'],
-        }],
+    const self = this;
+    return flow({
       from: sp,
-      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
+      self: self,
+      checkSignature: self.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
       type: 'login',
-    }, binding, req);
+      binding: binding,
+      request: req 
+    });
   }
 }
