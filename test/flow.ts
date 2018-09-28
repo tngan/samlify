@@ -579,3 +579,29 @@ test('should reject signature wrapped response', async t => {
     t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
   }
 });
+
+test('should reject signature wrapped response', async t => {
+  // 
+  const user = { email: 'user@esaml2.com' };
+  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
+  //Decode
+  const buffer = new Buffer(SAMLResponse, 'base64');
+  const xml = buffer.toString();
+  //Create version of response without signature
+  const stripped = xml
+    .replace(/<ds:Signature[\s\S]*ds:Signature>/, '');
+  //Create version of response with altered IDs and new username
+  const outer = xml
+    .replace(/assertion" ID="_[0-9a-f]{3}/g, 'assertion" ID="_000')
+    .replace('user@esaml2.com', 'admin@esaml2.com');
+  //Put stripped version under SubjectConfirmationData of modified version
+  const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
+  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+  try {
+    const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
+    console.log(xmlWrapped);
+    console.log(result);
+  } catch (e) {
+    t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
+  }
+});

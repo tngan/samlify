@@ -224,19 +224,31 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifySignature(_decodedResponse, { cert: IdPMetadata })[0], true);
   });
   test('integrity check for request signed with RSA-SHA1', t => {
-    t.is(libsaml.verifySignature(_falseDecodedRequestSHA1, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 })[0], false);
+    try {
+      libsaml.verifySignature(_falseDecodedRequestSHA1, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
+    } catch (e) {
+      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+    }
   });
   test('verify a XML signature signed by RSA-SHA256 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
   });
   test('integrity check for request signed with RSA-SHA256', t => {
-    t.is(libsaml.verifySignature(_falseDecodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], false);
+    try {
+      libsaml.verifySignature(_falseDecodedRequestSHA256, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
+    } catch (e) {
+      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+    }
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0], true);
   });
   test('integrity check for request signed with RSA-SHA512', t => {
-    t.is(libsaml.verifySignature(_falseDecodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0], false);
+    try {
+      libsaml.verifySignature(_falseDecodedRequestSHA512, { cert: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
+    } catch (e) {
+      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+    }
   });
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
     const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));

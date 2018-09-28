@@ -17,6 +17,7 @@ import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as Validator from 'xsd-schema-validator';
+import { extract } from './extractor';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -343,31 +344,16 @@ const libSaml = () => {
       if (wrappingElementNode.length !== 0) {
         throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
       }
-      // response must be signed, either entire document or assertion
-      // default we will take the assertion section under root
-      if (messageSignatureNode.length === 1) {
-        const node = select("/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']", doc);
-        if (node.length === 1) {
-          assertionNode = node[0].toString(); 
-        }
-        // remove message signature
-        doc.removeChild(messageSignatureNode[0]);
-      }
-
-      if (assertionSignatureNode.length === 1) {
-        assertionNode = assertionSignatureNode[0].parentNode.toString();
-        // remove assertion signature
-        doc.removeChild(assertionSignatureNode[0]);
-      }
 
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
         throw new Error('ERR_ZERO_SIGNATURE');
       }
-      
+
       const sig = new SignedXml();
       let verified = true;
-      selection.forEach(s => {
+      // need to refactor later on
+      selection.forEach(signatureNode => {
         let selectedCert = '';
         sig.signatureAlgorithm = opts.signatureAlgorithm;
         if (opts.keyFile) {
@@ -381,7 +367,7 @@ const libSaml = () => {
             metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
-          let x509Certificate = select(".//*[local-name(.)='X509Certificate']", s)[0].firstChild.data;
+          let x509Certificate = select(".//*[local-name(.)='X509Certificate']", signatureNode)[0].firstChild.data;
           x509Certificate = utility.normalizeCerString(x509Certificate);
           if (includes(metadataCert, x509Certificate)) {
             selectedCert = x509Certificate;
@@ -393,9 +379,59 @@ const libSaml = () => {
         } else {
           throw new Error('undefined certificate in \'opts\' object');
         }
-        sig.loadSignature(s);
+        sig.loadSignature(signatureNode);
+
+        doc.removeChild(signatureNode);
+
         verified = verified && sig.checkSignature(doc.toString());
+
+        // immediately throw error when any one of the signature is failed to get verified
+        if (!verified) {
+          throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
+        }
+
       });
+
+      // response must be signed, either entire document or assertion
+      // default we will take the assertion section under root
+      if (messageSignatureNode.length === 1) {
+        const node = select("/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']", doc);
+        if (node.length === 1) {
+          assertionNode = node[0].toString();
+        }
+      }
+
+      if (assertionSignatureNode.length === 1) {
+        const verifiedAssertionInfo = extract(assertionSignatureNode[0].toString(), [{
+          key: 'refURI',
+          localPath: ['Signature', 'SignedInfo', 'Reference'],
+          attributes: ['URI']
+        }]);
+        // get the assertion supposed to be the one should be verified
+        const desiredAssertionInfo = extract(doc.toString(), [{
+          key: 'id',
+          localPath: ['~Response', 'Assertion'],
+          attributes: ['ID']
+        }]);
+        // 5.4.2 References
+        // SAML assertions and protocol messages MUST supply a value for the ID attribute on the root element of
+        // the assertion or protocol message being signed. The assertion’s or protocol message's root element may
+        // or may not be the root element of the actual XML document containing the signed assertion or protocol
+        // message (e.g., it might be contained within a SOAP envelope).
+        // Signatures MUST contain a single <ds:Reference> containing a same-document reference to the ID
+        // attribute value of the root element of the assertion or protocol message being signed. For example, if the
+        // ID attribute value is "foo", then the URI attribute in the <ds:Reference> element MUST be "#foo".
+        if (verifiedAssertionInfo.refURI !== `#${desiredAssertionInfo.id}`) {
+          throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');  
+        }
+        const verifiedDoc = extract(doc.toString(), [{
+          key: 'assertion',
+          localPath: ['~Response', 'Assertion'],
+          attributes: [],
+          context: true
+        }]);
+        assertionNode = verifiedDoc.assertion.toString();
+      }
 
       return [verified, assertionNode];
     },
