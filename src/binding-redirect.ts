@@ -5,7 +5,7 @@
 */
 import utility from './utility';
 import libsaml from './libsaml';
-import Entity, { BindingContext } from './entity';
+import { BindingContext } from './entity';
 import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
 import * as url from 'url';
@@ -137,7 +137,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.logoutNameID,
       SessionIndex: user.sessionIndex,
-    }
+    };
     if (initSetting.logoutRequestTemplate) {
       const info = customTagReplacement(initSetting.logoutRequestTemplate, requiredTags);
       id = get<BindingContext, keyof BindingContext>(info, 'id');

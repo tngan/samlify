@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
 import { assign } from 'lodash';
 import * as _ from 'lodash';
+import { verifyTime } from '../src/validator';
 
 const {
   IdentityProvider: identityProvider,
@@ -338,14 +339,13 @@ test('getAssertionConsumerService with two bindings', t => {
 })();
 
 test('verify time', t => {
-  let timeAfter5Mins = new Date();
-  let timeBefore5Mins = new Date();
-  timeBefore5Mins = new Date(timeBefore5Mins.setMinutes(timeBefore5Mins.getMinutes() - 5));
-  timeAfter5Mins = new Date(timeAfter5Mins.setMinutes(timeAfter5Mins.getMinutes() + 5));
-  t.true(sp.verifyTime(timeBefore5Mins, timeAfter5Mins));
-  t.false(sp.verifyTime(undefined, timeBefore5Mins));
-  t.false(sp.verifyTime(timeAfter5Mins));
-  t.true(sp.verifyTime());
+  const now = new Date();
+  const timeBefore5Mins = new Date(new Date().setMinutes(now.getMinutes() - 5)).toISOString();
+  const timeAfter5Mins = new Date(new Date().setMinutes(now.getMinutes() + 5)).toISOString();
+  t.true(verifyTime(timeBefore5Mins, timeAfter5Mins));
+  t.false(verifyTime(undefined, timeBefore5Mins));
+  t.false(verifyTime(timeAfter5Mins));
+  t.true(verifyTime());
 });
 
 test('metadata with multiple entity descriptors is invalid', t => {

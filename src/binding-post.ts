@@ -4,13 +4,12 @@
 * @desc Binding-level API, declare the functions using POST binding
 */
 
-import { wording, tags, namespace, StatusCode } from './urn';
+import { wording, namespace, StatusCode } from './urn';
 import { BindingContext } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
 import { get } from 'lodash';
 
-const xmlTag = tags.xmlTag;
 const binding = wording.binding;
 
 /**

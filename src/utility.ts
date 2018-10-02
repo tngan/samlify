@@ -3,11 +3,9 @@
 * @author tngan
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
-import * as fs from 'fs';
 import { pki, util, asn1 } from 'node-forge';
 import { inflate, deflate } from 'deflate-js';
 import { isString } from 'lodash';
-import { DOMParser } from 'xmldom';
 
 const BASE64_STR = 'base64';
 /**

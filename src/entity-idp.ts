@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Declares the actions taken by identity provider
 */
-import Entity, { ESamlHttpRequest, ParseResult } from './entity';
+import Entity, { ESamlHttpRequest } from './entity';
 import {
   ServiceProviderConstructor as ServiceProvider,
   ServiceProviderMetadata,

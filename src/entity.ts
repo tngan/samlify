@@ -130,31 +130,6 @@ export default class Entity {
     }
     return false;
   }
-
-  /**
-  * @desc  Verify time stamp
-  * @param  {date} notBefore
-  * @param  {date} notOnOrAfter
-  * @return {boolean}
-  */
-  verifyTime(notBefore?: Date, notOnOrAfter?: Date): boolean {
-    const now = new Date();
-    if (isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
-      return true; // throw exception todo
-    }
-    if (!isUndefined(notBefore) && isUndefined(notOnOrAfter)) {
-      const notBeforeLocal = new Date(notBefore.toUTCString());
-      return +notBeforeLocal <= +now;
-    }
-    if (isUndefined(notBefore) && !isUndefined(notOnOrAfter)) {
-      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
-      return now < notOnOrAfterLocal;
-    } else {
-      const notBeforeLocal = new Date(notBefore.toUTCString());
-      const notOnOrAfterLocal = new Date(notOnOrAfter.toUTCString());
-      return +notBeforeLocal <= +now && now < notOnOrAfterLocal;
-    }
-  }
   /** @desc   Generates the logout request for developers to design their own method
   * @param  {ServiceProvider} sp     object of service provider
   * @param  {string}   binding       protocol binding

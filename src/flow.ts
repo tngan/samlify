@@ -1,6 +1,6 @@
 import { inflateString, base64Decode } from './utility';
+import { verifyTime } from './validator';
 import libsaml from './libsaml';
-import { DOMParser as dom } from 'xmldom';
 import {
   extract,
   loginRequestFields,
@@ -51,7 +51,7 @@ async function redirectFlow(options) {
   const { request, parserType, checkSignature = true, from } = options;
   const { query, octetString } = request;
   const { SigAlg: sigAlg, Signature: signature } = query;
-  
+
   const targetEntityMetadata = from.entityMeta;
 
   // ?SAMLRequest= or ?SAMLResponse=
@@ -91,7 +91,7 @@ async function redirectFlow(options) {
     // put the below two assignemnts into verifyMessageSignature function
     const base64Signature = new Buffer(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
-    
+
     const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);
 
     if (!verified) {
@@ -108,7 +108,7 @@ async function redirectFlow(options) {
 // proceed the post flow
 async function postFlow(options): Promise<FlowResult> {
 
-  const { 
+  const {
     request,
     from,
     self,
@@ -132,6 +132,11 @@ async function postFlow(options): Promise<FlowResult> {
 
   let extractorFields = [];
 
+  // validate the xml first
+  if (parserType === 'SAMLResponse') {
+    await libsaml.isValidXml(samlContent);
+  }
+
   if (parserType !== 'SAMLResponse') {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
@@ -143,8 +148,8 @@ async function postFlow(options): Promise<FlowResult> {
   ) {
     const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
     if (!verified) {
-      return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE'); 
-    } 
+      return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+    }
     if (!decryptRequired) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
@@ -156,10 +161,6 @@ async function postFlow(options): Promise<FlowResult> {
     extractorFields = getDefaultExtractorFields(parserType, result[1]);
   }
 
-  if (parserType === 'SAMLResponse') {
-    await libsaml.isValidXml(samlContent);
-  }
-
   // verify the signatures (the repsonse is signed then encrypted, then decrypt first then verify)
   if (
     checkSignature &&
@@ -169,7 +170,7 @@ async function postFlow(options): Promise<FlowResult> {
     if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     } else {
-      return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE'); 
+      return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
     }
   }
 
@@ -178,9 +179,43 @@ async function postFlow(options): Promise<FlowResult> {
     extract: extract(samlContent, extractorFields),
   };
 
-  // TODO: basic validator (issuer, timer)
-  // const targetEntityMetadata = from.entityMeta;
-  // const issuer = targetEntityMetadata.getEntityID();
+  // validation part
+  const targetEntityMetadata = from.entityMeta;
+  const issuer = targetEntityMetadata.getEntityID();
+  const extractedProperties = parseResult.extract;
+
+  // unmatched issuer
+  if (
+    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    && extractedProperties
+    && extractedProperties.issuer !== issuer
+  ) {
+    return Promise.reject('ERR_UNMATCH_ISSUER');
+  }
+
+  // invalid session time
+  if (
+    parserType === 'SAMLResponse'
+    && !verifyTime(
+      undefined,
+      extractedProperties.sessionIndex.sessionNotOnOrAfter
+    )
+  ) {
+    return Promise.reject('ERR_EXPIRED_SESSION');
+  }
+
+  // invalid time
+  // 2.4.1.2 https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+  if (
+    parserType === 'SAMLResponse'
+    && extractedProperties.conditions
+    && !verifyTime(
+      extractedProperties.conditions.notBefore,
+      extractedProperties.conditions.notOnOrAfter
+    )
+  ) {
+    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+  }
 
   return Promise.resolve(parseResult);
 }
