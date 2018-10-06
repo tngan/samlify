@@ -1,18 +1,15 @@
-language: java
+language: node_js
 
-jdk: 
-  - openjdk8
-
-env:
-  - TRAVIS_NODE_VERSION=6
-  - TRAVIS_NODE_VERSION=8
-  - TRAVIS_NODE_VERSION=9
-  - TRAVIS_NODE_VERSION=10
+node_js:
+  - "6"
+  - "8"
+  - "9"
+  - "10"
 
 before_install:
-  - nvm install $TRAVIS_NODE_VERSION
-  - nvm use $TRAVIS_NODE_VERSION
-  - npm install
+  - sudo add-apt-repository ppa:openjdk-r/ppa -y
+  - sudo apt-get -qq update
+  - sudo apt-get install -y openjdk-9-jdk
 
 script:
   - npm test
@@ -23,5 +20,6 @@ branches:
   - /^.*-alpha$/
   - /^.*-beta$/
   - /^.*-rc*$/
+  - /^.*-exp*$/
 
 after_success: npm run coverage
