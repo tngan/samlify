@@ -16,7 +16,7 @@ import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as Validator from 'xsd-schema-validator';
+import * as Validator from '@passify/xsd-schema-validator';
 import { extract } from './extractor';
 
 const signatureAlgorithms = algorithms.signature;

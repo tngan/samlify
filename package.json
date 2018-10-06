@@ -33,6 +33,7 @@
   "license": "MIT",
   "dependencies": {
     "@passify/xml-encryption": "^0.11.1",
+    "@passify/xsd-schema-validator": "^0.7.1",
     "@types/camelcase": "^0.0.30",
     "@types/lodash": "^4.14.112",
     "@types/node": "^7.0.67",
@@ -49,8 +50,7 @@
     "xml": "^1.0.0",
     "xml-crypto": "^0.10.1",
     "xmldom": "^0.1.19",
-    "xpath": "0.0.24",
-    "xsd-schema-validator": "^0.6.0"
+    "xpath": "0.0.24"
   },
   "devDependencies": {
     "ava": "^0.19.1",
