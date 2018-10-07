@@ -268,19 +268,19 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('encrypt assertion response without assertion returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, wrongResponse));
-    t.is(error.message, 'undefined number (0) of assertion section');
+    t.is(error.message, 'ERR_MULTIPLE_ASSERTION');
   });
   test('encrypt assertion with invalid xml syntax returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
-    t.is(error.message, 'undefined number (0) of assertion section');
+    t.is(error.message, 'ERR_MULTIPLE_ASSERTION');
   });
   test('encrypt assertion with empty string returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, ''));
-    t.is(error.message, 'empty or undefined xml string during encryption');
+    t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
   });
   test('encrypt assertion with undefined string returns error', async t => {
     const error = await t.throws(libsaml.encryptAssertion(idp, sp, undefined));
-    t.is(error.message, 'empty or undefined xml string during encryption');
+    t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
   });
   test('building attribute statement with one attribute', t => {
     const attributes = [{

@@ -116,7 +116,8 @@ const libSaml = () => {
       } catch (err) {
         //console.warn('Unable to specify schema directory', err);
         // QUESTION should this be swallowed?
-        throw err;
+        console.error(err);
+        throw new Error('ERR_FAILED_FETCH_SCHEMA_FILE');
       }
     }
     // set schema directory
@@ -136,7 +137,7 @@ const libSaml = () => {
     if ([urlParams.logoutResponse, urlParams.samlResponse].indexOf(type) !== -1) {
       return 'SAMLResponse';
     }
-    throw new Error('undefined parserType');
+    throw new Error('ERR_UNDEFINED_QUERY_PARAMS');
   }
   /**
    *
@@ -373,11 +374,11 @@ const libSaml = () => {
             selectedCert = x509Certificate;
           }
           if (selectedCert === '') {
-            throw new Error('certificate in document is not matched those specified in metadata');
+            throw new Error('ERR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
           }
           sig.keyInfoProvider = new this.getKeyInfo(selectedCert);
         } else {
-          throw new Error('undefined certificate in \'opts\' object');
+          throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
         }
         sig.loadSignature(signatureNode);
 
@@ -422,7 +423,7 @@ const libSaml = () => {
         // attribute value of the root element of the assertion or protocol message being signed. For example, if the
         // ID attribute value is "foo", then the URI attribute in the <ds:Reference> element MUST be "#foo".
         if (verifiedAssertionInfo.refURI !== `#${desiredAssertionInfo.id}`) {
-          throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');  
+          throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
         }
         const verifiedDoc = extract(doc.toString(), [{
           key: 'assertion',
@@ -519,42 +520,44 @@ const libSaml = () => {
     encryptAssertion(sourceEntity, targetEntity, xml: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
-        if (xml) {
-          const sourceEntitySetting = sourceEntity.entitySetting;
-          const targetEntityMetadata = targetEntity.entityMeta;
-          const doc = new dom().parseFromString(xml);
-          const assertions = select("//*[local-name(.)='Assertion']", doc);
-          if (!Array.isArray(assertions)) {
-            throw new Error('undefined assertion is found');
-          }
-          if (assertions.length !== 1) {
-            throw new Error(`undefined number (${assertions.length}) of assertion section`);
-          }
-          // Perform encryption depends on the setting, default is false
-          if (sourceEntitySetting.isAssertionEncrypted) {
-            xmlenc.encrypt(assertions[0].toString(), {
-              // use xml-encryption module
-              rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
-              pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
-              encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
-              keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm,
-            }, (err, res) => {
-              if (err) {
-                return reject(new Error('exception in encrpytedAssertion ' + err));
-              }
-              if (!res) {
-                return reject(new Error('undefined encrypted assertion'));
-              }
-              const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
-              const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
-              doc.replaceChild(encryptAssertionNode, assertions[0]);
-              return resolve(utility.base64Encode(doc.toString()));
-            });
-          } else {
-            return resolve(utility.base64Encode(xml)); // No need to do encrpytion
-          }
+
+        if (!xml) {
+          return reject(new Error('ERR_UNDEFINED_ASSERTION'));
+        }
+
+        const sourceEntitySetting = sourceEntity.entitySetting;
+        const targetEntityMetadata = targetEntity.entityMeta;
+        const doc = new dom().parseFromString(xml);
+        const assertions = select("//*[local-name(.)='Assertion']", doc);
+        if (!Array.isArray(assertions)) {
+          throw new Error('ERR_NO_ASSERTION');
+        }
+        if (assertions.length !== 1) {
+          throw new Error('ERR_MULTIPLE_ASSERTION');
+        }
+        // Perform encryption depends on the setting, default is false
+        if (sourceEntitySetting.isAssertionEncrypted) {
+          xmlenc.encrypt(assertions[0].toString(), {
+            // use xml-encryption module
+            rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+            pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
+            encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
+            keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm,
+          }, (err, res) => {
+            if (err) {
+              console.error(err);
+              return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_ENCRYPTION'));
+            }
+            if (!res) {
+              return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
+            }
+            const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
+            const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
+            doc.replaceChild(encryptAssertionNode, assertions[0]);
+            return resolve(utility.base64Encode(doc.toString()));
+          });
         } else {
-          return reject(new Error('empty or undefined xml string during encryption'));
+          return resolve(utility.base64Encode(xml)); // No need to do encrpytion
         }
       });
     },
@@ -570,26 +573,27 @@ const libSaml = () => {
       return new Promise<[string, any]>((resolve, reject) => {
         // Implement decryption first then check the signature
         if (!entireXML) {
-          return reject(new Error('empty or undefined xml string during decryption'));
+          return reject(new Error('ERR_UNDEFINED_ASSERTION'));
         }
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
         const xml = new dom().parseFromString(entireXML);
         const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", xml);
         if (!Array.isArray(encryptedAssertions)) {
-          throw new Error('undefined encrypted assertion is found');
+          throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
         }
         if (encryptedAssertions.length !== 1) {
-          throw new Error(`undefined number (${encryptedAssertions.length}) of encrypted assertions section`);
+          throw new Error('ERR_MULTIPLE_ASSERTION');
         }
         return xmlenc.decrypt(encryptedAssertions[0].toString(), {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
-            return reject(new Error('exception in decryptAssertion ' + err));
+            console.error(err);
+            return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
           }
           if (!res) {
-            return reject(new Error('undefined encrypted assertion'));
+            return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
           }
           const assertionNode = new dom().parseFromString(res);
           xml.replaceChild(assertionNode, encryptedAssertions[0]);
@@ -604,12 +608,13 @@ const libSaml = () => {
       return new Promise((resolve, reject) => {
         validator.validateXML(input, 'saml-schema-protocol-2.0.xsd', (err, result) => {
           if (err) {
-            return reject(err.message);
+            console.error(err);
+            return reject('ERR_EXCEPTION_VALIDATE_SAML_RESPONSE');
           }
           if (result.valid) {
             return resolve(true);
           }
-          return reject('this is not a valid saml response with errors');
+          return reject('ERR_INVALID_SAML_RESPONSE');
         });
       });
     },

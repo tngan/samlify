@@ -82,7 +82,7 @@ export default class Entity {
         this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
         break;
       default:
-        throw new Error('undefined entity type');
+        throw new Error('ERR_UNDEFINED_ENTITY_TYPE');
     }
   }
 
@@ -155,7 +155,7 @@ export default class Entity {
       };
     }
     // Will support artifact in the next release
-    throw new Error('The binding is not support');
+    throw new Error('ERR_UNDEFINED_BINDING');
   }
 
   /**

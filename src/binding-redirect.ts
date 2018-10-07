@@ -112,7 +112,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       }),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
 }
 /**
 * @desc Redirect URL for logout request
@@ -158,7 +158,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       }),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
 }
 /**
 * @desc Redirect URL for logout response
@@ -208,7 +208,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
       }),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_RESPONSE_MISSING_METADATA');
 }
 
 const redirectBinding = {

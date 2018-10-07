@@ -76,7 +76,7 @@ export class IdpMetadata extends Metadata {
           IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
         });
       } else {
-        throw new Error('Missing endpoint of SingleSignOnService');
+        throw new Error('ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE');
       }
 
       if (isNonEmptyArray(singleLogoutService)) {

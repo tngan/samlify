@@ -60,7 +60,7 @@ export class ServiceProvider extends Entity {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
-      throw new Error('metadata conflict - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
+      throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }
 
     if (protocol === nsBinding.redirect) {
@@ -77,7 +77,7 @@ export class ServiceProvider extends Entity {
       };
     }
     // Will support artifact in the next release
-    throw new Error('The binding is not support');
+    throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
   }
 
   /**

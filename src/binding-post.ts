@@ -63,7 +63,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       context: utility.base64Encode(rawSamlRequest),
     };
   }
-  throw new Error('missing declaration of metadata');
+  throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
 /**
 * @desc Generate a base64 encoded login response
@@ -183,7 +183,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     });
 
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
 /**
 * @desc Generate a base64 encoded logout request
@@ -236,7 +236,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       context: utility.base64Encode(rawSamlRequest),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_POST_LOGOUT_REQUEST_MISSING_METADATA');
 }
 /**
 * @desc Generate a base64 encoded logout response
@@ -292,7 +292,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       context: utility.base64Encode(rawSamlResponse),
     };
   }
-  throw new Error('Missing declaration of metadata');
+  throw new Error('ERR_GENERATE_POST_LOGOUT_RESPONSE_MISSING_METADATA');
 }
 
 const postBinding = {

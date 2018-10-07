@@ -142,7 +142,7 @@ test('signed in sp is not matched with the signed notation in idp with post requ
     const { id, context } = sp.createLoginRequest(_idp, 'post');
     t.fail();
   } catch (e) {
-    t.is(e.message, 'metadata conflict - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
+    t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
@@ -152,7 +152,7 @@ test('signed in sp is not matched with the signed notation in idp with redirect 
     const { id, context } = sp.createLoginRequest(_idp, 'redirect');
     t.fail();
   } catch (e) {
-    t.is(e.message, 'metadata conflict - sp isAuthnRequestSigned is not equal to idp isWantAuthnRequestsSigned');
+    t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
