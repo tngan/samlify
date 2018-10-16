@@ -305,7 +305,6 @@ const libSaml = () => {
       sig.signatureAlgorithm = signatureAlgorithm;
       sig.keyInfoProvider = new this.getKeyInfo(signingCert, signatureConfig);
       sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
-
       if (signatureConfig) {
         sig.computeSignature(rawSamlMessage, signatureConfig);
       } else {
@@ -338,8 +337,8 @@ const libSaml = () => {
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
       const wrappingElementNode = select(wrappingElementsXPath, doc);
 
-      selection = selection.concat(assertionSignatureNode);
       selection = selection.concat(messageSignatureNode);
+      selection = selection.concat(assertionSignatureNode);
 
       // try to catch potential wrapping attack
       if (wrappingElementNode.length !== 0) {

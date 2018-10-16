@@ -133,8 +133,25 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       signingCert: metadata.idp.getX509Certificate('signing'),
       isBase64Output: false,
     };
+    // step: sign assertion ? -> encrypted ? -> sign message ?
+    if (metadata.sp.isWantAssertionsSigned()) {
+      // console.debug('sp wants assertion signed');
+      rawSamlResponse = libsaml.constructSAMLSignature({
+        ...config,
+        rawSamlMessage: rawSamlResponse,
+        referenceTagXPath: '/samlp:Response/saml:Assertion', 
+        signatureConfig: {
+          prefix: 'ds',
+          location: { reference: '/samlp:Response/saml:Assertion/saml:Issuer', action: 'after' },
+        },
+      });
+    }
+
+    // console.debug('after assertion signed', rawSamlResponse);
+
     // SAML response must be signed sign message first, then encrypt
     if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
+      // console.debug('sign then encrypt and sign entire message');
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -145,20 +162,11 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }
-    // step: sign assertion ? -> encrypted ? -> sign message ?
-    if (metadata.sp.isWantAssertionsSigned()) {
-      rawSamlResponse = libsaml.constructSAMLSignature({
-        ...config,
-        rawSamlMessage: rawSamlResponse,
-        referenceTagXPath: '/samlp:Response/saml:Assertion', // libsaml.createXPath('Assertion'),
-        signatureConfig: {
-          prefix: 'ds',
-          location: { reference: '/samlp:Response/saml:Assertion/saml:Issuer', action: 'after' },
-        },
-      });
-    }
+
+    // console.debug('after message signed', rawSamlResponse);
 
     if (idpSetting.isAssertionEncrypted) {
+      // console.debug('idp is configured to do encryption');
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       if (encryptThenSign) {
         //need to decode it

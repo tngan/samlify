@@ -314,7 +314,7 @@ test('send login response with signed assertion + signed message and parse it', 
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(spWantMessageSign, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, spWantMessageSign, user));
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
+  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse (idpNoEncrypt, 'post', { body: { SAMLResponse } });
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -599,8 +599,6 @@ test('should reject signature wrapped response', async t => {
   const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
   try {
     const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-    console.log(xmlWrapped);
-    console.log(result);
   } catch (e) {
     t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
   }
