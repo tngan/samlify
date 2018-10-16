@@ -13,7 +13,6 @@ import {
   ServiceProviderMetadata,
   ServiceProviderSettings,
 } from './types';
-import libsaml from './libsaml';
 import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
@@ -68,7 +67,7 @@ export class ServiceProvider extends Entity {
     }
 
     if (protocol === nsBinding.post) {
-      const context = postBinding.base64LoginRequest(libsaml.createXPath('Issuer'), { idp, sp: this }, customTagReplacement);
+      const context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
       return {
         ...context,
         relayState: this.entitySetting.relayState,

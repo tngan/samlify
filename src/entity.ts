@@ -146,7 +146,7 @@ export default class Entity {
     }
     if (binding === wording.binding.post) {
       const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding);
-      const context = postBinding.base64LogoutRequest(user, libsaml.createXPath('Issuer'), { init: this, target: targetEntity }, customTagReplacement);
+      const context = postBinding.base64LogoutRequest(user, "/*[local-name(.)='LogoutRequest']", { init: this, target: targetEntity }, customTagReplacement);
       return {
         ...context,
         relayState,

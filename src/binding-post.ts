@@ -54,6 +54,10 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
           signatureAlgorithm,
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.sp.getX509Certificate('signing'),
+          signatureConfig: spSetting.signatureConfig || {
+            prefix: 'ds',
+            location: { reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']", action: 'after' },
+          }
         }),
       };
     }
@@ -228,6 +232,10 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
           signatureAlgorithm,
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.init.getX509Certificate('signing'),
+          signatureConfig: initSetting.signatureConfig || {
+            prefix: 'ds',
+            location: { reference: "/*[local-name(.)='LogoutRequest']/*[local-name(.)='Issuer']", action: 'after' },
+          }
         }),
       };
     }
