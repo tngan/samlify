@@ -7,7 +7,9 @@ clean:	;
 				rm -rf node_modules
 
 rebuild: ;
-	       rm -rf build; tsc;
+	       rm -rf build; \
+				 tsc; \
+				 cp -a schemas build;
 
 pretest:	;
 					mkdir -p build/test; \

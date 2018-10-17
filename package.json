@@ -1,6 +1,6 @@
 {
   "name": "samlify",
-  "version": "2.4.0-rc5",
+  "version": "2.4.0-rc6",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -12,7 +12,7 @@
   ],
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "make rebuild",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
