@@ -218,7 +218,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
-        [key]: uniq(select(multiXPaths, targetDoc).map(n => n.nodeValue))
+        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue))
       };
     }
     // eo special case: multiple path
@@ -242,7 +242,7 @@ export function extract(context: string, fields) {
       const fullLocalXPath = `${baseXPath}${indexPath}`;
       const parentNodes = select(baseXPath, targetDoc);
       // [uid, mail, edupersonaffiliation], ready for aggregate
-      const parentAttributes = select(fullLocalXPath, targetDoc).map(n => n.value);
+      const parentAttributes = select(fullLocalXPath, targetDoc).map((n: Attr) => n.value);
       // [attribute, attributevalue]
       const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
       const childAttributeXPath = buildAttributeXPath(attributes);
@@ -251,14 +251,14 @@ export function extract(context: string, fields) {
       const childAttributes = parentNodes.map(node => {
         const nodeDoc = new dom().parseFromString(node.toString());
         if (attributes.length === 0) {
-          const childValues = select(fullChildXPath, nodeDoc).map(n => n.nodeValue);
+          const childValues = select(fullChildXPath, nodeDoc).map((n: Node) => n.nodeValue);
           if (childValues.length === 1) {
             return childValues[0];
           }
           return childValues;
         }
         if (attributes.length > 0) {
-          const childValues = select(fullChildXPath, nodeDoc).map(n => n.value);
+          const childValues = select(fullChildXPath, nodeDoc).map((n: Attr) => n.value);
           if (childValues.length === 1) {
             return childValues[0];
           }
@@ -310,7 +310,7 @@ export function extract(context: string, fields) {
       const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
         const nodeDoc = new dom().parseFromString(node);
-        const values = select(childXPath, nodeDoc).reduce((r: any, n: any) => { 
+        const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => { 
           r[camelCase(n.name)] = n.value;
           return r;
         }, {});
@@ -331,7 +331,7 @@ export function extract(context: string, fields) {
     */
     if (attributes.length === 1) {
       const fullPath = `${baseXPath}${attributeXPath}`;
-      const attributeValues = select(fullPath, targetDoc).map(n => n.value);
+      const attributeValues = select(fullPath, targetDoc).map((n: Attr) => n.value);
       return {
         ...result,
         [key]: attributeValues[0]
@@ -353,7 +353,7 @@ export function extract(context: string, fields) {
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.map(n => n.nodeValue);
+        attributeValue = node.map((n: Node) => n.nodeValue);
       }
       return {
         ...result,

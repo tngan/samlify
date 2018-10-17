@@ -367,7 +367,8 @@ const libSaml = () => {
             metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
-          let x509Certificate = select(".//*[local-name(.)='X509Certificate']", signatureNode)[0].firstChild.data;
+          const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
+          let x509Certificate = certificateNode[0].firstChild.data;
           x509Certificate = utility.normalizeCerString(x509Certificate);
           if (includes(metadataCert, x509Certificate)) {
             selectedCert = x509Certificate;
@@ -527,7 +528,7 @@ const libSaml = () => {
         const sourceEntitySetting = sourceEntity.entitySetting;
         const targetEntityMetadata = targetEntity.entityMeta;
         const doc = new dom().parseFromString(xml);
-        const assertions = select("//*[local-name(.)='Assertion']", doc);
+        const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
         if (!Array.isArray(assertions)) {
           throw new Error('ERR_NO_ASSERTION');
         }
@@ -577,7 +578,7 @@ const libSaml = () => {
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
         const xml = new dom().parseFromString(entireXML);
-        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", xml);
+        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", xml) as Node[];
         if (!Array.isArray(encryptedAssertions)) {
           throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
         }

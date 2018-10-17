@@ -50,7 +50,7 @@
     "xml": "^1.0.0",
     "xml-crypto": "^1.0.1",
     "xmldom": "^0.1.19",
-    "xpath": "0.0.24"
+    "xpath": "^0.0.27"
   },
   "devDependencies": {
     "ava": "^0.19.1",

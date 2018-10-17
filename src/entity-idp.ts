@@ -14,7 +14,7 @@ import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
 import { isString } from 'lodash';
-import { flow } from './flow';
+import { flow, FlowResult } from './flow';
 
 
 /**
@@ -95,7 +95,7 @@ export class IdentityProvider extends Entity {
    * @param binding Protocol binding
    * @param req RequesmessageSigningOrderst
    */
-  public parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
+  parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
     const self = this;
     return flow({
       from: sp,
