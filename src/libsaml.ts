@@ -35,6 +35,7 @@ export interface SignatureConstructor {
   isBase64Output?: boolean;
   signatureConfig?: any;
   isMessageSigned?: boolean;
+  transformationAlgorithms?: string[];
 }
 
 export interface SignatureVerifierOptions {
@@ -268,6 +269,7 @@ const libSaml = () => {
     * @param  {string} passphrase           passphrase of the private key [optional]
     * @param  {string|buffer} signingCert   signing certificate
     * @param  {string} signatureAlgorithm   signature algorithm
+    * @param  {string[]} transformationAlgorithms   canonicalization and transformation Algorithms
     * @return {string} base64 encoded string
     */
     constructSAMLSignature(opts: SignatureConstructor) {
@@ -277,6 +279,10 @@ const libSaml = () => {
         privateKey,
         privateKeyPass,
         signatureAlgorithm = signatureAlgorithms.RSA_SHA256,
+        transformationAlgorithms = [
+          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+          'http://www.w3.org/2001/10/xml-exc-c14n#',
+        ],
         signingCert,
         signatureConfig,
         isBase64Output = true,
@@ -291,10 +297,7 @@ const libSaml = () => {
         sig.addReference(
           // reference to the root node
           '/*',
-          [
-            'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-            'http://www.w3.org/2001/10/xml-exc-c14n#',
-          ],
+          transformationAlgorithms,
           getDigestMethod(signatureAlgorithm),
           '',
           '',

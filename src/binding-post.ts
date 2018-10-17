@@ -45,7 +45,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       } as any);
     }
     if (metadata.idp.isWantAuthnRequestsSigned()) {
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = spSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = spSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
@@ -53,6 +53,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
+          transformationAlgorithms,
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.sp.getX509Certificate('signing'),
           signatureConfig: spSetting.signatureConfig || {
@@ -157,6 +158,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         ...config,
         rawSamlMessage: rawSamlResponse,
         isMessageSigned: true,
+        transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
           location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
@@ -183,6 +185,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         ...config,
         rawSamlMessage: rawSamlResponse,
         isMessageSigned: true,
+        transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
           location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
@@ -289,11 +292,12 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutResponseSigned) {
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
           isMessageSigned: true,
+          transformationAlgorithms: transformationAlgorithms,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
