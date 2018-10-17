@@ -64,8 +64,13 @@ async function redirectFlow(options) {
   }
 
   const xmlString = inflateString(decodeURIComponent(content));
+
   // validate the response xml
-  if (parserType === urlParams.samlResponse) {
+  if (
+    parserType === urlParams.samlRequest ||
+    parserType === urlParams.logoutRequest ||
+    parserType === urlParams.logoutResponse
+  ) {
     try {
       await libsaml.isValidXml(xmlString);
     } catch (e) {
@@ -133,9 +138,7 @@ async function postFlow(options): Promise<FlowResult> {
   let extractorFields = [];
 
   // validate the xml first
-  if (parserType === 'SAMLResponse') {
-    await libsaml.isValidXml(samlContent);
-  }
+  await libsaml.isValidXml(samlContent);
 
   if (parserType !== 'SAMLResponse') {
     extractorFields = getDefaultExtractorFields(parserType, null);

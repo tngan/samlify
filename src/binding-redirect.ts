@@ -124,7 +124,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
-  let id: string = '';
+  let id: string = initSetting.generateID();
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlRequest: string = '';
@@ -143,7 +143,6 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       id = get<BindingContext, keyof BindingContext>(info, 'id');
       rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
     } else {
-      id = initSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as any);
     }
     return {
@@ -167,22 +166,20 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
 function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
-  let id: string = '';
   const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,
   };
   const initSetting = entity.init.entitySetting;
+  let id: string = initSetting.generateID();
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlResponse: string;
-
     if (initSetting.logoutResponseTemplate) {
       const template = customTagReplacement(initSetting.logoutResponseTemplate);
       id = get<BindingContext, keyof BindingContext>(template, 'id');
       rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
     } else {
-      id = initSetting.generateID();
       const tvalue: any = {
         ID: id,
         Destination: base,
@@ -191,8 +188,8 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         IssueInstant: new Date().toISOString(),
         StatusCode: namespace.statusCode.success,
       };
-      if (requestInfo && requestInfo.extract && requestInfo.extract.logoutrequest) {
-        tvalue.InResponseTo = requestInfo.extract.logoutrequest.id;
+      if (requestInfo && requestInfo.extract && requestInfo.extract.logoutRequest) {
+        tvalue.InResponseTo = requestInfo.extract.logoutRequest.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }

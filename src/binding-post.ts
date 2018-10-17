@@ -9,6 +9,7 @@ import { BindingContext } from './entity';
 import libsaml from './libsaml';
 import utility from './utility';
 import { get } from 'lodash';
+import { LogoutResponseTemplate } from './libsaml';
 
 const binding = wording.binding;
 
@@ -283,10 +284,8 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         StatusCode: StatusCode.Success,
+        InResponseTo: get(requestInfo, 'extract.request.id', null)
       };
-      if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
-      }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutResponseSigned) {
@@ -294,12 +293,19 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       return {
         id,
         context: libsaml.constructSAMLSignature({
-          referenceTagXPath: libsaml.createXPath('Issuer'),
+          isMessageSigned: true,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
           rawSamlMessage: rawSamlResponse,
           signingCert: metadata.init.getX509Certificate('signing'),
+          signatureConfig: {
+            prefix: 'ds',
+            location: {
+              reference: "/*[local-name(.)='LogoutResponse']/*[local-name(.)='Issuer']",
+              action: 'after'
+            }
+          } 
         }),
       };
     }

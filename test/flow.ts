@@ -436,8 +436,6 @@ test('idp sends a redirect logout request without signature and sp parses it', a
   t.is(_.includes(query, 'SAMLRequest='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
-  // const originURL = new url.URL(context);
-  // const SAMLRequest = originURL.searchParams.get('SAMLRequest');
   const originalURL = url.parse(context, true);
   const SAMLRequest = encodeURIComponent(originalURL.query.SAMLRequest);
   let result;
@@ -512,7 +510,7 @@ test('sp sends a post logout response without signature and parse', async t => {
 });
 
 test('sp sends a post logout response with signature and parse', async t => {
-  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, null, 'post', '', createTemplateCallback(idpWantLogoutResSign, sp, {})) as PostBindingContext;
+  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, sampleRequestInfo, 'post', '', createTemplateCallback(idpWantLogoutResSign, sp, {})) as PostBindingContext;
   const { samlContent, extract } = await idpWantLogoutResSign.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   t.is(typeof extract.signature, 'string');
   t.is(extract.issuer, 'https://sp.example.org/metadata');
