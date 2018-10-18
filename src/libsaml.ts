@@ -291,7 +291,11 @@ const libSaml = () => {
       const sig = new SignedXml();
       // Add assertion sections as reference
       if (referenceTagXPath) {
-        sig.addReference(referenceTagXPath, null, getDigestMethod(signatureAlgorithm));
+        sig.addReference(
+          referenceTagXPath,
+          opts.transformationAlgorithms,
+          getDigestMethod(signatureAlgorithm)
+        );
       }
       if (isMessageSigned) {
         sig.addReference(
