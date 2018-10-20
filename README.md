@@ -32,12 +32,9 @@ const saml = require('samlify');
 ```
 See full documentation [here](https://samlify.js.org/)
 
-### Examples (In progress)
+### Example
 
-[samlify-sp](https://github.com/passify/samlify-sp) Service provider example written with Next.js
-
-[samlify-idp](https://github.com/passify/samlify-idp) Identity provider example written with Next.js
-
+[react-samlify](https://github.com/passify/react-samlify) SP example powered by React, TypeScript and Webpack
 
 ### Talks
 
