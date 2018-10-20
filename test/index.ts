@@ -371,3 +371,20 @@ test('get entity setting', t => {
   t.is(typeof idp.getEntitySetting(), 'object');
   t.is(typeof sp.getEntitySetting(), 'object');
 });
+
+test('contains shared certificate for both signing and encryption in metadata', t => {
+  const metadata = idpMetadata(readFileSync('./test/misc/idpmeta_share_cert.xml'));
+  const signingCertificate = metadata.getX509Certificate('signing');
+  const encryptionCertificate = metadata.getX509Certificate('encryption');
+  t.not(signingCertificate, null);
+  t.not(encryptionCertificate, null);
+  t.is(signingCertificate, encryptionCertificate);
+});
+
+test('contains explicit certificate declaration for signing and encryption in metadata', t => {
+  const signingCertificate = IdPMetadata.getX509Certificate('signing');
+  const encryptionCertificate = IdPMetadata.getX509Certificate('encryption');
+  t.not(signingCertificate, null);
+  t.not(encryptionCertificate, null);
+  t.not(signingCertificate, encryptionCertificate);
+});

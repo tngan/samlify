@@ -353,7 +353,7 @@ export function extract(context: string, fields) {
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.map((n: Node) => n.nodeValue);
+        attributeValue = node.map((n: Node) => n.firstChild.nodeValue);
       }
       return {
         ...result,
