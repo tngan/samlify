@@ -34,18 +34,11 @@
   "dependencies": {
     "@passify/xml-encryption": "^0.11.1",
     "@passify/xsd-schema-validator": "^0.7.1",
-    "@types/camelcase": "^0.0.30",
-    "@types/lodash": "^4.14.112",
-    "@types/node": "^7.0.67",
-    "@types/node-forge": "^0.7.4",
-    "@types/uuid": "3.0.0",
-    "@types/xmldom": "^0.1.28",
     "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
     "lodash": "^4.17.10",
     "node-forge": "^0.7.5",
     "node-rsa": "^0.4.2",
-    "typescript": "^2.9.2",
     "uuid": "^3.3.2",
     "xml": "^1.0.0",
     "xml-crypto": "^1.0.1",
@@ -53,9 +46,16 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
+    "@types/camelcase": "^0.0.30",
+    "@types/lodash": "^4.14.112",
+    "@types/node": "^7.0.67",
+    "@types/node-forge": "^0.7.4",
+    "@types/uuid": "3.0.0",
+    "@types/xmldom": "^0.1.28",
     "ava": "^0.19.1",
     "coveralls": "^3.0.2",
     "nyc": "^11.9.0",
-    "tslint": "5.4.2"
+    "tslint": "5.4.2",
+    "typescript": "^2.9.2"
   }
 }
