@@ -34,7 +34,6 @@
   "dependencies": {
     "@passify/xml-encryption": "^0.11.1",
     "@passify/xsd-schema-validator": "^0.7.1",
-    "camelcase": "^4.0.0",
     "deflate-js": "^0.2.3",
     "lodash": "^4.17.10",
     "node-forge": "^0.7.5",
@@ -46,7 +45,6 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
-    "@types/camelcase": "^0.0.30",
     "@types/lodash": "^4.14.112",
     "@types/node": "^7.0.67",
     "@types/node-forge": "^0.7.4",

@@ -8,9 +8,8 @@ import { DOMParser } from 'xmldom';
 import utility from './utility';
 import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
-import * as camel from 'camelcase';
 import { MetadataInterface } from './metadata';
-import { isObject, isUndefined, includes, flattenDeep } from 'lodash';
+import { isObject, isUndefined, includes, flattenDeep, camelCase } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
@@ -225,7 +224,7 @@ const libSaml = () => {
    * @return {string}
    */
   function tagging(prefix: string, content: string): string {
-    const camelContent = camel(content);
+    const camelContent = camelCase(content);
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
