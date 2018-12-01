@@ -213,6 +213,20 @@ test('create logout request with post binding', t => {
   _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
 });
 
+test('create logout request when idp only has one binding', t => {
+  const testIdpConfig = {
+    privateKey: readFileSync('./test/key/idp/privkey.pem'),
+    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+    isAssertionEncrypted: true,
+    encPrivateKey: readFileSync('./test/key/idp/encryptKey.pem'),
+    encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
+    metadata: readFileSync('./test/misc/idpmeta_onelogoutservice.xml'),
+  };
+  const testIdp = identityProvider(testIdpConfig);
+  const { id, context } = sp.createLogoutRequest(testIdp, 'redirect', { logoutNameID: 'user@esaml2' });
+  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+});
+
 test('create logout response with undefined binding', t => {
   try {
     const { id, context } = idp.createLogoutResponse(sp, {}, 'undefined', '', createTemplateCallback(idp, sp, {}));

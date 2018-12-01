@@ -136,7 +136,11 @@ export default class Metadata implements MetadataInterface {
   public getSingleLogoutService(binding: string | undefined): string | object {
     if (isString(binding)) {
       const bindType = namespace.binding[binding];
-      const service = this.meta.singleLogoutService.find(obj => obj.binding === bindType);
+      let singleLogoutService = this.meta.singleLogoutService;
+      if (!(singleLogoutService instanceof Array)) {
+        singleLogoutService = [singleLogoutService];
+       }
+      const service = singleLogoutService.find(obj => obj.binding === bindType);      
       if (service) {
         return service.location;
       }
