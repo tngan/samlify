@@ -374,6 +374,9 @@ const libSaml = () => {
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
+          if (certificateNode.length === 0) {
+            throw new Error('ERR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+          }
           let x509Certificate = certificateNode[0].firstChild.data;
           x509Certificate = utility.normalizeCerString(x509Certificate);
           if (includes(metadataCert, x509Certificate)) {
