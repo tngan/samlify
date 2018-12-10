@@ -366,11 +366,9 @@ const libSaml = () => {
         } else if (opts.cert) {
 
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
-          const x509CertificateData = certificateNode[0].firstChild.data;
-          const x509Certificate = utility.normalizeCerString(x509CertificateData);
+          
+          // certificate in metadata
           let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
-          const selectedCert = x509Certificate;
-
           if (typeof metadataCert === 'string') {
             metadataCert = [metadataCert];
           } else if (metadataCert instanceof Array) {
@@ -378,10 +376,20 @@ const libSaml = () => {
             metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
+
+          // use the first 
+          let selectedCert = metadataCert[0];
+          // no certificate node in response
+          if (certificateNode.length !== 0) {
+            const x509CertificateData = certificateNode[0].firstChild.data;
+            const x509Certificate = utility.normalizeCerString(x509CertificateData);
+            selectedCert = x509Certificate;
+          }
+
           if (selectedCert === null) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (metadataCert.length > 1 && !includes(metadataCert, x509Certificate)) {
+          if (metadataCert.length > 1 && !includes(metadataCert, selectedCert)) {
             // keep this restriction for rolling certificate usage
             // to make sure the response certificate is one of those specified in metadata
             throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
