@@ -360,12 +360,17 @@ const libSaml = () => {
       let verified = true;
       // need to refactor later on
       selection.forEach(signatureNode => {
-        let selectedCert = '';
         sig.signatureAlgorithm = opts.signatureAlgorithm;
         if (opts.keyFile) {
           sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
         } else if (opts.cert) {
+
+          const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
+          const x509CertificateData = certificateNode[0].firstChild.data;
+          const x509Certificate = utility.normalizeCerString(x509CertificateData);
           let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
+          const selectedCert = x509Certificate;
+
           if (typeof metadataCert === 'string') {
             metadataCert = [metadataCert];
           } else if (metadataCert instanceof Array) {
@@ -373,14 +378,13 @@ const libSaml = () => {
             metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
-          const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
-          let x509Certificate = certificateNode[0].firstChild.data;
-          x509Certificate = utility.normalizeCerString(x509Certificate);
-          if (includes(metadataCert, x509Certificate)) {
-            selectedCert = x509Certificate;
+          if (selectedCert === null) {
+            throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (selectedCert === '') {
-            throw new Error('ERR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+          if (metadataCert.length > 1 && !includes(metadataCert, x509Certificate)) {
+            // keep this restriction for rolling certificate usage
+            // to make sure the response certificate is one of those specified in metadata
+            throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
           }
           sig.keyInfoProvider = new this.getKeyInfo(selectedCert);
         } else {
