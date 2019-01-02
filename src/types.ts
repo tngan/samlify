@@ -87,7 +87,7 @@ export interface IdentityProviderSettings {
   /** template of login response */
   loginResponseTemplate?: { [key: string]: any };
 
-  /** template of login response */
+  /** template of logout request */
   logoutRequestTemplate?: { [key: string]: any };
 
   /** customized function used for generating request ID */
