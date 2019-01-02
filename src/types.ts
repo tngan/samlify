@@ -76,6 +76,7 @@ export interface ServiceProviderSettings {
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
+  logoutRequestTemplate?: { [key: string]: any };
 }
 
 export interface IdentityProviderSettings {
