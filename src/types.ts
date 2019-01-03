@@ -76,7 +76,7 @@ export interface ServiceProviderSettings {
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
-  logoutRequestTemplate?: { [key: string]: any };
+  logoutRequestTemplate?: SAMLDocumentTemplate;
 }
 
 export interface IdentityProviderSettings {
@@ -86,10 +86,10 @@ export interface IdentityProviderSettings {
   requestSignatureAlgotithm?: string;
 
   /** template of login response */
-  loginResponseTemplate?: { [key: string]: any };
+  loginResponseTemplate?: SAMLDocumentTemplate;
 
   /** template of logout request */
-  logoutRequestTemplate?: { [key: string]: any };
+  logoutRequestTemplate?: SAMLDocumentTemplate;
 
   /** customized function used for generating request ID */
   generateID?: () => string;
