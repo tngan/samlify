@@ -1,3 +1,5 @@
+import { LoginResponseTemplate } from './libsaml';
+
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
 
@@ -59,6 +61,7 @@ export interface SignatureConfig {
 export interface SAMLDocumentTemplate {
   context?: string;
 }
+
 export interface ServiceProviderSettings {
   metadata?: string | Buffer;
   entityID?: string;
@@ -76,6 +79,7 @@ export interface ServiceProviderSettings {
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
+  logoutRequestTemplate?: SAMLDocumentTemplate;
 }
 
 export interface IdentityProviderSettings {
@@ -85,10 +89,10 @@ export interface IdentityProviderSettings {
   requestSignatureAlgotithm?: string;
 
   /** template of login response */
-  loginResponseTemplate?: { [key: string]: any };
+  loginResponseTemplate?: LoginResponseTemplate;
 
-  /** template of login response */
-  logoutRequestTemplate?: { [key: string]: any };
+  /** template of logout request */
+  logoutRequestTemplate?: SAMLDocumentTemplate;
 
   /** customized function used for generating request ID */
   generateID?: () => string;
