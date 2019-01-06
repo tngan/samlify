@@ -80,6 +80,8 @@ export interface ServiceProviderSettings {
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
   logoutRequestTemplate?: SAMLDocumentTemplate;
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer;
 }
 
 export interface IdentityProviderSettings {
@@ -100,8 +102,8 @@ export interface IdentityProviderSettings {
   entityID?: string;
   privateKey?: string | Buffer;
   privateKeyPass?: string;
-  signingCert?: string;
-  encrpytCert?: string; /** todo */
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer; /** todo */
   nameIDFormat?: string[];
   singleSignOnService?: Array<{ [key: string]: string }>;
   singleLogoutService?: Array<{ [key: string]: string }>;
