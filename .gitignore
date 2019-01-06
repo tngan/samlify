@@ -32,5 +32,3 @@ types/
 .vscode
 
 *.tgz
-
-yarn.lock
