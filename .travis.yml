@@ -19,7 +19,5 @@ branches:
   - master
   - /^.*-alpha$/
   - /^.*-beta$/
-  - /^.*-rc*$/
-  - /^.*-exp*$/
 
 after_success: npm run coverage
