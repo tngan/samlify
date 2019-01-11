@@ -47,6 +47,10 @@
     xmldom "~0.1.15"
     xpath "0.0.24"
 
+"@passify/xsd-schema-validator@^0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@passify/xsd-schema-validator/-/xsd-schema-validator-0.7.1.tgz#19d4318320d0ae52ac74076761c9285f2bac00ee"
+
 "@types/lodash@^4.14.112":
   version "4.14.116"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.116.tgz#5ccf215653e3e8c786a58390751033a9adca0eb9"

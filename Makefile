@@ -19,8 +19,12 @@ pretest:	;
 validator: ;
 ifeq ($(SAML_VALIDATOR), javac)
 	@echo "Installing java xsd schema validator ...";
-	yarn add --ignore-scripts @passify/xsd-schema-validator;
-else ifeq ($(SAML_VALIDATOR), libxmljs)
+	# for java runtime support library
+	# need to run with npm install, yarn add --ignore-scripts will ignore the postinstall script
+	# check more information in the package.json of @passify/xsd-schema-validator
+	npm install @passify/xsd-schema-validator;
+
+else ifeq ($(SAML_VALIDATOR), libxml)
 	@echo "Installing libxmljs-mt ...";
 	yarn add --ignore-scripts libxmljs-mt;
 else

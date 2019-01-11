@@ -40,7 +40,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
     };
 
     const validator = await import (SchemaValidators.JAVAC);
-    const mod = setSchemaDir(new (validator.default())());
+    const mod = setSchemaDir(new validator());
 
     return {
       validate: (xml: string, xsd: string) => {
@@ -62,7 +62,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   if (require.resolve(SchemaValidators.LIBXML)) {
     const validator = await import (SchemaValidators.LIBXML);
-    const mod = validator.default();
+    const mod = new validator();
     return {
       validate: (xml: string, xsd: string) => {
         return new Promise((resolve, reject) => {

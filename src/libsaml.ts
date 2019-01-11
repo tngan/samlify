@@ -601,9 +601,9 @@ const libSaml = () => {
       try {
         const mod = await getValidatorModule();
         await mod.validate(input, 'saml-schema-protocol-2.0.xsd');
-        return true;
+        return Promise.resolve();
       } catch (e) {
-        return false;
+        throw e;
       }
     },
   };
