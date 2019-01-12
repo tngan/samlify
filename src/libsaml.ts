@@ -13,10 +13,8 @@ import { isObject, isUndefined, includes, flattenDeep, camelCase } from 'lodash'
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@passify/xml-encryption';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as Validator from '@passify/xsd-schema-validator';
 import { extract } from './extractor';
+import { getValidatorModule } from './schema-validator';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -102,29 +100,6 @@ export interface LibSamlInterface {
 }
 
 const libSaml = () => {
-  const validator = new Validator();
-  function setSchemaDir() {
-    let schemaDir;
-    try {
-      schemaDir = path.resolve(__dirname, '../schemas');
-      fs.accessSync(schemaDir, fs.constants.F_OK);
-    } catch (err) {
-      // for built-from git folder layout
-      try {
-        schemaDir = path.resolve(__dirname, '../../schemas');
-        fs.accessSync(schemaDir, fs.constants.F_OK);
-      } catch (err) {
-        //console.warn('Unable to specify schema directory', err);
-        // QUESTION should this be swallowed?
-        console.error(err);
-        throw new Error('ERR_FAILED_FETCH_SCHEMA_FILE');
-      }
-    }
-    // set schema directory
-    validator.cwd = schemaDir;
-    validator.debug = process.env.NODE_ENV === 'test';
-  }
-  setSchemaDir();
 
   /**
   * @desc helper function to get back the query param for redirect binding for SLO/SSO
@@ -623,18 +598,13 @@ const libSaml = () => {
      * @desc Check if the xml string is valid and bounded
      */
     async isValidXml(input: string) {
-      return new Promise((resolve, reject) => {
-        validator.validateXML(input, 'saml-schema-protocol-2.0.xsd', (err, result) => {
-          if (err) {
-            console.error(err);
-            return reject('ERR_EXCEPTION_VALIDATE_SAML_RESPONSE');
-          }
-          if (result.valid) {
-            return resolve(true);
-          }
-          return reject('ERR_INVALID_SAML_RESPONSE');
-        });
-      });
+      try {
+        const mod = await getValidatorModule();
+        await mod.validate(input);
+        return Promise.resolve();
+      } catch (e) {
+        throw e;
+      }
     },
   };
 };

@@ -20,6 +20,7 @@
     "test": "npm run build && NODE_ENV=test nyc ava --verbose build/test",
     "test:pure": "NODE_ENV=test nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "preinstall": "make validator",
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
@@ -33,7 +34,6 @@
   "license": "MIT",
   "dependencies": {
     "@passify/xml-encryption": "^0.11.1",
-    "@passify/xsd-schema-validator": "^0.7.1",
     "deflate-js": "^0.2.3",
     "lodash": "^4.17.10",
     "node-forge": "^0.7.5",

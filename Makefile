@@ -16,7 +16,23 @@ pretest:	;
 					cp -a schemas build; \
 					cp -a test/key test/misc build/test;
 
+validator: ;
+ifeq ($(SAML_VALIDATOR), javac)
+	@echo "Installing java xsd schema validator ...";
+	# for java runtime support library
+	# need to run with npm install, yarn add --ignore-scripts will ignore the postinstall script
+	# check more information in the package.json of @passify/xsd-schema-validator
+	npm install @passify/xsd-schema-validator;
+
+else ifeq ($(SAML_VALIDATOR), libxml)
+	@echo "Installing libxml-xsd ...";
+	npm install libxml-xsd
+
+else
+	@echo "No valid SAML_VALIDATOR is chosen";
+endif
+
 doc: ;@echo "prepare and serve the docs"; \
 	   docsify serve ./docs
 
-.PHONY: rebuild pretest doc
+.PHONY: rebuild pretest doc validator
