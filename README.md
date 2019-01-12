@@ -20,6 +20,12 @@ Starting from v2.5, schema validation becomes selectable and optional, we restri
 $ SAML_VALIDATOR=javac yarn add samlify
 ```
 
+For those using Windows, `windows-build-tools` should be installed globally before installing samlify if you are using `libxml` validator.
+
+```console
+$ yarn global add windows-build-tools
+```
+
 ### Development
 This project is now developed using TypeScript, also support Yarn which is a new package manager.
 
