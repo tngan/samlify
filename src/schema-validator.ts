@@ -3,18 +3,31 @@ import * as path from 'path';
 
 enum SchemaValidators {
   JAVAC = '@passify/xsd-schema-validator',
-  LIBXML = 'libxmljs-mt'
+  LIBXML = 'libxml-xsd'
 }
 
 interface SchemaValidator {
-  validate: (xml: string, xsd: string) => Promise<string>;
+  validate: (xml: string) => Promise<string>;
 }
 
 type GetValidatorModuleSpec = () => Promise<SchemaValidator>;
 
+const moduleResolver = (name: string) => {
+  try {
+    require.resolve(name);
+    return name;
+  } catch (e) {
+    return null;
+  }
+};
+
 const getValidatorModule: GetValidatorModuleSpec = async () => {
 
-  if (require.resolve(SchemaValidators.JAVAC)) {
+  const selectedValidator: string = moduleResolver(SchemaValidators.JAVAC) || moduleResolver(SchemaValidators.LIBXML);
+
+  const xsd = 'saml-schema-protocol-2.0.xsd';
+
+  if (selectedValidator === SchemaValidators.JAVAC) {
 
     // TODO: refactor
     const setSchemaDir = (v: any) => {
@@ -43,7 +56,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
     const mod = setSchemaDir(new validator());
 
     return {
-      validate: (xml: string, xsd: string) => {
+      validate: (xml: string) => {
         return new Promise((resolve, reject) => {
           mod.validateXML(xml, xsd, (err, result) => {
             if (err) {
@@ -60,22 +73,36 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
     };
   }
 
-  if (require.resolve(SchemaValidators.LIBXML)) {
-    const validator = await import (SchemaValidators.LIBXML);
-    const mod = new validator();
+  if (selectedValidator === SchemaValidators.LIBXML) {
+    const mod = await import (SchemaValidators.LIBXML);
     return {
-      validate: (xml: string, xsd: string) => {
+      validate: (xml: string) => {
         return new Promise((resolve, reject) => {
-          const xsdContext = fs.readFileSync(`../schemas/${xsd}`).toString();
-          const xmlDoc = mod.parseXml(xml);
-          const xsdDoc = mod.parseXml(xsdContext);
-          const result = xmlDoc.validate(xsdDoc);
-          if (result) {
-            return resolve('SUCCESS_VALIDATE_XML');
-          } 
-          console.error('[ERROR] validateXML', xmlDoc.validationErrors);
-          return reject('ERR_EXCEPTION_VALIDATE_XML');
+          // https://github.com/albanm/node-libxml-xsd/issues/11
+          process.chdir(path.resolve(__dirname, '../schemas'));
+          mod.parseFile(path.resolve(xsd), (err, schema) => {
+            if (err) {
+              console.error('[ERROR] validateXML', err);
+              return reject('ERR_INVALID_XML');
+            }
+            schema.validate(xml, (techErrors, validationErrors) => {
+              if (techErrors !== null || validationErrors !== null) {
+                console.error(`this is not a valid saml response with errors: ${validationErrors}`);
+                return reject('ERR_EXCEPTION_VALIDATE_XML');
+              }
+              return resolve('SUCCESS_VALIDATE_XML');
+            });
+          });
         });
+      }
+    };
+  }
+
+  // allow to skip the validate function if it's in development or test mode if no schema validator is provided
+  if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
+    return {
+      validate: (_xml: string) => {
+        return new Promise((resolve, _reject) => resolve('SKIP_XML_VALIDATION'));
       }
     };
   }

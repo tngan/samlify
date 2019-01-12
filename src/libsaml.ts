@@ -600,7 +600,7 @@ const libSaml = () => {
     async isValidXml(input: string) {
       try {
         const mod = await getValidatorModule();
-        await mod.validate(input, 'saml-schema-protocol-2.0.xsd');
+        await mod.validate(input);
         return Promise.resolve();
       } catch (e) {
         throw e;

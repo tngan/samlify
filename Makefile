@@ -25,8 +25,9 @@ ifeq ($(SAML_VALIDATOR), javac)
 	npm install @passify/xsd-schema-validator;
 
 else ifeq ($(SAML_VALIDATOR), libxml)
-	@echo "Installing libxmljs-mt ...";
-	yarn add --ignore-scripts libxmljs-mt;
+	@echo "Installing libxml-xsd ...";
+	npm install libxml-xsd
+
 else
 	@echo "No valid SAML_VALIDATOR is chosen";
 endif
