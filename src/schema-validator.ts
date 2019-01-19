@@ -3,7 +3,8 @@ import * as path from 'path';
 
 enum SchemaValidators {
   JAVAC = '@passify/xsd-schema-validator',
-  LIBXML = 'libxml-xsd'
+  LIBXML = 'libxml-xsd',
+  XMLLINT = 'node-xmllint'
 }
 
 interface SchemaValidator {
@@ -23,7 +24,7 @@ const moduleResolver = (name: string) => {
 
 const getValidatorModule: GetValidatorModuleSpec = async () => {
 
-  const selectedValidator: string = moduleResolver(SchemaValidators.JAVAC) || moduleResolver(SchemaValidators.LIBXML);
+  const selectedValidator: string = moduleResolver(SchemaValidators.JAVAC) || moduleResolver(SchemaValidators.LIBXML) || moduleResolver(SchemaValidators.XMLLINT);
 
   const xsd = 'saml-schema-protocol-2.0.xsd';
 
@@ -93,6 +94,41 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
               return resolve('SUCCESS_VALIDATE_XML');
             });
           });
+        });
+      }
+    };
+  }
+
+  if (selectedValidator === SchemaValidators.XMLLINT) {
+    const mod = await import (SchemaValidators.XMLLINT);
+    
+    return {
+      validate: (xml: string) => {
+        
+        return new Promise((resolve, reject) => {
+          process.chdir(path.resolve(__dirname, '../schemas'));
+          let schemaProto = fs.readFileSync(path.resolve(xsd),'utf-8');
+          let schemaAssert = fs.readFileSync(path.resolve('saml-schema-assertion-2.0.xsd'),'utf-8');
+          let schemaXmldsig = fs.readFileSync(path.resolve('xmldsig-core-schema.xsd'),'utf-8');
+          let schemaXenc = fs.readFileSync(path.resolve('xenc-schema.xsd'),'utf-8');
+
+          // file fix for virtual filesystem of emscripten
+          schemaProto = schemaProto.replace('saml-schema-assertion-2.0.xsd','file_0.xsd')
+          schemaProto = schemaProto.replace('xmldsig-core-schema.xsd','file_1.xsd')
+
+          schemaAssert=schemaAssert.replace('xmldsig-core-schema.xsd','file_1.xsd')
+          schemaAssert=schemaAssert.replace('xenc-schema.xsd','file_3.xsd')
+          
+          const validationResult = mod.validateXML({
+            xml: xml,
+            schema: [schemaAssert,schemaXmldsig,schemaXenc,schemaProto]
+          })
+          if(validationResult.errors==null){
+            return resolve('SUCCESS_VALIDATE_XML');
+          }else{
+            console.error(`this is not a valid saml response with errors: ${validationResult.errors}`);
+            return reject('ERR_EXCEPTION_VALIDATE_XML');
+          }
         });
       }
     };

@@ -28,6 +28,10 @@ else ifeq ($(SAML_VALIDATOR), libxml)
 	@echo "Installing libxml-xsd ...";
 	npm install libxml-xsd
 
+else ifeq ($(SAML_VALIDATOR), xmllint)
+	@echo "Installing node-xmllint ...";
+	npm i node-xmllint
+
 else
 	@echo "No valid SAML_VALIDATOR is chosen";
 endif
