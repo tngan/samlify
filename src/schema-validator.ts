@@ -55,7 +55,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
       return v;
     };
 
-    const validator = await import(SchemaValidators.JAVAC);
+    const validator = await import (SchemaValidators.JAVAC);
     const mod = setSchemaDir(new validator());
 
     return {
@@ -77,7 +77,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
   }
 
   if (selectedValidator === SchemaValidators.LIBXML) {
-    const mod = await import(SchemaValidators.LIBXML);
+    const mod = await import (SchemaValidators.LIBXML);
     return {
       validate: (xml: string) => {
         return new Promise((resolve, reject) => {
@@ -103,13 +103,13 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   if (selectedValidator === SchemaValidators.XMLLINT) {
 
-    const mod = await import(SchemaValidators.XMLLINT);
+    const mod = await import (SchemaValidators.XMLLINT);
 
     const schemaPath = (schema: string) => path.resolve(__dirname, `../schemas/${schema}`);
 
     let schemaProto = fs.readFileSync(schemaPath(xsd), 'utf-8');
     let schemaAssert = fs.readFileSync(schemaPath('saml-schema-assertion-2.0.xsd'), 'utf-8');
-    let schemaXmldsig = fs.readFileSync(schemaPath('xmldsig-core-schema.xsd'), 'utf-8');
+    const schemaXmldsig = fs.readFileSync(schemaPath('xmldsig-core-schema.xsd'), 'utf-8');
     let schemaXenc = fs.readFileSync(schemaPath('xenc-schema.xsd'), 'utf-8');
 
     // file fix for virtual filesystem of emscripten

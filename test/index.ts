@@ -264,22 +264,22 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0], true);
   });
   test('encrypt assertion test passes', async t => {
-    await t.notThrows(libsaml.encryptAssertion(idp, sp, sampleSignedResponse));
+    await t.notThrowsAsync(() => libsaml.encryptAssertion(idp, sp, sampleSignedResponse));
   });
   test('encrypt assertion response without assertion returns error', async t => {
-    const error = await t.throws(libsaml.encryptAssertion(idp, sp, wrongResponse));
+    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, wrongResponse));
     t.is(error.message, 'ERR_MULTIPLE_ASSERTION');
   });
   test('encrypt assertion with invalid xml syntax returns error', async t => {
-    const error = await t.throws(libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
+    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
     t.is(error.message, 'ERR_MULTIPLE_ASSERTION');
   });
   test('encrypt assertion with empty string returns error', async t => {
-    const error = await t.throws(libsaml.encryptAssertion(idp, sp, ''));
+    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, ''));
     t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
   });
   test('encrypt assertion with undefined string returns error', async t => {
-    const error = await t.throws(libsaml.encryptAssertion(idp, sp, undefined));
+    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, undefined));
     t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
   });
   test('building attribute statement with one attribute', t => {

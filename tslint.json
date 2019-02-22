@@ -1,6 +1,11 @@
 {
     "extends": "tslint:recommended",
     "rulesDirectory": [],
+    "linterOptions": {
+      "exclude": [
+        "node_modules/**"
+      ]
+    },
     "rules": {
       "arrow-parens": [true, "ban-single-arg-parens"],
       "comment-format": false,

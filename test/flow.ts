@@ -25,17 +25,17 @@ const loginResponseTemplate = {
   ],
 };
 
-const createTemplateCallback = (idp, sp, user) => template => {
+const createTemplateCallback = (_idp, _sp, user) => template => {
   const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
   const now = new Date();
-  const spEntityID = sp.entityMeta.getEntityID();
-  const idpSetting = idp.entitySetting;
+  const spEntityID = _sp.entityMeta.getEntityID();
+  const idpSetting = _idp.entitySetting;
   const fiveMinutesLater = new Date(now.getTime());
   fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
   const tvalue = {
     ID: _id,
     AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${uuid.v4()}`,
-    Destination: sp.entityMeta.getAssertionConsumerService(binding.post),
+    Destination: _sp.entityMeta.getAssertionConsumerService(binding.post),
     Audience: spEntityID,
     SubjectRecipient: spEntityID,
     NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
@@ -45,7 +45,7 @@ const createTemplateCallback = (idp, sp, user) => template => {
     ConditionsNotBefore: now.toISOString(),
     ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
     SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
-    AssertionConsumerServiceURL: sp.entityMeta.getAssertionConsumerService(binding.post),
+    AssertionConsumerServiceURL: _sp.entityMeta.getAssertionConsumerService(binding.post),
     EntityID: spEntityID,
     InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
     StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
@@ -193,7 +193,7 @@ test('create login request with post binding using [custom template]', t => {
 
 test('create login response with undefined binding', async t => {
   const user = { email: 'user@esaml2.com' };
-  const error = await t.throws(idp.createLoginResponse(sp, {}, 'undefined', user, createTemplateCallback(idp, sp, user)));
+  const error = await t.throwsAsync(() => idp.createLoginResponse(sp, {}, 'undefined', user, createTemplateCallback(idp, sp, user)));
   t.is(error.message, 'ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
 });
 
@@ -565,10 +565,10 @@ test('avoid mitm attack', async t => {
   const { context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   const rawResponse = String(utility.base64Decode(SAMLResponse, true));
   const attackResponse = `<NameID>evil@evil.com${rawResponse}</NameID>`;
-  const error = await t.throws(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
+  const error = await t.throwsAsync(() => sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
 });
 
-test('should reject signature wrapped response', async t => {
+test('should reject signature wrapped response - case 1', async t => {
   // 
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
@@ -592,7 +592,7 @@ test('should reject signature wrapped response', async t => {
   }
 });
 
-test('should reject signature wrapped response', async t => {
+test('should reject signature wrapped response - case 2', async t => {
   // 
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));

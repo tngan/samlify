@@ -50,10 +50,10 @@
     "@types/node-forge": "^0.7.4",
     "@types/uuid": "3.0.0",
     "@types/xmldom": "^0.1.28",
-    "ava": "^0.19.1",
+    "ava": "^1.2.1",
     "coveralls": "^3.0.2",
     "nyc": "^11.9.0",
-    "tslint": "5.4.2",
-    "typescript": "^2.9.2"
+    "tslint": "^5.12.1",
+    "typescript": "^3.3.3333"
   }
 }
