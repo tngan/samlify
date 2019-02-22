@@ -82,7 +82,7 @@ const idp = require('samlify').IdentityProvider({
   },
   signatureConfig: {
     prefix: 'ds',
-    location: { reference: '/samlp:Response/saml:Issuer', action: 'after' }
+    location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' }
   }
 });
 ```

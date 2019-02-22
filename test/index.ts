@@ -153,7 +153,7 @@ test('getAssertionConsumerService with two bindings', t => {
     signatureAlgorithm: signatureAlgorithms.RSA_SHA1,
     signatureConfig: {
       prefix: 'ds',
-      location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
+      location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
     },
   })));
   */

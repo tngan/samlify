@@ -141,10 +141,10 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
-        referenceTagXPath: '/samlp:Response/saml:Assertion', 
+        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']", 
         signatureConfig: {
           prefix: 'ds',
-          location: { reference: '/samlp:Response/saml:Assertion/saml:Issuer', action: 'after' },
+          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
         },
       });
     }
@@ -161,7 +161,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
+          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
         },
       });
     }
@@ -188,7 +188,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: '/samlp:Response/saml:Issuer', action: 'after' },
+          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
         },
       });
     }
