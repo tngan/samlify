@@ -3899,12 +3899,12 @@ xdg-basedir@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/xdg-basedir/-/xdg-basedir-3.0.0.tgz#496b2cc109eca8dbacfe2dc72b603c17c5870ad4"
 
-xml-crypto@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-1.0.1.tgz#2b2422142d8c2bd5227024022f50633bc3c868a6"
+xml-crypto@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-1.1.4.tgz#fbd01c1aaa343945f8ee51327e4299ce743ee37b"
   dependencies:
     xmldom "0.1.27"
-    xpath.js ">=0.0.3"
+    xpath "0.0.27"
 
 xml@^1.0.0:
   version "1.0.1"
@@ -3914,15 +3914,11 @@ xmldom@0.1.27, xmldom@^0.1.19, xmldom@~0.1.15:
   version "0.1.27"
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.27.tgz#d501f97b3bdb403af8ef9ecc20573187aadac0e9"
 
-xpath.js@>=0.0.3:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/xpath.js/-/xpath.js-1.1.0.tgz#3816a44ed4bb352091083d002a383dd5104a5ff1"
-
 xpath@0.0.24:
   version "0.0.24"
   resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.24.tgz#1ade162e1cc523c8d39fc7d06afc16ea216f29fb"
 
-xpath@^0.0.27:
+xpath@0.0.27, xpath@^0.0.27:
   version "0.0.27"
   resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.27.tgz#dd3421fbdcc5646ac32c48531b4d7e9d0c2cfa92"
 
