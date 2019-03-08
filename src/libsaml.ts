@@ -364,7 +364,7 @@ const libSaml = () => {
           if (selectedCert === null) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (metadataCert.length > 1 && !includes(metadataCert, selectedCert)) {
+          if (metadataCert.length >= 1 && !includes(metadataCert, selectedCert)) {
             // keep this restriction for rolling certificate usage
             // to make sure the response certificate is one of those specified in metadata
             throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
