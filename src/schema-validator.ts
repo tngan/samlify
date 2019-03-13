@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 enum SchemaValidators {
-  JAVAC = '@passify/xsd-schema-validator',
+  JAVAC = '@authenio/xsd-schema-validator',
   LIBXML = 'libxml-xsd',
   XMLLINT = 'node-xmllint'
 }

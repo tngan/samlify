@@ -12,7 +12,7 @@ import { MetadataInterface } from './metadata';
 import { isObject, isUndefined, includes, flattenDeep, camelCase } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from '@passify/xml-encryption';
+import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
 import { getValidatorModule } from './schema-validator';
 

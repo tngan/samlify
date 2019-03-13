@@ -2,6 +2,17 @@
 # yarn lockfile v1
 
 
+"@authenio/xml-encryption@^0.11.1":
+  version "0.11.2"
+  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-0.11.2.tgz#789125b3c4254e6dcec6ec1e0e29664f3aa4f0a4"
+  integrity sha512-dRZBrdZDTKGE9xOR2E8aPBLTsg8u36DdvGSjIai7UoL4ANyb2NglQyRWlnGEUv4WfwLNaFFP+MlU/jBZGWcUow==
+  dependencies:
+    async "^2.1.5"
+    ejs "^2.5.6"
+    node-forge "^0.7.4"
+    xmldom "~0.1.15"
+    xpath "0.0.27"
+
 "@ava/babel-plugin-throws-helper@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@ava/babel-plugin-throws-helper/-/babel-plugin-throws-helper-3.0.0.tgz#2c933ec22da0c4ce1fc5369f2b95452c70420586"
@@ -287,16 +298,6 @@
   resolved "https://registry.yarnpkg.com/@concordance/react/-/react-2.0.0.tgz#aef913f27474c53731f4fd79cc2f54897de90fde"
   dependencies:
     arrify "^1.0.1"
-
-"@passify/xml-encryption@^0.11.1":
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/@passify/xml-encryption/-/xml-encryption-0.11.1.tgz#750763d9f16430ee46e745daf05e2b3490e7de3e"
-  dependencies:
-    async "^2.1.5"
-    ejs "^2.5.6"
-    node-forge "^0.7.4"
-    xmldom "~0.1.15"
-    xpath "0.0.24"
 
 "@types/lodash@^4.14.112":
   version "4.14.116"
@@ -3849,10 +3850,6 @@ xml@^1.0.0:
 xmldom@0.1.27, xmldom@^0.1.19, xmldom@~0.1.15:
   version "0.1.27"
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.27.tgz#d501f97b3bdb403af8ef9ecc20573187aadac0e9"
-
-xpath@0.0.24:
-  version "0.0.24"
-  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.24.tgz#1ade162e1cc523c8d39fc7d06afc16ea216f29fb"
 
 xpath@0.0.27, xpath@^0.0.27:
   version "0.0.27"
