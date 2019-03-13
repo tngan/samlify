@@ -1,6 +1,6 @@
 {
   "name": "samlify",
-  "version": "2.5.0-rc2",
+  "version": "2.5.0-rc3",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@authenio/xml-encryption": "^0.11.1",
+    "@authenio/xml-encryption": "^0.11.2",
     "deflate-js": "^0.2.3",
     "lodash": "^4.17.10",
     "node-forge": "^0.7.5",
