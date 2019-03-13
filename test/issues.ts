@@ -158,7 +158,7 @@ test('#31 query param for sso/slo returns error', t => {
   test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
     const { id, context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
-    const request = originalURL.query.SAMLRequest;
+    const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
     const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];

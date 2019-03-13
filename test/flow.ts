@@ -114,7 +114,7 @@ test('create login request with redirect binding using default template and pars
   const Signature = originalURL.query.Signature;
   const SigAlg = originalURL.query.SigAlg;
   delete originalURL.query.Signature;
-  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q])).join('&');
+  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
   const { samlContent, extract } = await idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
   t.is(extract.issuer, 'https://sp.example.org/metadata');
   t.is(typeof extract.request.id, 'string');
@@ -451,7 +451,7 @@ test('idp sends a redirect logout request without signature and sp parses it', a
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);
-  const SAMLRequest = encodeURIComponent(originalURL.query.SAMLRequest);
+  const SAMLRequest = encodeURIComponent(originalURL.query.SAMLRequest as string);
   let result;
   const { samlContent, extract } = result = await sp.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest }});
   t.is(result.sigAlg, null);
@@ -476,7 +476,7 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
   const Signature = originalURL.query.Signature;
   const SigAlg = originalURL.query.SigAlg;
   delete originalURL.query.Signature;
-  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q])).join('&');
+  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
   const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.issuer, 'https://idp.example.com/metadata');
