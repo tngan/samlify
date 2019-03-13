@@ -559,13 +559,18 @@ test('Customize prefix (default is saml) for encrypted assertion tag', async t =
   const { samlContent, extract } = await sp.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
 });
 
-test('avoid mitm attack', async t => {
+test('avoid malformatted response', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const user = { email: 'user@email.com' };
   const { context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   const rawResponse = String(utility.base64Decode(SAMLResponse, true));
   const attackResponse = `<NameID>evil@evil.com${rawResponse}</NameID>`;
-  const error = await t.throwsAsync(() => sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } }));
+  try {
+    await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } });
+  } catch (e) {
+    // it must throw an error
+    t.is(true, true);
+  }
 });
 
 test('should reject signature wrapped response - case 1', async t => {
