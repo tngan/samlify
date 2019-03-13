@@ -599,7 +599,6 @@ const libSaml = () => {
      */
     async isValidXml(input: string) {
       try {
-        const mod = await getValidatorModule();
         await mod.validate(input);
         return Promise.resolve();
       } catch (e) {
@@ -608,5 +607,9 @@ const libSaml = () => {
     },
   };
 };
+
+// load the validator module before the function runtime
+let mod = null;
+(async () => mod = await getValidatorModule())();
 
 export default libSaml();
