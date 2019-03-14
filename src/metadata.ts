@@ -5,8 +5,8 @@
 */
 import * as fs from 'fs';
 import { namespace } from './urn';
-import { isString } from 'lodash';
 import { extract } from './extractor';
+import { isString } from './utility';
 
 export interface MetadataInterface {
   xmlString: string;

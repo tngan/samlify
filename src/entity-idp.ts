@@ -13,9 +13,8 @@ import {
 import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
-import { isString } from 'lodash';
 import { flow, FlowResult } from './flow';
-
+import { isString } from './utility';
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting

@@ -34,8 +34,8 @@
   "license": "MIT",
   "dependencies": {
     "@authenio/xml-encryption": "^0.11.2",
+    "camelcase": "^5.2.0",
     "deflate-js": "^0.2.3",
-    "lodash": "^4.17.10",
     "node-forge": "^0.7.5",
     "node-rsa": "^0.4.2",
     "uuid": "^3.3.2",
@@ -45,7 +45,7 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.112",
+    "@types/camelcase": "^5.2.0",
     "@types/node": "^11.11.3",
     "@types/node-forge": "^0.7.4",
     "@types/uuid": "3.0.0",

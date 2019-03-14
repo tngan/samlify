@@ -3,15 +3,13 @@
 * @author tngan
 * @desc Binding-level API, declare the functions using Redirect binding
 */
-import utility from './utility';
+import utility, { get } from './utility';
 import libsaml from './libsaml';
 import { BindingContext } from './entity';
 import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
 import * as url from 'url';
-
 import { wording, namespace } from './urn';
-import { get } from 'lodash';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -85,8 +83,8 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
       const info = customTagReplacement(spSetting.loginRequestTemplate);
-      id = get<BindingContext, keyof BindingContext>(info, 'id');
-      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
+      id = get(info, 'id', null);
+      rawSamlRequest = get(info, 'context', null);
     } else {
       id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
@@ -140,8 +138,8 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
     };
     if (initSetting.logoutRequestTemplate) {
       const info = customTagReplacement(initSetting.logoutRequestTemplate, requiredTags);
-      id = get<BindingContext, keyof BindingContext>(info, 'id');
-      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
+      id = get(info, 'id', null);
+      rawSamlRequest = get(info, 'context', null);
     } else {
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as any);
     }
@@ -177,8 +175,8 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
     let rawSamlResponse: string;
     if (initSetting.logoutResponseTemplate) {
       const template = customTagReplacement(initSetting.logoutResponseTemplate);
-      id = get<BindingContext, keyof BindingContext>(template, 'id');
-      rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
+      id = get(template, 'id', null);
+      rawSamlResponse = get(template, 'context', null);
     } else {
       const tvalue: any = {
         ID: id,

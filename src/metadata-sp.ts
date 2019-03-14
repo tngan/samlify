@@ -7,8 +7,7 @@ import Metadata, { MetadataInterface } from './metadata';
 import { MetadataSpConstructor, MetadataSpOptions } from './types';
 import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
-import { isString } from 'lodash';
-import { isNonEmptyArray } from './utility';
+import { isNonEmptyArray, isString } from './utility';
 import * as xml from 'xml';
 
 export interface SpMetadataInterface extends MetadataInterface {

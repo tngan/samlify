@@ -1,10 +1,12 @@
 import esaml2 = require('../index');
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
-import * as _ from 'lodash';
 import { PostBindingContext } from '../src/entity';
 import * as uuid from 'uuid';
 import * as url from 'url';
+import util from '../src/utility';
+
+const isString = util.isString;
 
 const {
   IdentityProvider: identityProvider,
@@ -168,7 +170,7 @@ test('create login request with redirect binding using [custom template]', t => 
       context: template, // all the tags are supposed to be replaced
     };
   });
-  (id === 'exposed_testing_id' && _.isString(context)) ? t.pass() : t.fail();
+  (id === 'exposed_testing_id' && isString(context)) ? t.pass() : t.fail();
 });
 
 test('create login request with post binding using [custom template]', t => {
@@ -184,10 +186,10 @@ test('create login request with post binding using [custom template]', t => {
     };
   }) as PostBindingContext;
   id === 'exposed_testing_id' &&
-    _.isString(context) &&
-    _.isString(relayState) &&
-    _.isString(entityEndpoint) &&
-    _.isEqual(type, 'SAMLRequest')
+    isString(context) &&
+    isString(relayState) &&
+    isString(entityEndpoint) &&
+    type === 'SAMLRequest'
     ? t.pass() : t.fail();
 });
 
@@ -200,17 +202,17 @@ test('create login response with undefined binding', async t => {
 test('create post login response', async t => {
   const user = { email: 'user@esaml2.com' };
   const { id, context } = await idp.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idp, sp, user));
-  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+  isString(id) && isString(context) ? t.pass() : t.fail();
 });
 
 test('create logout request with redirect binding', t => {
   const { id, context } = sp.createLogoutRequest(idp, 'redirect', { logoutNameID: 'user@esaml2' });
-  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+  isString(id) && isString(context) ? t.pass() : t.fail();
 });
 
 test('create logout request with post binding', t => {
   const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { logoutNameID: 'user@esaml2' }) as PostBindingContext;
-  _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLRequest') ? t.pass() : t.fail();
+  isString(id) && isString(context) && isString(entityEndpoint) && type === 'SAMLRequest' ? t.pass() : t.fail();
 });
 
 test('create logout request when idp only has one binding', t => {
@@ -224,7 +226,7 @@ test('create logout request when idp only has one binding', t => {
   };
   const testIdp = identityProvider(testIdpConfig);
   const { id, context } = sp.createLogoutRequest(testIdp, 'redirect', { logoutNameID: 'user@esaml2' });
-  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+  isString(id) && isString(context) ? t.pass() : t.fail();
 });
 
 test('create logout response with undefined binding', t => {
@@ -238,12 +240,12 @@ test('create logout response with undefined binding', t => {
 
 test('create logout response with redirect binding', t => {
   const { id, context } = idp.createLogoutResponse(sp, {}, 'redirect', '', createTemplateCallback(idp, sp, {}));
-  _.isString(id) && _.isString(context) ? t.pass() : t.fail();
+  isString(id) && isString(context) ? t.pass() : t.fail();
 });
 
 test('create logout response with post binding', t => {
   const { relayState, type, entityEndpoint, id, context } = idp.createLogoutResponse(sp, {}, 'post', '', createTemplateCallback(idp, sp, {})) as PostBindingContext;
-  _.isString(id) && _.isString(context) && _.isString(entityEndpoint) && _.isEqual(type, 'SAMLResponse') ? t.pass() : t.fail();
+  isString(id) && isString(context) && isString(entityEndpoint) && type === 'SAMLResponse' ? t.pass() : t.fail();
 });
 
 // Check if the response data parsing is correct
@@ -447,7 +449,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 test('idp sends a redirect logout request without signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(_.includes(query, 'SAMLRequest='), true);
+  t.is(query.includes('SAMLRequest='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);
@@ -466,9 +468,9 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 test('idp sends a redirect logout request with signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(_.includes(query, 'SAMLRequest='), true);
-  t.is(_.includes(query, 'SigAlg='), true);
-  t.is(_.includes(query, 'Signature='), true);
+  t.is(query.includes('SAMLRequest='), true);
+  t.is(query.includes('SigAlg='), true);
+  t.is(query.includes('Signature='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);

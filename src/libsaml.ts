@@ -5,16 +5,16 @@
 */
 
 import { DOMParser } from 'xmldom';
-import utility from './utility';
+import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import { MetadataInterface } from './metadata';
-import { isObject, isUndefined, includes, flattenDeep, camelCase } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
 import { getValidatorModule } from './schema-validator';
+import camelCase from 'camelcase';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -159,7 +159,7 @@ const libSaml = () => {
   */
   function getSigningScheme(sigAlg?: string): string | null {
     const algAlias = nrsaAliasMapping[sigAlg];
-    if (!isUndefined(algAlias)) {
+    if (!(algAlias === undefined)) {
       return algAlias;
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
@@ -172,7 +172,7 @@ const libSaml = () => {
   */
   function getDigestMethod(sigAlg: string): string | null {
     const digestAlg = digestAlgorithms[sigAlg];
-    if (!isUndefined(digestAlg)) {
+    if (!(digestAlg === undefined)) {
       return digestAlg;
     }
     return null; // default value
@@ -185,10 +185,10 @@ const libSaml = () => {
   * @return {string} xpath
   */
   function createXPath(local, isExtractAll?: boolean): string {
-    if (isObject(local)) {
-      return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
+    if (isString(local)) {
+      return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
     }
-    return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
+    return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
   }
 
   /**
@@ -348,7 +348,7 @@ const libSaml = () => {
             metadataCert = [metadataCert];
           } else if (metadataCert instanceof Array) {
             // flattens the nested array of Certificates from each KeyDescriptor
-            metadataCert = flattenDeep(metadataCert);
+            metadataCert = flattenDeep(metadataCert as []);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
@@ -364,7 +364,7 @@ const libSaml = () => {
           if (selectedCert === null) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (metadataCert.length >= 1 && !includes(metadataCert, selectedCert)) {
+          if (metadataCert.length >= 1 && !metadataCert.find(cert => cert === selectedCert)) {
             // keep this restriction for rolling certificate usage
             // to make sure the response certificate is one of those specified in metadata
             throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');

@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import * as url from 'url';
 import { DOMParser as dom } from 'xmldom';
 import { xpath as select } from 'xml-crypto';
-import * as _ from 'lodash';
 import { extract } from '../src/extractor';
 
 const {
@@ -162,7 +161,7 @@ test('#31 query param for sso/slo returns error', t => {
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
     const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];
-    const acsUrl = _.find(authnRequest.attributes, (a: any) => a.nodeName === 'AssertionConsumerServiceURL').nodeValue;
-    t.is(acsUrl, 'https://example.org/response');
+    const acsUrl = Object.entries(authnRequest.attributes).find(([key, value]: [string, any]) => value.nodeName === 'AssertionConsumerServiceURL') as any;
+    t.is(acsUrl[1].nodeValue, 'https://example.org/response');
   });
 })();

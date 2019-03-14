@@ -3,14 +3,13 @@
 * @author tngan
 * @desc  An abstraction for identity provider and service provider.
 */
-import { isNonEmptyArray } from './utility';
+import { isString, isNonEmptyArray } from './utility';
 import { namespace, wording, algorithms, messageConfigurations } from './urn';
 import * as uuid from 'uuid';
 import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
 import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
-import { isString, isUndefined } from 'lodash';
 import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
 import { flow, FlowResult } from './flow';
 
@@ -119,7 +118,7 @@ export default class Entity {
     }
     if (isNonEmptyArray(field)) {
       let res = true;
-      field.forEach(f => {
+      (field as string[]).forEach(f => {
         if (f !== metaField) {
           res = false;
           return;

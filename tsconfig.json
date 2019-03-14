@@ -7,6 +7,7 @@
     "declarationDir": "types",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "downlevelIteration": true,
     "sourceMap": true,
     "outDir": "./build",
     "baseUrl": "./",

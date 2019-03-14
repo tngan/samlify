@@ -1,6 +1,7 @@
 import { DOMParser } from 'xmldom';
 import { select } from 'xpath';
-import { zipObject, camelCase, last, uniq } from 'lodash';
+import { uniq, last, zipObject } from './utility';
+import camelCase from 'camelcase';
 const dom = DOMParser;
 
 interface ExtractorField {

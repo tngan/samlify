@@ -7,8 +7,7 @@
 import { wording, namespace, StatusCode } from './urn';
 import { BindingContext } from './entity';
 import libsaml from './libsaml';
-import utility from './utility';
-import { get } from 'lodash';
+import utility, { get } from './utility';
 import { LogoutResponseTemplate } from './libsaml';
 
 const binding = wording.binding;
@@ -29,8 +28,8 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate) {
       const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-      id = get<BindingContext, keyof BindingContext>(info, 'id');
-      rawSamlRequest = get<BindingContext, keyof BindingContext>(info, 'context');
+      id = get(info, 'id', null);
+      rawSamlRequest = get(info, 'context', null);
     } else {
       id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
@@ -114,13 +113,13 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
       NameID: user.email || '',
-      InResponseTo: get(requestInfo, 'extract.request.id') || '',
+      InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: '',
       AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-      rawSamlResponse = get<BindingContext, keyof BindingContext>(template, 'context');
+      rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo.extract.request.id;
@@ -217,8 +216,8 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
     let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate) {
       const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
-      id = get<BindingContext, keyof BindingContext>(template, 'id');
-      rawSamlRequest = get<BindingContext, keyof BindingContext>(template, 'context');
+      id = get(template, 'id', null);
+      rawSamlRequest = get(template, 'context', null);
     } else {
       id = initSetting.generateID();
       const tvalue: any = {
