@@ -161,7 +161,7 @@ test('#31 query param for sso/slo returns error', t => {
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
     const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];
-    const acsUrl = Object.entries(authnRequest.attributes).find(([key, value]: [string, any]) => value.nodeName === 'AssertionConsumerServiceURL') as any;
-    t.is(acsUrl[1].nodeValue, 'https://example.org/response');
+    const index = Object.keys(authnRequest.attributes).find((i: string) => authnRequest.attributes[i].nodeName === 'AssertionConsumerServiceURL') as any;
+    t.is(authnRequest.attributes[index].nodeValue, 'https://example.org/response');
   });
 })();
