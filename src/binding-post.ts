@@ -140,6 +140,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
+        transformationAlgorithms: spSetting.transformationAlgorithms,
         referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']", 
         signatureConfig: {
           prefix: 'ds',

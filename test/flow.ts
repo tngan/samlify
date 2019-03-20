@@ -265,6 +265,34 @@ test('send response with signed assertion and parse it', async t => {
   t.is(extract.response.inResponseTo, 'request_id');
 });
 
+test('send response with signed assertion + custom transformation algorithms and parse it', async t => {
+  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const signedAssertionSp = serviceProvider(
+    {
+      ...defaultSpConfig,
+      transformationAlgorithms: [
+          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+          'http://www.w3.org/2001/10/xml-exc-c14n#'
+      ]
+    }
+  );
+
+  const user = { email: 'user@esaml2.com' };
+  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(signedAssertionSp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
+  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
+  t.is(typeof id, 'string');
+  t.is(samlContent.startsWith('<samlp:Response'), true);
+  t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.response.inResponseTo, 'request_id');
+
+  // Verify xmldsig#enveloped-signature is included in the response
+  if (samlContent.indexOf('http://www.w3.org/2000/09/xmldsig#enveloped-signature') === -1) {
+    t.fail();
+  }
+});
+
 test('send response with [custom template] signed assertion and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const requestInfo = { extract: { request: { id: 'request_id' } } };

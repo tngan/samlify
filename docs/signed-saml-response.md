@@ -39,6 +39,16 @@ There are different examples of signing scheme supported in samlify.
 To guarantee the setting in between idp-sp pair is synchronized, determination of assertion signature depends on the sp setting. Set `WantAssertionsSigned` to true in corresponding sp's metadata or `wantAssertionsSigned` in constructor if metadata is not set.
 
 ```javascript
+const sp = ServiceProvider({
+  // ...
+  metadata: readFileSync('./sp-metadata.xml'),
+  // must have if assertion signature fails validation
+  // transformationAlgorithms: [
+  //     'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+  //     'http://www.w3.org/2001/10/xml-exc-c14n#',
+  // ],
+});
+
 const idp = IdentityProvider({
   // ...
   metadata: readFileSync('./idp-metatadata.xml'),
