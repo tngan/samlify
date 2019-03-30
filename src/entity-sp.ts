@@ -51,11 +51,13 @@ export class ServiceProvider extends Entity {
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {string}   relayState                optionally override default SP relayState
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
     customTagReplacement?: (...args: any[]) => any,
+    relayState?: string
   ): BindingContext | PostBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -63,15 +65,19 @@ export class ServiceProvider extends Entity {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }
 
+    if (relayState === undefined) {
+        relayState = this.entitySetting.relayState;
+    }
+
     if (protocol === nsBinding.redirect) {
-      return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+      return redirectBinding.loginRequestRedirectURL({ idp, sp: this, relayState }, customTagReplacement);
     }
 
     if (protocol === nsBinding.post) {
       const context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
       return {
         ...context,
-        relayState: this.entitySetting.relayState,
+        relayState,
         entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
         type: 'SAMLRequest',
       };
