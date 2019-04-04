@@ -350,7 +350,7 @@ const libSaml = () => {
             metadataCert = [metadataCert];
           } else if (metadataCert instanceof Array) {
             // flattens the nested array of Certificates from each KeyDescriptor
-            metadataCert = flattenDeep(metadataCert as []);
+            metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
 

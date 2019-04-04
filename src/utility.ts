@@ -24,7 +24,7 @@ export function zipObject(arr1: string[], arr2: any[]) {
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_flattendeep
  * @param input {[]}
  */
-export function flattenDeep(input: []) {
+export function flattenDeep(input: any[]) {
   return Array.isArray(input)
   ? input.reduce( (a, b) => a.concat(flattenDeep(b)) , [])
   : [input];
@@ -34,7 +34,7 @@ export function flattenDeep(input: []) {
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_last
  * @param input {[]}
  */
-export function last(input: []) {
+export function last(input: any[]) {
   return input.slice(-1)[0];
 }
 /**
