@@ -5,11 +5,12 @@ node_js:
   - "8"
   - "10"
 
+env:
+  - INSTALL_JDK=1
+  - INSTALL_JDK=0
+
 before_install:
-  - sudo add-apt-repository ppa:openjdk-r/ppa -y
-  - sudo apt-get -qq update
-  - sudo apt-get install -y openjdk-9-jdk
-  - export SAML_VALIDATOR=javac
+  - if [[ "$INSTALL_JDK" == "1" ]] ; then make install_jdk ; fi
 
 script:
   - npm test
