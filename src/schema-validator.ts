@@ -7,7 +7,7 @@ enum SchemaValidators {
   XMLLINT = 'node-xmllint'
 }
 
-interface SchemaValidator {
+export interface SchemaValidator {
   validate: (xml: string) => Promise<string>;
 }
 
@@ -26,7 +26,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   const selectedValidator: string = moduleResolver(SchemaValidators.JAVAC)
     || moduleResolver(SchemaValidators.LIBXML)
-    || moduleResolver(SchemaValidators.XMLLINT);
+    || moduleResolver(SchemaValidators.XMLLINT) || "";
 
   const xsd = 'saml-schema-protocol-2.0.xsd';
 

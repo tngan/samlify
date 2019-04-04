@@ -1,6 +1,6 @@
 import { DOMParser } from 'xmldom';
-import { select } from 'xpath';
-import { uniq, last, zipObject } from './utility';
+import { select, SelectedValue } from 'xpath';
+import { uniq, last, zipObject, notEmpty } from './utility';
 import camelCase from 'camelcase';
 const dom = DOMParser;
 
@@ -219,7 +219,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
-        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue))
+        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue).filter(notEmpty))
       };
     }
     // eo special case: multiple path
@@ -285,7 +285,7 @@ export function extract(context: string, fields) {
     */
     if (isEntire) {
       const node = select(baseXPath, targetDoc);
-      let value = null;
+      let value: string | string[] | null = null;
       if (node.length === 1) {
         value = node[0].toString();
       }
@@ -347,14 +347,14 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length === 0) {
-      let attributeValue = null;
+      let attributeValue: SelectedValue[] | Array<(string | null)> | null = null;
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.map((n: Node) => n.firstChild.nodeValue);
+        attributeValue = node.map((n: Node) => n.firstChild!.nodeValue);
       }
       return {
         ...result,

@@ -80,7 +80,7 @@ async function redirectFlow(options) {
 
   const extractorFields = getDefaultExtractorFields(parserType);
 
-  const parseResult: { samlContent: string, extract: any, sigAlg: string } = {
+  const parseResult: { samlContent: string, extract: any, sigAlg: (string | null) } = {
     samlContent: xmlString,
     sigAlg: null,
     extract: extract(xmlString, extractorFields),
@@ -135,7 +135,7 @@ async function postFlow(options): Promise<FlowResult> {
 
   const decryptRequired = from.entitySetting.isAssertionEncrypted;
 
-  let extractorFields = [];
+  let extractorFields: ExtractorFields = [];
 
   // validate the xml first
   await libsaml.isValidXml(samlContent);

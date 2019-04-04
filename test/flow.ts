@@ -478,7 +478,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 test('idp sends a redirect logout request without signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(query.includes('SAMLRequest='), true);
+  t.is(query!.includes('SAMLRequest='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);
@@ -497,9 +497,9 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 test('idp sends a redirect logout request with signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(query.includes('SAMLRequest='), true);
-  t.is(query.includes('SigAlg='), true);
-  t.is(query.includes('Signature='), true);
+  t.is(query!.includes('SAMLRequest='), true);
+  t.is(query!.includes('SigAlg='), true);
+  t.is(query!.includes('Signature='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);
