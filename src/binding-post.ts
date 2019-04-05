@@ -18,7 +18,7 @@ const binding = wording.binding;
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
+function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
@@ -26,7 +26,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.post);
     let rawSamlRequest: string;
-    if (spSetting.loginRequestTemplate) {
+    if (spSetting.loginRequestTemplate && customTagReplacement) {
       const info = customTagReplacement(spSetting.loginRequestTemplate.context);
       id = get(info, 'id', null);
       rawSamlRequest = get(info, 'context', null);
@@ -78,7 +78,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 * @param  {function} customTagReplacement     used when developers have their own login response template
 * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
 */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -117,7 +117,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       AuthnStatement: '',
       AttributeStatement: '',
     };
-    if (idpSetting.loginResponseTemplate) {
+    if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
       rawSamlResponse = get(template, 'context', null);
     } else {
@@ -215,7 +215,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest: string;
-    if (initSetting.logoutRequestTemplate) {
+    if (initSetting.logoutRequestTemplate && customTagReplacement) {
       const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
       id = get(template, 'id', null);
       rawSamlRequest = get(template, 'context', null);

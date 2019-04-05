@@ -160,10 +160,10 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass).toString('base64'), signatureB64SHA1);
   });
   test('sign a SAML message with RSA-SHA256', t => {
-    t.is(libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass, null, signatureAlgorithms.RSA_SHA256).toString('base64'), signatureB64SHA256);
+    t.is(libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA256).toString('base64'), signatureB64SHA256);
   });
   test('sign a SAML message with RSA-SHA512', t => {
-    t.is(libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass, null, signatureAlgorithms.RSA_SHA512).toString('base64'), signatureB64SHA512);
+    t.is(libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA512).toString('base64'), signatureB64SHA512);
   });
   test('verify binary SAML message signed with RSA-SHA1', t => {
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass, false);

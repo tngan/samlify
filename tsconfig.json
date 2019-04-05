@@ -12,6 +12,7 @@
     "outDir": "./build",
     "baseUrl": "./",
     "removeComments": false,
+    "strictNullChecks": true,
     "paths": {},
     "lib": [
       "dom",
