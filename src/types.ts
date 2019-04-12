@@ -88,7 +88,7 @@ export interface IdentityProviderSettings {
   metadata?: string | Buffer;
 
   /** signature algorithm */
-  requestSignatureAlgotithm?: string;
+  requestSignatureAlgorithm?: string;
 
   /** template of login response */
   loginResponseTemplate?: LoginResponseTemplate;
