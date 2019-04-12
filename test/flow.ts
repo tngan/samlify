@@ -71,6 +71,15 @@ const defaultIdpConfig = {
   metadata: readFileSync('./test/misc/idpmeta.xml'),
 };
 
+const oneloginIdpConfig = {
+  privateKey: readFileSync('./test/key/idp/privkey.pem'),
+  privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+  isAssertionEncrypted: true,
+  encPrivateKey: readFileSync('./test/key/idp/encryptKey.pem'),
+  encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
+  metadata: readFileSync('./test/misc/idpmeta_onelogoutservice.xml'),
+};
+
 const defaultSpConfig = {
   privateKey: readFileSync('./test/key/sp/privkey.pem'),
   privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
@@ -216,15 +225,7 @@ test('create logout request with post binding', t => {
 });
 
 test('create logout request when idp only has one binding', t => {
-  const testIdpConfig = {
-    privateKey: readFileSync('./test/key/idp/privkey.pem'),
-    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
-    isAssertionEncrypted: true,
-    encPrivateKey: readFileSync('./test/key/idp/encryptKey.pem'),
-    encPrivateKeyPass: 'g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN',
-    metadata: readFileSync('./test/misc/idpmeta_onelogoutservice.xml'),
-  };
-  const testIdp = identityProvider(testIdpConfig);
+  const testIdp = identityProvider(oneloginIdpConfig);
   const { id, context } = sp.createLogoutRequest(testIdp, 'redirect', { logoutNameID: 'user@esaml2' });
   isString(id) && isString(context) ? t.pass() : t.fail();
 });
@@ -263,6 +264,34 @@ test('send response with signed assertion and parse it', async t => {
   t.is(samlContent.endsWith('/samlp:Response>'), true);
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.response.inResponseTo, 'request_id');
+});
+
+test('send response with signed assertion + custom transformation algorithms and parse it', async t => {
+  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const signedAssertionSp = serviceProvider(
+    {
+      ...defaultSpConfig,
+      transformationAlgorithms: [
+          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+          'http://www.w3.org/2001/10/xml-exc-c14n#'
+      ]
+    }
+  );
+
+  const user = { email: 'user@esaml2.com' };
+  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(signedAssertionSp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
+  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
+  t.is(typeof id, 'string');
+  t.is(samlContent.startsWith('<samlp:Response'), true);
+  t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.response.inResponseTo, 'request_id');
+
+  // Verify xmldsig#enveloped-signature is included in the response
+  if (samlContent.indexOf('http://www.w3.org/2000/09/xmldsig#enveloped-signature') === -1) {
+    t.fail();
+  }
 });
 
 test('send response with [custom template] signed assertion and parse it', async t => {
@@ -449,7 +478,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 test('idp sends a redirect logout request without signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(query.includes('SAMLRequest='), true);
+  t.is(query!.includes('SAMLRequest='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);
@@ -468,9 +497,9 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 test('idp sends a redirect logout request with signature and sp parses it', async t => {
   const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
   const query = url.parse(context).query;
-  t.is(query.includes('SAMLRequest='), true);
-  t.is(query.includes('SigAlg='), true);
-  t.is(query.includes('Signature='), true);
+  t.is(query!.includes('SAMLRequest='), true);
+  t.is(query!.includes('SigAlg='), true);
+  t.is(query!.includes('Signature='), true);
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   const originalURL = url.parse(context, true);

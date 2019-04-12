@@ -82,6 +82,7 @@ export interface ServiceProviderSettings {
   logoutRequestTemplate?: SAMLDocumentTemplate;
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer;
+  transformationAlgorithms?: string[];
 }
 
 export interface IdentityProviderSettings {

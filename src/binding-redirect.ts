@@ -62,7 +62,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
   if (isSigned) {
     const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
     const octetString = samlRequest + relayState + sigAlg;
-    return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(queryParam + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, null, entitySetting.requestSignatureAlgorithm)));
+    return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(queryParam + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, undefined, entitySetting.requestSignatureAlgorithm)));
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
@@ -81,7 +81,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.redirect);
     let rawSamlRequest: string;
-    if (spSetting.loginRequestTemplate) {
+    if (spSetting.loginRequestTemplate && customTagReplacement) {
       const info = customTagReplacement(spSetting.loginRequestTemplate);
       id = get(info, 'id', null);
       rawSamlRequest = get(info, 'context', null);
@@ -136,7 +136,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       NameID: user.logoutNameID,
       SessionIndex: user.sessionIndex,
     };
-    if (initSetting.logoutRequestTemplate) {
+    if (initSetting.logoutRequestTemplate && customTagReplacement) {
       const info = customTagReplacement(initSetting.logoutRequestTemplate, requiredTags);
       id = get(info, 'id', null);
       rawSamlRequest = get(info, 'context', null);
@@ -173,7 +173,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlResponse: string;
-    if (initSetting.logoutResponseTemplate) {
+    if (initSetting.logoutResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(initSetting.logoutResponseTemplate);
       id = get(template, 'id', null);
       rawSamlResponse = get(template, 'context', null);
