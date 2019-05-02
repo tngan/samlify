@@ -184,17 +184,7 @@ async function postFlow(options): Promise<FlowResult> {
 
   // validation part
   const targetEntityMetadata = from.entityMeta;
-  const issuer = targetEntityMetadata.getEntityID();
   const extractedProperties = parseResult.extract;
-
-  // unmatched issuer
-  if (
-    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
-    && extractedProperties
-    && extractedProperties.issuer !== issuer
-  ) {
-    return Promise.reject('ERR_UNMATCH_ISSUER');
-  }
 
   // invalid session time
   if (
