@@ -1,6 +1,6 @@
 {
   "name": "samlify-2",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -35,7 +35,7 @@
     "@passify/xml-encryption": "^0.11.1",
     "@passify/xsd-schema-validator": "^0.7.1",
     "deflate-js": "^0.2.3",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "node-forge": "^0.7.5",
     "node-rsa": "^0.4.2",
     "uuid": "^3.3.2",
