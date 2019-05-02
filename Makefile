@@ -1,4 +1,4 @@
-PROJECT = "samlify"
+PROJECT = "samlify-2"
 
 install: ;@echo "install ${PROJECT}"; \
 				 npm install;

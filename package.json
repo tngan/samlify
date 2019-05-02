@@ -1,6 +1,6 @@
 {
-  "name": "samlify",
-  "version": "2.4.2",
+  "name": "samlify-2",
+  "version": "2.4.4",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -23,11 +23,11 @@
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
-    "Tony Ngan <tonynwk919@gmail.com>"
+    "Harrison Hunter <harrison@maestroqa.com>"
   ],
-  "author": "tngan",
+  "author": "harrisonhunter",
   "repository": {
-    "url": "https://github.com/tngan/samlify",
+    "url": "https://github.com/adtribute/samlify",
     "type": "git"
   },
   "license": "MIT",
