@@ -54,6 +54,8 @@ export interface LoginResponseAttribute {
   nameFormat: string; //
   valueXsiType: string; //
   valueTag: string;
+  valueXmlnsXs?: string;
+  valueXmlnsXsi?: string;
 }
 
 export interface BaseSamlTemplate {
@@ -232,8 +234,8 @@ const libSaml = () => {
     * @return {string}
     */
     attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
-      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType }) => {
-        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
+      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xmlns:xs="${valueXmlnsXs}" xmlns:xsi="${valueXmlnsXsi}" xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
       }).join('');
       return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
     },
