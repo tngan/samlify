@@ -4,7 +4,8 @@ import * as path from 'path';
 enum SchemaValidators {
   JAVAC = '@authenio/xsd-schema-validator',
   LIBXML = 'libxml-xsd',
-  XMLLINT = 'node-xmllint'
+  XMLLINT = 'node-xmllint',
+	NATIVEXMLLINT = 'validate-with-xmllint'
 }
 
 export interface SchemaValidator {
@@ -139,6 +140,29 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
         });
       }
     };
+  }
+
+  if (selectedValidator === SchemaValidators.NATIVEXMLLINT) {
+
+		const mod = await import (SchemaValidators.NATIVEXMLLINT);
+
+		return {
+			validate: (xml: string) => {
+				return new Promise((resolve, reject) => {
+
+					process.chdir(path.resolve(__dirname, '../schemas'));
+
+					mod.validateXMLWithXSD(xml, xsd)
+					.then(function(result) {
+						return resolve('SUCCESS_VALIDATE_XML');
+					}, function(err) {
+						console.error('[ERROR] validateXML', err);
+						return reject('ERR_INVALID_XML');
+					})
+
+				});
+			}
+		};
   }
 
   // allow to skip the validate function if it's in development or test mode if no schema validator is provided
