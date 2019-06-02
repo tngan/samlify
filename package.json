@@ -33,6 +33,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@authenio/xml-encryption": "^0.11.2",
     "camelcase": "^5.2.0",
     "deflate-js": "^0.2.3",
     "global": "^4.3.2",
@@ -45,7 +46,7 @@
     "xpath": "^0.0.27"
   },
   "optionalDependencies": {
-    "@authenio/xml-encryption": "^0.11.2",
+    "@authenio/xsd-schema-validator": "^0.7.1",
     "libxml-xsd": "^0.5.2",
     "node-xmllint": "^1.0.0",
     "validate-with-xmllint": "^1.0.2"
