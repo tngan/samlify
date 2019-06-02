@@ -45,12 +45,6 @@
     "xmldom": "^0.1.19",
     "xpath": "^0.0.27"
   },
-  "optionalDependencies": {
-    "@authenio/xsd-schema-validator": "^0.7.1",
-    "libxml-xsd": "^0.5.2",
-    "node-xmllint": "^1.0.0",
-    "validate-with-xmllint": "^1.0.2"
-  },
   "devDependencies": {
     "@types/camelcase": "^5.2.0",
     "@types/node": "^11.11.3",
