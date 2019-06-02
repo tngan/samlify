@@ -10,7 +10,12 @@ export { default as SamlLib } from './src/libsaml';
 import * as Constants from './src/urn';
 import * as Extractor from './src/extractor';
 
+// exposed methods for customising samlify
+import { setSchemaValidator } from './src/api';
+
 export {
   Constants,
-  Extractor
+  Extractor,
+  // set context
+  setSchemaValidator
 };

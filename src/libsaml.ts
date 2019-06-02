@@ -13,8 +13,8 @@ import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
-import { getValidatorModule, SchemaValidator } from './schema-validator';
 import camelCase from 'camelcase';
+import { getContext } from './api';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -600,18 +600,31 @@ const libSaml = () => {
      * @desc Check if the xml string is valid and bounded
      */
     async isValidXml(input: string) {
+
+      // check if global api contains the validate function
+      const { validate } = getContext();
+
+      /**
+       * user can write a validate function that always returns
+       * a resolved promise and skip the validator even in 
+       * production, user will take the responsibility if 
+       * they intend to skip the validation
+       */
+      if (!validate) {
+
+        // otherwise, an error will be thrown
+        return Promise.reject('Your application is potentially vulnerable because there is no validation function is found. Please read the documentation on how to setup the validator. (https://samlify.js.org/#/schema-validator)');
+
+      }
+
       try {
-        await mod!.validate(input);
-        return Promise.resolve();
+        return await validate(input);
       } catch (e) {
         throw e;
       }
+
     },
   };
 };
-
-// load the validator module before the function runtime
-let mod: SchemaValidator | null = null;
-(async () => mod = await getValidatorModule())();
 
 export default libSaml();
