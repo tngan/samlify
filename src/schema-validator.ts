@@ -5,7 +5,7 @@ enum SchemaValidators {
   JAVAC = '@authenio/xsd-schema-validator',
   LIBXML = 'libxml-xsd',
   XMLLINT = 'node-xmllint',
-	NATIVEXMLLINT = 'validate-with-xmllint'
+  NATIVEXMLLINT = 'validate-with-xmllint'
 }
 
 export interface SchemaValidator {
@@ -58,7 +58,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
       return v;
     };
 
-    const validator = await import (SchemaValidators.JAVAC);
+    const validator = await import(SchemaValidators.JAVAC);
     const mod = setSchemaDir(new validator());
 
     return {
@@ -80,7 +80,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
   }
 
   if (selectedValidator === SchemaValidators.LIBXML) {
-    const mod = await import (SchemaValidators.LIBXML);
+    const mod = await import(SchemaValidators.LIBXML);
     return {
       validate: (xml: string) => {
         return new Promise((resolve, reject) => {
@@ -106,7 +106,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   if (selectedValidator === SchemaValidators.XMLLINT) {
 
-    const mod = await import (SchemaValidators.XMLLINT);
+    const mod = await import(SchemaValidators.XMLLINT);
 
     const schemaPath = (schema: string) => path.resolve(__dirname, `../schemas/${schema}`);
 
@@ -146,25 +146,25 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   if (selectedValidator === SchemaValidators.NATIVEXMLLINT) {
 
-		const mod = await import (SchemaValidators.NATIVEXMLLINT);
+    const mod = await import(SchemaValidators.NATIVEXMLLINT);
 
-		return {
-			validate: (xml: string) => {
-				return new Promise((resolve, reject) => {
+    return {
+      validate: (xml: string) => {
+        return new Promise((resolve, reject) => {
 
-					process.chdir(path.resolve(__dirname, '../schemas'));
+          process.chdir(path.resolve(__dirname, '../schemas'));
 
-					mod.validateXMLWithXSD(xml, xsd)
-					.then(function(result) {
-						return resolve('SUCCESS_VALIDATE_XML');
-					}, function(err) {
-						console.error('[ERROR] validateXML', err);
-						return reject('ERR_INVALID_XML');
-					})
+          mod.validateXMLWithXSD(xml, xsd)
+            .then((result: any) => {
+              return resolve('SUCCESS_VALIDATE_XML');
+            }, (err: any) => {
+              console.error('[ERROR] validateXML', err);
+              return reject('ERR_INVALID_XML');
+            });
 
-				});
-			}
-		};
+        });
+      }
+    };
   }
 
   // allow to skip the validate function if it's in development or test mode if no schema validator is provided
