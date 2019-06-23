@@ -46,7 +46,10 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
-    "@authenio/samlify-xsd-schema-validator": "^1.0.0",
+    "@authenio/samlify-xsd-schema-validator": "^1.0.1",
+    "@authenio/samlify-validate-with-xmllint": "^1.0.0",
+    "@authenio/samlify-node-xmllint": "^1.0.0",
+    "@authenio/samlify-libxml-xsd": "^1.0.0",
     "@types/camelcase": "^5.2.0",
     "@types/node": "^11.11.3",
     "@types/node-forge": "^0.7.4",

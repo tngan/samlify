@@ -25,7 +25,7 @@ import samlify = require('samlify');
 import validator from '@authenio/samlify-xsd-schema-validator';
 // import validator from '@authenio/samlify-validate-with-xmllint';
 // import validator from '@authenio/samlify-node-xmllint';
-// import validator from '@authenio/samlify-libxml-xsd';
+// import validator from '@authenio/samlify-libxml-xsd'; // only support for version of nodejs <= 8
 
 samlify.setSchemaValidator(validator);
 ```
