@@ -2,7 +2,7 @@
 interface Context extends ValidatorContext {}
 
 interface ValidatorContext {
-  validate?: (xml: string) => Promise<void>;
+  validate?: (xml: string) => Promise<any>;
 }
 
 const context: Context = {
