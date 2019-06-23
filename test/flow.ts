@@ -6,6 +6,9 @@ import * as uuid from 'uuid';
 import * as url from 'url';
 import util from '../src/utility';
 import validator from '@authenio/samlify-xsd-schema-validator';
+// import validator from '@authenio/samlify-validate-with-xmllint';
+// import validator from '@authenio/samlify-node-xmllint';
+// import validator from '@authenio/samlify-libxml-xsd';
 
 esaml2.setSchemaValidator(validator);
 
