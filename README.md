@@ -18,7 +18,28 @@ Welcome all PRs for maintaining this project, or provide a link to the repositor
 ### Installation
 To install the stable version
 
-Starting from v2.5, multiple schema validators have become available. All three of `@authenio/xsd-schema-validator`, `libxml-xsd` and `node-xmllint`are included as 'optional' dependencies, and will be preferentially used in that order. If one has failed to install, the next in the list will be used.
+Starting from v2.6, multiple schema validators are now supported. You can simply set the validator via the following global method. We have four validator modules right now, and you can write your own. The `setSchemaValidator` is required since v2.6, it will throw error if you don't set at the beginning.
+
+```js
+import samlify = require('samlify');
+import validator from '@authenio/samlify-xsd-schema-validator';
+// import validator from '@authenio/samlify-validate-with-xmllint';
+// import validator from '@authenio/samlify-node-xmllint';
+// import validator from '@authenio/samlify-libxml-xsd';
+
+samlify.setSchemaValidator(validator);
+```
+
+Now you can create your own schema validator and even suppress it but you have to take the risk for accepting malicious response.
+
+```typescript
+samlify.setSchemaValidator({
+  validator: (response: string) => { 
+    /* implment your own or always returns a resolved promise to skip */
+    return Promise.resolve('skipped');
+  }
+});
+```
 
 For those using Windows, `windows-build-tools` should be installed globally before installing samlify if you are using `libxml` validator.
 
