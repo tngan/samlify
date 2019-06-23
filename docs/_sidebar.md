@@ -11,6 +11,7 @@
   - [SAML Response](/saml-response)
     - [Signed](/signed-saml-response)
     - [Encrypted](/encrypted-saml-response)
+  - [Key Generation](/key-generation)
 - **Advanced**
   - [Introduction](/advance)
   - [Configuration](/configuration)
