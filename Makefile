@@ -9,11 +9,9 @@ clean:	;
 rebuild: ;
 	       rm -rf build; \
 				 tsc; \
-				 cp -a schemas build;
 
 pretest:	;
 					mkdir -p build/test; \
-					cp -a schemas build; \
 					cp -a test/key test/misc build/test;
 
 validator: ;

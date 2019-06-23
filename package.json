@@ -1,6 +1,6 @@
 {
   "name": "samlify",
-  "version": "2.5.0",
+  "version": "2.6.0-rc1",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -46,6 +46,7 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
+    "@authenio/samlify-xsd-schema-validator": "^1.0.0",
     "@types/camelcase": "^5.2.0",
     "@types/node": "^11.11.3",
     "@types/node-forge": "^0.7.4",

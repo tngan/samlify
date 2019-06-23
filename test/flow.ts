@@ -5,6 +5,9 @@ import { PostBindingContext } from '../src/entity';
 import * as uuid from 'uuid';
 import * as url from 'url';
 import util from '../src/utility';
+import validator from '@authenio/samlify-xsd-schema-validator';
+
+esaml2.setSchemaValidator(validator);
 
 const isString = util.isString;
 
