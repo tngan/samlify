@@ -42,7 +42,7 @@ OR
   _Optional_: Define the DOM structure of xml document, default to `['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService']`. (See more [#89](https://github.com/tngan/samlify/issues/89))
 
 - **nameIDFormat: NameIDFormat[]**<br/>
-  _Optional_: Declare the name id format that would respond if you construct the sp without a metadata.
+  _Optional_: Declare the name id format that would respond if you construct the sp without a metadata. The request will always pick the first one if multiple formats are specified.
 
 - **singleLogoutService: Service[]**<br/>
   _Optional_: Declare the single logout service if you construct the sp without a metadata.

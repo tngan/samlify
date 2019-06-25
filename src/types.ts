@@ -1,4 +1,5 @@
 import { LoginResponseTemplate } from './libsaml';
+import { ServiceProviderSettings } from './types';
 
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
@@ -41,14 +42,7 @@ export type MetadataSpConstructor =
   | MetadataSpOptions
   | MetadataFile;
 
-export interface EntitySetting {
-  wantAuthnRequestsSigned?: boolean;
-  authnRequestsSigned?: boolean;
-  wantLogoutResponseSigned?: boolean;
-  wantLogoutRequestSigned?: boolean;
-  wantAssertionsSigned?: boolean;
-  relayState?: any;
-}
+export type EntitySetting = ServiceProviderSettings & IdentityProviderSettings;
 
 export interface SignatureConfig {
   prefix?: string;
@@ -62,7 +56,7 @@ export interface SAMLDocumentTemplate {
   context?: string;
 }
 
-export interface ServiceProviderSettings {
+export type ServiceProviderSettings = {
   metadata?: string | Buffer;
   entityID?: string;
   authnRequestsSigned?: boolean;
@@ -83,9 +77,12 @@ export interface ServiceProviderSettings {
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer;
   transformationAlgorithms?: string[];
-}
+  nameIDFormat?: string[];
+  // will be deprecated soon
+  relayState?: string;
+};
 
-export interface IdentityProviderSettings {
+export type IdentityProviderSettings = {
   metadata?: string | Buffer;
 
   /** signature algorithm */
@@ -117,4 +114,4 @@ export interface IdentityProviderSettings {
   wantAuthnRequestsSigned?: boolean;
   wantLogoutRequestSignedResponseSigned?: boolean;
   tagPrefix?: { [key: string]: string };
-}
+};
