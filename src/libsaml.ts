@@ -235,8 +235,8 @@ const libSaml = () => {
     */
     attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
       const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
-        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema'
-        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance'
+        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
+        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
         return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xmlns:xs="${valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs}" xmlns:xsi="${valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi}" xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
       }).join('');
       return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;

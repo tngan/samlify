@@ -5,10 +5,16 @@ import { PostBindingContext } from '../src/entity';
 import * as uuid from 'uuid';
 import * as url from 'url';
 import util from '../src/utility';
-import validator from '@authenio/samlify-xsd-schema-validator';
-// import validator from '@authenio/samlify-validate-with-xmllint';
-// import validator from '@authenio/samlify-node-xmllint';
-// import validator from '@authenio/samlify-libxml-xsd';
+
+import * as validator from '@authenio/samlify-xsd-schema-validator';
+// import * as validator from '@authenio/samlify-validate-with-xmllint';
+// import * as validator from '@authenio/samlify-node-xmllint';
+// import * as validator from '@authenio/samlify-libxml-xsd';
+
+// const validator = require('@authenio/samlify-xsd-schema-validator');
+// const validator = require('@authenio/samlify-validate-with-xmllint');
+// const validator = require('@authenio/samlify-node-xmllint');
+// const validator = require('@authenio/samlify-libxml-xsd');
 
 esaml2.setSchemaValidator(validator);
 
@@ -32,6 +38,8 @@ const loginResponseTemplate = {
     { name: 'name', valueTag: 'user.name', nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },
   ],
 };
+
+const failedResponse: string = String(readFileSync('./test/misc/failed_response.xml'));
 
 const createTemplateCallback = (_idp, _sp, user) => template => {
   const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
@@ -659,7 +667,6 @@ test('should reject signature wrapped response - case 2', async t => {
 });
 
 test('should throw two-tiers code error when the response does not return success status', async t => {
-  const failedResponse: string = String(readFileSync('./test/misc/failed_response.xml'));
   try {
     const _result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(failedResponse) } });
   } catch (e) {
