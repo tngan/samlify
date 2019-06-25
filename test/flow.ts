@@ -651,3 +651,12 @@ test('should reject signature wrapped response - case 2', async t => {
     t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
   }
 });
+
+test('should throw two-tiers code error when the response does not return success status', async t => {
+  const failedResponse: string = String(readFileSync('./test/misc/failed_response.xml'));
+  try {
+    const _result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(failedResponse) } });
+  } catch (e) {
+    t.is(e.message, 'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy');
+  }
+});
