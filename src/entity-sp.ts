@@ -57,8 +57,8 @@ export class ServiceProvider extends Entity {
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (...args: any[]) => any,
-    relayState?: string
+    relayState?: string,
+    customTagReplacement?: (template: string) => BindingContext
   ): BindingContext | PostBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -78,8 +78,8 @@ export class ServiceProvider extends Entity {
       const context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
       return {
         ...context,
-        relayState,
-        entityEndpoint: idp.entityMeta.getSingleSignOnService(binding),
+        relayState: this.entitySetting.relayState,
+        entityEndpoint: idp.entityMeta.getSingleSignOnService(binding) as string,
         type: 'SAMLRequest',
       };
     }

@@ -7,13 +7,13 @@
 import { DOMParser } from 'xmldom';
 import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
-import { select } from 'xpath';
+import { select, SelectedValue } from 'xpath';
 import { MetadataInterface } from './metadata';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
-import { getValidatorModule } from './schema-validator';
+import { getValidatorModule, SchemaValidator } from './schema-validator';
 import camelCase from 'camelcase';
 
 const signatureAlgorithms = algorithms.signature;
@@ -54,6 +54,8 @@ export interface LoginResponseAttribute {
   nameFormat: string; //
   valueXsiType: string; //
   valueTag: string;
+  valueXmlnsXs?: string;
+  valueXmlnsXsi?: string;
 }
 
 export interface BaseSamlTemplate {
@@ -158,9 +160,11 @@ const libSaml = () => {
   * @return {string/null} signing algorithm short-hand for the module node-rsa
   */
   function getSigningScheme(sigAlg?: string): string | null {
-    const algAlias = nrsaAliasMapping[sigAlg];
-    if (!(algAlias === undefined)) {
-      return algAlias;
+    if (sigAlg) {
+      const algAlias = nrsaAliasMapping[sigAlg];
+      if (!(algAlias === undefined)) {
+        return algAlias;
+      }
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
   }
@@ -230,8 +234,10 @@ const libSaml = () => {
     * @return {string}
     */
     attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
-      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType }) => {
-        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
+      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema'
+        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance'
+        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xmlns:xs="${valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs}" xmlns:xsi="${valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi}" xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
       }).join('');
       return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
     },
@@ -312,8 +318,8 @@ const libSaml = () => {
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
 
       // select the signature node
-      let selection = [];
-      let assertionNode = null;
+      let selection: any = [];
+      let assertionNode: string | null = null;
       const messageSignatureNode = select(messageSignatureXpath, doc);
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
       const wrappingElementNode = select(wrappingElementsXPath, doc);
@@ -341,18 +347,18 @@ const libSaml = () => {
         } else if (opts.cert) {
 
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
-          
+
           // certificate in metadata
           let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
           if (typeof metadataCert === 'string') {
             metadataCert = [metadataCert];
           } else if (metadataCert instanceof Array) {
             // flattens the nested array of Certificates from each KeyDescriptor
-            metadataCert = flattenDeep(metadataCert as []);
+            metadataCert = flattenDeep(metadataCert);
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          // use the first 
+          // use the first
           let selectedCert = metadataCert[0];
           // no certificate node in response
           if (certificateNode.length !== 0) {
@@ -364,7 +370,7 @@ const libSaml = () => {
           if (selectedCert === null) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (metadataCert.length >= 1 && !metadataCert.find(cert => cert === selectedCert)) {
+          if (metadataCert.length >= 1 && !metadataCert.find(cert => cert.trim() === selectedCert.trim())) {
             // keep this restriction for rolling certificate usage
             // to make sure the response certificate is one of those specified in metadata
             throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
@@ -510,7 +516,7 @@ const libSaml = () => {
     * @param  {string} xml                      response in xml string format
     * @return {Promise} a promise to resolve the finalized xml
     */
-    encryptAssertion(sourceEntity, targetEntity, xml: string) {
+    encryptAssertion(sourceEntity, targetEntity, xml?: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
 
@@ -599,7 +605,7 @@ const libSaml = () => {
      */
     async isValidXml(input: string) {
       try {
-        await mod.validate(input);
+        await mod!.validate(input);
         return Promise.resolve();
       } catch (e) {
         throw e;
@@ -609,7 +615,7 @@ const libSaml = () => {
 };
 
 // load the validator module before the function runtime
-let mod = null;
+let mod: SchemaValidator | null = null;
 (async () => mod = await getValidatorModule())();
 
 export default libSaml();

@@ -4,10 +4,11 @@ import * as path from 'path';
 enum SchemaValidators {
   JAVAC = '@authenio/xsd-schema-validator',
   LIBXML = 'libxml-xsd',
-  XMLLINT = 'node-xmllint'
+  XMLLINT = 'node-xmllint',
+  NATIVEXMLLINT = 'validate-with-xmllint'
 }
 
-interface SchemaValidator {
+export interface SchemaValidator {
   validate: (xml: string) => Promise<string>;
 }
 
@@ -26,7 +27,9 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   const selectedValidator: string = moduleResolver(SchemaValidators.JAVAC)
     || moduleResolver(SchemaValidators.LIBXML)
-    || moduleResolver(SchemaValidators.XMLLINT);
+    || moduleResolver(SchemaValidators.XMLLINT)
+    || moduleResolver(SchemaValidators.NATIVEXMLLINT)
+    || '';
 
   const xsd = 'saml-schema-protocol-2.0.xsd';
 
@@ -55,7 +58,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
       return v;
     };
 
-    const validator = await import (SchemaValidators.JAVAC);
+    const validator = await import(SchemaValidators.JAVAC);
     const mod = setSchemaDir(new validator());
 
     return {
@@ -77,7 +80,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
   }
 
   if (selectedValidator === SchemaValidators.LIBXML) {
-    const mod = await import (SchemaValidators.LIBXML);
+    const mod = await import(SchemaValidators.LIBXML);
     return {
       validate: (xml: string) => {
         return new Promise((resolve, reject) => {
@@ -103,7 +106,7 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
   if (selectedValidator === SchemaValidators.XMLLINT) {
 
-    const mod = await import (SchemaValidators.XMLLINT);
+    const mod = await import(SchemaValidators.XMLLINT);
 
     const schemaPath = (schema: string) => path.resolve(__dirname, `../schemas/${schema}`);
 
@@ -135,6 +138,29 @@ const getValidatorModule: GetValidatorModuleSpec = async () => {
 
           console.error(`this is not a valid saml response with errors: ${validationResult.errors}`);
           return reject('ERR_EXCEPTION_VALIDATE_XML');
+
+        });
+      }
+    };
+  }
+
+  if (selectedValidator === SchemaValidators.NATIVEXMLLINT) {
+
+    const mod = await import(SchemaValidators.NATIVEXMLLINT);
+
+    return {
+      validate: (xml: string) => {
+        return new Promise((resolve, reject) => {
+
+          process.chdir(path.resolve(__dirname, '../schemas'));
+
+          mod.validateXMLWithXSD(xml, xsd)
+            .then((result: any) => {
+              return resolve('SUCCESS_VALIDATE_XML');
+            }, (err: any) => {
+              console.error('[ERROR] validateXML', err);
+              return reject('ERR_INVALID_XML');
+            });
 
         });
       }

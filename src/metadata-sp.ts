@@ -81,19 +81,22 @@ export class SpMetadata extends Metadata {
       }
 
       if (signingCert) {
-        descriptors.KeyDescriptor.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
+        descriptors.KeyDescriptor!.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing signing certificate');
       }
 
       if (encryptCert) {
-        descriptors.KeyDescriptor.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
+        descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
       } else {
         //console.warn('Construct service provider - missing encrypt certificate');
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
+        nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
+      } else {
+        // default value
+        descriptors.NameIDFormat!.push(namespace.format.emailAddress);
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
@@ -107,7 +110,7 @@ export class SpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.SingleLogoutService.push([{ _attr: attr }]);
+          descriptors.SingleLogoutService!.push([{ _attr: attr }]);
         });
       }
 
@@ -122,7 +125,7 @@ export class SpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.AssertionConsumerService.push([{ _attr: attr }]);
+          descriptors.AssertionConsumerService!.push([{ _attr: attr }]);
         });
       } else {
         // console.warn('Missing endpoint of AssertionConsumerService');

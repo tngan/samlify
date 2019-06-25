@@ -5,8 +5,8 @@ function verifyTime(utcNotBefore?: string, utcNotOnOrAfter?: string): boolean {
     return true; // throw exception todo
   }
 
-  let notBeforeLocal = null;
-  let notOnOrAfterLocal = null;
+  let notBeforeLocal: Date | null = null;
+  let notOnOrAfterLocal: Date | null = null;
 
   if (utcNotBefore && !utcNotOnOrAfter) {
     notBeforeLocal = new Date(utcNotBefore);
@@ -17,8 +17,8 @@ function verifyTime(utcNotBefore?: string, utcNotOnOrAfter?: string): boolean {
     return now < notOnOrAfterLocal;
   }
 
-  notBeforeLocal = new Date(utcNotBefore);
-  notOnOrAfterLocal = new Date(utcNotOnOrAfter);
+  notBeforeLocal = new Date(utcNotBefore!);
+  notOnOrAfterLocal = new Date(utcNotOnOrAfter!);
   return +notBeforeLocal <= +now && now < notOnOrAfterLocal;
 }
 

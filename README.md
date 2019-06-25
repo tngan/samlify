@@ -18,11 +18,7 @@ Welcome all PRs for maintaining this project, or provide a link to the repositor
 ### Installation
 To install the stable version
 
-Starting from v2.5, schema validation becomes selectable and optional, we restrict to apply it in your production environment, you can only ignore schema validation in development mode. When you install samlify in your current project, please assign the environment variable `SAML_VALIDATOR` to either `javac`, `xmllint` or `libxml`.
-
-```console
-$ SAML_VALIDATOR=javac yarn add samlify
-```
+Starting from v2.5, multiple schema validators have become available. All three of `@authenio/xsd-schema-validator`, `libxml-xsd` and `node-xmllint`are included as 'optional' dependencies, and will be preferentially used in that order. If one has failed to install, the next in the list will be used.
 
 For those using Windows, `windows-build-tools` should be installed globally before installing samlify if you are using `libxml` validator.
 

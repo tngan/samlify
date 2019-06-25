@@ -1,6 +1,6 @@
 {
   "name": "samlify",
-  "version": "2.5.0-rc4",
+  "version": "2.5.0",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -36,6 +36,7 @@
     "@authenio/xml-encryption": "^0.11.2",
     "camelcase": "^5.2.0",
     "deflate-js": "^0.2.3",
+    "global": "^4.3.2",
     "node-forge": "^0.7.5",
     "node-rsa": "^0.4.2",
     "uuid": "^3.3.2",
@@ -43,6 +44,12 @@
     "xml-crypto": "^1.1.4",
     "xmldom": "^0.1.19",
     "xpath": "^0.0.27"
+  },
+  "optionalDependencies": {
+    "@authenio/xsd-schema-validator": "^0.7.1",
+    "libxml-xsd": "^0.5.2",
+    "node-xmllint": "^1.0.0",
+    "validate-with-xmllint": "^1.0.2"
   },
   "devDependencies": {
     "@types/camelcase": "^5.2.0",
@@ -54,6 +61,6 @@
     "coveralls": "^3.0.2",
     "nyc": "^11.9.0",
     "tslint": "^5.12.1",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.4.5"
   }
 }
