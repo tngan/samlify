@@ -2,27 +2,27 @@
 # yarn lockfile v1
 
 
-"@authenio/samlify-libxml-xsd@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-libxml-xsd/-/samlify-libxml-xsd-1.0.0.tgz#0795248729ec4c1fb7bb259d859ce4be4343b830"
+"@authenio/samlify-libxml-xsd@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@authenio/samlify-libxml-xsd/-/samlify-libxml-xsd-1.0.1.tgz#4d15fc66ac76c4b852d1985f07c3d765fd6d497e"
   dependencies:
     libxml-xsd "^0.5.2"
 
-"@authenio/samlify-node-xmllint@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-node-xmllint/-/samlify-node-xmllint-1.0.0.tgz#1633baae0f8c749e62bf2dc2365cca9610b68031"
+"@authenio/samlify-node-xmllint@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@authenio/samlify-node-xmllint/-/samlify-node-xmllint-1.0.1.tgz#325659eed8b561fcdc2a15e187b8f052fbb7c172"
   dependencies:
     node-xmllint "^1.0.0"
 
-"@authenio/samlify-validate-with-xmllint@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-validate-with-xmllint/-/samlify-validate-with-xmllint-1.0.0.tgz#6ea47cacc234963769bed21388df48fec45962f6"
+"@authenio/samlify-validate-with-xmllint@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@authenio/samlify-validate-with-xmllint/-/samlify-validate-with-xmllint-1.0.1.tgz#9fdf4e44e657e6863e32acc33bdeaff59276459a"
   dependencies:
     validate-with-xmllint "^1.0.2"
 
-"@authenio/samlify-xsd-schema-validator@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-xsd-schema-validator/-/samlify-xsd-schema-validator-1.0.1.tgz#940d641cf6b4959e0dc9a850c789c10edbe9d1dd"
+"@authenio/samlify-xsd-schema-validator@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@authenio/samlify-xsd-schema-validator/-/samlify-xsd-schema-validator-1.0.2.tgz#ba150e1e04cce71093941c715a873f4d0b76e606"
   dependencies:
     "@authenio/xsd-schema-validator" "^0.7.1"
 
@@ -987,7 +987,6 @@ commander@^2.12.1:
 commander@~2.20.0:
   version "2.20.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.0.tgz#d58bb2b5c1ee8f87b0d340027e9e94e222c5a422"
-  integrity sha512-7j2y+40w61zy6YC2iRNpUe/NwhNyoXrYpHMrSunaMG64nRnaf96zO/KMQR4OyN/UnE5KLyEBnKHd4aG3rskjpQ==
 
 common-path-prefix@^1.0.0:
   version "1.0.0"
@@ -1655,7 +1654,6 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2:
 handlebars@^4.0.3:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.1.2.tgz#b6b37c1ced0306b221e094fc7aca3ec23b131b67"
-  integrity sha512-nvfrjqvt9xQ8Z/w0ijewdD/vvWDTOweBUm96NTr66Wfvo1mJenBLwcYmPs3TIBP5ruzYGD7Hx/DaM9RmhroGPw==
   dependencies:
     neo-async "^2.6.0"
     optimist "^0.6.1"
@@ -2130,7 +2128,6 @@ js-tokens@^3.0.2:
 js-yaml@^3.10.0, js-yaml@^3.11.0, js-yaml@^3.7.0:
   version "3.13.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.13.1.tgz#aff151b30bfdfa8e49e05da22e7415e9dfa37847"
-  integrity sha512-YfbcO7jXDdyj0DGxYVSlSeQNHbD7XPWvrVWeVUujrQEoZzWJIRrCPoyk6kL6IAjAG2IolMK4T0hNUe0HOUs5Jw==
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
@@ -2591,7 +2588,6 @@ needle@^2.2.1:
 neo-async@^2.6.0:
   version "2.6.1"
   resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.1.tgz#ac27ada66167fa8849a6addd837f6b189ad2081c"
-  integrity sha512-iyam8fBuCUpWeKPGpaNMetEocMt364qkCsfL9JuhjXX6dRnguRVOfk2GZaDpPjcOKiiXCPINZC1GczQ7iTq3Zw==
 
 node-forge@^0.7.4, node-forge@^0.7.5:
   version "0.7.6"
@@ -3722,7 +3718,6 @@ typescript@^3.4.5:
 uglify-js@^3.1.4:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.6.0.tgz#704681345c53a8b2079fb6cec294b05ead242ff5"
-  integrity sha512-W+jrUHJr3DXKhrsS7NUVxn3zqMOFn0hL/Ei6v0anCIMoKC93TjcflTagwIHLW7SfMFfiQuktQyFVCFHGUE0+yg==
   dependencies:
     commander "~2.20.0"
     source-map "~0.6.1"
@@ -3841,7 +3836,6 @@ validate-npm-package-license@^3.0.1:
 validate-with-xmllint@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/validate-with-xmllint/-/validate-with-xmllint-1.0.2.tgz#7cf0010fa58d74ffffbd13f388a54210eaf2322b"
-  integrity sha512-CvyrXE7y0fxqWDXbo4y2lsa1hLnD6j/ojDxVW6+FzBN0hr8agl71tznsVHpyNqmaB9k6Akxx/GzEe8WSl3zxnw==
 
 verror@1.10.0:
   version "1.10.0"
