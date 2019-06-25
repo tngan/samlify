@@ -27,7 +27,8 @@
       "no-trailing-whitespace": false,
       "ordered-imports": false,
       "quotemark": [true, "single", "avoid-escape", "avoid-template"],
-      "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
+      "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"],
+      "interface-over-type-literal": false
     },
     "jsRules": {}
 }

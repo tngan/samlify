@@ -94,6 +94,9 @@ export class SpMetadata extends Metadata {
 
       if (isNonEmptyArray(nameIDFormat)) {
         nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
+      } else {
+        // default value
+        descriptors.NameIDFormat!.push(namespace.format.emailAddress);
       }
 
       if (isNonEmptyArray(singleLogoutService)) {

@@ -72,12 +72,15 @@ export default class Entity {
     switch (entityType) {
       case 'idp':
         this.entityMeta = IdpMetadata(metadata);
+        // setting with metadata has higher precedence 
         this.entitySetting.wantAuthnRequestsSigned = this.entityMeta.isWantAuthnRequestsSigned();
         break;
       case 'sp':
         this.entityMeta = SpMetadata(metadata);
+        // setting with metadata has higher precedence 
         this.entitySetting.authnRequestsSigned = this.entityMeta.isAuthnRequestSigned();
         this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
+        this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat();
         break;
       default:
         throw new Error('ERR_UNDEFINED_ENTITY_TYPE');

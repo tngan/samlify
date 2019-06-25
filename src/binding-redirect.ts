@@ -86,13 +86,15 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       id = get(info, 'id', null);
       rawSamlRequest = get(info, 'context', null);
     } else {
+      const nameIDFormat = spSetting.nameIDFormat;
+      const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
       id = spSetting.generateID();
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
         ID: id,
         Destination: base,
         Issuer: metadata.sp.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        NameIDFormat: namespace.format[spSetting.loginNameIDFormat] || namespace.format.emailAddress,
+        NameIDFormat: selectedNameIDFormat,
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
