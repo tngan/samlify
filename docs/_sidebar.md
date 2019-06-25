@@ -14,11 +14,13 @@
   - [Key Generation](/key-generation)
 - **Advanced**
   - [Introduction](/advance)
-  - [Configuration](/configuration)
+  - [Metadata Distribution](/metadata-distribution)
+  - [IDP/SP Configuration](/configuration)
+    - [Identity Provider](/idp-configuration)
+    - [Service Provider](/sp-configuration)
   - [Attributes & Template](/template)
   - [Helper Functions](/helpers)
   - [Multiple Entities](/multi-entities)
-  - [Metadata Distribution](/metadata-distribution)
 - **Examples**
   - [Gitlab](/gitlab)
   - [OneLogin](/onelogin)

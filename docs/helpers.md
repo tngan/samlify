@@ -2,16 +2,17 @@
 
 ?> This module does basic validation for request and response, for example signature verfication and decrpytion, the rest is left to the developers. Some useful functions are also exported, this section if for the specification of those functions.
 
-
-## verifyTime (notBefore: string, notOnOrAfter: string)
+#### verifyTime (notBefore, notOnOrAfter): Boolean
 
 Verify whether the response has valid time.
 
-**notBefore: A time instant before which the subject cannot be confirmed. The time value is encoded in UTC**
+**notBefore: String**<br/>
+A time instant before which the subject cannot be confirmed. The time value is encoded in UTC.
 
-**notOnOrAfter: A time instant at which the subject can no longer be confirmed. The time value is encoded in UTC**
+**notOnOrAfter: String**<br/>
+A time instant at which the subject can no longer be confirmed. The time value is encoded in UTC.
 
-### Example
+#### Example
 
 ```javascript
 sp.parseLoginResponse(idp, 'post', req)
