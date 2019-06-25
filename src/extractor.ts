@@ -6,7 +6,7 @@ const dom = DOMParser;
 
 interface ExtractorField {
   key: string;
-  localPath: string[];
+  localPath: string[] | string[][];
   attributes: string[];
   index?: string[];
   attributePath?: string[];
@@ -70,12 +70,35 @@ export const loginRequestFields: ExtractorFields = [
   }
 ];
 
-export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
+// support two-tiers status code
+export const loginResponseStatusFields = [
   {
-    key: 'statusCode',
+    key: 'top',
     localPath: ['Response', 'Status', 'StatusCode'],
     attributes: ['Value'],
   },
+  {
+    key: 'second',
+    localPath: ['Response', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
+
+// support two-tiers status code
+export const logoutResponseStatusFields = [
+  {
+    key: 'top',
+    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
+    attributes: ['Value']
+  },
+  {
+    key: 'second',
+    localPath: ['LogoutResponse', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
+
+export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
   {
     key: 'conditions',
     localPath: ['Assertion', 'Conditions'],
@@ -155,11 +178,6 @@ export const logoutResponseFields: ExtractorFields = [
     key: 'response',
     localPath: ['LogoutResponse'],
     attributes: ['ID', 'Destination', 'InResponseTo']
-  },
-  {
-    key: 'statusCode',
-    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
-    attributes: ['Value']
   },
   {
     key: 'issuer',
