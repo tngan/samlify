@@ -13,6 +13,7 @@ before_install:
   - if [[ "$INSTALL_JDK" == "1" ]] ; then make install_jdk ; fi
 
 script:
+  - npm install @authenio/samlify-xsd-schema-validator
   - npm test
 
 branches:
