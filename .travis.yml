@@ -12,9 +12,12 @@ env:
 before_install:
   - if [[ "$INSTALL_JDK" == "1" ]] ; then make install_jdk ; fi
 
+install:
+  - yarn install --production=true
+
 script:
-  - npm install @authenio/samlify-xsd-schema-validator
-  - npm test
+  - yarn add @authenio/samlify-xsd-schema-validator
+  - yarn test
 
 branches:
   only:

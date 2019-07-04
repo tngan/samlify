@@ -43,11 +43,13 @@
     "xmldom": "^0.1.27",
     "xpath": "^0.0.27"
   },
-  "devDependencies": {
-    "@authenio/samlify-xsd-schema-validator": "^1.0.2",
-    "@authenio/samlify-validate-with-xmllint": "^1.0.1",
-    "@authenio/samlify-node-xmllint": "^1.0.1",
+  "peerDependencies": {
     "@authenio/samlify-libxml-xsd": "^1.0.1",
+    "@authenio/samlify-node-xmllint": "^1.0.1",
+    "@authenio/samlify-validate-with-xmllint": "^1.0.1",
+    "@authenio/samlify-xsd-schema-validator": "^1.0.2"
+  },
+  "devDependencies": {
     "@types/node": "^11.11.3",
     "@types/node-forge": "^0.7.4",
     "@types/uuid": "3.0.0",
