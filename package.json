@@ -20,7 +20,6 @@
     "test": "npm run build && NODE_ENV=test nyc ava --verbose build/test",
     "test:pure": "NODE_ENV=test nyc ava --verbose build/test",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "preinstall": "make validator",
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
