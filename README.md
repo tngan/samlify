@@ -1,4 +1,4 @@
-# samlify &middot
+# samlify &middot;
 
 [![Build Status](https://travis-ci.org/tngan/samlify.svg?branch=master)](https://travis-ci.org/tngan/samlify)
 [![npm version](https://img.shields.io/npm/v/samlify.svg?style=flat)](https://www.npmjs.com/package/samlify)
@@ -42,10 +42,10 @@ Now you can create your own schema validator and even suppress it but you have t
 
 ```typescript
 samlify.setSchemaValidator({
-    validate: (response: string) => {
-        /* implment your own or always returns a resolved promise to skip */
-        return Promise.resolve('skipped');
-    },
+  validate: (response: string) => {
+    /* implment your own or always returns a resolved promise to skip */
+    return Promise.resolve('skipped');
+  }
 });
 ```
 
