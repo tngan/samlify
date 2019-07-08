@@ -24,7 +24,7 @@ To install the stable version
 Starting from v2.6, multiple schema validators are now supported. You can simply set the validator via the following global method. We have four validator modules right now, and you can write your own. The `setSchemaValidator` is required since v2.6, it will throw error if you don't set at the beginning.
 
 ```js
-import samlify = require('samlify');
+import * as samlify from 'samlify';
 import * as validator from '@authenio/samlify-xsd-schema-validator';
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
 // import * as validator from '@authenio/samlify-node-xmllint';
