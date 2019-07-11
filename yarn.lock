@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"@authenio/samlify-xsd-schema-validator@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-xsd-schema-validator/-/samlify-xsd-schema-validator-1.0.2.tgz#ba150e1e04cce71093941c715a873f4d0b76e606"
-  integrity sha512-OkkXurt5UvjLk4ahYRT3gRm7cpL0xODfyFLdT1i2e1pdc2nmnSqikwhOhlnn9612shOMtRE1hp9aIXi5r9VbWQ==
-  dependencies:
-    "@authenio/xsd-schema-validator" "^0.7.1"
-
 "@authenio/xml-encryption@^0.11.3":
   version "0.11.3"
   resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-0.11.3.tgz#35379a8a87bbed3f34907a0359e8e1c30ce24bdd"
@@ -19,11 +12,6 @@
     node-forge "^0.7.4"
     xmldom "~0.1.15"
     xpath "0.0.27"
-
-"@authenio/xsd-schema-validator@^0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@authenio/xsd-schema-validator/-/xsd-schema-validator-0.7.1.tgz#3264c1b781d5192fe46cb5207d6ce51a706eed07"
-  integrity sha512-LfxalSt34Z6V2MKBRExfDBXHwLO3PycKaI0+k4nM1ei5rLJZHqU3C/vYm+LaA1nba6cu+cVXQY8zez3R0ZKl+w==
 
 "@ava/babel-plugin-throws-helper@^3.0.0":
   version "3.0.0"
@@ -2656,9 +2644,9 @@ lodash.islength@^4.0.1:
   integrity sha1-Tpho1FJXXXUK/9NYyXlUPcIO1Xc=
 
 lodash.merge@^4.6.1:
-  version "4.6.1"
-  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.1.tgz#adc25d9cb99b9391c59624f379fbba60d7111d54"
-  integrity sha512-AOYza4+Hf5z1/0Hztxpm2/xiPZgi/cjMqdnKTUWTBSKchJlxXXuUSxCCl8rJlf4g6yww/j6mA8nC8Hw/EZWxKQ==
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz#558aa53b43b661e1925a0afdfa36a9a1085fe57a"
+  integrity sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==
 
 lodash@^4.17.11, lodash@^4.17.4:
   version "4.17.11"
