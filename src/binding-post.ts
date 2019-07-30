@@ -88,6 +88,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
   };
+  const nameIDFormat = idpSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
     let rawSamlResponse: string;
@@ -113,7 +115,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       ConditionsNotBefore: now,
       ConditionsNotOnOrAfter: fiveMinutesLater,
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
-      NameIDFormat: namespace.format[idpSetting.logoutNameIDFormat] || namespace.format.emailAddress,
+      NameIDFormat: selectedNameIDFormat,
       NameID: user.email || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: '',
@@ -214,7 +216,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
-  let id: string = '';
+  const nameIDFormat = initSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;  let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
@@ -229,7 +232,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
-        NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.transient,
+        NameIDFormat: selectedNameIDFormat,
         NameID: user.logoutNameID,
       };
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);

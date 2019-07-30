@@ -125,6 +125,9 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   let id: string = initSetting.generateID();
+  const nameIDFormat = initSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlRequest: string = '';
@@ -134,7 +137,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       EntityID: metadata.init.getEntityID(),
       Issuer: metadata.init.getEntityID(),
       IssueInstant: new Date().toISOString(),
-      NameIDFormat: namespace.format[initSetting.logoutNameIDFormat] || namespace.format.emailAddress,
+      NameIDFormat: selectedNameIDFormat,
       NameID: user.logoutNameID,
       SessionIndex: user.sessionIndex,
     };
