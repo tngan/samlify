@@ -239,7 +239,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms  } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
@@ -247,6 +247,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
+          transformationAlgorithms,
           rawSamlMessage: rawSamlRequest,
           signingCert: metadata.init.getX509Certificate('signing'),
           signatureConfig: initSetting.signatureConfig || {

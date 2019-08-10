@@ -617,7 +617,7 @@ const libSaml = () => {
       if (!validate) {
 
         // otherwise, an error will be thrown
-        return Promise.reject('Your application is potentially vulnerable because there is no validation function is found. Please read the documentation on how to setup the validator. (https://samlify.js.org/#/schema-validator)');
+        return Promise.reject('Your application is potentially vulnerable because no validation function found. Please read the documentation on how to setup the validator. (https://github.com/tngan/samlify#installation)');
 
       }
 
