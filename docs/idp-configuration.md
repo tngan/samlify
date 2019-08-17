@@ -24,7 +24,7 @@ const idp = new IdentityProvider({
 
 OR
 
-- **entiyID: String**<br/> Entity identifier. It is used to identify your entity, and match the equivalence in each saml request/response.
+- **entityID: String**<br/> Entity identifier. It is used to identify your entity, and match the equivalence in each saml request/response.
   
 - **signingCert: String**<br/>
   _Optional_: Specify the certificate used for signing purpose if you construct the idp without a metadata.

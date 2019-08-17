@@ -21,7 +21,7 @@ const sp = new ServiceProvider({
 
 OR
 
-- **entiyID: String**<br/> Entity identifier. It is used to identify your entity, and match the equivalence in each saml request/response.
+- **entityID: String**<br/> Entity identifier. It is used to identify your entity, and match the equivalence in each saml request/response.
 
 - **authnRequestsSigned: Boolean**<br/>
   _Optional_: Declare if sp signs the authn request, reflects to the `AuthnRequestsSigned` in sp metadata, default to `false`.
