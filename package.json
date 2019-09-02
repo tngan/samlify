@@ -17,8 +17,7 @@
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
     "pretest": "make pretest",
-    "test": "npm run build && NODE_ENV=test nyc ava --verbose build/test",
-    "test:pure": "NODE_ENV=test nyc ava --verbose build/test",
+    "test": "NODE_ENV=test nyc ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
@@ -57,7 +56,17 @@
     "ava": "^1.2.1",
     "coveralls": "^3.0.2",
     "nyc": "^11.9.0",
+    "ts-node": "^8.3.0",
     "tslint": "^5.12.1",
     "typescript": "^3.4.5"
+  },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
   }
 }
