@@ -26,7 +26,7 @@ The following metadata is provided by the target identity provider.
     <SurName>Support</SurName>
     <EmailAddress>support@onelogin.com</EmailAddress>
   </ContactPerson>
-</EntityDescriptor
+</EntityDescriptor>
 ```
 
 Import the above metadata and get the identity provider ready. Previously, we only allow user to enter path to file and the module will read for users. Starting from v2, we have relaxed the configuration to accept string, it allows user importing their metadata, key and certificate files from different sources. For examples, read from database, file systems, online resources (public url for metadata) and even in-memory storage.
