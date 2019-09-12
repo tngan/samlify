@@ -7,8 +7,7 @@ import Metadata, { MetadataInterface } from './metadata';
 import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
 import { namespace } from './urn';
 import libsaml from './libsaml';
-import { isString, isUndefined } from 'lodash';
-import { isNonEmptyArray } from './utility';
+import { isNonEmptyArray, isString } from './utility';
 import * as xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
@@ -129,7 +128,7 @@ export class IdpMetadata extends Metadata {
   */
   isWantAuthnRequestsSigned(): boolean {
     const was = this.meta.wantAuthnRequestsSigned;
-    if (isUndefined(was)) {
+    if (was === undefined) {
       return false;
     }
     return String(was) === 'true';

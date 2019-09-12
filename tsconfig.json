@@ -7,10 +7,12 @@
     "declarationDir": "types",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "downlevelIteration": true,
     "sourceMap": true,
     "outDir": "./build",
     "baseUrl": "./",
     "removeComments": false,
+    "strictNullChecks": true,
     "paths": {},
     "lib": [
       "dom",

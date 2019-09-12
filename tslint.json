@@ -1,6 +1,11 @@
 {
     "extends": "tslint:recommended",
     "rulesDirectory": [],
+    "linterOptions": {
+      "exclude": [
+        "node_modules/**"
+      ]
+    },
     "rules": {
       "arrow-parens": [true, "ban-single-arg-parens"],
       "comment-format": false,
@@ -22,7 +27,9 @@
       "no-trailing-whitespace": false,
       "ordered-imports": false,
       "quotemark": [true, "single", "avoid-escape", "avoid-template"],
-      "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
+      "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"],
+      "interface-over-type-literal": false,
+      "no-var-requires": false
     },
     "jsRules": {}
 }

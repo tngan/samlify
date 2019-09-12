@@ -9,14 +9,17 @@ clean:	;
 rebuild: ;
 	       rm -rf build; \
 				 tsc; \
-				 cp -a schemas build;
 
 pretest:	;
 					mkdir -p build/test; \
-					cp -a schemas build; \
 					cp -a test/key test/misc build/test;
+
+install_jdk:
+	sudo add-apt-repository ppa:openjdk-r/ppa -y
+	sudo apt-get -qq update
+	sudo apt-get install -y openjdk-9-jdk
 
 doc: ;@echo "prepare and serve the docs"; \
 	   docsify serve ./docs
 
-.PHONY: rebuild pretest doc
+.PHONY: rebuild pretest doc install_jdk

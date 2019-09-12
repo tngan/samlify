@@ -16,10 +16,12 @@ export enum MessageSignatureOrder {
 }
 
 export enum StatusCode {
+  // top-tier
   Success = 'urn:oasis:names:tc:SAML:2.0:status:Success',
   Requester = 'urn:oasis:names:tc:SAML:2.0:status:Requester',
   Responder = 'urn:oasis:names:tc:SAML:2.0:status:Responder',
   VersionMismatch = 'urn:oasis:names:tc:SAML:2.0:status:VersionMismatch',
+  // second-tier to provide more information
   AuthFailed = 'urn:oasis:names:tc:SAML:2.0:status:AuthnFailed',
   InvalidAttrNameOrValue = 'urn:oasis:names:tc:SAML:2.0:status:InvalidAttrNameOrValue',
   InvalidNameIDPolicy = 'urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy',

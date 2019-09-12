@@ -5,9 +5,65 @@
 */
 import { pki, util, asn1 } from 'node-forge';
 import { inflate, deflate } from 'deflate-js';
-import { isString } from 'lodash';
 
 const BASE64_STR = 'base64';
+
+/**
+ * @desc Mimic lodash.zipObject
+ * @param arr1 {string[]}
+ * @param arr2 {[]}
+ */
+export function zipObject(arr1: string[], arr2: any[]) {
+  return arr1.reduce((res, l, i) => {
+    res[l] = arr2[i];
+    return res;
+  }, {});
+}
+/**
+ * @desc Alternative to lodash.flattenDeep
+ * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_flattendeep
+ * @param input {[]}
+ */
+export function flattenDeep(input: any[]) {
+  return Array.isArray(input)
+  ? input.reduce( (a, b) => a.concat(flattenDeep(b)) , [])
+  : [input];
+}
+/**
+ * @desc Alternative to lodash.last
+ * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_last
+ * @param input {[]}
+ */
+export function last(input: any[]) {
+  return input.slice(-1)[0];
+}
+/**
+ * @desc Alternative to lodash.uniq
+ * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_uniq
+ * @param input {string[]}
+ */
+export function uniq(input: string[]) {
+  const set = new Set(input);
+  return [... set];
+}
+/**
+ * @desc Alternative to lodash.get 
+ * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
+ * @param obj 
+ * @param path 
+ * @param defaultValue 
+ */
+export function get(obj, path, defaultValue) {
+  return path.split('.')
+  .reduce((a, c) => (a && a[c] ? a[c] : (defaultValue || null)), obj);
+}
+/**
+ * @desc Check if the input is string 
+ * @param {any} input 
+ */
+export function isString(input: any) {
+  return typeof input === 'string';
+}
 /**
 * @desc Encode string with base64 format
 * @param  {string} message                       plain-text message
@@ -112,7 +168,7 @@ function getPublicKeyPemFromCertificate(x509Certificate: string) {
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem content (recommend)
 */
-export function readPrivateKey(keyString: string | Buffer, passphrase: string, isOutputString?: boolean) {
+export function readPrivateKey(keyString: string | Buffer, passphrase: string | undefined, isOutputString?: boolean) {
   return isString(passphrase) ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
 }
 /**
@@ -128,7 +184,12 @@ export function isNonEmptyArray(a) {
   return Array.isArray(a) && a.length > 0;
 }
 
+export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
+  return value !== null && value !== undefined;
+}
+
 const utility = {
+  isString,
   base64Encode,
   base64Decode,
   deflateString,

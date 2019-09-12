@@ -1,11 +1,12 @@
 import { DOMParser } from 'xmldom';
-import { select } from 'xpath';
-import { zipObject, camelCase, last, uniq } from 'lodash';
+import { select, SelectedValue } from 'xpath';
+import { uniq, last, zipObject, notEmpty } from './utility';
+import camelCase from 'camelcase';
 const dom = DOMParser;
 
 interface ExtractorField {
   key: string;
-  localPath: string[];
+  localPath: string[] | string[][];
   attributes: string[];
   index?: string[];
   attributePath?: string[];
@@ -69,12 +70,35 @@ export const loginRequestFields: ExtractorFields = [
   }
 ];
 
-export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
+// support two-tiers status code
+export const loginResponseStatusFields = [
   {
-    key: 'statusCode',
+    key: 'top',
     localPath: ['Response', 'Status', 'StatusCode'],
     attributes: ['Value'],
   },
+  {
+    key: 'second',
+    localPath: ['Response', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
+
+// support two-tiers status code
+export const logoutResponseStatusFields = [
+  {
+    key: 'top',
+    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
+    attributes: ['Value']
+  },
+  {
+    key: 'second',
+    localPath: ['LogoutResponse', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
+
+export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
   {
     key: 'conditions',
     localPath: ['Assertion', 'Conditions'],
@@ -156,11 +180,6 @@ export const logoutResponseFields: ExtractorFields = [
     attributes: ['ID', 'Destination', 'InResponseTo']
   },
   {
-    key: 'statusCode',
-    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
-    attributes: ['Value']
-  },
-  {
     key: 'issuer',
     localPath: ['LogoutResponse', 'Issuer'],
     attributes: []
@@ -218,7 +237,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
-        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue))
+        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue).filter(notEmpty))
       };
     }
     // eo special case: multiple path
@@ -284,7 +303,7 @@ export function extract(context: string, fields) {
     */
     if (isEntire) {
       const node = select(baseXPath, targetDoc);
-      let value = null;
+      let value: string | string[] | null = null;
       if (node.length === 1) {
         value = node[0].toString();
       }
@@ -346,14 +365,14 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length === 0) {
-      let attributeValue = null;
+      let attributeValue: SelectedValue[] | Array<(string | null)> | null = null;
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.map((n: Node) => n.firstChild.nodeValue);
+        attributeValue = node.map((n: Node) => n.firstChild!.nodeValue);
       }
       return {
         ...result,

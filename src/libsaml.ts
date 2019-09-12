@@ -5,18 +5,16 @@
 */
 
 import { DOMParser } from 'xmldom';
-import utility from './utility';
+import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
-import { select } from 'xpath';
+import { select, SelectedValue } from 'xpath';
 import { MetadataInterface } from './metadata';
-import { isObject, isUndefined, includes, flattenDeep, camelCase } from 'lodash';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from '@passify/xml-encryption';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as Validator from '@passify/xsd-schema-validator';
+import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
+import camelCase from 'camelcase';
+import { getContext } from './api';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -56,6 +54,8 @@ export interface LoginResponseAttribute {
   nameFormat: string; //
   valueXsiType: string; //
   valueTag: string;
+  valueXmlnsXs?: string;
+  valueXmlnsXsi?: string;
 }
 
 export interface BaseSamlTemplate {
@@ -102,29 +102,6 @@ export interface LibSamlInterface {
 }
 
 const libSaml = () => {
-  const validator = new Validator();
-  function setSchemaDir() {
-    let schemaDir;
-    try {
-      schemaDir = path.resolve(__dirname, '../schemas');
-      fs.accessSync(schemaDir, fs.constants.F_OK);
-    } catch (err) {
-      // for built-from git folder layout
-      try {
-        schemaDir = path.resolve(__dirname, '../../schemas');
-        fs.accessSync(schemaDir, fs.constants.F_OK);
-      } catch (err) {
-        //console.warn('Unable to specify schema directory', err);
-        // QUESTION should this be swallowed?
-        console.error(err);
-        throw new Error('ERR_FAILED_FETCH_SCHEMA_FILE');
-      }
-    }
-    // set schema directory
-    validator.cwd = schemaDir;
-    validator.debug = process.env.NODE_ENV === 'test';
-  }
-  setSchemaDir();
 
   /**
   * @desc helper function to get back the query param for redirect binding for SLO/SSO
@@ -159,7 +136,7 @@ const libSaml = () => {
   * @type {LogoutRequestTemplate}
   */
   const defaultLogoutRequestTemplate = {
-    context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID SPNameQualifier="{EntityID}" Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>',
+    context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>',
   };
   /**
   * @desc Default login response template
@@ -183,9 +160,11 @@ const libSaml = () => {
   * @return {string/null} signing algorithm short-hand for the module node-rsa
   */
   function getSigningScheme(sigAlg?: string): string | null {
-    const algAlias = nrsaAliasMapping[sigAlg];
-    if (!isUndefined(algAlias)) {
-      return algAlias;
+    if (sigAlg) {
+      const algAlias = nrsaAliasMapping[sigAlg];
+      if (!(algAlias === undefined)) {
+        return algAlias;
+      }
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
   }
@@ -197,7 +176,7 @@ const libSaml = () => {
   */
   function getDigestMethod(sigAlg: string): string | null {
     const digestAlg = digestAlgorithms[sigAlg];
-    if (!isUndefined(digestAlg)) {
+    if (!(digestAlg === undefined)) {
       return digestAlg;
     }
     return null; // default value
@@ -210,10 +189,10 @@ const libSaml = () => {
   * @return {string} xpath
   */
   function createXPath(local, isExtractAll?: boolean): string {
-    if (isObject(local)) {
-      return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
+    if (isString(local)) {
+      return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
     }
-    return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
+    return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
   }
 
   /**
@@ -255,8 +234,10 @@ const libSaml = () => {
     * @return {string}
     */
     attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
-      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType }) => {
-        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
+      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
+        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
+        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xmlns:xs="${valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs}" xmlns:xsi="${valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi}" xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
       }).join('');
       return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
     },
@@ -337,8 +318,8 @@ const libSaml = () => {
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
 
       // select the signature node
-      let selection = [];
-      let assertionNode = null;
+      let selection: any = [];
+      let assertionNode: string | null = null;
       const messageSignatureNode = select(messageSignatureXpath, doc);
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
       const wrappingElementNode = select(wrappingElementsXPath, doc);
@@ -366,7 +347,7 @@ const libSaml = () => {
         } else if (opts.cert) {
 
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
-          
+
           // certificate in metadata
           let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
           if (typeof metadataCert === 'string') {
@@ -377,7 +358,7 @@ const libSaml = () => {
           }
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          // use the first 
+          // use the first
           let selectedCert = metadataCert[0];
           // no certificate node in response
           if (certificateNode.length !== 0) {
@@ -389,7 +370,7 @@ const libSaml = () => {
           if (selectedCert === null) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
-          if (metadataCert.length > 1 && !includes(metadataCert, selectedCert)) {
+          if (metadataCert.length >= 1 && !metadataCert.find(cert => cert.trim() === selectedCert.trim())) {
             // keep this restriction for rolling certificate usage
             // to make sure the response certificate is one of those specified in metadata
             throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
@@ -535,7 +516,7 @@ const libSaml = () => {
     * @param  {string} xml                      response in xml string format
     * @return {Promise} a promise to resolve the finalized xml
     */
-    encryptAssertion(sourceEntity, targetEntity, xml: string) {
+    encryptAssertion(sourceEntity, targetEntity, xml?: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
 
@@ -623,18 +604,29 @@ const libSaml = () => {
      * @desc Check if the xml string is valid and bounded
      */
     async isValidXml(input: string) {
-      return new Promise((resolve, reject) => {
-        validator.validateXML(input, 'saml-schema-protocol-2.0.xsd', (err, result) => {
-          if (err) {
-            console.error(err);
-            return reject('ERR_EXCEPTION_VALIDATE_SAML_RESPONSE');
-          }
-          if (result.valid) {
-            return resolve(true);
-          }
-          return reject('ERR_INVALID_SAML_RESPONSE');
-        });
-      });
+
+      // check if global api contains the validate function
+      const { validate } = getContext();
+
+      /**
+       * user can write a validate function that always returns
+       * a resolved promise and skip the validator even in 
+       * production, user will take the responsibility if 
+       * they intend to skip the validation
+       */
+      if (!validate) {
+
+        // otherwise, an error will be thrown
+        return Promise.reject('Your application is potentially vulnerable because no validation function found. Please read the documentation on how to setup the validator. (https://github.com/tngan/samlify#installation)');
+
+      }
+
+      try {
+        return await validate(input);
+      } catch (e) {
+        throw e;
+      }
+
     },
   };
 };

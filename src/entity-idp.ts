@@ -13,9 +13,9 @@ import {
 import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
-import { isString } from 'lodash';
 import { flow, FlowResult } from './flow';
-
+import { isString } from './utility';
+import { BindingContext } from './entity';
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
@@ -47,7 +47,7 @@ export class IdentityProvider extends Entity {
         };
         entitySetting.loginResponseTemplate = {
           ...entitySetting.loginResponseTemplate,
-          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement),
+          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate!.context, replacement),
         };
       } else {
         console.warn('Invalid login response template');
@@ -70,7 +70,7 @@ export class IdentityProvider extends Entity {
     requestInfo: { [key: string]: any },
     binding: string,
     user: { [key: string]: any },
-    customTagReplacement?: (...args: any[]) => any,
+    customTagReplacement?: (template: string) => BindingContext,
     encryptThenSign?: boolean,
   ) {
     const protocol = namespace.binding[binding];

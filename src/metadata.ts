@@ -5,8 +5,8 @@
 */
 import * as fs from 'fs';
 import { namespace } from './urn';
-import { isString } from 'lodash';
 import { extract } from './extractor';
+import { isString } from './utility';
 
 export interface MetadataInterface {
   xmlString: string;
@@ -28,7 +28,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string | Buffer} metadata xml
   * @param  {object} extraParse for custom metadata extractor
   */
-  constructor(xml: string | Buffer, extraParse = []) {
+  constructor(xml: string | Buffer, extraParse: any = []) {
     this.xmlString = xml.toString();
     this.meta = extract(this.xmlString, extraParse.concat([
       {
@@ -134,7 +134,7 @@ export default class Metadata implements MetadataInterface {
   * @return {string/object} location
   */
   public getSingleLogoutService(binding: string | undefined): string | object {
-    if (isString(binding)) {
+    if (binding && isString(binding)) {
       const bindType = namespace.binding[binding];
       let singleLogoutService = this.meta.singleLogoutService;
       if (!(singleLogoutService instanceof Array)) {

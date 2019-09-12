@@ -1,3 +1,6 @@
+import { LoginResponseTemplate } from './libsaml';
+import { ServiceProviderSettings } from './types';
+
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
 
@@ -39,14 +42,7 @@ export type MetadataSpConstructor =
   | MetadataSpOptions
   | MetadataFile;
 
-export interface EntitySetting {
-  wantAuthnRequestsSigned?: boolean;
-  authnRequestsSigned?: boolean;
-  wantLogoutResponseSigned?: boolean;
-  wantLogoutRequestSigned?: boolean;
-  wantAssertionsSigned?: boolean;
-  relayState?: any;
-}
+export type EntitySetting = ServiceProviderSettings & IdentityProviderSettings;
 
 export interface SignatureConfig {
   prefix?: string;
@@ -59,7 +55,8 @@ export interface SignatureConfig {
 export interface SAMLDocumentTemplate {
   context?: string;
 }
-export interface ServiceProviderSettings {
+
+export type ServiceProviderSettings = {
   metadata?: string | Buffer;
   entityID?: string;
   authnRequestsSigned?: boolean;
@@ -76,19 +73,26 @@ export interface ServiceProviderSettings {
   singleLogoutService?: Array<{ Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
-}
+  logoutRequestTemplate?: SAMLDocumentTemplate;
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer;
+  transformationAlgorithms?: string[];
+  nameIDFormat?: string[];
+  // will be deprecated soon
+  relayState?: string;
+};
 
-export interface IdentityProviderSettings {
+export type IdentityProviderSettings = {
   metadata?: string | Buffer;
 
   /** signature algorithm */
-  requestSignatureAlgotithm?: string;
+  requestSignatureAlgorithm?: string;
 
   /** template of login response */
-  loginResponseTemplate?: { [key: string]: any };
+  loginResponseTemplate?: LoginResponseTemplate;
 
-  /** template of login response */
-  logoutRequestTemplate?: { [key: string]: any };
+  /** template of logout request */
+  logoutRequestTemplate?: SAMLDocumentTemplate;
 
   /** customized function used for generating request ID */
   generateID?: () => string;
@@ -96,8 +100,8 @@ export interface IdentityProviderSettings {
   entityID?: string;
   privateKey?: string | Buffer;
   privateKeyPass?: string;
-  signingCert?: string;
-  encrpytCert?: string; /** todo */
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer; /** todo */
   nameIDFormat?: string[];
   singleSignOnService?: Array<{ [key: string]: string }>;
   singleLogoutService?: Array<{ [key: string]: string }>;
@@ -110,4 +114,4 @@ export interface IdentityProviderSettings {
   wantAuthnRequestsSigned?: boolean;
   wantLogoutRequestSignedResponseSigned?: boolean;
   tagPrefix?: { [key: string]: string };
-}
+};

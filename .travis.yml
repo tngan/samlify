@@ -1,25 +1,28 @@
 language: node_js
 
 node_js:
-  - "6"
   - "8"
-  - "9"
   - "10"
+  - "12"
+
+env:
+  - INSTALL_JDK=1
+  - INSTALL_JDK=0
 
 before_install:
-  - sudo add-apt-repository ppa:openjdk-r/ppa -y
-  - sudo apt-get -qq update
-  - sudo apt-get install -y openjdk-9-jdk
+  - if [[ "$INSTALL_JDK" == "1" ]] ; then make install_jdk ; fi
+
+install:
+  - yarn install --production=true
 
 script:
-  - npm test
+  - yarn add @authenio/samlify-xsd-schema-validator
+  - yarn test
 
 branches:
   only:
   - master
   - /^.*-alpha$/
-  - /^.*-beta$/
-  - /^.*-rc*$/
-  - /^.*-exp*$/
+  - /^.*-rc.*$/
 
 after_success: npm run coverage

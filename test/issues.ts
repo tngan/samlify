@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import * as url from 'url';
 import { DOMParser as dom } from 'xmldom';
 import { xpath as select } from 'xml-crypto';
-import * as _ from 'lodash';
 import { extract } from '../src/extractor';
 
 const {
@@ -158,11 +157,11 @@ test('#31 query param for sso/slo returns error', t => {
   test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
     const { id, context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
-    const request = originalURL.query.SAMLRequest;
+    const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
     const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];
-    const acsUrl = _.find(authnRequest.attributes, (a: any) => a.nodeName === 'AssertionConsumerServiceURL').nodeValue;
-    t.is(acsUrl, 'https://example.org/response');
+    const index = Object.keys(authnRequest.attributes).find((i: string) => authnRequest.attributes[i].nodeName === 'AssertionConsumerServiceURL') as any;
+    t.is(authnRequest.attributes[index].nodeValue, 'https://example.org/response');
   });
 })();
