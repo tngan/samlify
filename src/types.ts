@@ -70,7 +70,7 @@ export type ServiceProviderSettings = {
   isAssertionEncrypted?: boolean;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
-  assertionConsumeService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  assertionConsumerService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
