@@ -59,6 +59,7 @@ export interface SAMLDocumentTemplate {
 export type ServiceProviderSettings = {
   metadata?: string | Buffer;
   entityID?: string;
+  keyFile?: string;
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
   wantMessageSigned?: boolean;
@@ -69,8 +70,8 @@ export type ServiceProviderSettings = {
   isAssertionEncrypted?: boolean;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
-  assertionConsumerService?: Array<{ Binding: string, Location: string }>;
-  singleLogoutService?: Array<{ Binding: string, Location: string }>;
+  assertionConsumeService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
   logoutRequestTemplate?: SAMLDocumentTemplate;
@@ -84,27 +85,23 @@ export type ServiceProviderSettings = {
 
 export type IdentityProviderSettings = {
   metadata?: string | Buffer;
-
   /** signature algorithm */
   requestSignatureAlgorithm?: string;
-
   /** template of login response */
   loginResponseTemplate?: LoginResponseTemplate;
-
   /** template of logout request */
   logoutRequestTemplate?: SAMLDocumentTemplate;
-
   /** customized function used for generating request ID */
   generateID?: () => string;
-
   entityID?: string;
+  keyFile?: string;
   privateKey?: string | Buffer;
   privateKeyPass?: string;
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer; /** todo */
   nameIDFormat?: string[];
-  singleSignOnService?: Array<{ [key: string]: string }>;
-  singleLogoutService?: Array<{ [key: string]: string }>;
+  singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   isAssertionEncrypted?: boolean;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string;

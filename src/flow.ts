@@ -1,6 +1,6 @@
 import { inflateString, base64Decode } from './utility';
 import { verifyTime } from './validator';
-import libsaml from './libsaml';
+import libsaml, { SignatureVerifierOptions } from './libsaml';
 import {
   extract,
   loginRequestFields,
@@ -134,9 +134,10 @@ async function postFlow(options): Promise<FlowResult> {
 
   let samlContent = String(base64Decode(encodedRequest));
 
-  const verificationOptions = {
+  const verificationOptions: SignatureVerifierOptions = {
     cert: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
+    keyFile: from.entitySetting.keyFile
   };
 
   const decryptRequired = from.entitySetting.isAssertionEncrypted;
