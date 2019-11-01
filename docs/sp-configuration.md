@@ -5,7 +5,7 @@
 ?> You can either choose to import from metadata plus optional paramters, or defined properties plus optional parameters.
 
 - **metadata: String**<br/>
-  IDP issued metadata to declare the structure and scope of the entity, as a common contract on how sso/slo should be proceeded.
+  SP issued metadata to declare the structure and scope of the entity, as a common contract on how sso/slo should be proceeded.
 
 ```js
 const sp = new ServiceProvider({
