@@ -1,5 +1,4 @@
 import { LoginResponseTemplate } from './libsaml';
-import { ServiceProviderSettings } from './types';
 
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
