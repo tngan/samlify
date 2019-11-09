@@ -98,7 +98,7 @@ export const logoutResponseStatusFields = [
   }
 ];
 
-export const loginResponseFields: ((asserion: any) => ExtractorFields) = assertion => [
+export const loginResponseFields: ((assertion: any) => ExtractorFields) = assertion => [
   {
     key: 'conditions',
     localPath: ['Assertion', 'Conditions'],
