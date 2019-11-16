@@ -336,15 +336,40 @@ test('getAssertionConsumerService with two bindings', t => {
 
 })();
 
-test('verify time', t => {
+test('verify time with and without drift tolerance', t => {
+  
   const now = new Date();
+  const timeBefore10Mins = new Date(new Date().setMinutes(now.getMinutes() - 10)).toISOString();
   const timeBefore5Mins = new Date(new Date().setMinutes(now.getMinutes() - 5)).toISOString();
   const timeAfter5Mins = new Date(new Date().setMinutes(now.getMinutes() + 5)).toISOString();
+  const timeAfter10Mins = new Date(new Date().setMinutes(now.getMinutes() + 5)).toISOString();
+
+  // without drift tolerance
   t.true(verifyTime(timeBefore5Mins, timeAfter5Mins));
+  t.true(verifyTime(timeBefore5Mins, undefined));
+  t.true(verifyTime(undefined, timeAfter5Mins));
+  
   t.false(verifyTime(undefined, timeBefore5Mins));
-  t.false(verifyTime(timeAfter5Mins));
-  t.true(verifyTime());
+  t.false(verifyTime(timeAfter5Mins, undefined));
+  t.false(verifyTime(timeBefore10Mins, timeBefore5Mins));
+  t.false(verifyTime(timeAfter5Mins, timeAfter10Mins));
+
+  t.true(verifyTime(undefined, undefined));
+
+  // with drift tolerance 5 mins + 1 sec = 301,000 ms
+  const drifts: [number, number] = [-301000, 301000];
+  t.true(verifyTime(timeBefore5Mins, timeAfter5Mins, drifts));
+  t.true(verifyTime(timeBefore5Mins, undefined, drifts));
+  t.true(verifyTime(undefined, timeAfter5Mins, drifts));
+
+  t.true(verifyTime(undefined, timeBefore5Mins, drifts));
+  t.true(verifyTime(timeAfter5Mins, undefined, drifts));
+  t.true(verifyTime(timeBefore10Mins, timeBefore5Mins, drifts));
+  t.true(verifyTime(timeAfter5Mins, timeAfter10Mins, drifts));
+  
+  t.true(verifyTime(undefined, undefined, drifts));
 });
+
 
 test('metadata with multiple entity descriptors is invalid', t => {
   try {
