@@ -19,7 +19,9 @@
     "pretest": "make pretest",
     "test": "NODE_ENV=test nyc ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
+    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit",
+    "snyk-protect": "snyk protect",
+    "prepare": "yarn run snyk-protect"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
@@ -40,7 +42,8 @@
     "xml": "^1.0.1",
     "xml-crypto": "^1.4.0",
     "xmldom": "^0.1.27",
-    "xpath": "^0.0.27"
+    "xpath": "^0.0.27",
+    "snyk": "^1.258.2"
   },
   "peerDependencies": {
     "@authenio/samlify-libxml-xsd": "^1.0.1",
@@ -68,5 +71,6 @@
     "require": [
       "ts-node/register"
     ]
-  }
+  },
+  "snyk": true
 }
