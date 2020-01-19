@@ -10,8 +10,8 @@ export type MetadataFile = string | Buffer;
 
 export interface MetadataIdpOptions {
   entityID?: string;
-  signingCert?: string;
-  encryptCert?: string;
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer;
   wantAuthnRequestsSigned?: boolean;
   nameIDFormat?: string[];
   singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
@@ -25,8 +25,8 @@ export type MetadataIdpConstructor =
 
 export interface MetadataSpOptions {
   entityID?: string;
-  signingCert?: string;
-  encryptCert?: string;
+  signingCert?: string | Buffer;
+  encryptCert?: string | Buffer;
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
   wantMessageSigned?: boolean;
@@ -69,7 +69,7 @@ export type ServiceProviderSettings = {
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
   assertionConsumerService?: Array<{ Binding: string, Location: string }>;
-  singleLogoutService?: Array<{ Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
   logoutRequestTemplate?: SAMLDocumentTemplate;
@@ -102,8 +102,8 @@ export type IdentityProviderSettings = {
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer; /** todo */
   nameIDFormat?: string[];
-  singleSignOnService?: Array<{ [key: string]: string }>;
-  singleLogoutService?: Array<{ [key: string]: string }>;
+  singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
   isAssertionEncrypted?: boolean;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string;
