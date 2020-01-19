@@ -4,7 +4,7 @@
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
 import { pki, util, asn1 } from 'node-forge';
-import { inflate, deflate } from 'deflate-js';
+import { inflate, deflate } from 'pako';
 
 const BASE64_STR = 'base64';
 
@@ -69,8 +69,8 @@ export function isString(input: any) {
 * @param  {string} message                       plain-text message
 * @return {string} base64 encoded string
 */
-function base64Encode(message: string) {
-  return new Buffer(message).toString(BASE64_STR);
+function base64Encode(message: string | number[]) {
+  return new Buffer(message as string).toString(BASE64_STR);
 }
 /**
 * @desc Decode string from base64 format
@@ -87,8 +87,9 @@ export function base64Decode(base64Message: string, isBytes?: boolean): string |
 * @param  {string} message
 * @return {string} compressed string
 */
-function deflateString(message: string): string {
-  return deflate(Array.prototype.map.call(message, char => char.charCodeAt(0)));
+function deflateString(message: string): number[] {
+  const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
+  return Array.from(deflate(input, { raw: true }));
 }
 /**
 * @desc Decompress the compressed string
@@ -96,7 +97,9 @@ function deflateString(message: string): string {
 * @return {string} decompressed string
 */
 export function inflateString(compressedString: string): string {
-  return inflate(Array.prototype.map.call(new Buffer(compressedString, BASE64_STR).toString('binary'), char => char.charCodeAt(0)))
+  const inputBuffer = new Buffer(compressedString, BASE64_STR);
+  const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
+  return Array.from(inflate(input, { raw: true }))
     .map(byte => String.fromCharCode(byte))
     .join('');
 }
