@@ -70,7 +70,7 @@ export function isString(input: any) {
 * @return {string} base64 encoded string
 */
 function base64Encode(message: string | number[]) {
-  return new Buffer(message as string).toString(BASE64_STR);
+  return Buffer.from(message as string).toString(BASE64_STR);
 }
 /**
 * @desc Decode string from base64 format
@@ -79,7 +79,7 @@ function base64Encode(message: string | number[]) {
 * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
 */
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
-  const bytes = new Buffer(base64Message, BASE64_STR);
+  const bytes = Buffer.from(base64Message, BASE64_STR);
   return Boolean(isBytes) ? bytes : bytes.toString();
 }
 /**
@@ -97,7 +97,7 @@ function deflateString(message: string): number[] {
 * @return {string} decompressed string
 */
 export function inflateString(compressedString: string): string {
-  const inputBuffer = new Buffer(compressedString, BASE64_STR);
+  const inputBuffer = Buffer.from(compressedString, BASE64_STR);
   const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
   return Array.from(inflate(input, { raw: true }))
     .map(byte => String.fromCharCode(byte))
