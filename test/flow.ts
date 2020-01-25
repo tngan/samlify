@@ -623,7 +623,7 @@ test('should reject signature wrapped response - case 1', async t => {
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   //Decode
-  const buffer = new Buffer(SAMLResponse, 'base64');
+  const buffer = Buffer.from(SAMLResponse, 'base64');
   const xml = buffer.toString();
   //Create version of response without signature
   const stripped = xml
@@ -634,7 +634,7 @@ test('should reject signature wrapped response - case 1', async t => {
     .replace('user@esaml2.com', 'admin@esaml2.com');
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '<saml:SubjectConfirmationData>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:SubjectConfirmationData>');
-  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+  const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
   } catch (e) {
@@ -647,7 +647,7 @@ test('should reject signature wrapped response - case 2', async t => {
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   //Decode
-  const buffer = new Buffer(SAMLResponse, 'base64');
+  const buffer = Buffer.from(SAMLResponse, 'base64');
   const xml = buffer.toString();
   //Create version of response without signature
   const stripped = xml
@@ -658,7 +658,7 @@ test('should reject signature wrapped response - case 2', async t => {
     .replace('user@esaml2.com', 'admin@esaml2.com');
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
-  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+  const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
   } catch (e) {

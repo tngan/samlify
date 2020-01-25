@@ -100,7 +100,7 @@ async function redirectFlow(options) {
     }
 
     // put the below two assignemnts into verifyMessageSignature function
-    const base64Signature = new Buffer(decodeURIComponent(signature), 'base64');
+    const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
 
     const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);

@@ -538,8 +538,8 @@ const libSaml = () => {
         if (sourceEntitySetting.isAssertionEncrypted) {
           xmlenc.encrypt(assertions[0].toString(), {
             // use xml-encryption module
-            rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
-            pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
+            rsa_pub: Buffer.from(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+            pem: Buffer.from('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm,
           }, (err, res) => {
