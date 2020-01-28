@@ -54,6 +54,7 @@
     "ava": "^1.2.1",
     "coveralls": "^3.0.2",
     "nyc": "^11.9.0",
+    "timekeeper": "^2.2.0",
     "ts-node": "^8.3.0",
     "tslint": "^5.12.1",
     "typescript": "^3.4.5"

@@ -212,7 +212,8 @@ async function postFlow(options): Promise<FlowResult> {
     parserType === 'SAMLResponse'
     && !verifyTime(
       undefined,
-      extractedProperties.sessionIndex.sessionNotOnOrAfter
+      extractedProperties.sessionIndex.sessionNotOnOrAfter,
+      self.entitySetting.clockDrifts
     )
   ) {
     return Promise.reject('ERR_EXPIRED_SESSION');
@@ -225,7 +226,8 @@ async function postFlow(options): Promise<FlowResult> {
     && extractedProperties.conditions
     && !verifyTime(
       extractedProperties.conditions.notBefore,
-      extractedProperties.conditions.notOnOrAfter
+      extractedProperties.conditions.notOnOrAfter,
+      self.entitySetting.clockDrifts
     )
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');

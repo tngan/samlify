@@ -79,6 +79,8 @@ export type ServiceProviderSettings = {
   nameIDFormat?: string[];
   // will be deprecated soon
   relayState?: string;
+  // https://github.com/tngan/samlify/issues/337
+  clockDrifts?: [number, number];
 };
 
 export type IdentityProviderSettings = {
