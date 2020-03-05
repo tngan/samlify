@@ -57,7 +57,7 @@ router.post('/acs', (req, res) => {
   })
   .catch(console.error);
 });
-	```
+```
 
 Our default validation is to validate signature and the issuer name of Identity Provider. The code base is self explained. More use cases are provided in this documentation to fit in the real world application.
 
