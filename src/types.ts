@@ -66,6 +66,7 @@ export type ServiceProviderSettings = {
   privateKey?: string | Buffer;
   privateKeyPass?: string;
   isAssertionEncrypted?: boolean;
+  requestSignatureAlgorithm?: string;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
   assertionConsumerService?: Array<{ Binding: string, Location: string }>;
