@@ -208,8 +208,10 @@ async function postFlow(options): Promise<FlowResult> {
   }
 
   // invalid session time
+  // only run the verifyTime when `SessionNotOnOrAfter` exists
   if (
     parserType === 'SAMLResponse'
+    && extractedProperties.sessionIndex.sessionNotOnOrAfter
     && !verifyTime(
       undefined,
       extractedProperties.sessionIndex.sessionNotOnOrAfter,
