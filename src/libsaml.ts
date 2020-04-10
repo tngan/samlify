@@ -11,7 +11,7 @@ import { select, SelectedValue } from 'xpath';
 import { MetadataInterface } from './metadata';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from '@authenio/xml-encryption';
+import * as xmlenc from 'xml-encryption';
 import { extract } from './extractor';
 import camelCase from 'camelcase';
 import { getContext } from './api';
@@ -541,7 +541,7 @@ const libSaml = () => {
             rsa_pub: Buffer.from(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
             pem: Buffer.from('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
-            keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm,
+            keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
           }, (err, res) => {
             if (err) {
               console.error(err);
@@ -610,8 +610,8 @@ const libSaml = () => {
 
       /**
        * user can write a validate function that always returns
-       * a resolved promise and skip the validator even in 
-       * production, user will take the responsibility if 
+       * a resolved promise and skip the validator even in
+       * production, user will take the responsibility if
        * they intend to skip the validation
        */
       if (!validate) {
