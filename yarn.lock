@@ -2,18 +2,6 @@
 # yarn lockfile v1
 
 
-"@authenio/samlify-xsd-schema-validator@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@authenio/samlify-xsd-schema-validator/-/samlify-xsd-schema-validator-1.0.3.tgz#7e30a5a3a4af302f43095fec1eb9d3fd29778142"
-  integrity sha512-J4yC4S6Jn8bd9AXIdytzuFprrpDrRoV5TUoH135fFirx8CE1wUzy5xKYPXi8juDRylsIKOGpXEY3voCPIWYxGg==
-  dependencies:
-    "@authenio/xsd-schema-validator" "^0.7.1"
-
-"@authenio/xsd-schema-validator@^0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@authenio/xsd-schema-validator/-/xsd-schema-validator-0.7.1.tgz#3264c1b781d5192fe46cb5207d6ce51a706eed07"
-  integrity sha512-LfxalSt34Z6V2MKBRExfDBXHwLO3PycKaI0+k4nM1ei5rLJZHqU3C/vYm+LaA1nba6cu+cVXQY8zez3R0ZKl+w==
-
 "@ava/babel-plugin-throws-helper@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@ava/babel-plugin-throws-helper/-/babel-plugin-throws-helper-3.0.0.tgz#2c933ec22da0c4ce1fc5369f2b95452c70420586"
