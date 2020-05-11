@@ -24,5 +24,6 @@ branches:
   - master
   - /^.*-alpha$/
   - /^.*-rc.*$/
+  - /^feature\/.*$/
 
 after_success: npm run coverage
