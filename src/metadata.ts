@@ -13,7 +13,7 @@ export interface MetadataInterface {
   getMetadata: () => string;
   exportMetadata: (exportFile: string) => void;
   getEntityID: () => string;
-  getX509Certificate: (certType: string) => string;
+  getX509Certificate: (certType: string) => string | string[];
   getNameIDFormat: () => any[];
   getSingleLogoutService: (binding: string | undefined) => string | object;
   getSupportBindings: (services: string[]) => string[];
@@ -116,7 +116,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} use declares the type of certificate
   * @return {string} certificate in string format
   */
-  public getX509Certificate(use: string): string {
+  public getX509Certificate(use: string): string | string[] {
     return this.meta.certificate[use] || null;
   }
 

@@ -13,10 +13,24 @@ const BASE64_STR = 'base64';
  * @param arr1 {string[]}
  * @param arr2 {[]}
  */
-export function zipObject(arr1: string[], arr2: any[]) {
+export function zipObject(arr1: string[], arr2: any[], skipDuplicated = true) {
   return arr1.reduce((res, l, i) => {
+    
+    if (skipDuplicated) {
+      res[l] = arr2[i];
+      return res;
+    }
+    // if key exists, aggregate with array in order to get rid of duplicate key
+    if (res[l] !== undefined) {
+      res[l] = Array.isArray(res[l])
+        ? res[l].concat(arr2[i])
+        : [res[l]].concat(arr2[i]);
+      return res;
+    }
+
     res[l] = arr2[i];
     return res;
+
   }, {});
 }
 /**

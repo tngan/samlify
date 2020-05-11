@@ -1,13 +1,7 @@
 // This test file includes all the units related to the extractor
 import test from 'ava';
-import esaml2 = require('../index');
 import { readFileSync } from 'fs';
 import { extract } from '../src/extractor';
-
-const {
-  SamlLib: libsaml,
-  SPMetadata: spMetadata
-} = esaml2;
 
 const _decodedResponse: string = String(readFileSync('./test/misc/response_signed.xml'));
 const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
