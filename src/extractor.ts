@@ -286,11 +286,12 @@ export function extract(context: string, fields) {
         return null;
       });
       // aggregation
-      const obj = zipObject(parentAttributes, childAttributes);
+      const obj = zipObject(parentAttributes, childAttributes, false);
       return {
         ...result,
         [key]: obj
       };
+
     }
     // case: fetch entire content, only allow one existence
     /*

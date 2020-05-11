@@ -135,7 +135,7 @@ async function postFlow(options): Promise<FlowResult> {
   let samlContent = String(base64Decode(encodedRequest));
 
   const verificationOptions = {
-    cert: from.entityMeta,
+    metadata: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
 
