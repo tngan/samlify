@@ -17,7 +17,7 @@ install:
 
 script:
   - yarn add @authenio/samlify-xsd-schema-validator
-  - yarn test
+  - yarn test --timeout=30s
 
 branches:
   only:
