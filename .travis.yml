@@ -1,9 +1,9 @@
 language: node_js
 
 node_js:
-  - "8"
   - "10"
   - "12"
+  - "14"
 
 env:
   - INSTALL_JDK=1
@@ -17,12 +17,13 @@ install:
 
 script:
   - yarn add @authenio/samlify-xsd-schema-validator
-  - yarn test
+  - yarn test --timeout=30s
 
 branches:
   only:
   - master
   - /^.*-alpha$/
   - /^.*-rc.*$/
+  - /^feature\/.*$/
 
 after_success: npm run coverage

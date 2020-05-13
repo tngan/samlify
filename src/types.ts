@@ -8,14 +8,20 @@ export { SpMetadata as ServiceProviderMetadata } from './metadata-sp';
 
 export type MetadataFile = string | Buffer;
 
+type SSOService = {
+  isDefault?: boolean;
+  Binding: string;
+  Location: string;
+};
+
 export interface MetadataIdpOptions {
   entityID?: string;
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer;
   wantAuthnRequestsSigned?: boolean;
   nameIDFormat?: string[];
-  singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
-  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleSignOnService?: SSOService[];
+  singleLogoutService?: SSOService[];
   requestSignatureAlgorithm?: string;
 }
 
@@ -32,8 +38,9 @@ export interface MetadataSpOptions {
   wantMessageSigned?: boolean;
   signatureConfig?: { [key: string]: any };
   nameIDFormat?: string[];
-  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
-  assertionConsumerService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleSignOnService?: SSOService[];
+  singleLogoutService?: SSOService[];
+  assertionConsumerService?: SSOService[];
   elementsOrder?: string[];
 }
 
@@ -69,8 +76,8 @@ export type ServiceProviderSettings = {
   requestSignatureAlgorithm?: string;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
-  assertionConsumerService?: Array<{ Binding: string, Location: string }>;
-  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  assertionConsumerService?: SSOService[];
+  singleLogoutService?: SSOService[];
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
   logoutRequestTemplate?: SAMLDocumentTemplate;
@@ -106,8 +113,8 @@ export type IdentityProviderSettings = {
   signingCert?: string | Buffer;
   encryptCert?: string | Buffer; /** todo */
   nameIDFormat?: string[];
-  singleSignOnService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
-  singleLogoutService?: Array<{ isDefault?: boolean, Binding: string, Location: string }>;
+  singleSignOnService?: SSOService[];
+  singleLogoutService?: SSOService[];
   isAssertionEncrypted?: boolean;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string;

@@ -12,16 +12,14 @@
   ],
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "make rebuild",
+    "build": "yarn audit;make rebuild",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
     "pretest": "make pretest",
     "test": "NODE_ENV=test nyc ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit",
-    "snyk-protect": "snyk protect",
-    "prepare": "yarn run snyk-protect"
+    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>"
@@ -39,34 +37,35 @@
     "pako": "^1.0.10",
     "uuid": "^3.3.2",
     "xml": "^1.0.1",
-    "xml-crypto": "^1.4.0",
+    "xml-crypto": "^1.5.3",
     "xml-encryption": "^1.1.1",
     "xmldom": "^0.1.27",
     "xpath": "^0.0.27"
   },
   "devDependencies": {
+    "@ava/typescript": "^1.1.1",
     "@types/node": "^11.11.3",
     "@types/node-forge": "^0.7.4",
     "@types/pako": "^1.0.1",
     "@types/uuid": "3.0.0",
     "@types/xmldom": "^0.1.28",
-    "ava": "^1.2.1",
-    "coveralls": "^3.0.11",
-    "nyc": "^11.9.0",
-    "snyk": "^1.258.2",
+    "ava": "^3.8.2",
+    "coveralls": "^3.1.0",
+    "nyc": "^15.0.1",
     "timekeeper": "^2.2.0",
     "ts-node": "^8.3.0",
-    "tslint": "^5.12.1",
-    "typescript": "^3.4.5"
+    "tslint": "^6.1.2",
+    "typescript": "^3.8.3"
   },
   "ava": {
-    "compileEnhancements": false,
     "extensions": [
       "ts"
     ],
     "require": [
       "ts-node/register"
+    ],
+    "files": [
+      "!**/*.d.ts"
     ]
-  },
-  "snyk": true
+  }
 }

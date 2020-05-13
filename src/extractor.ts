@@ -366,7 +366,7 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length === 0) {
-      let attributeValue: SelectedValue[] | Array<(string | null)> | null = null;
+      let attributeValue: SelectedValue[] | (string | null)[] | null = null;
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
