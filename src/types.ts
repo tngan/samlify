@@ -78,6 +78,7 @@ export type ServiceProviderSettings = {
   encryptCert?: string | Buffer;
   transformationAlgorithms?: string[];
   nameIDFormat?: string[];
+  allowCreate?: boolean;
   // will be deprecated soon
   relayState?: string;
   // https://github.com/tngan/samlify/issues/337
