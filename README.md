@@ -24,8 +24,8 @@ To install the stable version
 Starting from v2.6, multiple schema validators are now supported. You can simply set the validator via the following global method. We have four validator modules right now, and you can write your own. The `setSchemaValidator` is required since v2.6, it will throw error if you don't set at the beginning.
 
 ```js
-import * as samlify from 'samlify';
-import * as validator from '@authenio/samlify-xsd-schema-validator';
+import * as samlify from "samlify";
+import * as validator from "@authenio/samlify-xsd-schema-validator";
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
 // import * as validator from '@authenio/samlify-node-xmllint';
 // import * as validator from '@authenio/samlify-libxml-xsd'; // only support for version of nodejs <= 8
@@ -42,10 +42,10 @@ Now you can create your own schema validator and even suppress it but you have t
 
 ```typescript
 samlify.setSchemaValidator({
-  validate: (response: string) => {
-    /* implment your own or always returns a resolved promise to skip */
-    return Promise.resolve('skipped');
-  }
+	validate: (response: string) => {
+		/* implment your own or always returns a resolved promise to skip */
+		return Promise.resolve("skipped");
+	},
 });
 ```
 
@@ -67,7 +67,7 @@ yarn
 ### Get Started
 
 ```javascript
-const saml = require('samlify');
+const saml = require("samlify");
 ```
 
 See full documentation [here](https://samlify.js.org/)

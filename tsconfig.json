@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "lib": ["dom", "es2015.core", "es2015.promise", "es2015.iterable", "es5"],
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -13,21 +14,13 @@
     "baseUrl": "./",
     "removeComments": false,
     "strictNullChecks": true,
-    "paths": {},
-    "lib": [
-      "dom",
-      "es2015.core",
-      "es2015.promise",
-      "es2015.iterable",
-      "es5"
-    ]
+    "allowSyntheticDefaultImports": true,
+    "paths": {}
   },
-  "atom": { "rewriteTsconfig": false },
-  "exclude": [
-    "node_modules",
-    "types/**/*.ts",
-    "test/**/*.ts"
-  ],
+  "atom": {
+    "rewriteTsconfig": false
+  },
+  "exclude": ["node_modules", "types/**/*.ts", "test/**/*.ts"],
   "compileOnSave": false,
   "buildOnSave": false
 }
