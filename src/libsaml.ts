@@ -9,7 +9,7 @@ import utility, { flattenDeep, isString } from "./utility";
 import { algorithms, namespace, wording } from "./urn";
 import { select } from "xpath";
 import { MetadataInterface } from "./metadata";
-import * as Nrsa from "node-rsa";
+import * as NodeRSA from "node-rsa";
 import {
   AdvancedSigningScheme,
   SigningScheme,
@@ -569,9 +569,9 @@ const libSaml = () => {
     ): string {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
-      const decryptedKey = new Nrsa(
+      const decryptedKey = new NodeRSA(
         utility.readPrivateKey(key, passphrase),
-        "private",
+        undefined,
         {
           signingScheme: getSigningScheme(signingAlgorithm),
         }
@@ -598,9 +598,8 @@ const libSaml = () => {
     ) {
       const signCert = metadata.getX509Certificate(certUse.signing);
       const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new Nrsa(
-        utility.getPublicKeyPemFromCertificate(signCert),
-        "public",
+      const key = new NodeRSA(
+        utility.getPublicKeyPemFromCertificate(signCert),undefined,
         { signingScheme }
       );
       return key.verify(
