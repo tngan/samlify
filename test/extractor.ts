@@ -89,7 +89,7 @@ const _spmeta: string = String(readFileSync("./test/misc/spmeta.xml"));
     ]);
     t.is(result.issuer.length, 1);
     t.is(
-      result.issuer.every((i) => i === "https://idp.example.com/metadata"),
+      result.issuer.every((i:string) => i === "https://idp.example.com/metadata"),
       true
     );
   });

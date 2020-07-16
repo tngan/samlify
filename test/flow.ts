@@ -1,4 +1,4 @@
-import esaml2 = require("../index");
+import esaml2 = require("../src");
 import { readFileSync, writeFileSync } from "fs";
 import test, { ExecutionContext } from "ava";
 import { PostBindingContext } from "../src/entity";

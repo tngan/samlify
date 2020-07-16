@@ -1,22 +1,22 @@
 // version <= 1.25
 import IdentityProvider, {
   IdentityProvider as IdentityProviderInstance,
-} from "./src/entity-idp";
+} from "./entity-idp";
 import ServiceProvider, {
   ServiceProvider as ServiceProviderInstance,
-} from "./src/entity-sp";
+} from "./entity-sp";
 
-export { default as IdPMetadata } from "./src/metadata-idp";
-export { default as SPMetadata } from "./src/metadata-sp";
-export { default as Utility } from "./src/utility";
-export { default as SamlLib } from "./src/libsaml";
+export { default as IdPMetadata } from "./metadata-idp";
+export { default as SPMetadata } from "./metadata-sp";
+export { default as Utility } from "./utility";
+export { default as SamlLib } from "./libsaml";
 // roadmap
 // new name convention in version >= 3.0
-import * as Constants from "./src/urn";
-import * as Extractor from "./src/extractor";
+import * as Constants from "./urn";
+import * as Extractor from "./extractor";
 
 // exposed methods for customising samlify
-import { setSchemaValidator } from "./src/api";
+import { setSchemaValidator } from "./api";
 
 export {
   Constants,

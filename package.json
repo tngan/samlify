@@ -21,9 +21,9 @@
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
-    "Tony Ngan <tonynwk919@gmail.com>"
+    "Tony Ngan <tonynwk919@gmail.com>",
+    "Mohamed Meabed <meabed@me.io>"
   ],
-  "author": "tngan",
   "repository": {
     "url": "https://github.com/meabed/samlify-js",
     "type": "git"
