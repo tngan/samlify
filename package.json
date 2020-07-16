@@ -31,7 +31,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@authenio/samlify-xsd-schema-validator": "^1.0.3",
     "camelcase": "^6.0.0",
     "node-forge": "^0.9.1",
     "node-rsa": "^1.0.8",
@@ -44,6 +43,7 @@
     "xpath": "^0.0.27"
   },
   "devDependencies": {
+    "@authenio/samlify-xsd-schema-validator": "^1.0.3",
     "@ava/typescript": "^1.1.1",
     "@types/node": "^14.0.23",
     "@types/node-forge": "^0.9.4",

@@ -71,7 +71,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
             entitySetting.privateKeyPass,
             undefined,
             entitySetting.requestSignatureAlgorithm
-          )
+          ) as string
         )
       )
     );

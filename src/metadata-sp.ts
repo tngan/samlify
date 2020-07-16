@@ -94,14 +94,14 @@ export class SpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach((f:any) => descriptors.NameIDFormat!.push(f));
+        nameIDFormat.forEach((f: any) => descriptors.NameIDFormat!.push(f));
       } else {
         // default value
         descriptors.NameIDFormat!.push(namespace.format.emailAddress);
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
-        singleLogoutService.forEach((a:any) => {
+        singleLogoutService.forEach((a: any) => {
           const attr: any = {
             Binding: a.Binding,
             Location: a.Location,
@@ -115,7 +115,7 @@ export class SpMetadata extends Metadata {
 
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
-        assertionConsumerService.forEach((a:any) => {
+        assertionConsumerService.forEach((a: any) => {
           const attr: any = {
             index: String(indexCount++),
             Binding: a.Binding,
@@ -131,11 +131,13 @@ export class SpMetadata extends Metadata {
       }
 
       // handle element order
-      const existedElements = elementsOrder.filter((name:string) =>
+      const existedElements = elementsOrder.filter((name: string) =>
         isNonEmptyArray(descriptors[name])
       );
-      existedElements.forEach((name:string) => {
-        descriptors[name].forEach((e:string) => SPSSODescriptor.push({ [name]: e }));
+      existedElements.forEach((name: string) => {
+        descriptors[name].forEach((e: string) =>
+          SPSSODescriptor.push({ [name]: e })
+        );
       });
 
       // Re-assign the meta reference as a XML string|Buffer for use with the parent constructor
@@ -201,7 +203,7 @@ export class SpMetadata extends Metadata {
       let location;
       const bindName = namespace.binding[binding];
       if (isNonEmptyArray(this.meta.assertionConsumerService)) {
-        this.meta.assertionConsumerService.forEach((obj:any) => {
+        this.meta.assertionConsumerService.forEach((obj: any) => {
           if (obj.binding === bindName) {
             location = obj.location;
             return;

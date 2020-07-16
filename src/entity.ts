@@ -72,7 +72,7 @@ export default class Entity {
 
   /**
    * @param entitySetting
-   * @param entityMeta is the entity metadata, deprecated after 2.0
+   * @param entityType
    */
   constructor(entitySetting: EntityConstructor, entityType: "idp" | "sp") {
     this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);
@@ -133,7 +133,7 @@ export default class Entity {
     }
     if (isNonEmptyArray(field)) {
       let res = true;
-      (field as string[]).forEach((f) => {
+      (field as string[]).forEach((f:string) => {
         if (f !== metaField) {
           res = false;
           return;
@@ -145,7 +145,7 @@ export default class Entity {
   }
 
   /** @desc   Generates the logout request for developers to design their own method
-   * @param  {ServiceProvider} sp     object of service provider
+   * @param targetEntity
    * @param  {string}   binding       protocol binding
    * @param  {object}   user          current logged user (e.g. user)
    * @param  {string} relayState      the URL to which to redirect the user when logout is complete
@@ -192,7 +192,7 @@ export default class Entity {
 
   /**
    * @desc  Generates the logout response for developers to design their own method
-   * @param  {IdentityProvider} idp               object of identity provider
+   * @param target
    * @param  {object} requestInfo                 corresponding request, used to obtain the id
    * @param  {string} relayState                  the URL to which to redirect the user when logout is complete.
    * @param  {string} binding                     protocol binding
@@ -238,9 +238,9 @@ export default class Entity {
 
   /**
    * @desc   Validation of the parsed the URL parameters
-   * @param  {IdentityProvider}   idp             object of identity provider
+   * @param from
    * @param  {string}   binding                   protocol binding
-   * @param  {request}   req                      request
+   * @param request
    * @return {Promise}
    */
   parseLogoutRequest(from, binding, request: ESamlHttpRequest) {
@@ -258,9 +258,9 @@ export default class Entity {
 
   /**
    * @desc   Validation of the parsed the URL parameters
-   * @param  {object} config                      config for the parser
+   * @param from
    * @param  {string}   binding                   protocol binding
-   * @param  {request}   req                      request
+   * @param request
    * @return {Promise}
    */
   parseLogoutResponse(from, binding, request: ESamlHttpRequest) {

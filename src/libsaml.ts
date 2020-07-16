@@ -566,7 +566,7 @@ const libSaml = () => {
       passphrase?: string,
       isBase64?: boolean,
       signingAlgorithm?: string
-    ): string {
+    ): string | Buffer {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
       const decryptedKey = new NodeRSA(
@@ -580,7 +580,7 @@ const libSaml = () => {
       // Use private key to sign data
       return isBase64 !== false
         ? signature.toString("base64")
-        : signature.toString();
+        : (signature as Buffer);
     },
     /**
      * @desc Verifies message signature
@@ -599,13 +599,11 @@ const libSaml = () => {
       const signCert = metadata.getX509Certificate(certUse.signing);
       const signingScheme = getSigningScheme(verifyAlgorithm);
       const key = new NodeRSA(
-        utility.getPublicKeyPemFromCertificate(signCert),undefined,
+        utility.getPublicKeyPemFromCertificate(signCert),
+        undefined,
         { signingScheme }
       );
-      return key.verify(
-        new Buffer(octetString),
-        Buffer.from(signature.toString())
-      );
+      return key.verify(new Buffer(octetString), Buffer.from(signature));
     },
     /**
      * @desc Get the public key in string format

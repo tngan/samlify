@@ -1,6 +1,6 @@
-import {DOMParser} from "xmldom";
-import {select, SelectedValue} from "xpath";
-import {last, notEmpty, uniq, zipObject} from "./utility";
+import { DOMParser } from "xmldom";
+import { select, SelectedValue } from "xpath";
+import { last, notEmpty, uniq, zipObject } from "./utility";
 import camelCase from "camelcase";
 
 const dom = DOMParser;
@@ -39,7 +39,7 @@ function buildAttributeXPath(attributes) {
     return `/@${attributes[0]}`;
   }
   const filters = attributes
-    .map((attribute:string) => `name()='${attribute}'`)
+    .map((attribute: string) => `name()='${attribute}'`)
     .join(" or ");
   return `/@*[${filters}]`;
 }
@@ -107,7 +107,7 @@ export const logoutResponseStatusFields = [
 ];
 
 export const loginResponseFields: (assertion: any) => ExtractorFields = (
-  assertion:string
+  assertion: string
 ) => [
   {
     key: "conditions",
@@ -236,9 +236,9 @@ export function extract(context: string, fields) {
         attributes: []
       }
      */
-    if (localPath.every((path:string) => Array.isArray(path))) {
+    if (localPath.every((path: string) => Array.isArray(path))) {
       const multiXPaths = localPath
-        .map((path:string) => {
+        .map((path: string) => {
           // not support attribute yet, so ignore it
           return `${buildAbsoluteXPath(path)}/text()`;
         })
@@ -284,7 +284,7 @@ export function extract(context: string, fields) {
       const childAttributeXPath = buildAttributeXPath(attributes);
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
       // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
-      const childAttributes = parentNodes.map((node:SelectedValue) => {
+      const childAttributes = parentNodes.map((node: SelectedValue) => {
         const nodeDoc = new dom().parseFromString(node.toString());
         if (attributes.length === 0) {
           const childValues = select(fullChildXPath, nodeDoc).map(
@@ -329,7 +329,7 @@ export function extract(context: string, fields) {
         value = node[0].toString();
       }
       if (node.length > 1) {
-        value = node.map((n:SelectedValue) => n.toString());
+        value = node.map((n: SelectedValue) => n.toString());
       }
       return {
         ...result,
@@ -346,7 +346,9 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length > 1) {
-      const baseNode = select(baseXPath, targetDoc).map((n:SelectedValue) => n.toString());
+      const baseNode = select(baseXPath, targetDoc).map((n: SelectedValue) =>
+        n.toString()
+      );
       const childXPath = `${buildAbsoluteXPath([
         last(localPath),
       ])}${attributeXPath}`;

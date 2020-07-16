@@ -3,15 +3,14 @@
  * @author tngan
  * @desc  Metadata of identity provider
  */
-import Metadata, {MetadataInterface} from "./metadata";
-import {MetadataIdpConstructor, MetadataIdpOptions} from "./types";
-import {namespace} from "./urn";
+import Metadata, { MetadataInterface } from "./metadata";
+import { MetadataIdpConstructor, MetadataIdpOptions } from "./types";
+import { namespace } from "./urn";
 import libsaml from "./libsaml";
-import {isNonEmptyArray, isString} from "./utility";
+import { isNonEmptyArray, isString } from "./utility";
 import * as xml from "xml";
 
-export interface IdpMetadataInterface extends MetadataInterface {
-}
+export interface IdpMetadataInterface extends MetadataInterface {}
 
 /*
  * @desc interface function
@@ -59,11 +58,13 @@ export class IdpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach((f: any) => IDPSSODescriptor.push({NameIDFormat: f}));
+        nameIDFormat.forEach((f: any) =>
+          IDPSSODescriptor.push({ NameIDFormat: f })
+        );
       }
 
       if (isNonEmptyArray(singleSignOnService)) {
-        singleSignOnService.forEach((a:any) => {
+        singleSignOnService.forEach((a: any) => {
           const attr: any = {
             Binding: a.Binding,
             Location: a.Location,
@@ -71,21 +72,21 @@ export class IdpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          IDPSSODescriptor.push({SingleSignOnService: [{_attr: attr}]});
+          IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
         });
       } else {
         throw new Error("ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE");
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
-        singleLogoutService.forEach((a:any) => {
+        singleLogoutService.forEach((a: any) => {
           const attr: any = {};
           if (a.isDefault) {
             attr.isDefault = true;
           }
           attr.Binding = a.Binding;
           attr.Location = a.Location;
-          IDPSSODescriptor.push({SingleLogoutService: [{_attr: attr}]});
+          IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
         });
       } else {
         console.warn(
@@ -104,7 +105,7 @@ export class IdpMetadata extends Metadata {
                 entityID,
               },
             },
-            {IDPSSODescriptor},
+            { IDPSSODescriptor },
           ],
         },
       ]);

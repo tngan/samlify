@@ -289,7 +289,7 @@ test("getAssertionConsumerService with two bindings", (t: ExecutionContext) => {
       libsaml.verifyMessageSignature(
         SPMetadata,
         octetString,
-        Buffer.from(signature, "base64")
+        Buffer.from(signature as string, "base64")
       ),
       true
     );
@@ -304,7 +304,7 @@ test("getAssertionConsumerService with two bindings", (t: ExecutionContext) => {
       libsaml.verifyMessageSignature(
         SPMetadata,
         octetStringSHA256,
-        Buffer.from(signature, "base64")
+        Buffer.from(signature as string, "base64")
       ),
       true
     );
@@ -319,7 +319,7 @@ test("getAssertionConsumerService with two bindings", (t: ExecutionContext) => {
       libsaml.verifyMessageSignature(
         SPMetadata,
         octetStringSHA512,
-        Buffer.from(signature, "base64")
+        Buffer.from(signature as string, "base64")
       ),
       true
     );

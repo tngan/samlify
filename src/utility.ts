@@ -113,7 +113,9 @@ export function base64Decode(
  * @return {string} compressed string
  */
 function deflateString(message: string): number[] {
-  const input = Array.prototype.map.call(message, (char:string) => char.charCodeAt(0));
+  const input = Array.prototype.map.call(message, (char: string) =>
+    char.charCodeAt(0)
+  );
   return Array.from(deflate(input, { raw: true }));
 }
 
@@ -126,10 +128,10 @@ export function inflateString(compressedString: string): string {
   const inputBuffer = Buffer.from(compressedString, BASE64_STR);
   const input = Array.prototype.map.call(
     inputBuffer.toString("binary"),
-    (char:string) => char.charCodeAt(0)
+    (char: string) => char.charCodeAt(0)
   );
   return Array.from(inflate(input, { raw: true }))
-    .map((byte:number) => String.fromCharCode(byte))
+    .map((byte: number) => String.fromCharCode(byte))
     .join("");
 }
 
