@@ -1,0 +1,5 @@
+build
+.nyc_output
+node_modules
+types
+docs
