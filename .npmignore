@@ -10,3 +10,4 @@ yarn*
 .idea
 .travis.yml
 .github
+!build
