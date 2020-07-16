@@ -1,8 +1,8 @@
 {
-  "name": "samlify",
+  "name": "samlify-js",
   "version": "2.7.5",
   "description": "High-level API for Single Sign On (SAML 2.0)",
-  "main": "build/index.js",
+  "main": "./build/index.js",
   "keywords": [
     "nodejs",
     "saml2",
@@ -10,7 +10,6 @@
     "slo",
     "metadata"
   ],
-  "typings": "types/index.d.ts",
   "scripts": {
     "build": "yarn audit;make rebuild",
     "docs": "docsify serve -o docs",
@@ -26,7 +25,7 @@
   ],
   "author": "tngan",
   "repository": {
-    "url": "https://github.com/tngan/samlify",
+    "url": "https://github.com/meabed/samlify-js",
     "type": "git"
   },
   "license": "MIT",
