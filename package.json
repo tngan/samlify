@@ -1,6 +1,6 @@
 {
   "name": "samlify-js",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "./build/index.js",
   "keywords": [
