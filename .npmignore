@@ -2,6 +2,11 @@ node_modules
 examples
 test
 @types
+types
+src
 docs
 yarn*
 .nyc_output
+.idea
+.travis.yml
+.github
