@@ -1,0 +1,11 @@
+Private Key Phrase (SP) - signature
+VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px
+
+Private Key Phrase (SP) - encryption
+BXFNKpxrsjrCkGA8cAu5wUVHOSpci1RU
+
+Private Key Phrase (IDP) - signature
+q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW
+
+Private Key Phrase (IDP) - encryption
+g7hGcRmp8PxT5QeP2q9Ehf1bWe9zTALN
