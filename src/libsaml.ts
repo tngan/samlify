@@ -260,9 +260,12 @@ const libSaml = () => {
      */
     replaceTagsByValue(rawXML: string, tagValues: any): string {
       Object.keys(tagValues).forEach((t: string) => {
-        if (typeof tagValues[t] !== "undefined") {
-          rawXML = rawXML.replace(new RegExp(`{${t}}`, "g"), tagValues[t]);
-        }
+        rawXML = rawXML.replace(
+          new RegExp(`{${t}}`, "g"),
+          typeof tagValues[t] === "undefined"
+            ? ""
+            : tagValues[t]
+        );
       });
       return rawXML;
     },

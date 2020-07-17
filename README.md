@@ -17,7 +17,6 @@ Highly configuarable Node.js SAML 2.0 library for Single Sign On
 
 Welcome all PRs for maintaining this project, or provide a link to the repositories especially for use cases alongside with different frameworks.
 
-
 ### Installation
 
 To install the stable version
