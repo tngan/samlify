@@ -5,9 +5,11 @@
 [![Coverage Status](https://img.shields.io/coveralls/tngan/samlify/master.svg)](https://coveralls.io/github/tngan/samlify?branch=master)
 [![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/samlify)
 
------
+---
+
 ## Fork with typescript fixes, packages upgrade and faster bug fixes.
------
+
+---
 
 Highly configuarable Node.js SAML 2.0 library for Single Sign On
 

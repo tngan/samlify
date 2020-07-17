@@ -176,7 +176,9 @@ var libSaml = function () {
          */
         replaceTagsByValue: function (rawXML, tagValues) {
             Object.keys(tagValues).forEach(function (t) {
-                rawXML = rawXML.replace(new RegExp("{" + t + "}", "g"), tagValues[t]);
+                if (typeof tagValues[t] !== "undefined") {
+                    rawXML = rawXML.replace(new RegExp("{" + t + "}", "g"), tagValues[t]);
+                }
             });
             return rawXML;
         },

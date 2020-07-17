@@ -18,7 +18,8 @@
     "pretest": "make pretest",
     "test": "NODE_ENV=test nyc ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
+    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit",
+    "prettier": "prettier --write ."
   },
   "contributors": [
     "Tony Ngan <tonynwk919@gmail.com>",

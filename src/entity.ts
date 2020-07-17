@@ -133,7 +133,7 @@ export default class Entity {
     }
     if (isNonEmptyArray(field)) {
       let res = true;
-      (field as string[]).forEach((f:string) => {
+      (field as string[]).forEach((f: string) => {
         if (f !== metaField) {
           res = false;
           return;
