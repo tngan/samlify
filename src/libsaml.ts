@@ -366,11 +366,11 @@ const libSaml = () => {
           // normalise the certificate string
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          if (certificateNode.length === 0) {
+          if (metadataCert.length === 0) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
 
-          // no certificate node in response
+          // certificate node in response
           if (certificateNode.length !== 0) {
             const x509CertificateData = certificateNode[0].firstChild.data;
             const x509Certificate = utility.normalizeCerString(x509CertificateData);
@@ -386,6 +386,9 @@ const libSaml = () => {
 
             sig.keyInfoProvider = new this.getKeyInfo(x509Certificate);
 
+          } else {
+            // no certificate node in response so just use the first cert in metadata
+            sig.keyInfoProvider = new this.getKeyInfo(metadataCert[0]);
           }
 
         } 
