@@ -366,7 +366,8 @@ const libSaml = () => {
           // normalise the certificate string
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          if (metadataCert.length === 0) {
+          // no certificate in response or metadata
+          if (metadataCert.length === 0 && metadataCert.length === 0) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
 
