@@ -21,9 +21,9 @@ script:
 
 branches:
   only:
-  - master
-  - /^.*-alpha$/
-  - /^.*-rc.*$/
-  - /^feature\/.*$/
+    - master
+    - /^.*-alpha$/
+    - /^.*-rc.*$/
+    - /^feature\/.*$/
 
 after_success: npm run coverage
