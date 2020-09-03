@@ -32,7 +32,7 @@
   "license": "MIT",
   "dependencies": {
     "camelcase": "^5.3.1",
-    "node-forge": "^0.8.5",
+    "node-forge": "^0.10.0",
     "node-rsa": "^1.0.5",
     "pako": "^1.0.10",
     "uuid": "^3.3.2",
