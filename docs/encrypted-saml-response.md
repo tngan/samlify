@@ -43,6 +43,7 @@ Currently, we support the following encrpytion algorithms:
 * http://www.w3.org/2001/04/xmlenc#tripledes-cbc
 * http://www.w3.org/2001/04/xmlenc#aes128-cbc
 * http://www.w3.org/2001/04/xmlenc#aes256-cbc
+* http://www.w3.org/2009/xmlenc11#aes128-gcm
 
 **Key encryption algorithms**
 * http://www.w3.org/2001/04/xmlenc#rsa-1_5

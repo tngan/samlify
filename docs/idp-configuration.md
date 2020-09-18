@@ -80,7 +80,7 @@ const idp = new IdentityProvider({
   The signature algorithm used in request. Default to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. We also support rsa-sha1 (not recommended) `http://www.w3.org/2000/09/xmldsig#rsa-sha1` and rsa-sha2 `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`.
   
 - **dataEncryptionAlgorithm: EncryptionAlgorithm**<br/> 
-  The encryption algorithm used in response. Default to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. We also support aes256 `http://www.w3.org/2001/04/xmlenc#aes256-cbc` and tripledes `http://www.w3.org/2001/04/xmlenc#tripledes-cbc`.
+  The encryption algorithm used in response. Default to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. We also support aes256 `http://www.w3.org/2001/04/xmlenc#aes256-cbc`, tripledes `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` and aes128 `http://www.w3.org/2009/xmlenc11#aes128-gcm`.
 
 - **keyEncryptionAlgorithm: KeyEncryptionAlgorithm**<br/>
   The key encryption algorithm. Default to rsa-1_5 `http://www.w3.org/2001/04/xmlenc#rsa-1_5`. We also support rsa-oaep-mgf1p `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`.
