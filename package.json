@@ -35,7 +35,7 @@
     "@authenio/xml-encryption": "^0.11.3",
     "camelcase": "^5.3.1",
     "deflate-js": "^0.2.3",
-    "node-forge": "^0.8.5",
+    "node-forge": "^0.10.0",
     "node-rsa": "^1.0.5",
     "uuid": "^3.3.2",
     "xml": "^1.0.1",
