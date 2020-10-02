@@ -40,7 +40,7 @@
     "uuid": "^3.3.2",
     "xml": "^1.0.1",
     "xml-crypto": "^1.4.0",
-    "xmldom": "^0.1.27",
+    "xmldom": "^0.3.0",
     "xpath": "^0.0.27"
   },
   "peerDependencies": {
