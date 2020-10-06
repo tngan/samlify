@@ -356,10 +356,10 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.3.tgz#3dca0e3f33b200fc7d1139c0cd96c1268cadfd9d"
   integrity sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
 
-"@types/node-forge@^0.7.4":
-  version "0.7.12"
-  resolved "https://registry.yarnpkg.com/@types/node-forge/-/node-forge-0.7.12.tgz#24b0bbbbc2c8163379e976a8fd27c7950a271cbc"
-  integrity sha512-cLUoHEUZvAW6bX1mAwi2n1DHcwZ0fSzpmKiMf0AVK2sN4wQhy+IkHdHLGNq8I1/2ePsjraEpKRPlJ3eYMy0iVg==
+"@types/node-forge@^0.9.5":
+  version "0.9.5"
+  resolved "https://registry.yarnpkg.com/@types/node-forge/-/node-forge-0.9.5.tgz#648231d79da197216290429020698d4e767365a0"
+  integrity sha512-rrN3xfA/oZIzwOnO3d2wRQz7UdeVkmMMPjWUCfpPTPuKFVb3D6G10LuiVHYYmvrivBBLMx4m0P/FICoDbNZUMA==
   dependencies:
     "@types/node" "*"
 
