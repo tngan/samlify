@@ -381,7 +381,10 @@ const libSaml = () => {
             ) {
               // keep this restriction for rolling certificate usage
               // to make sure the response certificate is one of those specified in metadata
-              throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+              // throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+              console.log('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+              console.log('metadataCert', metadataCert);
+              console.log('x509Certificate', x509Certificate);
             }
 
             sig.keyInfoProvider = new this.getKeyInfo(x509Certificate);
