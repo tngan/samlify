@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@types/node": "^11.11.3",
-    "@types/node-forge": "^0.7.4",
+    "@types/node-forge": "^0.9.5",
     "@types/uuid": "3.0.0",
     "@types/xmldom": "^0.1.28",
     "ava": "^1.2.1",
