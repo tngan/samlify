@@ -5,6 +5,7 @@ import { PostBindingContext } from '../src/entity';
 import * as uuid from 'uuid';
 import * as url from 'url';
 import util from '../src/utility';
+import * as tk from 'timekeeper';
 
 import * as validator from '@authenio/samlify-xsd-schema-validator';
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
@@ -125,6 +126,7 @@ const spNoAssertSignCustomConfig = serviceProvider({ ...defaultSpConfig,
     location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
   },
 });
+const spWithClockDrift = serviceProvider({ ...defaultSpConfig, clockDrifts: [-2000, 2000] });
 
 function writer(str) {
   writeFileSync('test.txt', str);
@@ -623,7 +625,7 @@ test('should reject signature wrapped response - case 1', async t => {
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   //Decode
-  const buffer = new Buffer(SAMLResponse, 'base64');
+  const buffer = Buffer.from(SAMLResponse, 'base64');
   const xml = buffer.toString();
   //Create version of response without signature
   const stripped = xml
@@ -634,7 +636,7 @@ test('should reject signature wrapped response - case 1', async t => {
     .replace('user@esaml2.com', 'admin@esaml2.com');
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '<saml:SubjectConfirmationData>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:SubjectConfirmationData>');
-  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+  const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
   } catch (e) {
@@ -647,7 +649,7 @@ test('should reject signature wrapped response - case 2', async t => {
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, user));
   //Decode
-  const buffer = new Buffer(SAMLResponse, 'base64');
+  const buffer = Buffer.from(SAMLResponse, 'base64');
   const xml = buffer.toString();
   //Create version of response without signature
   const stripped = xml
@@ -658,7 +660,7 @@ test('should reject signature wrapped response - case 2', async t => {
     .replace('user@esaml2.com', 'admin@esaml2.com');
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
-  const wrappedResponse = new Buffer(xmlWrapped).toString('base64');
+  const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     const result = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
   } catch (e) {
@@ -672,4 +674,50 @@ test('should throw two-tiers code error when the response does not return succes
   } catch (e) {
     t.is(e.message, 'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy');
   }
+});
+
+test.serial('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response without clock drift setup', async t => {
+
+  const now = new Date();
+  const fiveMinutesOneSecLater = new Date(now.getTime());
+  fiveMinutesOneSecLater.setMinutes(fiveMinutesOneSecLater.getMinutes() + 5);
+  fiveMinutesOneSecLater.setSeconds(fiveMinutesOneSecLater.getSeconds() + 1);
+
+  const user = { email: 'user@esaml2.com' };
+
+  try {
+    const { context: SAMLResponse } = await idp.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idp, sp, user));
+    // simulate the time on client side when response arrives after 5.1 sec
+    tk.freeze(fiveMinutesOneSecLater);
+    await sp.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
+    // test failed, it shouldn't happen
+    t.is(true, false);
+  } catch (e) {
+    t.is(e, 'ERR_SUBJECT_UNCONFIRMED');
+  } finally {
+    tk.reset();
+  }
+});
+
+test.serial('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response with clock drift setup', async t => {
+
+  const now = new Date();
+  const fiveMinutesOneSecLater = new Date(now.getTime());
+  fiveMinutesOneSecLater.setMinutes(fiveMinutesOneSecLater.getMinutes() + 5);
+  fiveMinutesOneSecLater.setSeconds(fiveMinutesOneSecLater.getSeconds() + 1);
+  const user = { email: 'user@esaml2.com' };
+
+  try {
+    const { context: SAMLResponse } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'post', user, createTemplateCallback(idp, spWithClockDrift, user));
+    // simulate the time on client side when response arrives after 5.1 sec
+    tk.freeze(fiveMinutesOneSecLater);
+    await spWithClockDrift.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
+    t.is(true, true);
+  } catch (e) {
+    // test failed, it shouldn't happen
+    t.is(e, false);
+  } finally {
+    tk.reset();
+  }
+
 });

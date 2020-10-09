@@ -3,7 +3,7 @@ declare module "xml-encryption" {
     rsa_pub: string | Buffer;
     pem: string | Buffer;
     encryptionAlgorithm: string;
-    keyEncryptionAlgorighm: string;
+    keyEncryptionAlgorithm: string;
     input_encoding?: string;
   }
   export interface DecryptOptions {

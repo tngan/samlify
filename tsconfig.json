@@ -25,7 +25,8 @@
   "atom": { "rewriteTsconfig": false },
   "exclude": [
     "node_modules",
-    "types/**/*.ts"
+    "types/**/*.ts",
+    "test/**/*.ts"
   ],
   "compileOnSave": false,
   "buildOnSave": false

@@ -65,7 +65,6 @@ export class IdpMetadata extends Metadata {
       if (isNonEmptyArray(singleSignOnService)) {
         singleSignOnService.forEach((a, indexCount) => {
           const attr: any = {
-            index: indexCount.toString(),
             Binding: a.Binding,
             Location: a.Location,
           };
@@ -84,7 +83,6 @@ export class IdpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.index = (indexCount).toString();
           attr.Binding = a.Binding;
           attr.Location = a.Location;
           IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });

@@ -100,7 +100,7 @@ async function redirectFlow(options) {
     }
 
     // put the below two assignemnts into verifyMessageSignature function
-    const base64Signature = new Buffer(decodeURIComponent(signature), 'base64');
+    const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
 
     const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);
@@ -135,7 +135,7 @@ async function postFlow(options): Promise<FlowResult> {
   let samlContent = String(base64Decode(encodedRequest));
 
   const verificationOptions = {
-    cert: from.entityMeta,
+    metadata: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
 
@@ -198,11 +198,14 @@ async function postFlow(options): Promise<FlowResult> {
   const extractedProperties = parseResult.extract;
 
   // invalid session time
+  // only run the verifyTime when `SessionNotOnOrAfter` exists
   if (
     parserType === 'SAMLResponse'
+    && extractedProperties.sessionIndex.sessionNotOnOrAfter
     && !verifyTime(
       undefined,
-      extractedProperties.sessionIndex.sessionNotOnOrAfter
+      extractedProperties.sessionIndex.sessionNotOnOrAfter,
+      self.entitySetting.clockDrifts
     )
   ) {
     return Promise.reject('ERR_EXPIRED_SESSION');
@@ -215,7 +218,8 @@ async function postFlow(options): Promise<FlowResult> {
     && extractedProperties.conditions
     && !verifyTime(
       extractedProperties.conditions.notBefore,
-      extractedProperties.conditions.notOnOrAfter
+      extractedProperties.conditions.notOnOrAfter,
+      self.entitySetting.clockDrifts
     )
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');

@@ -36,9 +36,9 @@ export interface SignatureConstructor {
 }
 
 export interface SignatureVerifierOptions {
-  cert?: MetadataInterface;
-  signatureAlgorithm?: string;
+  metadata?: MetadataInterface;
   keyFile?: string;
+  signatureAlgorithm?: string;
 }
 
 export interface ExtractorResult {
@@ -341,47 +341,55 @@ const libSaml = () => {
       let verified = true;
       // need to refactor later on
       selection.forEach(signatureNode => {
+
         sig.signatureAlgorithm = opts.signatureAlgorithm;
+
+        if (!opts.keyFile && !opts.metadata) {
+          throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
+        }
+
         if (opts.keyFile) {
           sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
-        } else if (opts.cert) {
+        }
+
+        if (opts.metadata) {
 
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
-
           // certificate in metadata
-          let metadataCert: any = opts.cert.getX509Certificate(certUse.signing);
-          if (typeof metadataCert === 'string') {
-            metadataCert = [metadataCert];
-          } else if (metadataCert instanceof Array) {
-            // flattens the nested array of Certificates from each KeyDescriptor
+          let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
+          // flattens the nested array of Certificates from each KeyDescriptor
+          if (Array.isArray(metadataCert)) {
             metadataCert = flattenDeep(metadataCert);
+          } else if (typeof metadataCert === 'string') {
+            metadataCert = [metadataCert];
           }
+          // normalise the certificate string
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          // use the first
-          let selectedCert = metadataCert[0];
+          if (certificateNode.length === 0) {
+            throw new Error('NO_SELECTED_CERTIFICATE');
+          }
+
           // no certificate node in response
           if (certificateNode.length !== 0) {
             const x509CertificateData = certificateNode[0].firstChild.data;
             const x509Certificate = utility.normalizeCerString(x509CertificateData);
-            selectedCert = x509Certificate;
+
+            if (
+              metadataCert.length >= 1 &&
+              !metadataCert.find(cert => cert.trim() === x509Certificate.trim())
+            ) {
+              // keep this restriction for rolling certificate usage
+              // to make sure the response certificate is one of those specified in metadata
+              throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+            }
+
+            sig.keyInfoProvider = new this.getKeyInfo(x509Certificate);
+
           }
 
-          if (selectedCert === null) {
-            throw new Error('NO_SELECTED_CERTIFICATE');
-          }
-          if (metadataCert.length >= 1 && !metadataCert.find(cert => cert.trim() === selectedCert.trim())) {
-            // keep this restriction for rolling certificate usage
-            // to make sure the response certificate is one of those specified in metadata
-            // throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
-            console.log('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
-            console.log('metadataCert', metadataCert);
-            console.log('selectedCert', selectedCert);
-          }
-          sig.keyInfoProvider = new this.getKeyInfo(selectedCert);
-        } else {
-          throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
-        }
+        } 
+
         sig.loadSignature(signatureNode);
 
         doc.removeChild(signatureNode);
@@ -541,10 +549,10 @@ const libSaml = () => {
         if (sourceEntitySetting.isAssertionEncrypted) {
           xmlenc.encrypt(assertions[0].toString(), {
             // use xml-encryption module
-            rsa_pub: new Buffer(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
-            pem: new Buffer('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
+            rsa_pub: Buffer.from(utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt)).replace(/\r?\n|\r/g, '')), // public key from certificate
+            pem: Buffer.from('-----BEGIN CERTIFICATE-----' + targetEntityMetadata.getX509Certificate(certUse.encrypt) + '-----END CERTIFICATE-----'),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
-            keyEncryptionAlgorighm: sourceEntitySetting.keyEncryptionAlgorithm,
+            keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
           }, (err, res) => {
             if (err) {
               console.error(err);
@@ -613,8 +621,8 @@ const libSaml = () => {
 
       /**
        * user can write a validate function that always returns
-       * a resolved promise and skip the validator even in 
-       * production, user will take the responsibility if 
+       * a resolved promise and skip the validator even in
+       * production, user will take the responsibility if
        * they intend to skip the validation
        */
       if (!validate) {

@@ -100,10 +100,8 @@ export class SpMetadata extends Metadata {
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
-        let indexCount = 0;
         singleLogoutService.forEach(a => {
           const attr: any = {
-            index: String(indexCount++),
             Binding: a.Binding,
             Location: a.Location,
           };

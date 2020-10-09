@@ -112,20 +112,20 @@ test('#31 query param for sso/slo returns error', t => {
     t.is(acs.assertionConsumerService[0].index, '0');
     t.is(acs.assertionConsumerService[1].index, '1');
   });
-  test('#33 sp metadata slo index should be increased by 1', t => {
+  test('#352 no index attribute for sp SingleLogoutService nodes', t => {
     t.is(spslo.singleLogoutService.length, 2);
-    t.is(spslo.singleLogoutService[0].index, '0');
-    t.is(spslo.singleLogoutService[1].index, '1');
+    t.is(spslo.singleLogoutService[0].index, undefined);
+    t.is(spslo.singleLogoutService[1].index, undefined);
   });
-  test('#33 idp metadata sso index should be increased by 1', t => {
+  test('#352 no index attribute for idp SingleSignOnService nodes', t => {
     t.is(sso.singleSignOnService.length, 2);
-    t.is(sso.singleSignOnService[0].index, '0');
-    t.is(sso.singleSignOnService[1].index, '1');
+    t.is(sso.singleSignOnService[0].index, undefined);
+    t.is(sso.singleSignOnService[1].index, undefined);
   });
-  test('#33 idp metadata slo index should be increased by 1', t => {
+  test('#352 no index attribute for idp SingleLogoutService nodes', t => {
     t.is(idpslo.singleLogoutService.length, 2);
-    t.is(idpslo.singleLogoutService[0].index, '0');
-    t.is(idpslo.singleLogoutService[1].index, '1');
+    t.is(idpslo.singleLogoutService[0].index, undefined);
+    t.is(idpslo.singleLogoutService[1].index, undefined);
   });
   test('#86 duplicate issuer throws error', t => {
     const xml = readFileSync('./test/misc/dumpes_issuer_response.xml');

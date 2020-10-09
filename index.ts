@@ -1,6 +1,7 @@
 // version <= 1.25
-export { default as IdentityProvider } from './src/entity-idp';
-export { default as ServiceProvider } from './src/entity-sp';
+import IdentityProvider, { IdentityProvider as IdentityProviderInstance } from './src/entity-idp';
+import ServiceProvider, { ServiceProvider as ServiceProviderInstance } from './src/entity-sp';
+
 export { default as IdPMetadata } from './src/metadata-idp';
 export { default as SPMetadata } from './src/metadata-sp';
 export { default as Utility } from './src/utility';
@@ -16,6 +17,11 @@ import { setSchemaValidator } from './src/api';
 export {
   Constants,
   Extractor,
+  // temp: resolve the conflict after version >= 3.0
+  IdentityProvider,
+  IdentityProviderInstance,
+  ServiceProvider,
+  ServiceProviderInstance,
   // set context
   setSchemaValidator
 };

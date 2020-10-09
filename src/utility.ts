@@ -4,7 +4,7 @@
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
 import { pki, util, asn1 } from 'node-forge';
-import { inflate, deflate } from 'deflate-js';
+import { inflate, deflate } from 'pako';
 
 const BASE64_STR = 'base64';
 
@@ -13,10 +13,24 @@ const BASE64_STR = 'base64';
  * @param arr1 {string[]}
  * @param arr2 {[]}
  */
-export function zipObject(arr1: string[], arr2: any[]) {
+export function zipObject(arr1: string[], arr2: any[], skipDuplicated = true) {
   return arr1.reduce((res, l, i) => {
+    
+    if (skipDuplicated) {
+      res[l] = arr2[i];
+      return res;
+    }
+    // if key exists, aggregate with array in order to get rid of duplicate key
+    if (res[l] !== undefined) {
+      res[l] = Array.isArray(res[l])
+        ? res[l].concat(arr2[i])
+        : [res[l]].concat(arr2[i]);
+      return res;
+    }
+
     res[l] = arr2[i];
     return res;
+
   }, {});
 }
 /**
@@ -69,8 +83,8 @@ export function isString(input: any) {
 * @param  {string} message                       plain-text message
 * @return {string} base64 encoded string
 */
-function base64Encode(message: string) {
-  return new Buffer(message).toString(BASE64_STR);
+function base64Encode(message: string | number[]) {
+  return Buffer.from(message as string).toString(BASE64_STR);
 }
 /**
 * @desc Decode string from base64 format
@@ -79,7 +93,7 @@ function base64Encode(message: string) {
 * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
 */
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
-  const bytes = new Buffer(base64Message, BASE64_STR);
+  const bytes = Buffer.from(base64Message, BASE64_STR);
   return Boolean(isBytes) ? bytes : bytes.toString();
 }
 /**
@@ -87,8 +101,9 @@ export function base64Decode(base64Message: string, isBytes?: boolean): string |
 * @param  {string} message
 * @return {string} compressed string
 */
-function deflateString(message: string): string {
-  return deflate(Array.prototype.map.call(message, char => char.charCodeAt(0)));
+function deflateString(message: string): number[] {
+  const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
+  return Array.from(deflate(input, { raw: true }));
 }
 /**
 * @desc Decompress the compressed string
@@ -96,7 +111,9 @@ function deflateString(message: string): string {
 * @return {string} decompressed string
 */
 export function inflateString(compressedString: string): string {
-  return inflate(Array.prototype.map.call(new Buffer(compressedString, BASE64_STR).toString('binary'), char => char.charCodeAt(0)))
+  const inputBuffer = Buffer.from(compressedString, BASE64_STR);
+  const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
+  return Array.from(inflate(input, { raw: true }))
     .map(byte => String.fromCharCode(byte))
     .join('');
 }
