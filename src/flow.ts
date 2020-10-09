@@ -195,7 +195,19 @@ async function postFlow(options): Promise<FlowResult> {
    *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
    */
   const targetEntityMetadata = from.entityMeta;
+  const issuer = targetEntityMetadata.getEntityID();
   const extractedProperties = parseResult.extract;
+
+  // unmatched issuer
+  if (
+    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    && extractedProperties
+    && extractedProperties.issuer !== issuer
+  ) {
+    console.log('ERR_UNMATCH_ISSUER', issuer)
+    // return Promise.reject('ERR_UNMATCH_ISSUER');
+  }
+
 
   // invalid session time
   // only run the verifyTime when `SessionNotOnOrAfter` exists
