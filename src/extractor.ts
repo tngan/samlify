@@ -253,7 +253,7 @@ export function extract(context: string, fields) {
         index: ['Name'],
         attributePath: ['AttributeValue'],
         attributes: []
-      }
+      } 
     */
     if (index && attributePath) {
       // find the index in localpath
@@ -309,7 +309,7 @@ export function extract(context: string, fields) {
         value = node[0].toString();
       }
       if (node.length > 1) {
-        value = node.map(n => n.toString());
+        value = node.map(n => n.toString()); 
       }
       return {
         ...result,
@@ -330,7 +330,7 @@ export function extract(context: string, fields) {
       const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
         const nodeDoc = new dom().parseFromString(node);
-        const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
+        const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => { 
           r[camelCase(n.name)] = n.value;
           return r;
         }, {});
@@ -373,8 +373,7 @@ export function extract(context: string, fields) {
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.filter((n: Node) => n.firstChild)
-          .map((n: Node) => n.firstChild!.nodeValue);
+        attributeValue = node.map((n: Node) => n.firstChild!.nodeValue);
       }
       return {
         ...result,
