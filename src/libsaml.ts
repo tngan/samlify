@@ -11,7 +11,7 @@ import { select, SelectedValue } from 'xpath';
 import { MetadataInterface } from './metadata';
 import * as nrsa from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
-import * as xmlenc from 'xml-encryption';
+import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
 import camelCase from 'camelcase';
 import { getContext } from './api';
