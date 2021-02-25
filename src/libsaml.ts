@@ -82,6 +82,7 @@ export interface LibSamlInterface {
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
   attributeStatementBuilder: (attributes: LoginResponseAttribute[]) => string;
+  attributeStatementTagBuilder(attributes: LoginResponseAttribute[], user: any): any;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts) => [boolean, any];
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
@@ -241,6 +242,17 @@ const libSaml = () => {
       }).join('');
       return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
     },
+    /* @desc Helper function to build the AttributeStatement tag values
+    * @param  {LoginResponseAttribute} attributes    an array of attribute configuration
+    * @param  {any} user                             The user
+    * @return {any}
+    */
+    attributeStatementTagBuilder(attributes: LoginResponseAttribute[], user: any): Record<string, string> {
+      return attributes.reduce((r, { valueTag }) => {
+        r[tagging('attr', valueTag)] = user[valueTag.replace('user.', '')];
+        return r;
+      }, {});
+    },
     /**
     * @desc Construct the XML signature for POST binding
     * @param  {string} rawSamlMessage      request/response xml string
@@ -388,7 +400,7 @@ const libSaml = () => {
 
           }
 
-        } 
+        }
 
         sig.loadSignature(signatureNode);
 

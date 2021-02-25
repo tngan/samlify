@@ -100,6 +100,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
+  
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -121,15 +122,31 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       AuthnStatement: '',
       AttributeStatement: '',
     };
-    if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-      rawSamlResponse = get(template, 'context', null);
-    } else {
-      if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+
+    if (requestInfo !== null) {
+      tvalue.InResponseTo = requestInfo.extract.request.id;
+    }
+
+    if (idpSetting.loginResponseTemplate) {
+      rawSamlResponse = libsaml.replaceTagsByValue(idpSetting.loginResponseTemplate.context, tvalue);
+
+      const attributes = idpSetting.loginResponseTemplate.attributes;
+      if (attributes) {
+        if (Array.isArray(attributes)) {
+          rawSamlResponse = libsaml.replaceTagsByValue(rawSamlResponse, libsaml.attributeStatementTagBuilder(attributes, user));
+        } else {
+          console.warn('idpSetting.loginResponseTemplate.attributes is not array');
+        }
       }
+
+      if (customTagReplacement) {
+        const template = customTagReplacement(rawSamlResponse);
+        rawSamlResponse = get(template, 'context', null);
+      }
+    } else {
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
+
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
     const config = {
       privateKey,
@@ -145,7 +162,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         ...config,
         rawSamlMessage: rawSamlResponse,
         transformationAlgorithms: spSetting.transformationAlgorithms,
-        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']", 
+        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
         signatureConfig: {
           prefix: 'ds',
           location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
@@ -217,7 +234,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
-  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;  let id: string = '';
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat; let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
@@ -239,7 +256,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       // Need to embeded XML signature
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms  } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
@@ -315,7 +332,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
               reference: "/*[local-name(.)='LogoutResponse']/*[local-name(.)='Issuer']",
               action: 'after'
             }
-          } 
+          }
         }),
       };
     }
