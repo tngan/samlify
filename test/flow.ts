@@ -45,39 +45,40 @@ const loginResponseTemplate = {
 
 const failedResponse = String(readFileSync('./test/misc/failed_response.xml'));
 
-const createTemplateCallback = (_idp?: IdentityProvider, _sp?: ServiceProvider, user?: Record<string, any>) => (
-	template: string
-) => {
+const createTemplateCallback = (
+	_idp?: IdentityProvider,
+	_sp?: ServiceProvider,
+	user?: Record<string, any>,
+	requestInfo?: RequestInfo
+) => (template: string, values: Record<string, any>) => {
 	const _id = '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
 	const now = new Date();
 	const spEntityID = _sp?.entityMeta.getEntityID();
 	const idpSetting = _idp?.entitySetting;
 	const fiveMinutesLater = new Date(now.getTime());
 	fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
-	const values = {
+	const newValues = {
+		...values,
 		ID: _id,
 		AssertionID: idpSetting?.generateID ? idpSetting.generateID() : `${uuid()}`,
-		Destination: _sp?.entityMeta.getAssertionConsumerService(BindingNamespace.Post),
+		// Destination: _sp?.entityMeta.getAssertionConsumerService(BindingNamespace.Post),
 		Audience: spEntityID,
 		SubjectRecipient: spEntityID,
 		NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
 		NameID: user?.email,
-		Issuer: idp.entityMeta.getEntityID(),
+		// Issuer: _idp?.entityMeta.getEntityID(),
 		IssueInstant: now.toISOString(),
 		ConditionsNotBefore: now.toISOString(),
 		ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
 		SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
 		AssertionConsumerServiceURL: _sp?.entityMeta.getAssertionConsumerService(BindingNamespace.Post),
 		EntityID: spEntityID,
-		InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
+		InResponseTo: requestInfo?.extract.request.id ?? '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
 		StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
 		attrUserEmail: 'myemailassociatedwithsp@sp.com',
 		attrUserName: 'mynameinsp',
 	};
-	return {
-		id: _id,
-		context: libsaml.replaceTagsByValue(template, values),
-	};
+	return [libsaml.replaceTagsByValue(template, newValues), newValues] as [string, Record<string, any>];
 };
 
 // Define of metadata
@@ -113,6 +114,7 @@ const noSignedIdpMetadata = readFileSync('./test/misc/idpmeta_nosign.xml').toStr
 const spmetaNoAssertSign = readFileSync('./test/misc/spmeta_noassertsign.xml').toString().trim();
 
 const sampleRequestInfo = { extract: { request: { id: 'request_id' } } } as const;
+type RequestInfo = { extract: { request: { id: string } } };
 
 // Define entities
 const idp = identityProvider(defaultIdpConfig);
@@ -208,11 +210,12 @@ test('create login request with redirect binding using [custom template]', (t) =
 				'<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
 		},
 	});
-	const { id, context } = _sp.createLoginRequest(idp, BindingNamespace.Redirect, (template) => {
-		return {
-			id: 'exposed_testing_id',
-			context: template, // all the tags are supposed to be replaced
-		};
+	const { context, id } = _sp.createLoginRequest(idp, BindingNamespace.Redirect, (template, values) => {
+		values.ID = 'exposed_testing_id';
+		return [
+			template,
+			values, // all the tags are supposed to be replaced
+		] as const;
 	});
 	id === 'exposed_testing_id' && isString(context) ? t.pass() : t.fail();
 });
@@ -225,11 +228,12 @@ test('create login request with post binding using [custom template]', (t) => {
 				'<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
 		},
 	});
-	const result = _sp.createLoginRequest(idp, BindingNamespace.Post, (template) => {
-		return {
-			id: 'exposed_testing_id',
-			context: template, // all the tags are supposed to be replaced
-		};
+	const result = _sp.createLoginRequest(idp, BindingNamespace.Post, (template, values) => {
+		values.ID = 'exposed_testing_id';
+		return [
+			template,
+			values, // all the tags are supposed to be replaced
+		] as const;
 	});
 	t.is('entityEndpoint' in result, true);
 	if (!('entityEndpoint' in result)) return;
@@ -333,7 +337,7 @@ test('send response with signed assertion and parse it', async (t) => {
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idpNoEncrypt, sp, user)
+		createTemplateCallback(idpNoEncrypt, sp, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
@@ -362,7 +366,7 @@ test('send response with signed assertion + custom transformation algorithms and
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idpNoEncrypt, sp, user)
+		createTemplateCallback(idpNoEncrypt, sp, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
@@ -401,7 +405,7 @@ test('send response with [custom template] signed assertion and parse it', async
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
+	t.is(extract.attributes.mail, 'user@esaml2.com');
 	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
@@ -413,7 +417,7 @@ test('send response with signed message and parse it', async (t) => {
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idpNoEncrypt, spNoAssertSign, user)
+		createTemplateCallback(idpNoEncrypt, spNoAssertSign, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
@@ -446,7 +450,7 @@ test('send response with [custom template] and signed message and parse it', asy
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
+	t.is(extract.attributes.mail, 'user@esaml2.com');
 	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
@@ -461,7 +465,7 @@ test('send login response with signed assertion + signed message and parse it', 
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idpNoEncrypt, spWantMessageSign, user)
+		createTemplateCallback(idpNoEncrypt, spWantMessageSign, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
@@ -500,7 +504,7 @@ test('send login response with [custom template] and signed assertion + signed m
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
+	t.is(extract.attributes.mail, 'user@esaml2.com');
 	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
@@ -511,7 +515,7 @@ test('send login response with encrypted non-signed assertion and parse it', asy
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idp, spNoAssertSign, user)
+		createTemplateCallback(idp, spNoAssertSign, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idp, BindingNamespace.Post, {
@@ -531,7 +535,7 @@ test('send login response with encrypted signed assertion and parse it', async (
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idp, sp, user)
+		createTemplateCallback(idp, sp, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await sp.parseLoginResponse(idp, BindingNamespace.Post, { body: { SAMLResponse } });
@@ -560,7 +564,7 @@ test('send login response with [custom template] and encrypted signed assertion 
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
+	t.is(extract.attributes.mail, 'user@esaml2.com');
 	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
@@ -575,7 +579,7 @@ test('send login response with encrypted signed assertion + signed message and p
 		sampleRequestInfo,
 		BindingNamespace.Post,
 		user,
-		createTemplateCallback(idp, spWantMessageSign, user)
+		createTemplateCallback(idp, spWantMessageSign, user, sampleRequestInfo)
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idp, BindingNamespace.Post, {
@@ -612,7 +616,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
+	t.is(extract.attributes.mail, 'user@esaml2.com');
 	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 

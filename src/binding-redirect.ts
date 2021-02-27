@@ -6,7 +6,7 @@
 import type { BindingContext, Entity } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import type { ServiceProvider } from './entity-sp';
-import libsaml from './libsaml';
+import libsaml, { CustomTagReplacement } from './libsaml';
 import type { EntitySetting } from './types';
 import { BindingNamespace, StatusCode, wording } from './urn';
 import { base64Encode, deflateString, get } from './utility';
@@ -83,38 +83,41 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
  */
 function loginRequestRedirectURL(
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
-	customTagReplacement?: (template: string) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+	const metadata = {
+		idp: entity.idp.entityMeta,
+		sp: entity.sp.entityMeta,
+	};
 	if (metadata && metadata.idp && metadata.sp) {
 		const spSetting = entity.sp.entitySetting;
-		let id = '';
+		const template = spSetting.loginRequestTemplate ?? libsaml.defaultLoginRequestTemplate;
 
 		const baseUrl = metadata.idp.getSingleSignOnService(BindingNamespace.Redirect);
-		let rawSaml: string;
-		if (spSetting.loginRequestTemplate?.context && customTagReplacement) {
-			const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-			// @ts-expect-error todo
-			id = get(info, 'id', null);
-			// @ts-expect-error ttodo
-			rawSaml = get(info, 'context', null);
-		} else {
-			const nameIDFormat = spSetting.nameIDFormat;
-			const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-			id = entity.sp.generateID();
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
-				ID: id,
-				Destination: baseUrl,
-				Issuer: metadata.sp.getEntityID(),
-				IssueInstant: new Date().toISOString(),
-				NameIDFormat: selectedNameIDFormat,
-				AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(BindingNamespace.Post),
-				EntityID: metadata.sp.getEntityID(),
-				AllowCreate: spSetting.allowCreate,
-			} as any);
+		const nameIDFormat = spSetting.nameIDFormat;
+		const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
+		let values: Record<string, any> = {
+			ID: entity.sp.generateID(),
+			Destination: baseUrl,
+			Issuer: metadata.sp.getEntityID(),
+			IssueInstant: new Date().toISOString(),
+			NameIDFormat: selectedNameIDFormat,
+			AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(BindingNamespace.Post),
+			EntityID: metadata.sp.getEntityID(),
+			AllowCreate: spSetting.allowCreate,
+		};
+
+		let rawSaml = template.context ?? '';
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		return {
-			id,
+			id: values.ID,
 			context: buildRedirectURL({
 				context: rawSaml,
 				type: urlParams.samlRequest,
@@ -138,19 +141,22 @@ function logoutRequestRedirectURL(
 	user: Record<string, any>,
 	entity: { init: Entity; target: Entity },
 	relayState?: string,
-	customTagReplacement?: (template: string, tags: Record<string, unknown>) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
-	const initSetting = entity.init.entitySetting;
-	let id: string = entity.init.generateID();
-	const nameIDFormat = initSetting.nameIDFormat;
-	const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-
+	const metadata = {
+		init: entity.init.entityMeta,
+		target: entity.target.entityMeta,
+	};
 	if (metadata && metadata.init && metadata.target) {
+		const initSetting = entity.init.entitySetting;
+		const template = initSetting.logoutRequestTemplate ?? libsaml.defaultLogoutRequestTemplate;
+
+		const nameIDFormat = initSetting.nameIDFormat;
+		const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
 		const baseUrl = metadata.target.getSingleLogoutService(BindingNamespace.Redirect);
-		let rawSaml = '';
-		const requiredTags = {
-			ID: id,
+
+		let values: Record<string, any> = {
+			ID: entity.init.generateID(),
 			Destination: baseUrl,
 			EntityID: metadata.init.getEntityID(),
 			Issuer: metadata.init.getEntityID(),
@@ -159,17 +165,17 @@ function logoutRequestRedirectURL(
 			NameID: user.logoutNameID,
 			SessionIndex: user.sessionIndex,
 		};
-		if (initSetting.logoutRequestTemplate?.context && customTagReplacement) {
-			const info = customTagReplacement(initSetting.logoutRequestTemplate.context, requiredTags);
-			// @ts-expect-error todo
-			id = get(info, 'id', null);
-			// @ts-expect-error todo
-			rawSaml = get(info, 'context', null);
-		} else {
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as any);
+
+		let rawSaml = template.context ?? '';
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		return {
-			id,
+			id: values.ID,
 			context: buildRedirectURL({
 				context: rawSaml,
 				relayState,
@@ -185,44 +191,45 @@ function logoutRequestRedirectURL(
 /**
  * @desc Redirect URL for logout response
  * @param  {Record<string, unknown>|null} requescorresponding request, used to obtain the id
- * @param  {object} entity                      object includes both idp and sp
- * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param  {object} entity object includes both idp and sp
+ * @param  {function} customTagReplacement used when developers have their own login response template
  */
 function logoutResponseRedirectURL(
 	requestInfo: Record<string, any> | null,
 	entity: { init: Entity; target: Entity },
 	relayState?: string,
-	customTagReplacement?: (template: string) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
 	const metadata = {
 		init: entity.init.entityMeta,
 		target: entity.target.entityMeta,
 	};
-	const initSetting = entity.init.entitySetting;
-	let id: string = entity.init.generateID();
 	if (metadata && metadata.init && metadata.target) {
+		const initSetting = entity.init.entitySetting;
+		const template = initSetting.logoutResponseTemplate ?? libsaml.defaultLogoutResponseTemplate;
+
 		const baseUrl = metadata.target.getSingleLogoutService(BindingNamespace.Redirect);
-		let rawSaml: string;
-		if (initSetting.logoutResponseTemplate?.context && customTagReplacement) {
-			const template = customTagReplacement(initSetting.logoutResponseTemplate.context);
-			// @ts-expect-error todo
-			id = get(template, 'id', null);
-			// @ts-expect-error todo
-			rawSaml = get(template, 'context', null);
-		} else {
-			const values: any = {
-				ID: id,
-				Destination: baseUrl,
-				Issuer: metadata.init.getEntityID(),
-				EntityID: metadata.init.getEntityID(),
-				IssueInstant: new Date().toISOString(),
-				StatusCode: StatusCode.Success,
-				InResponseTo: get(requestInfo, 'extract.logoutRequest.id', ''),
-			};
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, values);
+
+		let values: Record<string, any> = {
+			ID: entity.init.generateID(),
+			Destination: baseUrl,
+			Issuer: metadata.init.getEntityID(),
+			EntityID: metadata.init.getEntityID(),
+			IssueInstant: new Date().toISOString(),
+			StatusCode: StatusCode.Success,
+			InResponseTo: get(requestInfo, 'extract.logoutRequest.id', ''),
+		};
+
+		let rawSaml = template.context;
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		return {
-			id,
+			id: values.ID,
 			context: buildRedirectURL({
 				baseUrl,
 				type: urlParams.logoutResponse,

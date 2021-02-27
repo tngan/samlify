@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
 import { flow } from './flow';
+import type { CustomTagReplacement } from './libsaml';
 import metadataIdp, { MetadataIdp } from './metadata-idp';
 import metadataSp, { MetadataSp } from './metadata-sp';
 import type { EntitySetting, MetadataIdpConstructorOptions, MetadataSpConstructorOptions } from './types';
@@ -151,7 +152,7 @@ export class Entity {
 		protocol: BindingNamespace,
 		user: Record<string, any>,
 		relayState = '',
-		customTagReplacement?: (template: string) => BindingContext
+		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
 		if (protocol === BindingNamespace.Redirect) {
 			return redirectBinding.logoutRequestRedirectURL(
@@ -196,7 +197,7 @@ export class Entity {
 		requestInfo: Record<string, any> | null,
 		protocol: BindingNamespace,
 		relayState = '',
-		customTagReplacement?: (template: string) => BindingContext
+		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
 		if (protocol === BindingNamespace.Redirect) {
 			return redirectBinding.logoutResponseRedirectURL(

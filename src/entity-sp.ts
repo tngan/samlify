@@ -8,6 +8,7 @@ import redirectBinding from './binding-redirect';
 import { BindingContext, Entity, ESamlHttpRequest, PostBindingContext } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import { flow } from './flow';
+import type { CustomTagReplacement } from './libsaml';
 import type { ServiceProviderMetadata, ServiceProviderSettings } from './types';
 import { BindingNamespace, ParserType } from './urn';
 
@@ -51,7 +52,7 @@ export class ServiceProvider extends Entity {
 	public createLoginRequest(
 		idp: IdentityProvider,
 		protocol = BindingNamespace.Redirect,
-		customTagReplacement?: (template: string) => BindingContext
+		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
 		if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
 			throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');

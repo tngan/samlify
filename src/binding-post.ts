@@ -7,9 +7,9 @@
 import type { BindingContext, Entity } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import type { ServiceProvider } from './entity-sp';
-import libsaml from './libsaml';
+import libsaml, { CustomTagReplacement } from './libsaml';
 import { BindingNamespace, StatusCode } from './urn';
-import { base64Decode, base64Encode, get } from './utility';
+import { base64Decode, base64Encode, get, isNonEmptyArray } from './utility';
 
 /**
  * @desc Generate a base64 encoded login request
@@ -20,35 +20,35 @@ import { base64Decode, base64Encode, get } from './utility';
 function base64LoginRequest(
 	referenceTagXPath: string,
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
-	customTagReplacement?: (template: string) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
 	const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
-	const spSetting = entity.sp.entitySetting;
-	let id = '';
-
 	if (metadata && metadata.idp && metadata.sp) {
-		let rawSaml: string;
-		if (spSetting.loginRequestTemplate?.context && customTagReplacement) {
-			const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-			// @ts-expect-error todo
-			id = get(info, 'id', null);
-			// @ts-expect-error todo
-			rawSaml = get(info, 'context', null);
-		} else {
-			const nameIDFormat = spSetting.nameIDFormat;
-			const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-			id = entity.sp.generateID();
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
-				ID: id,
-				Destination: metadata.idp.getSingleSignOnService(BindingNamespace.Post),
-				Issuer: metadata.sp.getEntityID(),
-				IssueInstant: new Date().toISOString(),
-				AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(BindingNamespace.Post),
-				EntityID: metadata.sp.getEntityID(),
-				AllowCreate: spSetting.allowCreate,
-				NameIDFormat: selectedNameIDFormat,
-			} as any);
+		const spSetting = entity.sp.entitySetting;
+		const template = spSetting.loginRequestTemplate ?? libsaml.defaultLoginRequestTemplate;
+
+		const nameIDFormat = spSetting.nameIDFormat;
+		const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
+		let values: Record<string, any> = {
+			ID: entity.sp.generateID(),
+			Destination: metadata.idp.getSingleSignOnService(BindingNamespace.Post),
+			Issuer: metadata.sp.getEntityID(),
+			IssueInstant: new Date().toISOString(),
+			AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(BindingNamespace.Post),
+			EntityID: metadata.sp.getEntityID(),
+			AllowCreate: spSetting.allowCreate,
+			NameIDFormat: selectedNameIDFormat,
+		};
+
+		let rawSaml = template.context ?? '';
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		if (metadata.idp.isWantAuthnRequestsSigned()) {
 			const {
 				privateKey,
@@ -60,7 +60,7 @@ function base64LoginRequest(
 				throw new Error('ERR_MISSING_PRIVATE_KEY');
 			}
 			return {
-				id,
+				id: values.ID,
 				context: libsaml.constructSAMLSignature({
 					referenceTagXPath,
 					privateKey: privateKey.toString(),
@@ -81,7 +81,7 @@ function base64LoginRequest(
 		}
 		// No need to embeded XML signature
 		return {
-			id,
+			id: values.ID,
 			context: base64Encode(rawSaml),
 		};
 	}
@@ -99,21 +99,23 @@ async function base64LoginResponse(
 	requestInfo: Record<string, unknown> = {},
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
 	user: Record<string, string> = {},
-	customTagReplacement?: (template: string) => BindingContext,
+	customTagReplacement?: CustomTagReplacement,
 	encryptThenSign = false
 ): Promise<BindingContext> {
-	const idpSetting = entity.idp.entitySetting;
-	const spSetting = entity.sp.entitySetting;
-	const id = entity.idp.generateID();
 	const metadata = {
 		idp: entity.idp.entityMeta,
 		sp: entity.sp.entityMeta,
 	};
-	const nameIDFormat = idpSetting.nameIDFormat;
-	const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
 	if (metadata && metadata.idp && metadata.sp) {
+		const idpSetting = entity.idp.entitySetting;
+		const template = idpSetting.loginResponseTemplate ?? libsaml.defaultLoginResponseTemplate;
+		const attributes = template.attributes;
+
+		const spSetting = entity.sp.entitySetting;
+		const nameIDFormat = idpSetting.nameIDFormat;
+		const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
 		const base = metadata.sp.getAssertionConsumerService(BindingNamespace.Post);
-		let rawSaml: string;
 		const nowTime = new Date();
 		const spEntityID = metadata.sp.getEntityID();
 		const fiveMinutesLaterTime = new Date(nowTime.getTime());
@@ -121,8 +123,9 @@ async function base64LoginResponse(
 		const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
 		const now = nowTime.toISOString();
 		const acl = metadata.sp.getAssertionConsumerService(BindingNamespace.Post);
-		const values: any = {
-			ID: id,
+
+		let values: Record<string, any> = {
+			ID: entity.idp.generateID(),
 			AssertionID: entity.idp.generateID(),
 			Destination: base,
 			Audience: spEntityID,
@@ -140,15 +143,23 @@ async function base64LoginResponse(
 			NameID: user.email || '',
 			InResponseTo: get(requestInfo, 'extract.request.id', ''),
 			AuthnStatement: '',
-			AttributeStatement: '',
+			// First fill in attributes
+			AttributeStatement: isNonEmptyArray(attributes)
+				? libsaml.replaceTagsByValue(
+						libsaml.attributeStatementBuilder(attributes),
+						libsaml.attributeStatementTagBuilder(attributes, user)
+				  )
+				: '',
 		};
-		if (idpSetting.loginResponseTemplate && customTagReplacement) {
-			const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-			// @ts-expect-error todo
-			rawSaml = get(template, 'context', null);
-		} else {
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, values);
+
+		let rawSaml = template.context;
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		const getConfig = () => {
 			const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
 			if (!privateKey) {
@@ -207,7 +218,7 @@ async function base64LoginResponse(
 				//need to decode it
 				rawSaml = base64Decode(context) as string;
 			} else {
-				return { id, context };
+				return { id: values.ID, context };
 			}
 		}
 
@@ -244,34 +255,37 @@ function base64LogoutRequest(
 	user: Record<string, string>,
 	referenceTagXPath: string,
 	entity: { init: Entity; target: Entity },
-	customTagReplacement?: (template: string) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
-	const initSetting = entity.init.entitySetting;
-	const nameIDFormat = initSetting.nameIDFormat;
-	const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-	let id = '';
+	const metadata = {
+		init: entity.init.entityMeta,
+		target: entity.target.entityMeta,
+	};
 	if (metadata && metadata.init && metadata.target) {
-		let rawSaml: string;
-		if (initSetting.logoutRequestTemplate?.context && customTagReplacement) {
-			const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
-			// @ts-expect-error todo
-			id = get(template, 'id', null);
-			// @ts-expect-error todo
-			rawSaml = get(template, 'context', null);
-		} else {
-			id = entity.init.generateID();
-			const values: any = {
-				ID: id,
-				Destination: metadata.target.getSingleLogoutService(BindingNamespace.Redirect),
-				Issuer: metadata.init.getEntityID(),
-				IssueInstant: new Date().toISOString(),
-				EntityID: metadata.init.getEntityID(),
-				NameIDFormat: selectedNameIDFormat,
-				NameID: user.logoutNameID,
-			};
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, values);
+		const initSetting = entity.init.entitySetting;
+		const template = initSetting.logoutRequestTemplate ?? libsaml.defaultLogoutRequestTemplate;
+
+		const nameIDFormat = initSetting.nameIDFormat;
+		const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
+		let values: Record<string, any> = {
+			ID: entity.init.generateID(),
+			Destination: metadata.target.getSingleLogoutService(BindingNamespace.Redirect),
+			Issuer: metadata.init.getEntityID(),
+			IssueInstant: new Date().toISOString(),
+			EntityID: metadata.init.getEntityID(),
+			NameIDFormat: selectedNameIDFormat,
+			NameID: user.logoutNameID,
+		};
+
+		let rawSaml = template.context ?? '';
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		if (entity.target.entitySetting.wantLogoutRequestSigned) {
 			// Need to embeded XML signature
 			const {
@@ -284,7 +298,7 @@ function base64LogoutRequest(
 				throw new Error('ERR_MISSING_PRIVATE_KEY');
 			}
 			return {
-				id,
+				id: values.ID,
 				context: libsaml.constructSAMLSignature({
 					referenceTagXPath,
 					privateKey: privateKey.toString(),
@@ -304,7 +318,7 @@ function base64LogoutRequest(
 			};
 		}
 		return {
-			id,
+			id: values.ID,
 			context: base64Encode(rawSaml),
 		};
 	}
@@ -320,33 +334,34 @@ function base64LogoutRequest(
 function base64LogoutResponse(
 	requestInfo: Record<string, any> | null,
 	entity: { init: Entity; target: Entity },
-	customTagReplacement?: (template: string) => BindingContext
+	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
 	const metadata = {
 		init: entity.init.entityMeta,
 		target: entity.target.entityMeta,
 	};
-	let id = '';
-	const initSetting = entity.init.entitySetting;
 	if (metadata && metadata.init && metadata.target) {
-		let rawSaml;
-		if (initSetting.logoutResponseTemplate && customTagReplacement) {
-			const template = customTagReplacement(initSetting.logoutResponseTemplate.context);
-			id = template.id;
-			rawSaml = template.context;
-		} else {
-			id = entity.init.generateID();
-			const values: any = {
-				ID: id,
-				Destination: metadata.target.getSingleLogoutService(BindingNamespace.Post),
-				EntityID: metadata.init.getEntityID(),
-				Issuer: metadata.init.getEntityID(),
-				IssueInstant: new Date().toISOString(),
-				StatusCode: StatusCode.Success,
-				InResponseTo: get(requestInfo, 'extract.request.id', ''),
-			};
-			rawSaml = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, values);
+		const initSetting = entity.init.entitySetting;
+		const template = initSetting.logoutResponseTemplate ?? libsaml.defaultLogoutResponseTemplate;
+
+		let values: Record<string, any> = {
+			ID: entity.init.generateID(),
+			Destination: metadata.target.getSingleLogoutService(BindingNamespace.Post),
+			EntityID: metadata.init.getEntityID(),
+			Issuer: metadata.init.getEntityID(),
+			IssueInstant: new Date().toISOString(),
+			StatusCode: StatusCode.Success,
+			InResponseTo: get(requestInfo, 'extract.request.id', ''),
+		};
+
+		let rawSaml = template.context;
+		// perform custom replacement
+		if (customTagReplacement) {
+			[rawSaml = rawSaml, values = values] = customTagReplacement(rawSaml, values);
 		}
+		// pickup any remaining
+		rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
+
 		if (entity.target.entitySetting.wantLogoutResponseSigned) {
 			const {
 				privateKey,
@@ -358,12 +373,11 @@ function base64LogoutResponse(
 				throw new Error('ERR_MISSING_PRIVATE_KEY');
 			}
 			return {
-				id,
+				id: values.ID,
 				context: libsaml.constructSAMLSignature({
 					isMessageSigned: true,
 					transformationAlgorithms: transformationAlgorithms,
-					// @ts-expect-error todo
-					privateKey,
+					privateKey: privateKey.toString(),
 					privateKeyPass,
 					signatureAlgorithm,
 					rawSamlMessage: rawSaml,
@@ -379,7 +393,7 @@ function base64LogoutResponse(
 			};
 		}
 		return {
-			id,
+			id: values.ID,
 			context: base64Encode(rawSaml),
 		};
 	}

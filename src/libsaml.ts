@@ -95,6 +95,12 @@ export interface KeyComponent {
 	[key: string]: any;
 }
 
+export interface CustomTagReplacement<
+	Values extends Record<string, number | string> = Record<string, number | string>
+> {
+	(template: string, values: Values): readonly [template?: string, values?: Values];
+}
+
 const libSaml = () => {
 	/**
 	 * @desc helper function to get back the query param for redirect binding for SLO/SSO
@@ -236,6 +242,22 @@ const libSaml = () => {
 				})
 				.join('');
 			return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
+		},
+		/* @desc Helper function to build the AttributeStatement tag values
+		 * @param  {LoginResponseAttribute} attributes    an array of attribute configuration
+		 * @param  {any} user                             The user
+		 * @return {any}
+		 */
+		attributeStatementTagBuilder(
+			attributes: LoginResponseAttribute[],
+			user: Record<string, string>
+		): Record<string, string> {
+			return attributes.reduce((r, { valueTag }) => {
+				const key = tagging('attr', valueTag);
+				const value = user[valueTag.replace('user.', '')];
+				if (key != null && value != null) r[key] = value;
+				return r;
+			}, {} as Record<string, string>);
 		},
 		/**
 		 * @desc Construct the XML signature for POST binding

@@ -4,16 +4,15 @@
  * @desc  Declares the actions taken by identity provider
  */
 import postBinding from './binding-post';
-import { BindingContext, Entity, ESamlHttpRequest } from './entity';
+import { Entity, ESamlHttpRequest } from './entity';
 import { flow } from './flow';
-import libsaml from './libsaml';
+import type { CustomTagReplacement } from './libsaml';
 import type {
 	IdentityProviderMetadata,
 	IdentityProviderSettings,
 	ServiceProviderConstructor as ServiceProvider,
 } from './types';
 import { BindingNamespace, ParserType } from './urn';
-import { isString } from './utility';
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
@@ -36,23 +35,6 @@ export class IdentityProvider extends Entity {
 			},
 		};
 		const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
-		// build attribute part
-		if (entitySetting.loginResponseTemplate) {
-			if (
-				isString(entitySetting.loginResponseTemplate.context) &&
-				Array.isArray(entitySetting.loginResponseTemplate.attributes)
-			) {
-				const replacement = {
-					AttributeStatement: libsaml.attributeStatementBuilder(entitySetting.loginResponseTemplate.attributes),
-				};
-				entitySetting.loginResponseTemplate = {
-					...entitySetting.loginResponseTemplate,
-					context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate.context, replacement),
-				};
-			} else {
-				console.warn('Invalid login response template');
-			}
-		}
 		super(entitySetting, 'idp');
 	}
 
@@ -70,7 +52,7 @@ export class IdentityProvider extends Entity {
 		requestInfo: Record<string, unknown>,
 		protocol: BindingNamespace,
 		user: { [key: string]: any },
-		customTagReplacement?: (template: string) => BindingContext,
+		customTagReplacement?: CustomTagReplacement,
 		encryptThenSign?: boolean
 	) {
 		// can only support post binding for login response

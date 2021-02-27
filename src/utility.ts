@@ -63,7 +63,7 @@ export function uniq(input: string[]) {
  */
 export function get<T, D = null>(obj: any, path: string, defaultValue?: D): T | D {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-	return path.split('.').reduce((a, c) => (a && a[c] ? a[c] : defaultValue || null), obj) ?? null;
+	return path.split('.').reduce((a, c) => (a && a[c] ? a[c] : defaultValue ?? null), obj) ?? null;
 }
 /**
  * @desc Check if the input is string
