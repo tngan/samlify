@@ -14,8 +14,7 @@ Welcome all PRs for maintaining this project, or provide a link to the repositor
 ### Sponsor
 
 | <img width="50" src="https://user-images.githubusercontent.com/83319/31722733-de95bbde-b3ea-11e7-96bf-4f4e8f915588.png"> | <div style="text-align: left;">If you want to quickly implement SAML SSO, feel free to check out Auth0's NodeJS SDK and free plan at [auth0.com/developers](https://auth0.com/developers?utm_source=GHsponsor&utm_medium=GHsponsor&utm_campaign=samlify&utm_content=auth).</div> |
-| :----------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-
+| :----------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 ### Installation
 
@@ -42,10 +41,8 @@ Now you can create your own schema validator and even suppress it but you have t
 
 ```typescript
 samlify.setSchemaValidator({
-  validate: (response: string) => {
-    /* implment your own or always returns a resolved promise to skip */
-    return Promise.resolve('skipped');
-  }
+	/* implment your own or always returns a resolved promise to skip */
+	validate: async (response: string) => 'skipped';
 });
 ```
 

@@ -1,10 +1,10 @@
 /**
-* @file utility.ts
-* @author tngan
-* @desc  Library for some common functions (e.g. de/inflation, en/decoding)
-*/
-import { pki, util, asn1 } from 'node-forge';
-import { inflate, deflate } from 'pako';
+ * @file utility.ts
+ * @author tngan
+ * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
+ */
+import { asn1, pki, util } from 'node-forge';
+import { deflate, inflate } from 'pako';
 
 const BASE64_STR = 'base64';
 
@@ -14,42 +14,36 @@ const BASE64_STR = 'base64';
  * @param arr2 {[]}
  */
 export function zipObject(arr1: string[], arr2: any[], skipDuplicated = true) {
-  return arr1.reduce((res, l, i) => {
-    
-    if (skipDuplicated) {
-      res[l] = arr2[i];
-      return res;
-    }
-    // if key exists, aggregate with array in order to get rid of duplicate key
-    if (res[l] !== undefined) {
-      res[l] = Array.isArray(res[l])
-        ? res[l].concat(arr2[i])
-        : [res[l]].concat(arr2[i]);
-      return res;
-    }
-
-    res[l] = arr2[i];
-    return res;
-
-  }, {});
+	return arr1.reduce((res, l, i) => {
+		if (skipDuplicated) {
+			res[l] = arr2[i];
+			return res;
+		}
+		// if key exists, aggregate with array in order to get rid of duplicate key
+		if (res[l] !== undefined) {
+			const arr: any[] = Array.isArray(res[l]) ? res[l] : [res[l]];
+			res[l] = arr.concat(arr2[i]);
+			return res;
+		}
+		res[l] = arr2[i];
+		return res;
+	}, {} as Record<string, any>);
 }
 /**
  * @desc Alternative to lodash.flattenDeep
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_flattendeep
  * @param input {[]}
  */
-export function flattenDeep(input: any[]) {
-  return Array.isArray(input)
-  ? input.reduce( (a, b) => a.concat(flattenDeep(b)) , [])
-  : [input];
+export function flattenDeep<T>(input: T | T[]): T[] {
+	return Array.isArray(input) ? input.reduce((a, b) => a.concat(flattenDeep(b)), [] as T[]) : [input];
 }
 /**
  * @desc Alternative to lodash.last
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_last
  * @param input {[]}
  */
-export function last(input: any[]) {
-  return input.slice(-1)[0];
+export function last<T>(input: T[]) {
+	return input.slice(-1)[0];
 }
 /**
  * @desc Alternative to lodash.uniq
@@ -57,169 +51,150 @@ export function last(input: any[]) {
  * @param input {string[]}
  */
 export function uniq(input: string[]) {
-  const set = new Set(input);
-  return [... set];
+	const set = new Set(input);
+	return [...set];
 }
 /**
- * @desc Alternative to lodash.get 
+ * @desc Alternative to lodash.get
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
- * @param obj 
- * @param path 
- * @param defaultValue 
+ * @param obj
+ * @param path
+ * @param defaultValue
  */
-export function get(obj, path, defaultValue) {
-  return path.split('.')
-  .reduce((a, c) => (a && a[c] ? a[c] : (defaultValue || null)), obj);
+export function get<T, D = null>(obj: any, path: string, defaultValue?: D): T | D {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+	return path.split('.').reduce((a, c) => (a && a[c] ? a[c] : defaultValue || null), obj) ?? null;
 }
 /**
- * @desc Check if the input is string 
- * @param {any} input 
+ * @desc Check if the input is string
+ * @param {any} input
  */
-export function isString(input: any) {
-  return typeof input === 'string';
+export function isString(input: any): input is string {
+	return typeof input === 'string';
 }
 /**
-* @desc Encode string with base64 format
-* @param  {string} message                       plain-text message
-* @return {string} base64 encoded string
-*/
-function base64Encode(message: string | number[]) {
-  return Buffer.from(message as string).toString(BASE64_STR);
+ * @desc Check if the input is an array of arrays
+ * @param {T[] | T[][]} input
+ */
+export function isArrayOfArrays<T>(arr: T[] | T[][]): arr is T[][] {
+	return (arr as T[][]).every(Array.isArray);
 }
 /**
-* @desc Decode string from base64 format
-* @param  {string} base64Message                 encoded string
-* @param  {boolean} isBytes                      determine the return value type (True: bytes False: string)
-* @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
-*/
+ * Create a buffer or return current buffer
+ * @param {string|Buffer} buf
+ */
+export function bufferFromIfNeeded(buf: string | Buffer): Buffer {
+	return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+}
+/**
+ * @desc Encode string with base64 format
+ * @param  {string} message                       plain-text message
+ * @return {string} base64 encoded string
+ */
+export function base64Encode(message: string | number[]) {
+	return Buffer.from(message as string).toString(BASE64_STR);
+}
+/**
+ * @desc Decode string from base64 format
+ * @param  {string} base64Message                 encoded string
+ * @param  {boolean} isBytes                      determine the return value type (True: bytes False: string)
+ * @return {bytes/string}  decoded bytes/string depends on isBytes, default is {string}
+ */
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
-  const bytes = Buffer.from(base64Message, BASE64_STR);
-  return Boolean(isBytes) ? bytes : bytes.toString();
+	const bytes = Buffer.from(base64Message, BASE64_STR);
+	return isBytes ? bytes : bytes.toString();
 }
 /**
-* @desc Compress the string
-* @param  {string} message
-* @return {string} compressed string
-*/
-function deflateString(message: string): number[] {
-  const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
-  return Array.from(deflate(input, { raw: true }));
+ * @desc Compress the string
+ * @param  {string} message
+ * @return {string} compressed string
+ */
+export function deflateString(message: string): number[] {
+	const input = Array.prototype.map.call(message, (char: string) => char.charCodeAt(0)) as number[];
+	return Array.from(deflate(input, { raw: true }));
 }
 /**
-* @desc Decompress the compressed string
-* @param  {string} compressedString
-* @return {string} decompressed string
-*/
+ * @desc Decompress the compressed string
+ * @param  {string} compressedString
+ * @return {string} decompressed string
+ */
 export function inflateString(compressedString: string): string {
-  const inputBuffer = Buffer.from(compressedString, BASE64_STR);
-  const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
-  return Array.from(inflate(input, { raw: true }))
-    .map(byte => String.fromCharCode(byte))
-    .join('');
+	const inputBuffer = Buffer.from(compressedString, BASE64_STR);
+	const input = Array.prototype.map.call(inputBuffer.toString('binary'), (char: string) =>
+		char.charCodeAt(0)
+	) as number[];
+	return Array.from(inflate(input, { raw: true }))
+		.map((byte) => String.fromCharCode(byte))
+		.join('');
 }
 /**
-* @desc Abstract the normalizeCerString and normalizePemString
-* @param {buffer} File stream or string
-* @param {string} String for header and tail
-* @return {string} A formatted certificate string
-*/
+ * @desc Abstract the normalizeCerString and normalizePemString
+ * @param {buffer} File stream or string
+ * @param {string} String for header and tail
+ * @return {string} A formatted certificate string
+ */
 function _normalizeCerString(bin: string | Buffer, format: string) {
-  return bin.toString().replace(/\n/g, '').replace(/\r/g, '').replace(`-----BEGIN ${format}-----`, '').replace(`-----END ${format}-----`, '').replace(/ /g, '');
+	return bin
+		.toString()
+		.replace(/\n/g, '')
+		.replace(/\r/g, '')
+		.replace(`-----BEGIN ${format}-----`, '')
+		.replace(`-----END ${format}-----`, '')
+		.replace(/ /g, '')
+		.trim();
 }
 /**
-* @desc Parse the .cer to string format without line break, header and footer
-* @param  {string} certString     declares the certificate contents
-* @return {string} certificiate in string format
-*/
-function normalizeCerString(certString: string | Buffer) {
-  return _normalizeCerString(certString, 'CERTIFICATE');
+ * @desc Parse the .cer to string format without line break, header and footer
+ * @param  {string} certString     declares the certificate contents
+ * @return {string} certificiate in string format
+ */
+export function normalizeCerString(certString: string | Buffer) {
+	return _normalizeCerString(certString, 'CERTIFICATE');
 }
 /**
-* @desc Normalize the string in .pem format without line break, header and footer
-* @param  {string} pemString
-* @return {string} private key in string format
-*/
-function normalizePemString(pemString: string | Buffer) {
-  return _normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
+ * @desc Normalize the string in .pem format without line break, header and footer
+ * @param  {string} pemString
+ * @return {string} private key in string format
+ */
+export function normalizePemString(pemString: string | Buffer) {
+	return _normalizeCerString(pemString.toString(), 'RSA PRIVATE KEY');
 }
 /**
-* @desc Return the complete URL
-* @param  {object} req                   HTTP request
-* @return {string} URL
-*/
-function getFullURL(req) {
-  return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+ * @desc Get public key in pem format from the certificate included in the metadata
+ * @param {string | Buffer} x509 certificate
+ * @return {string} public key fetched from the certificate
+ */
+export function getPublicKeyPemFromCertificate(x509Certificate: string | Buffer) {
+	const certDerBytes = util.decode64(x509Certificate.toString());
+	const obj = asn1.fromDer(certDerBytes);
+	const cert = pki.certificateFromAsn1(obj);
+	return pki.publicKeyToPem(cert.publicKey);
 }
 /**
-* @desc Parse input string, return default value if it is undefined
-* @param  {string/boolean}
-* @return {boolean}
-*/
-function parseString(str, defaultValue = '') {
-  return str || defaultValue;
+ * @desc Inline syntax sugar
+ */
+function toStringMaybe<T>(input: T, yesOrNo: boolean): string | T {
+	return yesOrNo ? String(input) : input;
 }
 /**
-* @desc Override the object by another object (rtl)
-* @param  {object} default object
-* @param  {object} object applied to the default object
-* @return {object} result object
-*/
-function applyDefault(obj1, obj2) {
-  return Object.assign({}, obj1, obj2);
-}
-/**
-* @desc Get public key in pem format from the certificate included in the metadata
-* @param {string} x509 certificate
-* @return {string} public key fetched from the certificate
-*/
-function getPublicKeyPemFromCertificate(x509Certificate: string) {
-  const certDerBytes = util.decode64(x509Certificate);
-  const obj = asn1.fromDer(certDerBytes);
-  const cert = pki.certificateFromAsn1(obj);
-  return pki.publicKeyToPem(cert.publicKey);
-}
-/**
-* @desc Read private key from pem-formatted string
-* @param {string | Buffer} keyString pem-formattted string
-* @param {string} protected passphrase of the key
-* @return {string} string in pem format
-* If passphrase is used to protect the .pem content (recommend)
-*/
-export function readPrivateKey(keyString: string | Buffer, passphrase: string | undefined, isOutputString?: boolean) {
-  return isString(passphrase) ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
-}
-/**
-* @desc Inline syntax sugar
-*/
-function convertToString(input, isOutputString) {
-  return Boolean(isOutputString) ? String(input) : input;
+ * @desc Read private key from pem-formatted string
+ * @param {string | Buffer} keyString pem-formattted string
+ * @param {string} protected passphrase of the key
+ * @return {string} string in pem format
+ * If passphrase is used to protect the .pem content (recommend)
+ */
+export function readPrivateKey(keyString: string | Buffer, passphrase: string | undefined, returnString = false) {
+	return isString(passphrase)
+		? toStringMaybe(pki.privateKeyToPem(pki.decryptRsaPrivateKey(keyString.toString(), passphrase)), returnString)
+		: keyString;
 }
 /**
  * @desc Check if the input is an array with non-zero size
  */
-export function isNonEmptyArray(a) {
-  return Array.isArray(a) && a.length > 0;
+export function isNonEmptyArray<T>(a?: T | null): a is T {
+	return Array.isArray(a) && a.length > 0;
 }
 
 export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-  return value !== null && value !== undefined;
+	return value !== null && value !== undefined;
 }
-
-const utility = {
-  isString,
-  base64Encode,
-  base64Decode,
-  deflateString,
-  inflateString,
-  normalizeCerString,
-  normalizePemString,
-  getFullURL,
-  parseString,
-  applyDefault,
-  getPublicKeyPemFromCertificate,
-  readPrivateKey,
-  convertToString,
-  isNonEmptyArray,
-};
-
-export default utility;

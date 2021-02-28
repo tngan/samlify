@@ -7,12 +7,11 @@ clean:	;
 				rm -rf node_modules
 
 rebuild: ;
-	       rm -rf build; \
-				 tsc; \
+	       rm -rf .build lib; tsc -b --verbose; \
 
 pretest:	;
-					mkdir -p build/test; \
-					cp -a test/key test/misc build/test;
+					mkdir -p .build/test; \
+					cp -a test/key test/misc .build/test;
 
 install_jdk:
 	sudo add-apt-repository ppa:openjdk-r/ppa -y

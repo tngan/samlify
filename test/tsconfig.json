@@ -1,0 +1,15 @@
+{
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"rootDir": "./",
+		"tsBuildInfoFile": "./.build/caches/test/tsconfig.tsbuildinfo",
+		"types": ["node", "ava"]
+	},
+	"include": ["./**/*.ts"],
+	"references": [
+		{
+			"path": "../tsconfig.json"
+		}
+	]
+}

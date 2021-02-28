@@ -1,0 +1,8 @@
+{
+	"root": true,
+	"extends": ["./tools/eslintrc"],
+	"rules": {
+		"security/detect-non-literal-fs-filename": "off",
+		"security/detect-object-injection": "off"
+	}
+}
