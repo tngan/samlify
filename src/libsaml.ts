@@ -13,6 +13,7 @@ import { DOMParser } from 'xmldom';
 import { select } from 'xpath';
 import { getContext } from './api';
 import type { Entity } from './entity';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import { extract, isNode } from './extractor';
 import type { Metadata } from './metadata';
 import type { RequestSignatureAlgorithm, SAMLDocumentTemplate } from './types';
@@ -113,16 +114,20 @@ const libSaml = () => {
 		if (([urlParams.logoutResponse, urlParams.samlResponse] as string[]).includes(type)) {
 			return 'SAMLResponse';
 		}
-		throw new Error('ERR_UNDEFINED_QUERY_PARAMS');
+		throw new SamlifyError(SamlifyErrorCode.UndefinedQueryParams);
 	}
 	/**
 	 *
 	 */
 	const nrsaAliasMapping = {
-		'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'pkcs1-sha1',
-		'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'pkcs1-sha256',
-		'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'pkcs1-sha512',
+		[signatureAlgorithms.RSA_SHA1]: 'pkcs1-sha1',
+		[signatureAlgorithms.RSA_SHA256]: 'pkcs1-sha256',
+		[signatureAlgorithms.RSA_SHA512]: 'pkcs1-sha512',
 	} as const;
+	/**
+	 *
+	 */
+	const defaultSignatureAlgorithm = signatureAlgorithms.RSA_SHA1;
 	/**
 	 * @desc Default login request template
 	 * @type {LoginRequestTemplate}
@@ -166,7 +171,7 @@ const libSaml = () => {
 			const algAlias = nrsaAliasMapping[sigAlg];
 			if (algAlias != null) return algAlias;
 		}
-		return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
+		return nrsaAliasMapping[defaultSignatureAlgorithm]; // default value
 	}
 	/**
 	 * @private
@@ -206,6 +211,7 @@ const libSaml = () => {
 	return {
 		createXPath,
 		getQueryParamByType,
+		defaultSignatureAlgorithm,
 		defaultLoginRequestTemplate,
 		defaultLoginResponseTemplate,
 		defaultLogoutRequestTemplate,
@@ -342,14 +348,14 @@ const libSaml = () => {
 
 			// try to catch potential wrapping attack
 			if (wrappingElementNode.length !== 0) {
-				throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+				throw new SamlifyError(SamlifyErrorCode.PotentialWrappingAttack);
 			}
 
 			const selection = [...messageSignatureNode, ...assertionSignatureNode].filter(isNode);
 
 			// guarantee to have a signature in saml response
 			if (selection.length === 0) {
-				throw new Error('ERR_ZERO_SIGNATURE');
+				throw new SamlifyError(SamlifyErrorCode.ZeroSignature);
 			}
 
 			const sig = new SignedXml();
@@ -359,7 +365,7 @@ const libSaml = () => {
 				sig.signatureAlgorithm = opts.signatureAlgorithm as string;
 
 				if (!opts.keyFile && !opts.metadata) {
-					throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
+					throw new SamlifyError(SamlifyErrorCode.MissingOptionsForSignatureVerification);
 				}
 
 				if (opts.keyFile) {
@@ -370,7 +376,7 @@ const libSaml = () => {
 					const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
 					// no certificate node in response
 					if (certificateNode.length === 0) {
-						throw new Error('ERR_CERTIFICATE_NOT_FOUND');
+						throw new SamlifyError(SamlifyErrorCode.CertificateNotFound);
 					}
 
 					// certificate in metadata
@@ -389,7 +395,7 @@ const libSaml = () => {
 					if (certs.length >= 1 && !certs.find((cert) => cert === x509Certificate)) {
 						// keep this restriction for rolling certificate usage
 						// to make sure the response certificate is one of those specified in metadata
-						throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+						throw new SamlifyError(SamlifyErrorCode.MismatchedCertificateDeclarationInMetadata);
 					}
 					// @ts-expect-error todo
 					sig.keyInfoProvider = this.getKeyInfoProvider(x509Certificate);
@@ -403,7 +409,7 @@ const libSaml = () => {
 
 				// immediately throw error when any one of the signature is failed to get verified
 				if (!verified) {
-					throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
+					throw new SamlifyError(SamlifyErrorCode.FailedToVerifySignature);
 				}
 			});
 
@@ -444,7 +450,7 @@ const libSaml = () => {
 				// attribute value of the root element of the assertion or protocol message being signed. For example, if the
 				// ID attribute value is "foo", then the URI attribute in the <ds:Reference> element MUST be "#foo".
 				if (verifiedAssertionInfo.refURI !== `#${desiredAssertionInfo.id}`) {
-					throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+					throw new SamlifyError(SamlifyErrorCode.PotentialWrappingAttack);
 				}
 				const verifiedDoc = extract(doc.toString(), [
 					{
@@ -561,27 +567,27 @@ const libSaml = () => {
 			// Implement encryption after signature if it has
 			return new Promise<string>((resolve, reject) => {
 				if (!xml) {
-					return reject(new Error('ERR_UNDEFINED_ASSERTION'));
+					return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 				}
 
-				const sourceEntitySetting = sourceEntity.entitySetting;
+				const sourceEntitySetting = sourceEntity.getEntitySetting();
 				const targetEntityMetadata = targetEntity.entityMeta;
 				const doc = new dom().parseFromString(xml);
 				const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
 				if (!isNonEmptyArray(assertions) || assertions[0] == null) {
-					throw new Error('ERR_UNDEFINED_ASSERTION');
+					throw new SamlifyError(SamlifyErrorCode.UndefinedAssertion);
 				}
 				if (assertions.length > 1) {
-					throw new Error('ERR_MULTIPLE_ASSERTION');
+					throw new SamlifyError(SamlifyErrorCode.MultipleAssertion);
 				}
 				const assertion = assertions[0];
 				// Perform encryption depends on the setting, default is false
 				if (sourceEntitySetting.isAssertionEncrypted) {
 					if (!sourceEntitySetting.dataEncryptionAlgorithm) {
-						throw new Error('ERR_MISSING_DATA_ENCRYPTION_ALGORITHM');
+						throw new SamlifyError(SamlifyErrorCode.MissingDataEncryptionAlgorithm);
 					}
 					if (!sourceEntitySetting.keyEncryptionAlgorithm) {
-						throw new Error('ERR_MISSING_KEY_ENCRYPTION_ALGORITHM');
+						throw new SamlifyError(SamlifyErrorCode.MissingKeyEncryptionAlgorithm);
 					}
 					xmlenc.encrypt(
 						assertion.toString(),
@@ -604,10 +610,10 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 						(err, res) => {
 							if (err) {
 								console.error(err);
-								return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_ENCRYPTION'));
+								return reject(new SamlifyError(SamlifyErrorCode.ExceptionOfAssertionEncryption));
 							}
 							if (!res) {
-								return reject(new Error('ERR_UNDEFINED_ASSERTION'));
+								return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 							}
 							const encAssertionPrefix = sourceEntitySetting.tagPrefix?.encryptedAssertion;
 							const encryptAssertionNode = new dom().parseFromString(
@@ -634,7 +640,7 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 			return new Promise<[string, any]>((resolve, reject) => {
 				// Implement decryption first then check the signature
 				if (!entireXML) {
-					return reject(new Error('ERR_UNDEFINED_ASSERTION'));
+					return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 				}
 				// Perform encryption depends on the setting of where the message is sent, default is false
 				const hereSetting = here.entitySetting;
@@ -644,14 +650,17 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 					xml
 				) as Node[];
 				if (!isNonEmptyArray(encryptedAssertions) || encryptedAssertions[0] == null) {
-					throw new Error('ERR_UNDEFINED_ASSERTION');
+					throw new SamlifyError(SamlifyErrorCode.UndefinedAssertion);
 				}
 				if (encryptedAssertions.length !== 1) {
-					throw new Error('ERR_MULTIPLE_ASSERTION');
+					throw new SamlifyError(SamlifyErrorCode.MultipleAssertion);
 				}
 				const encryptedAssertion = encryptedAssertions[0];
 				if (!hereSetting.encPrivateKey) {
-					throw new Error('ERR_MISSING_PRIVATE_KEY');
+					throw new SamlifyError(
+						SamlifyErrorCode.MissingEncPrivateKey,
+						`${here.constructor.name} is trying to decrypt assertion, but encPrivateKey was not provided.`
+					);
 				}
 				return xmlenc.decrypt(
 					encryptedAssertion.toString(),
@@ -661,10 +670,10 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 					(err, res) => {
 						if (err) {
 							console.error(err);
-							return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
+							return reject(new SamlifyError(SamlifyErrorCode.ExceptionOfAssertionDecryption));
 						}
 						if (!res) {
-							return reject(new Error('ERR_UNDEFINED_ASSERTION'));
+							return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 						}
 						const assertionNode = new dom().parseFromString(res);
 						xml.replaceChild(assertionNode, encryptedAssertion);
@@ -688,7 +697,8 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 			 */
 			if (!validate) {
 				// otherwise, an error will be thrown
-				throw new Error(
+				throw new SamlifyError(
+					SamlifyErrorCode.MissingValidation,
 					'Your application is potentially vulnerable because no validation function found. Please read the documentation on how to setup the validator. (https://github.com/tngan/samlify#installation)'
 				);
 			}

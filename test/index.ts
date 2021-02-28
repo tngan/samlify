@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import test from 'ava';
 import { readFileSync } from 'fs';
 import { identityProvider, libsaml, metadataIdp, metadataSp, serviceProvider } from '../src';
+import { isSamlifyError, SamlifyErrorCode } from '../src/error';
 import { algorithms, BindingNamespace, elementsOrder, names } from '../src/urn';
 import {
 	base64Decode,
@@ -269,7 +271,8 @@ test('getAssertionConsumerService with two bindings', (t) => {
 				signatureAlgorithm: signatureAlgorithms.RSA_SHA1,
 			});
 		} catch (e) {
-			t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+			t.is(isSamlifyError(e), true);
+			t.is(e.code, SamlifyErrorCode.FailedToVerifySignature);
 		}
 	});
 	test('verify a XML signature signed by RSA-SHA256 with metadata', (t) => {
@@ -288,7 +291,8 @@ test('getAssertionConsumerService with two bindings', (t) => {
 				signatureAlgorithm: signatureAlgorithms.RSA_SHA256,
 			});
 		} catch (e) {
-			t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+			t.is(isSamlifyError(e), true);
+			t.is(e.code, SamlifyErrorCode.FailedToVerifySignature);
 		}
 	});
 	test('verify a XML signature signed by RSA-SHA512 with metadata', (t) => {
@@ -307,7 +311,8 @@ test('getAssertionConsumerService with two bindings', (t) => {
 				signatureAlgorithm: signatureAlgorithms.RSA_SHA512,
 			});
 		} catch (e) {
-			t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
+			t.is(isSamlifyError(e), true);
+			t.is(e.code, SamlifyErrorCode.FailedToVerifySignature);
 		}
 	});
 
@@ -347,19 +352,23 @@ test('getAssertionConsumerService with two bindings', (t) => {
 	});
 	test('encrypt assertion response without assertion returns error', async (t) => {
 		const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, wrongResponse));
-		t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
+		t.is(isSamlifyError(error), true);
+		if (isSamlifyError(error)) t.is(error.code, SamlifyErrorCode.UndefinedAssertion);
 	});
 	test('encrypt assertion with invalid xml syntax returns error', async (t) => {
 		const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
-		t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
+		t.is(isSamlifyError(error), true);
+		if (isSamlifyError(error)) t.is(error.code, SamlifyErrorCode.UndefinedAssertion);
 	});
 	test('encrypt assertion with empty string returns error', async (t) => {
 		const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, ''));
-		t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
+		t.is(isSamlifyError(error), true);
+		if (isSamlifyError(error)) t.is(error.code, SamlifyErrorCode.UndefinedAssertion);
 	});
 	test('encrypt assertion with undefined string returns error', async (t) => {
 		const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, undefined));
-		t.is(error.message, 'ERR_UNDEFINED_ASSERTION');
+		t.is(isSamlifyError(error), true);
+		if (isSamlifyError(error)) t.is(error.code, SamlifyErrorCode.UndefinedAssertion);
 	});
 	test('building attribute statement with one attribute', (t) => {
 		const attributes = [
@@ -470,8 +479,9 @@ test('metadata with multiple entity descriptors is invalid', (t) => {
 	try {
 		identityProvider({ ...defaultIdpConfig, metadata: readFileSync('./test/misc/multiple_entitydescriptor.xml') });
 		t.fail();
-	} catch ({ message }) {
-		t.is(message, 'ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
+	} catch (e) {
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.MultipleMetadataEntityDescriptor);
 	}
 });
 

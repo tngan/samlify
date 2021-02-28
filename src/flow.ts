@@ -1,4 +1,5 @@
 import type { Entity, ESamlHttpRequest } from './entity';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import {
 	extract,
 	ExtractorFields,
@@ -40,7 +41,7 @@ function getDefaultExtractorFields(parserType: ParserType, assertion?: any): Ext
 		case ParserType.SAMLResponse:
 			if (!assertion) {
 				// unexpected hit
-				throw new Error('ERR_EMPTY_ASSERTION');
+				throw new SamlifyError(SamlifyErrorCode.EmptyAssertion);
 			}
 			return loginResponseFields(assertion);
 		case ParserType.LogoutRequest:
@@ -48,7 +49,7 @@ function getDefaultExtractorFields(parserType: ParserType, assertion?: any): Ext
 		case ParserType.LogoutResponse:
 			return logoutResponseFields;
 		default:
-			throw new Error('ERR_UNDEFINED_PARSERTYPE');
+			throw new SamlifyError(SamlifyErrorCode.UnsupportedParserType);
 	}
 }
 
@@ -66,7 +67,7 @@ async function redirectFlow(options: FlowOptions) {
 
 	// query must contain the saml content
 	if (content === undefined) {
-		throw new Error('ERR_REDIRECT_FLOW_BAD_ARGS');
+		throw new SamlifyError(SamlifyErrorCode.RedirectFlowBadArgs);
 	}
 
 	const xmlString = inflateString(decodeURIComponent(content));
@@ -80,7 +81,7 @@ async function redirectFlow(options: FlowOptions) {
 		try {
 			await libsaml.isValidXml(xmlString);
 		} catch (e) {
-			throw new Error('ERR_INVALID_XML');
+			throw new SamlifyError(SamlifyErrorCode.InvalidXML);
 		}
 	}
 
@@ -99,10 +100,10 @@ async function redirectFlow(options: FlowOptions) {
 	// only verify message signature is enough
 	if (checkSignature) {
 		if (!octetString) {
-			throw new Error('ERR_MISSING_QUERY_OCTETSTRING');
+			throw new SamlifyError(SamlifyErrorCode.MissingQueryOctetString);
 		}
 		if (!signature || !sigAlg) {
-			throw new Error('ERR_MISSING_SIG_ALG');
+			throw new SamlifyError(SamlifyErrorCode.MissingSigAlg);
 		}
 
 		// put the below two assignemnts into verifyMessageSignature function
@@ -113,7 +114,7 @@ async function redirectFlow(options: FlowOptions) {
 
 		if (!verified) {
 			// Fail to verify message signature
-			throw new Error('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+			throw new SamlifyError(SamlifyErrorCode.FailedMessageSignatureVerification);
 		}
 
 		parseResult.sigAlg = decodeSigAlg;
@@ -156,7 +157,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	if (checkSignature && from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS) {
 		const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
 		if (!verified) {
-			throw new Error('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+			throw new SamlifyError(SamlifyErrorCode.FailedToVerifySignatureETS);
 		}
 		if (!decryptRequired) {
 			extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
@@ -175,7 +176,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 		if (verified) {
 			extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
 		} else {
-			throw new Error('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
+			throw new SamlifyError(SamlifyErrorCode.FailedToVerifySignatureSTE);
 		}
 	}
 
@@ -197,7 +198,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 		extractedProperties &&
 		extractedProperties.issuer !== issuer
 	) {
-		throw new Error('ERR_MISMATCHED_ISSUER');
+		throw new SamlifyError(SamlifyErrorCode.MismatchedIssuer);
 	}
 
 	// invalid session time
@@ -207,7 +208,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 		extractedProperties.sessionIndex.sessionNotOnOrAfter &&
 		!verifyTime(undefined, extractedProperties.sessionIndex.sessionNotOnOrAfter, self.entitySetting.clockDrifts)
 	) {
-		throw new Error('ERR_EXPIRED_SESSION');
+		throw new SamlifyError(SamlifyErrorCode.ExpiredSession);
 	}
 
 	// invalid time
@@ -221,7 +222,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 			self.entitySetting.clockDrifts
 		)
 	) {
-		throw new Error('ERR_SUBJECT_UNCONFIRMED');
+		throw new SamlifyError(SamlifyErrorCode.SubjectUnconfirmed);
 	}
 
 	return parseResult;
@@ -243,11 +244,11 @@ async function checkStatus(content: string, parserType: string): Promise<string>
 	}
 
 	if (!top) {
-		throw new Error('ERR_UNDEFINED_STATUS');
+		throw new SamlifyError(SamlifyErrorCode.MissingStatus);
 	}
 
 	// returns a detailed error for two-tier error code
-	throw new Error(`ERR_FAILED_STATUS with top tier code: ${top}, second tier code: ${second}`);
+	throw new SamlifyError(SamlifyErrorCode.FailedStatus, `with top tier code: ${top}, second tier code: ${second}`);
 }
 
 export function flow(options: FlowOptions): Promise<FlowResult> {
@@ -268,5 +269,5 @@ export function flow(options: FlowOptions): Promise<FlowResult> {
 		return redirectFlow(options);
 	}
 
-	throw new Error('ERR_UNEXPECTED_FLOW');
+	throw new SamlifyError(SamlifyErrorCode.UnexpectedFlow);
 }

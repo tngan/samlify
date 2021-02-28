@@ -4,6 +4,7 @@
  * @desc An abstraction for metadata of identity provider and service provider
  */
 import fs from 'fs';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import { extract } from './extractor';
 import type { BindingNamespace } from './urn';
 import { isString } from './utility';
@@ -71,7 +72,7 @@ export class Metadata {
 		}
 
 		if (Array.isArray(this.meta.entityDescriptor) && this.meta.entityDescriptor.length > 1) {
-			throw new Error('ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
+			throw new SamlifyError(SamlifyErrorCode.MultipleMetadataEntityDescriptor);
 		}
 	}
 
@@ -135,7 +136,7 @@ export class Metadata {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 			return service.location;
 		}
-		throw new Error('ERR_SINGLE_LOGOUT_LOCATION_NOT_FOUND');
+		throw new SamlifyError(SamlifyErrorCode.SingleLogoutLocationNotFound);
 	}
 
 	/**

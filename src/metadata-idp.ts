@@ -4,6 +4,7 @@
  * @desc  Metadata of identity provider
  */
 import xml from 'xml';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import libsaml from './libsaml';
 import { Metadata } from './metadata';
 import type { MetadataIdpConstructorOptions, MetadataIdpOptions } from './types';
@@ -69,7 +70,7 @@ export class MetadataIdp extends Metadata {
 					IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
 				});
 			} else {
-				throw new Error('ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE');
+				throw new SamlifyError(SamlifyErrorCode.MetadataIdpMissingSingleSignOnService);
 			}
 
 			if (isNonEmptyArray(singleLogoutService)) {
@@ -141,6 +142,6 @@ export class MetadataIdp extends Metadata {
 		if (isString(service)) {
 			return service;
 		}
-		throw new Error('ERR_SINGLE_SIGN_ON_LOCATION_NOT_FOUND');
+		throw new SamlifyError(SamlifyErrorCode.SingleSignOnLocationNotFound);
 	}
 }

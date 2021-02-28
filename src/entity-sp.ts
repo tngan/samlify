@@ -7,6 +7,7 @@ import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
 import { BindingContext, Entity, ESamlHttpRequest, PostBindingContext } from './entity';
 import type { IdentityProvider } from './entity-idp';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import type { ServiceProviderMetadata, ServiceProviderSettings } from './types';
@@ -55,7 +56,7 @@ export class ServiceProvider extends Entity {
 		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
 		if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
-			throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+			throw new SamlifyError(SamlifyErrorCode.MetadataConflictRequestSignedFlag);
 		}
 
 		if (protocol === BindingNamespace.Redirect) {
@@ -76,7 +77,7 @@ export class ServiceProvider extends Entity {
 			};
 		}
 		// Will support artifact in the next release
-		throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
+		throw new SamlifyError(SamlifyErrorCode.UnsupportedBinding);
 	}
 
 	/**

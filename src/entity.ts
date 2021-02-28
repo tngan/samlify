@@ -6,6 +6,7 @@
 import { v4 as uuid } from 'uuid';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import metadataIdp, { MetadataIdp } from './metadata-idp';
@@ -85,7 +86,7 @@ export class Entity {
 				this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;
 				break;
 			default:
-				throw new Error('ERR_UNDEFINED_ENTITY_TYPE');
+				throw new SamlifyError(SamlifyErrorCode.UnsupportedEntityType);
 		}
 	}
 	/**
@@ -181,7 +182,7 @@ export class Entity {
 			};
 		}
 		// Will support artifact in the next release
-		throw new Error('ERR_UNDEFINED_BINDING');
+		throw new SamlifyError(SamlifyErrorCode.UnsupportedBinding);
 	}
 
 	/**
@@ -226,7 +227,7 @@ export class Entity {
 				type: 'SAMLResponse',
 			};
 		}
-		throw new Error('ERR_CREATE_LOGOUT_RESPONSE_UNDEFINED_BINDING');
+		throw new SamlifyError(SamlifyErrorCode.UnsupportedBinding);
 	}
 
 	/**

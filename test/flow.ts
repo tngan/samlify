@@ -9,6 +9,7 @@ import { v4 as uuid } from 'uuid';
 import { identityProvider, libsaml, serviceProvider, setSchemaValidator } from '../src';
 import type { IdentityProvider } from '../src/entity-idp';
 import type { ServiceProvider } from '../src/entity-sp';
+import { isSamlifyError, SamlifyErrorCode } from '../src/error';
 import { BindingNamespace, names, wording } from '../src/urn';
 import { base64Decode, base64Encode, isString } from '../src/utility';
 
@@ -188,7 +189,8 @@ test('signed in sp is not matched with the signed notation in idp with post requ
 		sp.createLoginRequest(_idp, BindingNamespace.Post);
 		t.fail();
 	} catch (e) {
-		t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.MetadataConflictRequestSignedFlag);
 	}
 });
 
@@ -198,7 +200,8 @@ test('signed in sp is not matched with the signed notation in idp with redirect 
 		sp.createLoginRequest(_idp, BindingNamespace.Redirect);
 		t.fail();
 	} catch (e) {
-		t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.MetadataConflictRequestSignedFlag);
 	}
 });
 
@@ -253,7 +256,8 @@ test('create login response with undefined binding', async (t) => {
 			// @ts-expect-error
 			idp.createLoginResponse(sp, {}, 'undefined', user, createTemplateCallback(idp, sp, user)) // eslint-disable-line
 	);
-	t.is(error.message, 'ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+	t.is(isSamlifyError(error), true);
+	if (isSamlifyError(error)) t.is(error.code, SamlifyErrorCode.UnsupportedBinding);
 });
 
 test('create post login response', async (t) => {
@@ -299,7 +303,8 @@ test('create logout response with undefined binding', (t) => {
 		idp.createLogoutResponse(sp, {}, 'undefined', '', createTemplateCallback(idp, sp, {}));
 		t.fail();
 	} catch (e) {
-		t.is(e.message, 'ERR_CREATE_LOGOUT_RESPONSE_UNDEFINED_BINDING');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.UnsupportedBinding);
 	}
 });
 
@@ -856,7 +861,8 @@ test('should reject signature wrapped response - case 1', async (t) => {
 	try {
 		await sp.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, { body: { SAMLResponse: wrappedResponse } });
 	} catch (e) {
-		t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.PotentialWrappingAttack);
 	}
 });
 
@@ -892,7 +898,8 @@ test('should reject signature wrapped response - case 2', async (t) => {
 			body: { SAMLResponse: wrappedResponse },
 		});
 	} catch (e) {
-		t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.PotentialWrappingAttack);
 	}
 });
 
@@ -902,9 +909,11 @@ test('should throw two-tiers code error when the response does not return succes
 			body: { SAMLResponse: base64Encode(failedResponse) },
 		});
 	} catch (e) {
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.FailedStatus);
 		t.is(
 			e.message,
-			'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy'
+			'with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy'
 		);
 	}
 });
@@ -931,7 +940,8 @@ test.serial('should throw SUBJECT_UNCONFIRMED for the expired SAML response with
 		// test failed, it shouldn't happen
 		t.is(true, false);
 	} catch (e) {
-		t.is(e.message, 'ERR_SUBJECT_UNCONFIRMED');
+		t.is(isSamlifyError(e), true);
+		t.is(e.code, SamlifyErrorCode.SubjectUnconfirmed);
 	} finally {
 		tk.reset();
 	}

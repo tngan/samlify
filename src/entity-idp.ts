@@ -5,6 +5,7 @@
  */
 import postBinding from './binding-post';
 import { Entity, ESamlHttpRequest } from './entity';
+import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import type {
@@ -73,7 +74,7 @@ export class IdentityProvider extends Entity {
 				type: 'SAMLResponse',
 			};
 		}
-		throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+		throw new SamlifyError(SamlifyErrorCode.UnsupportedBinding);
 	}
 
 	/**

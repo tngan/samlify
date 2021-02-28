@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import test from 'ava';
 import { readFileSync } from 'fs';
 import { xpath as select } from 'xml-crypto';
 import { DOMParser as dom } from 'xmldom';
 import { identityProvider, serviceProvider } from '../src';
+import { isSamlifyError, SamlifyErrorCode } from '../src/error';
 import { extract, isElement } from '../src/extractor';
 import libsaml from '../src/libsaml';
 import { BindingNamespace, wording } from '../src/urn';
@@ -153,8 +155,9 @@ test('#31 query param for sso/slo returns error', (t) => {
 		try {
 			libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
 			t.fail();
-		} catch ({ message }) {
-			t.is(message, 'ERR_ZERO_SIGNATURE');
+		} catch (e) {
+			t.is(isSamlifyError(e), true);
+			t.is(e.code, SamlifyErrorCode.ZeroSignature);
 		}
 	});
 
