@@ -10,7 +10,8 @@ import type { IdentityProvider } from './entity-idp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow } from './flow';
 import type { CustomTagReplacement } from './libsaml';
-import type { ServiceProviderMetadata, ServiceProviderSettings } from './types';
+import metadataSp, { MetadataSp } from './metadata-sp';
+import type { ServiceProviderSettings } from './types';
 import { BindingNamespace, ParserType } from './urn';
 
 /*
@@ -25,23 +26,25 @@ export default function (props: ServiceProviderSettings) {
 * @param  {object} spSettingimport { FlowResult } from '../types/src/flow.d';
 
 */
-export class ServiceProvider extends Entity {
-	entityMeta!: ServiceProviderMetadata;
-
+export class ServiceProvider extends Entity<ServiceProviderSettings, MetadataSp> {
 	/**
 	 * @desc  Inherited from Entity
-	 * @param {object} spSetting    setting of service provider
+	 * @param {object} spSettings settings of service provider
 	 */
-	constructor(spSetting: ServiceProviderSettings) {
-		const entitySetting = Object.assign(
+	constructor(spSettings: ServiceProviderSettings) {
+		const entitySettings = Object.assign(
 			{
 				authnRequestsSigned: false,
 				wantAssertionsSigned: false,
 				wantMessageSigned: false,
 			},
-			spSetting
+			spSettings
 		);
-		super(entitySetting, 'sp');
+		const entityMeta = metadataSp(entitySettings.metadata || entitySettings);
+		// setting with metadata has higher precedence
+		entitySettings.authnRequestsSigned = entityMeta.isAuthnRequestSigned();
+		entitySettings.wantAssertionsSigned = entityMeta.isWantAssertionsSigned();
+		super(entitySettings, entityMeta);
 	}
 
 	/**
@@ -55,7 +58,8 @@ export class ServiceProvider extends Entity {
 		protocol = BindingNamespace.Redirect,
 		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
-		if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
+		const idpMeta = idp.getEntityMeta();
+		if (this.entityMeta.isAuthnRequestSigned() !== idpMeta.isWantAuthnRequestsSigned()) {
 			throw new SamlifyError(SamlifyErrorCode.MetadataConflictRequestSignedFlag);
 		}
 
@@ -71,8 +75,8 @@ export class ServiceProvider extends Entity {
 			);
 			return {
 				...context,
-				relayState: this.entitySetting.relayState,
-				entityEndpoint: idp.entityMeta.getSingleSignOnService(protocol),
+				relayState: this.entitySettings.relayState,
+				entityEndpoint: idpMeta.getSingleSignOnService(protocol),
 				type: 'SAMLRequest',
 			};
 		}

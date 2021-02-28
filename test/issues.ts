@@ -162,7 +162,7 @@ test('#31 query param for sso/slo returns error', (t) => {
 	});
 
 	test('#91 idp gets single sign on service from the metadata', (t) => {
-		t.is(idp.entityMeta.getSingleSignOnService(BindingNamespace.Post), 'https://idp.example.com/sso');
+		t.is(idp.getEntityMeta().getSingleSignOnService(BindingNamespace.Post), 'https://idp.example.com/sso');
 	});
 
 	test('#98 undefined AssertionConsumerServiceURL with redirect request', (t) => {

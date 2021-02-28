@@ -23,11 +23,11 @@ function base64LoginRequest(
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+	const metadata = { idp: entity.idp.getEntityMeta(), sp: entity.sp.getEntityMeta() };
 	if (!metadata.idp || !metadata.sp) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const spSetting = entity.sp.entitySetting;
+	const spSetting = entity.sp.getEntitySettings();
 	const template = spSetting.loginRequestTemplate ?? libsaml.defaultLoginRequestTemplate;
 
 	const nameIDFormat = spSetting.nameIDFormat;
@@ -103,15 +103,15 @@ async function base64LoginResponse(
 	customTagReplacement?: CustomTagReplacement,
 	encryptThenSign = false
 ): Promise<BindingContext> {
-	const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+	const metadata = { idp: entity.idp.getEntityMeta(), sp: entity.sp.getEntityMeta() };
 	if (!metadata.idp || !metadata.sp) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const idpSetting = entity.idp.entitySetting;
+	const idpSetting = entity.idp.getEntitySettings();
 	const template = idpSetting.loginResponseTemplate ?? libsaml.defaultLoginResponseTemplate;
 	const attributes = template.attributes;
 
-	const spSetting = entity.sp.entitySetting;
+	const spSetting = entity.sp.getEntitySettings();
 	const nameIDFormat = idpSetting.nameIDFormat;
 	const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
 	const base = metadata.sp.getAssertionConsumerService(BindingNamespace.Post);
@@ -257,11 +257,11 @@ function base64LogoutRequest(
 	entity: { init: Entity; target: Entity },
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+	const metadata = { init: entity.init.getEntityMeta(), target: entity.target.getEntityMeta() };
 	if (!metadata.init || !metadata.target) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const initSetting = entity.init.entitySetting;
+	const initSetting = entity.init.getEntitySettings();
 	const template = initSetting.logoutRequestTemplate ?? libsaml.defaultLogoutRequestTemplate;
 
 	const nameIDFormat = initSetting.nameIDFormat;
@@ -285,7 +285,7 @@ function base64LogoutRequest(
 	// pickup any remaining
 	rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
 
-	if (entity.target.entitySetting.wantLogoutRequestSigned) {
+	if (entity.target.getEntitySettings().wantLogoutRequestSigned) {
 		// Need to embeded XML signature
 		const {
 			privateKey,
@@ -333,11 +333,11 @@ function base64LogoutResponse(
 	entity: { init: Entity; target: Entity },
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+	const metadata = { init: entity.init.getEntityMeta(), target: entity.target.getEntityMeta() };
 	if (!metadata.init || !metadata.target) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const initSetting = entity.init.entitySetting;
+	const initSetting = entity.init.getEntitySettings();
 	const template = initSetting.logoutResponseTemplate ?? libsaml.defaultLogoutResponseTemplate;
 
 	let values: Record<string, any> = {
@@ -358,7 +358,7 @@ function base64LogoutResponse(
 	// pickup any remaining
 	rawSaml = libsaml.replaceTagsByValue(rawSaml, values);
 
-	if (entity.target.entitySetting.wantLogoutResponseSigned) {
+	if (entity.target.getEntitySettings().wantLogoutResponseSigned) {
 		const {
 			privateKey,
 			privateKeyPass,

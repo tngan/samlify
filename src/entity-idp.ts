@@ -5,14 +5,12 @@
  */
 import postBinding from './binding-post';
 import { Entity, ESamlHttpRequest } from './entity';
+import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow } from './flow';
 import type { CustomTagReplacement } from './libsaml';
-import type {
-	IdentityProviderMetadata,
-	IdentityProviderSettings,
-	ServiceProviderConstructor as ServiceProvider,
-} from './types';
+import metadataIdp, { MetadataIdp } from './metadata-idp';
+import type { IdentityProviderSettings } from './types';
 import { BindingNamespace, ParserType } from './urn';
 
 /**
@@ -23,20 +21,23 @@ export default function (props: IdentityProviderSettings) {
 }
 
 /**
- * Identity prvider can be configured using either metadata importing or idpSetting
+ * Identity prvider can be configured using either metadata importing or idpSettings
  */
-export class IdentityProvider extends Entity {
-	entityMeta!: IdentityProviderMetadata;
-
-	constructor(idpSetting: IdentityProviderSettings) {
-		const defaultIdpEntitySetting = {
-			wantAuthnRequestsSigned: false,
-			tagPrefix: {
-				encryptedAssertion: 'saml',
+export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataIdp> {
+	constructor(idpSettings: IdentityProviderSettings) {
+		const entitySettings = Object.assign(
+			{
+				wantAuthnRequestsSigned: false,
+				tagPrefix: {
+					encryptedAssertion: 'saml',
+				},
 			},
-		};
-		const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
-		super(entitySetting, 'idp');
+			idpSettings
+		);
+		const entityMeta = metadataIdp(entitySettings.metadata || entitySettings);
+		// setting with metadata has higher precedence
+		entitySettings.wantAuthnRequestsSigned = entityMeta.isWantAuthnRequestsSigned();
+		super(entitySettings, entityMeta);
 	}
 
 	/**
@@ -70,7 +71,7 @@ export class IdentityProvider extends Entity {
 			);
 			return {
 				...context,
-				entityEndpoint: sp.entityMeta.getAssertionConsumerService(protocol),
+				entityEndpoint: sp.getEntityMeta().getAssertionConsumerService(protocol),
 				type: 'SAMLResponse',
 			};
 		}

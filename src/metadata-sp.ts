@@ -6,7 +6,7 @@
 import xml from 'xml';
 import libsaml from './libsaml';
 import { Metadata } from './metadata';
-import type { MetadataSpConstructorOptions, MetadataSpOptions, MetaElement } from './types';
+import type { MetadataSpConstructorOptions, MetaElement } from './types';
 import { BindingNamespace, elementsOrder as order, names } from './urn';
 import { isNonEmptyArray, isString } from './utility';
 
@@ -26,10 +26,8 @@ export class MetadataSp extends Metadata {
 	 * @return {object} prototypes including public functions
 	 */
 	constructor(meta: MetadataSpConstructorOptions) {
-		const isFile = isString(meta) || meta instanceof Buffer;
-
 		// use object configuation instead of importing metadata file directly
-		if (!isFile) {
+		if (!(isString(meta) || meta instanceof Buffer)) {
 			const {
 				elementsOrder = order.default,
 				entityID,
@@ -42,7 +40,7 @@ export class MetadataSp extends Metadata {
 				nameIDFormat = [],
 				singleLogoutService = [],
 				assertionConsumerService = [],
-			} = meta as MetadataSpOptions;
+			} = meta;
 
 			const descriptors: MetaElement = {
 				KeyDescriptor: [],
@@ -140,7 +138,7 @@ export class MetadataSp extends Metadata {
 		}
 
 		// Use the re-assigned meta object reference here
-		super(meta as string | Buffer, [
+		super(meta, [
 			{
 				key: 'spSSODescriptor',
 				localPath: ['EntityDescriptor', 'SPSSODescriptor'],

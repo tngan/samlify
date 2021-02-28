@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 // This test file includes all the units related to the extractor
 import test from 'ava';
 import { readFileSync } from 'fs';

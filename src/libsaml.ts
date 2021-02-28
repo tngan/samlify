@@ -561,17 +561,17 @@ const libSaml = () => {
 		 * @param  {Entity} sourceEntity             source entity
 		 * @param  {Entity} targetEntity             target entity
 		 * @param  {string} xml                      response in xml string format
-		 * @return {Promise} a promise to resolve the finalized xml
+		 * @return {Promise<string>} a promise to resolve the finalized xml
 		 */
-		encryptAssertion(sourceEntity: Entity, targetEntity: Entity, xml?: string) {
+		encryptAssertion(sourceEntity: Entity, targetEntity: Entity, xml?: string): Promise<string> {
 			// Implement encryption after signature if it has
 			return new Promise<string>((resolve, reject) => {
 				if (!xml) {
 					return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 				}
 
-				const sourceEntitySetting = sourceEntity.getEntitySetting();
-				const targetEntityMetadata = targetEntity.entityMeta;
+				const sourceEntitySetting = sourceEntity.getEntitySettings();
+				const targetEntityMetadata = targetEntity.getEntityMeta();
 				const doc = new dom().parseFromString(xml);
 				const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
 				if (!isNonEmptyArray(assertions) || assertions[0] == null) {
@@ -643,7 +643,7 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 					return reject(new SamlifyError(SamlifyErrorCode.UndefinedAssertion));
 				}
 				// Perform encryption depends on the setting of where the message is sent, default is false
-				const hereSetting = here.entitySetting;
+				const hereSetting = here.getEntitySettings();
 				const xml = new dom().parseFromString(entireXML);
 				const encryptedAssertions = select(
 					"/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']",

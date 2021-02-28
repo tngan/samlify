@@ -10,8 +10,8 @@ import type { BindingNamespace } from './urn';
 import { isString } from './utility';
 
 export class Metadata {
-	xmlString: string;
-	meta: any;
+	private xmlString: string;
+	protected meta: any;
 
 	/**
 	 * @param  {string | Buffer} metadata xml

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import test from 'ava';
 import { readFileSync } from 'fs';
@@ -92,7 +93,7 @@ test('getAssertionConsumerService with one binding', (t) => {
 			},
 		],
 	});
-	t.is(_sp.entityMeta.getAssertionConsumerService(BindingNamespace.Post), expectedPostLocation);
+	t.is(_sp.getEntityMeta().getAssertionConsumerService(BindingNamespace.Post), expectedPostLocation);
 });
 test('getAssertionConsumerService with two bindings', (t) => {
 	const expectedPostLocation = 'https:sp.example.org/sp/sso/post';
@@ -124,8 +125,8 @@ test('getAssertionConsumerService with two bindings', (t) => {
 			},
 		],
 	});
-	t.is(_sp.entityMeta.getAssertionConsumerService(BindingNamespace.Post), expectedPostLocation);
-	t.is(_sp.entityMeta.getAssertionConsumerService(BindingNamespace.Artifact), expectedArtifactLocation);
+	t.is(_sp.getEntityMeta().getAssertionConsumerService(BindingNamespace.Post), expectedPostLocation);
+	t.is(_sp.getEntityMeta().getAssertionConsumerService(BindingNamespace.Artifact), expectedArtifactLocation);
 });
 
 (() => {
@@ -321,14 +322,14 @@ test('getAssertionConsumerService with two bindings', (t) => {
 		const responseSignedByCert2 = String(readFileSync('./test/misc/response_signed_cert2.xml'));
 		t.is(
 			libsaml.verifySignature(responseSignedByCert1, {
-				metadata: idpRollingCert.entityMeta,
+				metadata: idpRollingCert.getEntityMeta(),
 				signatureAlgorithm: signatureAlgorithms.RSA_SHA256,
 			})[0],
 			true
 		);
 		t.is(
 			libsaml.verifySignature(responseSignedByCert2, {
-				metadata: idpRollingCert.entityMeta,
+				metadata: idpRollingCert.getEntityMeta(),
 				signatureAlgorithm: signatureAlgorithms.RSA_SHA256,
 			})[0],
 			true
@@ -486,24 +487,24 @@ test('metadata with multiple entity descriptors is invalid', (t) => {
 });
 
 test('undefined x509 key in metadata should return null', (t) => {
-	t.is(idp.entityMeta.getX509Certificate('undefined'), null);
-	t.is(sp.entityMeta.getX509Certificate('undefined'), null);
+	t.is(idp.getEntityMeta().getX509Certificate('undefined'), null);
+	t.is(sp.getEntityMeta().getX509Certificate('undefined'), null);
 });
 
 test('return list of x509 key in metadata when multiple keys are used', (t) => {
-	t.is(Array.isArray(idpRollingCert.entityMeta.getX509Certificate('signing')), true);
-	t.is(idpRollingCert.entityMeta.getX509Certificate('signing').length, 2);
-	t.is(typeof idpRollingCert.entityMeta.getX509Certificate('encryption'), 'string');
+	t.is(Array.isArray(idpRollingCert.getEntityMeta().getX509Certificate('signing')), true);
+	t.is(idpRollingCert.getEntityMeta().getX509Certificate('signing').length, 2);
+	t.is(typeof idpRollingCert.getEntityMeta().getX509Certificate('encryption'), 'string');
 });
 
 test('get name id format in metadata', (t) => {
-	t.is(sp.entityMeta.getNameIDFormat(), 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
-	t.is(Array.isArray(idp.entityMeta.getNameIDFormat()), true);
+	t.is(sp.getEntityMeta().getNameIDFormat(), 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+	t.is(Array.isArray(idp.getEntityMeta().getNameIDFormat()), true);
 });
 
 test('get entity setting', (t) => {
-	t.is(typeof idp.getEntitySetting(), 'object');
-	t.is(typeof sp.getEntitySetting(), 'object');
+	t.is(typeof idp.getEntitySettings(), 'object');
+	t.is(typeof sp.getEntitySettings(), 'object');
 });
 
 test('contains shared certificate for both signing and encryption in metadata', (t) => {

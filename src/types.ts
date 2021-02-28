@@ -1,65 +1,54 @@
 import type { EncryptionAlgorithm, KeyEncryptionAlgorithm } from 'xml-encryption';
 import type { LoginResponseTemplate, LogoutResponseTemplate } from './libsaml';
-import type { BindingNamespace } from './urn';
+import type { BindingNamespace, MessageSignatureOrder } from './urn';
 
-export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
-export { ServiceProvider as ServiceProviderConstructor } from './entity-sp';
-export { MetadataIdp as IdentityProviderMetadata } from './metadata-idp';
-export { MetadataSp as ServiceProviderMetadata } from './metadata-sp';
-
-export type MetadataFile = string | Buffer;
-
-type SSOService = {
+interface SSOService {
 	isDefault?: boolean;
 	Binding: BindingNamespace;
 	Location: string;
-};
+}
 
 export type RequestSignatureAlgorithm =
 	| 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
 	| 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
 	| 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512';
 
-export interface MetadataIdpOptions {
-	entityID?: string;
-	signingCert?: string | Buffer;
-	encryptCert?: string | Buffer;
-	wantAuthnRequestsSigned?: boolean;
-	nameIDFormat?: string[];
-	singleSignOnService?: SSOService[];
-	singleLogoutService?: SSOService[];
-	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
-}
-
-export type MetadataIdpConstructorOptions = MetadataIdpOptions | MetadataFile;
-
 // https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
 export interface MetaElement {
+	AssertionConsumerService?: any[];
+	AttributeConsumingService?: any[];
 	KeyDescriptor?: any[];
 	NameIDFormat?: any[];
 	SingleLogoutService?: any[];
-	AssertionConsumerService?: any[];
-	AttributeConsumingService?: any[];
 }
 
-export interface MetadataSpOptions {
-	entityID?: string;
-	signingCert?: string | Buffer;
+interface MetadataOptions {
 	encryptCert?: string | Buffer;
+	entityID?: string;
+	nameIDFormat?: string[];
+	signingCert?: string | Buffer;
+	singleLogoutService?: SSOService[];
+	singleSignOnService?: SSOService[];
+}
+
+interface MetadataIdpOptions extends MetadataOptions {
+	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
+	wantAuthnRequestsSigned?: boolean;
+}
+
+interface MetadataSpOptions extends MetadataOptions {
+	assertionConsumerService?: SSOService[];
 	authnRequestsSigned?: boolean;
+	elementsOrder?: (keyof MetaElement)[];
+	signatureConfig?: { [key: string]: any };
 	wantAssertionsSigned?: boolean;
 	wantMessageSigned?: boolean;
-	signatureConfig?: { [key: string]: any };
-	nameIDFormat?: string[];
-	singleSignOnService?: SSOService[];
-	singleLogoutService?: SSOService[];
-	assertionConsumerService?: SSOService[];
-	elementsOrder?: (keyof MetaElement)[];
 }
 
-export type MetadataSpConstructorOptions = MetadataSpOptions | MetadataFile;
+type MetadataFile = string | Buffer;
 
-export type EntitySetting = ServiceProviderSettings & IdentityProviderSettings;
+export type MetadataIdpConstructorOptions = MetadataIdpOptions | MetadataFile;
+export type MetadataSpConstructorOptions = MetadataSpOptions | MetadataFile;
 
 export interface SignatureConfig {
 	prefix?: string;
@@ -73,68 +62,76 @@ export interface SAMLDocumentTemplate {
 	context?: string;
 }
 
-export type ServiceProviderSettings = {
+export interface EntitySettings {
 	metadata?: string | Buffer;
 	entityID?: string;
-	authnRequestsSigned?: boolean;
-	wantAssertionsSigned?: boolean;
-	wantMessageSigned?: boolean;
-	wantLogoutResponseSigned?: boolean;
-	wantLogoutRequestSigned?: boolean;
-	privateKey?: string | Buffer;
-	privateKeyPass?: string;
-	isAssertionEncrypted?: boolean;
-	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
-	encPrivateKey?: string | Buffer;
-	encPrivateKeyPass?: string | Buffer;
 	assertionConsumerService?: SSOService[];
 	singleLogoutService?: SSOService[];
-	signatureConfig?: SignatureConfig;
-	loginRequestTemplate?: SAMLDocumentTemplate;
-	logoutRequestTemplate?: SAMLDocumentTemplate;
-	signingCert?: string | Buffer;
-	encryptCert?: string | Buffer;
-	transformationAlgorithms?: string[];
-	nameIDFormat?: string[];
-	allowCreate?: boolean;
-	// will be deprecated soon
-	relayState?: string;
-	// https://github.com/tngan/samlify/issues/337
-	clockDrifts?: [number, number];
-};
 
-export type IdentityProviderSettings = {
-	metadata?: string | Buffer;
+	authnRequestsSigned?: boolean;
+	isAssertionEncrypted?: boolean;
 
 	/** signature algorithm */
 	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
 	dataEncryptionAlgorithm?: EncryptionAlgorithm;
 	keyEncryptionAlgorithm?: KeyEncryptionAlgorithm;
 
-	/** template of login response */
-	loginResponseTemplate?: LoginResponseTemplate;
+	messageSigningOrder?: MessageSignatureOrder;
+	signatureConfig?: SignatureConfig;
+	transformationAlgorithms?: string[];
+	wantAssertionsSigned?: boolean;
+	wantLogoutRequestSigned?: boolean;
+	wantLogoutResponseSigned?: boolean;
+	wantMessageSigned?: boolean;
 
+	signingCert?: string | Buffer;
+	privateKey?: string | Buffer;
+	privateKeyPass?: string;
+
+	encryptCert?: string | Buffer;
+	encPrivateKey?: string | Buffer;
+	encPrivateKeyPass?: string;
+
+	/** template of login request */
+	loginRequestTemplate?: SAMLDocumentTemplate;
+	/** template of logout request */
+	logoutRequestTemplate?: SAMLDocumentTemplate;
 	/** template of logout response */
 	logoutResponseTemplate?: LogoutResponseTemplate;
 
+	nameIDFormat?: string[];
+	allowCreate?: boolean;
+	// will be deprecated soon
+	relayState?: string;
+	// https://github.com/tngan/samlify/issues/337
+	clockDrifts?: [number, number];
 	/** customized function used for generating request ID */
 	generateID?: () => string;
 
-	entityID?: string;
-	privateKey?: string | Buffer;
-	privateKeyPass?: string;
-	signingCert?: string | Buffer;
-	encryptCert?: string | Buffer /** todo */;
-	nameIDFormat?: string[];
+	/** Declare the tag of specific xml document node. `TagPrefixKey` currently supports `encryptedAssertion` only */
+	tagPrefix?: { encryptedAssertion?: string };
+}
+
+export interface ServiceProviderSettings extends EntitySettings {
+	authnRequestsSigned?: boolean;
+	wantAssertionsSigned?: boolean;
+	wantMessageSigned?: boolean;
+	assertionConsumerService?: SSOService[];
+	loginRequestTemplate?: SAMLDocumentTemplate;
+	logoutRequestTemplate?: SAMLDocumentTemplate;
+	transformationAlgorithms?: string[];
+	allowCreate?: boolean;
+	// will be deprecated soon
+	relayState?: string;
+	// https://github.com/tngan/samlify/issues/337
+	clockDrifts?: [number, number];
+}
+
+export interface IdentityProviderSettings extends EntitySettings {
+	/** template of login response */
+	loginResponseTemplate?: LoginResponseTemplate;
+
 	singleSignOnService?: SSOService[];
-	singleLogoutService?: SSOService[];
-	isAssertionEncrypted?: boolean;
-	encPrivateKey?: string | Buffer;
-	encPrivateKeyPass?: string;
-	messageSigningOrder?: string;
-	wantLogoutRequestSigned?: boolean;
-	wantLogoutResponseSigned?: boolean;
 	wantAuthnRequestsSigned?: boolean;
 	wantLogoutRequestSignedResponseSigned?: boolean;
-	tagPrefix?: { [key: string]: string };
-};
+}

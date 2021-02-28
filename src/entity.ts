@@ -7,11 +7,10 @@ import { v4 as uuid } from 'uuid';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
 import { SamlifyError, SamlifyErrorCode } from './error';
-import { flow } from './flow';
+import { flow, FlowResult } from './flow';
 import type { CustomTagReplacement } from './libsaml';
-import metadataIdp, { MetadataIdp } from './metadata-idp';
-import metadataSp, { MetadataSp } from './metadata-sp';
-import type { EntitySetting, MetadataIdpConstructorOptions, MetadataSpConstructorOptions } from './types';
+import type { Metadata } from './metadata';
+import type { EntitySettings } from './types';
 import { algorithms, BindingNamespace, messageConfigurations, ParserType } from './urn';
 import { isNonEmptyArray, isString } from './utility';
 
@@ -56,53 +55,38 @@ export interface ParseResult {
 	sigAlg: string;
 }
 
-export type EntityConstructorOptions = (MetadataIdpConstructorOptions | MetadataSpConstructorOptions) & {
-	metadata?: string | Buffer;
-};
-
-export class Entity {
-	entitySetting: EntitySetting;
-	entityMeta: MetadataIdp | MetadataSp;
-
+export class Entity<Settings extends EntitySettings = EntitySettings, Meta extends Metadata = Metadata> {
+	protected entitySettings: Settings;
 	/**
-	 * @param entitySetting
-	 * @param entityMeta is the entity metadata, deprecated after 2.0
+	 * @param entitySettings
+	 * @param Meta
 	 */
-	constructor(entitySetting: EntityConstructorOptions, public entityType: 'idp' | 'sp') {
-		this.entitySetting = Object.assign({}, defaultEntitySetting, entitySetting);
-		const metadata = entitySetting.metadata || entitySetting;
-		switch (entityType) {
-			case 'idp':
-				this.entityMeta = metadataIdp(metadata);
-				// setting with metadata has higher precedence
-				this.entitySetting.wantAuthnRequestsSigned = this.entityMeta.isWantAuthnRequestsSigned();
-				this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;
-				break;
-			case 'sp':
-				this.entityMeta = metadataSp(metadata);
-				// setting with metadata has higher precedence
-				this.entitySetting.authnRequestsSigned = this.entityMeta.isAuthnRequestSigned();
-				this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
-				this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;
-				break;
-			default:
-				throw new SamlifyError(SamlifyErrorCode.UnsupportedEntityType);
-		}
+	constructor(entitySettings: Settings, protected entityMeta: Meta) {
+		// setting with metadata has higher precedence
+		entitySettings.nameIDFormat = entityMeta.getNameIDFormat() || entitySettings.nameIDFormat;
+		this.entitySettings = Object.assign({}, defaultEntitySetting, entitySettings);
 	}
 	/**
 	 * @desc  Returns the setting of entity
-	 * @return {object}
+	 * @return {string}
 	 */
-	generateID() {
-		if (this.entitySetting.generateID) return this.entitySetting.generateID();
+	generateID(): string {
+		if (this.entitySettings.generateID) return this.entitySettings.generateID();
 		return defaultEntitySetting.generateID();
 	}
 	/**
 	 * @desc  Returns the setting of entity
-	 * @return {object}
+	 * @return {EntitySettings}
 	 */
-	getEntitySetting() {
-		return this.entitySetting;
+	getEntitySettings(): Settings {
+		return this.entitySettings;
+	}
+	/**
+	 * @desc  Returns the meta object of entity
+	 * @return {Metadata}
+	 */
+	getEntityMeta(): Meta {
+		return this.entityMeta;
 	}
 	/**
 	 * @desc  Returns the xml string of entity metadata
@@ -149,29 +133,21 @@ export class Entity {
 	 * @param  {function} customTagReplacement     used when developers have their own login response template
 	 */
 	createLogoutRequest(
-		targetEntity: Entity,
+		target: Entity,
 		protocol: BindingNamespace,
 		user: Record<string, any>,
 		relayState = '',
 		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {
 		if (protocol === BindingNamespace.Redirect) {
-			return redirectBinding.logoutRequestRedirectURL(
-				user,
-				{
-					init: this,
-					target: targetEntity,
-				},
-				relayState,
-				customTagReplacement
-			);
+			return redirectBinding.logoutRequestRedirectURL(user, { init: this, target }, relayState, customTagReplacement);
 		}
 		if (protocol === BindingNamespace.Post) {
-			const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(protocol);
+			const entityEndpoint = target.entityMeta.getSingleLogoutService(protocol);
 			const context = postBinding.base64LogoutRequest(
 				user,
 				"/*[local-name(.)='LogoutRequest']",
-				{ init: this, target: targetEntity },
+				{ init: this, target },
 				customTagReplacement
 			);
 			return {
@@ -212,14 +188,7 @@ export class Entity {
 			);
 		}
 		if (protocol === BindingNamespace.Post) {
-			const context = postBinding.base64LogoutResponse(
-				requestInfo,
-				{
-					init: this,
-					target,
-				},
-				customTagReplacement
-			);
+			const context = postBinding.base64LogoutResponse(requestInfo, { init: this, target }, customTagReplacement);
 			return {
 				...context,
 				relayState,
@@ -235,15 +204,15 @@ export class Entity {
 	 * @param  {IdentityProvider} idp        object of identity provider
 	 * @param  {BindingNamespace} protocol   protocol binding
 	 * @param  {request}   req               request
-	 * @return {Promise}
+	 * @return {Promise<FlowResult>}
 	 */
-	parseLogoutRequest(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest) {
+	parseLogoutRequest(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest): Promise<FlowResult> {
 		return flow({
 			from: from,
 			self: this,
 			type: 'logout',
 			parserType: ParserType.LogoutRequest,
-			checkSignature: this.entitySetting.wantLogoutRequestSigned,
+			checkSignature: this.entitySettings.wantLogoutRequestSigned,
 			binding: protocol,
 			request: request,
 		});
@@ -253,15 +222,15 @@ export class Entity {
 	 * @param  {object}           config     config for the parser
 	 * @param  {BindingNamespace} protocol   protocol binding
 	 * @param  {ESamlHttpRequest} req        request
-	 * @return {Promise}
+	 * @return {Promise<FlowResult>}
 	 */
-	parseLogoutResponse(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest) {
+	parseLogoutResponse(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest): Promise<FlowResult> {
 		return flow({
 			from: from,
 			self: this,
 			type: 'logout',
 			parserType: ParserType.LogoutResponse,
-			checkSignature: this.entitySetting.wantLogoutResponseSigned,
+			checkSignature: this.entitySettings.wantLogoutResponseSigned,
 			binding: protocol,
 			request: request,
 		});

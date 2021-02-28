@@ -17,9 +17,9 @@ import { verifyTime } from './validator';
 
 const urlParams = wording.urlParams;
 
-export interface FlowOptions {
-	from: Entity;
-	self: Entity;
+export interface FlowOptions<From extends Entity = Entity, Self extends Entity = Entity> {
+	from: From;
+	self: Self;
 	checkSignature?: boolean;
 	parserType: ParserType;
 	type: 'login' | 'logout';
@@ -54,12 +54,12 @@ function getDefaultExtractorFields(parserType: ParserType, assertion?: any): Ext
 }
 
 // proceed the redirect binding flow
-async function redirectFlow(options: FlowOptions) {
+async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
 	const { request, parserType, checkSignature = true, from } = options;
 	const { query, octetString } = request;
 	const { SigAlg: sigAlg, Signature: signature } = query;
 
-	const targetEntityMetadata = from.entityMeta;
+	const targetEntityMetadata = from.getEntityMeta();
 
 	// ?SAMLRequest= or ?SAMLResponse=
 	const direction = libsaml.getQueryParamByType(parserType);
@@ -129,17 +129,18 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 
 	const { body } = request;
 
+	const fromEntitySetting = from.getEntitySettings();
 	const direction = libsaml.getQueryParamByType(parserType);
 	const encodedRequest = body[direction];
 
 	let samlContent = String(base64Decode(encodedRequest));
 
 	const verificationOptions = {
-		metadata: from.entityMeta,
-		signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
+		metadata: from.getEntityMeta(),
+		signatureAlgorithm: fromEntitySetting.requestSignatureAlgorithm,
 	};
 
-	const decryptRequired = from.entitySetting.isAssertionEncrypted;
+	const decryptRequired = fromEntitySetting.isAssertionEncrypted;
 
 	let extractorFields: ExtractorFields = [];
 
@@ -154,7 +155,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	await checkStatus(samlContent, parserType);
 
 	// verify the signatures (the repsonse is encrypted then signed, then verify first then decrypt)
-	if (checkSignature && from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS) {
+	if (checkSignature && fromEntitySetting.messageSigningOrder === MessageSignatureOrder.ETS) {
 		const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
 		if (!verified) {
 			throw new SamlifyError(SamlifyErrorCode.FailedToVerifySignatureETS);
@@ -171,7 +172,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	}
 
 	// verify the signatures (the repsonse is signed then encrypted, then decrypt first then verify)
-	if (checkSignature && from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE) {
+	if (checkSignature && fromEntitySetting.messageSigningOrder === MessageSignatureOrder.STE) {
 		const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
 		if (verified) {
 			extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
@@ -188,7 +189,8 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	/**
 	 *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
 	 */
-	const targetEntityMetadata = from.entityMeta;
+	const initEntitySetting = self.getEntitySettings();
+	const targetEntityMetadata = from.getEntityMeta();
 	const issuer = targetEntityMetadata.getEntityID();
 	const extractedProperties = parseResult.extract;
 
@@ -206,7 +208,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	if (
 		parserType === ParserType.SAMLResponse &&
 		extractedProperties.sessionIndex.sessionNotOnOrAfter &&
-		!verifyTime(undefined, extractedProperties.sessionIndex.sessionNotOnOrAfter, self.entitySetting.clockDrifts)
+		!verifyTime(undefined, extractedProperties.sessionIndex.sessionNotOnOrAfter, initEntitySetting.clockDrifts)
 	) {
 		throw new SamlifyError(SamlifyErrorCode.ExpiredSession);
 	}
@@ -219,7 +221,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 		!verifyTime(
 			extractedProperties.conditions.notBefore,
 			extractedProperties.conditions.notOnOrAfter,
-			self.entitySetting.clockDrifts
+			initEntitySetting.clockDrifts
 		)
 	) {
 		throw new SamlifyError(SamlifyErrorCode.SubjectUnconfirmed);

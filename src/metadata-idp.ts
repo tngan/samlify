@@ -7,7 +7,7 @@ import xml from 'xml';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import libsaml from './libsaml';
 import { Metadata } from './metadata';
-import type { MetadataIdpConstructorOptions, MetadataIdpOptions } from './types';
+import type { MetadataIdpConstructorOptions } from './types';
 import { BindingNamespace, names } from './urn';
 import { isNonEmptyArray, isString } from './utility';
 
@@ -20,9 +20,8 @@ export default function (meta: MetadataIdpConstructorOptions) {
 
 export class MetadataIdp extends Metadata {
 	constructor(meta: MetadataIdpConstructorOptions) {
-		const isFile = isString(meta) || meta instanceof Buffer;
-
-		if (!isFile) {
+		// use object configuation instead of importing metadata file directly
+		if (!(isString(meta) || meta instanceof Buffer)) {
 			const {
 				entityID,
 				signingCert,
@@ -31,7 +30,7 @@ export class MetadataIdp extends Metadata {
 				nameIDFormat = [],
 				singleSignOnService = [],
 				singleLogoutService = [],
-			} = meta as MetadataIdpOptions;
+			} = meta;
 
 			const IDPSSODescriptor: any[] = [
 				{
@@ -104,7 +103,7 @@ export class MetadataIdp extends Metadata {
 			]);
 		}
 
-		super(meta as string | Buffer, [
+		super(meta, [
 			{
 				key: 'wantAuthnRequestsSigned',
 				localPath: ['EntityDescriptor', 'IDPSSODescriptor'],

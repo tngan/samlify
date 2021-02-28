@@ -40,7 +40,6 @@ export enum SamlifyErrorCode {
 	UndefinedQueryParams = 'UndefinedQueryParams',
 	UnexpectedFlow = 'UnexpectedFlow',
 	UnsupportedBinding = 'UnsupportedBinding',
-	UnsupportedEntityType = 'UnsupportedEntityType',
 	UnsupportedParserType = 'UnsupportedParserType',
 	ZeroSignature = 'ZeroSignature',
 }

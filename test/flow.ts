@@ -10,7 +10,7 @@ import { identityProvider, libsaml, serviceProvider, setSchemaValidator } from '
 import type { IdentityProvider } from '../src/entity-idp';
 import type { ServiceProvider } from '../src/entity-sp';
 import { isSamlifyError, SamlifyErrorCode } from '../src/error';
-import { BindingNamespace, names, wording } from '../src/urn';
+import { BindingNamespace, MessageSignatureOrder, names, wording } from '../src/urn';
 import { base64Decode, base64Encode, isString } from '../src/utility';
 
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
@@ -54,8 +54,8 @@ const createTemplateCallback = (
 ) => (template: string, values: Record<string, any>) => {
 	const _id = '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
 	const now = new Date();
-	const spEntityID = _sp?.entityMeta.getEntityID();
-	const idpSetting = _idp?.entitySetting;
+	const spEntityID = _sp?.getEntityMeta().getEntityID();
+	const idpSetting = _idp?.getEntitySettings();
 	const fiveMinutesLater = new Date(now.getTime());
 	fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
 	const newValues = {
@@ -72,7 +72,7 @@ const createTemplateCallback = (
 		ConditionsNotBefore: now.toISOString(),
 		ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
 		SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
-		AssertionConsumerServiceURL: _sp?.entityMeta.getAssertionConsumerService(BindingNamespace.Post),
+		AssertionConsumerServiceURL: _sp?.getEntityMeta().getAssertionConsumerService(BindingNamespace.Post),
 		EntityID: spEntityID,
 		InResponseTo: requestInfo?.extract.request.id ?? '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
 		StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
@@ -127,7 +127,7 @@ const idpcustomNoEncrypt = identityProvider({
 	loginResponseTemplate,
 });
 const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
-const idpEncryptThenSign = identityProvider({ ...defaultIdpConfig, messageSigningOrder: 'encrypt-then-sign' });
+const idpEncryptThenSign = identityProvider({ ...defaultIdpConfig, messageSigningOrder: MessageSignatureOrder.ETS });
 const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
 const idpWantLogoutResSign = identityProvider({ ...defaultIdpConfig, wantLogoutResponseSigned: true });
 const spNoAssertSign = serviceProvider({ ...defaultSpConfig, metadata: spmetaNoAssertSign });

@@ -79,11 +79,11 @@ function loginRequestRedirectURL(
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+	const metadata = { idp: entity.idp.getEntityMeta(), sp: entity.sp.getEntityMeta() };
 	if (!metadata.idp || !metadata.sp) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const spSetting = entity.sp.entitySetting;
+	const spSetting = entity.sp.getEntitySettings();
 	const template = spSetting.loginRequestTemplate ?? libsaml.defaultLoginRequestTemplate;
 
 	const baseUrl = metadata.idp.getSingleSignOnService(BindingNamespace.Redirect);
@@ -143,11 +143,11 @@ function logoutRequestRedirectURL(
 	relayState?: string,
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+	const metadata = { init: entity.init.getEntityMeta(), target: entity.target.getEntityMeta() };
 	if (!metadata.init || !metadata.target) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const initSetting = entity.init.entitySetting;
+	const initSetting = entity.init.getEntitySettings();
 	const template = initSetting.logoutRequestTemplate ?? libsaml.defaultLogoutRequestTemplate;
 
 	const nameIDFormat = initSetting.nameIDFormat;
@@ -174,7 +174,7 @@ function logoutRequestRedirectURL(
 
 	const type = urlParams.logoutRequest;
 	let signed: BuildRedirectConfig['signed'];
-	if (entity.target.entitySetting.wantLogoutRequestSigned) {
+	if (entity.target.getEntitySettings().wantLogoutRequestSigned) {
 		if (!initSetting.privateKey) {
 			throw new SamlifyError(
 				SamlifyErrorCode.MissingPrivateKey,
@@ -202,11 +202,11 @@ function logoutResponseRedirectURL(
 	relayState?: string,
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
-	const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+	const metadata = { init: entity.init.getEntityMeta(), target: entity.target.getEntityMeta() };
 	if (!metadata.init || !metadata.target) {
 		throw new SamlifyError(SamlifyErrorCode.MissingMetadata);
 	}
-	const initSetting = entity.init.entitySetting;
+	const initSetting = entity.init.getEntitySettings();
 	const template = initSetting.logoutResponseTemplate ?? libsaml.defaultLogoutResponseTemplate;
 
 	const baseUrl = metadata.target.getSingleLogoutService(BindingNamespace.Redirect);
@@ -231,7 +231,7 @@ function logoutResponseRedirectURL(
 
 	const type = urlParams.logoutResponse;
 	let signed: BuildRedirectConfig['signed'];
-	if (entity.target.entitySetting.wantLogoutResponseSigned) {
+	if (entity.target.getEntitySettings().wantLogoutResponseSigned) {
 		if (!initSetting.privateKey) {
 			throw new SamlifyError(
 				SamlifyErrorCode.MissingPrivateKey,
