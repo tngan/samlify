@@ -16,7 +16,7 @@ import type { Entity } from './entity';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { extract, isNode } from './extractor';
 import type { Metadata } from './metadata';
-import type { RequestSignatureAlgorithm, SAMLDocumentTemplate } from './types';
+import type { RequestSignatureAlgorithm, SAMLDocumentTemplate, SignatureConfig } from './types';
 import { algorithms, names, wording } from './urn';
 import {
 	base64Encode,
@@ -54,7 +54,7 @@ export interface SignatureConstructor {
 	signatureAlgorithm?: RequestSignatureAlgorithm;
 	signingCert: string | Buffer;
 	isBase64Output?: boolean;
-	signatureConfig?: any;
+	signatureConfig?: SignatureConfig;
 	isMessageSigned?: boolean;
 	transformationAlgorithms?: string[];
 }
@@ -545,7 +545,7 @@ const libSaml = () => {
 		 * @param  {string | Buffer} x509Certificate certificate
 		 * @return {string} public key
 		 */
-		getKeyInfoProvider(x509Certificate: string | Buffer, signatureConfig: any) {
+		getKeyInfoProvider(x509Certificate: string | Buffer, signatureConfig: SignatureConfig) {
 			return {
 				getKeyInfo: () => {
 					const prefix = signatureConfig?.prefix ? `${signatureConfig.prefix}:` : '';

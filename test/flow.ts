@@ -136,7 +136,10 @@ const spNoAssertSignCustomConfig = serviceProvider({
 	metadata: spmetaNoAssertSign,
 	signatureConfig: {
 		prefix: 'ds',
-		location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
+		location: {
+			reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']",
+			action: 'after',
+		},
 	},
 });
 const spWithClockDrift = serviceProvider({ ...defaultSpConfig, clockDrifts: [-2000, 2000] });

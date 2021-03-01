@@ -1,3 +1,4 @@
+import type { SignedXml } from 'xml-crypto';
 import type { EncryptionAlgorithm, KeyEncryptionAlgorithm } from 'xml-encryption';
 import type { LoginResponseTemplate, LogoutResponseTemplate } from './libsaml';
 import type { BindingNamespace, MessageSignatureOrder } from './urn';
@@ -40,7 +41,8 @@ interface MetadataSpOptions extends MetadataOptions {
 	assertionConsumerService?: SSOService[];
 	authnRequestsSigned?: boolean;
 	elementsOrder?: (keyof MetaElement)[];
-	signatureConfig?: { [key: string]: any };
+	// TODO: Not sure if this is used. Consider removing.
+	signatureConfig?: Record<string, any>;
 	wantAssertionsSigned?: boolean;
 	wantMessageSigned?: boolean;
 }
@@ -50,17 +52,11 @@ type MetadataFile = string | Buffer;
 export type MetadataIdpConstructorOptions = MetadataIdpOptions | MetadataFile;
 export type MetadataSpConstructorOptions = MetadataSpOptions | MetadataFile;
 
-export interface SignatureConfig {
-	prefix?: string;
-	location?: {
-		reference?: string;
-		action?: 'append' | 'prepend' | 'before' | 'after';
-	};
-}
-
 export interface SAMLDocumentTemplate {
 	context?: string;
 }
+
+export type SignatureConfig = Parameters<SignedXml['computeSignature']>[1];
 
 export interface EntitySettings {
 	metadata?: string | Buffer;

@@ -208,7 +208,10 @@ async function base64LoginResponse(
 			transformationAlgorithms: spSetting.transformationAlgorithms,
 			signatureConfig: spSetting.signatureConfig || {
 				prefix: 'ds',
-				location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
+				location: {
+					reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']",
+					action: 'after',
+				},
 			},
 		});
 	}
