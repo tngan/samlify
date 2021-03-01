@@ -19,7 +19,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"preserveSymlinks": true,
-		"removeComments": true,
+		// "removeComments": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"sourceMap": false,
