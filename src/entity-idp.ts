@@ -53,7 +53,7 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 		sp: ServiceProvider,
 		requestInfo: Partial<FlowResult<ParsedLoginRequest>>,
 		protocol: BindingNamespace,
-		user: { [key: string]: any },
+		user: Record<string, string>,
 		customTagReplacement?: CustomTagReplacement,
 		encryptThenSign?: boolean
 	) {

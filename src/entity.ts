@@ -135,7 +135,7 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 	createLogoutRequest(
 		target: Entity,
 		protocol: BindingNamespace,
-		user: Record<string, any>,
+		user: Record<string, string>,
 		relayState = '',
 		customTagReplacement?: CustomTagReplacement
 	): BindingContext | PostBindingContext {

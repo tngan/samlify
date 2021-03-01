@@ -133,13 +133,13 @@ function loginRequestRedirectURL(
 }
 /**
  * @desc Redirect URL for logout request
- * @param  {Record<string, any>} user          current logged user (e.g. req.user)
+ * @param  {Record<string, string>} user          current logged user (e.g. req.user)
  * @param  {object} entity                     object includes both idp and sp
  * @param  {function} customTagReplacement     used when developers have their own login response template
  * @return {string} redirect URL
  */
 function logoutRequestRedirectURL(
-	user: Record<string, any>,
+	user: Record<string, string>,
 	entity: { init: Entity; target: Entity },
 	relayState?: string,
 	customTagReplacement?: CustomTagReplacement

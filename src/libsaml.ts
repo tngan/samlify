@@ -75,8 +75,8 @@ export interface ExtractorResult {
 
 export interface LoginResponseAttribute {
 	name: string;
-	nameFormat: string; //
-	valueXsiType: string; //
+	nameFormat: string;
+	valueXsiType: string;
 	valueTag: string;
 	valueXmlnsXs?: string;
 	valueXmlnsXsi?: string;

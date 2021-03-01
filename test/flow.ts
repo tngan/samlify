@@ -49,7 +49,7 @@ const failedResponse = String(readFileSync('./test/misc/failed_response.xml'));
 const createTemplateCallback = (
 	_idp?: IdentityProvider,
 	_sp?: ServiceProvider,
-	user?: Record<string, any>,
+	user?: Record<string, string>,
 	requestInfo?: RequestInfo
 ) => (template: string, values: Record<string, any>) => {
 	const _id = '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
