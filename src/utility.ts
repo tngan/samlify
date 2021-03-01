@@ -55,17 +55,6 @@ export function uniq(input: string[]) {
 	return [...set];
 }
 /**
- * @desc Alternative to lodash.get
- * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
- * @param obj
- * @param path
- * @param defaultValue
- */
-export function get<T, D = null>(obj: any, path: string, defaultValue?: D): T | D {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-	return path.split('.').reduce((a, c) => (a && a[c] ? a[c] : defaultValue ?? null), obj) ?? null;
-}
-/**
  * @desc Check if the input is string
  * @param {any} input
  */

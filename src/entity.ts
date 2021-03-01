@@ -10,7 +10,7 @@ import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow, FlowResult } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import type { Metadata } from './metadata';
-import type { EntitySettings } from './types';
+import type { EntitySettings, ParsedLogoutRequest, ParsedLogoutResponse } from './types';
 import { algorithms, BindingNamespace, messageConfigurations, ParserType } from './urn';
 import { isNonEmptyArray, isString } from './utility';
 
@@ -163,15 +163,15 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 
 	/**
 	 * @desc  Generates the logout response for developers to design their own method
-	 * @param  {IdentityProvider} idp               object of identity provider
-	 * @param  {object|null} requestInfo            corresponding request, used to obtain the id
-	 * @param  {string} relayState                  the URL to which to redirect the user when logout is complete.
-	 * @param  {string} binding                     protocol binding
-	 * @param  {function} customTagReplacement                 used when developers have their own login response template
+	 * @param  {IdentityProvider} idp                 object of identity provider
+	 * @param  {Partial<FlowResult>|null} requestInfo corresponding request, used to obtain the id
+	 * @param  {string} relayState                    the URL to which to redirect the user when logout is complete.
+	 * @param  {string} binding                       protocol binding
+	 * @param  {function} customTagReplacement        used when developers have their own login response template
 	 */
 	createLogoutResponse(
 		target: Entity,
-		requestInfo: Record<string, any> | null,
+		requestInfo: Partial<FlowResult<ParsedLogoutRequest>> | null,
 		protocol: BindingNamespace,
 		relayState = '',
 		customTagReplacement?: CustomTagReplacement
@@ -206,7 +206,11 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 	 * @param  {request}   req               request
 	 * @return {Promise<FlowResult>}
 	 */
-	parseLogoutRequest(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest): Promise<FlowResult> {
+	parseLogoutRequest(
+		from: Entity,
+		protocol: BindingNamespace,
+		request: ESamlHttpRequest
+	): Promise<FlowResult<ParsedLogoutRequest>> {
 		return flow({
 			from: from,
 			self: this,
@@ -215,7 +219,7 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 			checkSignature: this.entitySettings.wantLogoutRequestSigned,
 			binding: protocol,
 			request: request,
-		});
+		}) as Promise<FlowResult<ParsedLogoutRequest>>;
 	}
 	/**
 	 * @desc   Validation of the parsed the URL parameters
@@ -224,7 +228,11 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 	 * @param  {ESamlHttpRequest} req        request
 	 * @return {Promise<FlowResult>}
 	 */
-	parseLogoutResponse(from: Entity, protocol: BindingNamespace, request: ESamlHttpRequest): Promise<FlowResult> {
+	parseLogoutResponse(
+		from: Entity,
+		protocol: BindingNamespace,
+		request: ESamlHttpRequest
+	): Promise<FlowResult<ParsedLogoutResponse>> {
 		return flow({
 			from: from,
 			self: this,
@@ -233,6 +241,6 @@ export class Entity<Settings extends EntitySettings = EntitySettings, Meta exten
 			checkSignature: this.entitySettings.wantLogoutResponseSigned,
 			binding: protocol,
 			request: request,
-		});
+		}) as Promise<FlowResult<ParsedLogoutResponse>>;
 	}
 }

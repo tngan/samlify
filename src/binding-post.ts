@@ -8,9 +8,11 @@ import type { BindingContext, Entity } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
+import type { FlowResult } from './flow';
 import libsaml, { CustomTagReplacement } from './libsaml';
+import type { ParsedLoginRequest, ParsedLogoutRequest } from './types';
 import { BindingNamespace, StatusCode } from './urn';
-import { base64Decode, base64Encode, get, isNonEmptyArray } from './utility';
+import { base64Decode, base64Encode, isNonEmptyArray } from './utility';
 
 /**
  * @desc Generate a base64 encoded login request
@@ -90,14 +92,14 @@ function base64LoginRequest(
 }
 /**
  * @desc Generate a base64 encoded login response
- * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {Partial<FlowResult>} requestInfo    corresponding request, used to obtain the id
  * @param  {object} entity                      object includes both idp and sp
  * @param  {object} user                        current logged user (e.g. req.user)
- * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param  {function} customTagReplacement      used when developers have their own login response template
  * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
  */
 async function base64LoginResponse(
-	requestInfo: Record<string, unknown> = {},
+	requestInfo: Partial<FlowResult<ParsedLoginRequest>>,
 	entity: { idp: IdentityProvider; sp: ServiceProvider },
 	user: Record<string, string> = {},
 	customTagReplacement?: CustomTagReplacement,
@@ -140,7 +142,7 @@ async function base64LoginResponse(
 		SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
 		NameIDFormat: selectedNameIDFormat,
 		NameID: user.email || '',
-		InResponseTo: get(requestInfo, 'extract.request.id', ''),
+		InResponseTo: requestInfo.extract?.request?.id ?? '',
 		AuthnStatement: '',
 		// First fill in attributes
 		AttributeStatement: isNonEmptyArray(attributes)
@@ -323,13 +325,13 @@ function base64LogoutRequest(
 }
 /**
  * @desc Generate a base64 encoded logout response
- * @param  {object} requestInfo                 corresponding request, used to obtain the id
- * @param  {string} referenceTagXPath           reference uri
- * @param  {object} entity                      object includes both idp and sp
- * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param  {Partial<FlowResult>|null} requestInfo  corresponding request, used to obtain the id
+ * @param  {object} entity                         object includes both idp and sp
+ * @param  {string} referenceTagXPath              reference uri
+ * @param  {function} customTagReplacement         used when developers have their own login response template
  */
 function base64LogoutResponse(
-	requestInfo: Record<string, any> | null,
+	requestInfo: Partial<FlowResult<ParsedLogoutRequest>> | null,
 	entity: { init: Entity; target: Entity },
 	customTagReplacement?: CustomTagReplacement
 ): BindingContext {
@@ -347,7 +349,7 @@ function base64LogoutResponse(
 		Issuer: metadata.init.getEntityID(),
 		IssueInstant: new Date().toISOString(),
 		StatusCode: StatusCode.Success,
-		InResponseTo: get(requestInfo, 'extract.request.id', ''),
+		InResponseTo: requestInfo?.extract?.request?.id ?? '',
 	};
 
 	let rawSaml = template.context;

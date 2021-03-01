@@ -8,10 +8,10 @@ import redirectBinding from './binding-redirect';
 import { BindingContext, Entity, ESamlHttpRequest, PostBindingContext } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import { SamlifyError, SamlifyErrorCode } from './error';
-import { flow } from './flow';
+import { flow, FlowResult } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import metadataSp, { MetadataSp } from './metadata-sp';
-import type { ServiceProviderSettings } from './types';
+import type { ParsedLoginResponse, ServiceProviderSettings } from './types';
 import { BindingNamespace, ParserType } from './urn';
 
 /*
@@ -22,10 +22,9 @@ export default function (props: ServiceProviderSettings) {
 }
 
 /**
-* @desc Service provider can be configured using either metadata importing or spSetting
-* @param  {object} spSettingimport { FlowResult } from '../types/src/flow.d';
-
-*/
+ * @desc Service provider can be configured using either metadata importing or spSetting
+ * @param  {object} spSettingimport { FlowResult } from '../types/src/flow.d';
+ */
 export class ServiceProvider extends Entity<ServiceProviderSettings, MetadataSp> {
 	/**
 	 * @desc  Inherited from Entity
@@ -90,7 +89,11 @@ export class ServiceProvider extends Entity<ServiceProviderSettings, MetadataSp>
 	 * @param  {BindingNamespace} protocol protocol binding
 	 * @param  {request}          req      request
 	 */
-	public parseLoginResponse(idp: IdentityProvider, protocol: BindingNamespace, request: ESamlHttpRequest) {
+	public parseLoginResponse(
+		idp: IdentityProvider,
+		protocol: BindingNamespace,
+		request: ESamlHttpRequest
+	): Promise<FlowResult<ParsedLoginResponse>> {
 		return flow({
 			from: idp,
 			self: this,
@@ -99,6 +102,6 @@ export class ServiceProvider extends Entity<ServiceProviderSettings, MetadataSp>
 			type: 'login',
 			binding: protocol,
 			request: request,
-		});
+		}) as Promise<FlowResult<ParsedLoginResponse>>;
 	}
 }

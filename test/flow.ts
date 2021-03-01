@@ -114,7 +114,7 @@ const defaultSpConfig = {
 const noSignedIdpMetadata = readFileSync('./test/misc/idpmeta_nosign.xml').toString().trim();
 const spmetaNoAssertSign = readFileSync('./test/misc/spmeta_noassertsign.xml').toString().trim();
 
-const sampleRequestInfo = { extract: { request: { id: 'request_id' } } } as const;
+const sampleRequestInfo = { samlContent: '', extract: { request: { id: 'request_id' } } } as const;
 type RequestInfo = { extract: { request: { id: string } } };
 
 // Define entities
@@ -147,8 +147,8 @@ const spWithClockDrift = serviceProvider({ ...defaultSpConfig, clockDrifts: [-20
 
 test('create login request with redirect binding using default template and parse it', async (t) => {
 	const { id, context } = sp.createLoginRequest(idp, BindingNamespace.Redirect);
-	t.is(typeof id, 'string');
-	t.is(typeof context, 'string');
+	t.true(isString(id));
+	t.true(isString(context));
 	const url = new URL(`https://${context}`);
 	const SAMLRequest = url.searchParams.get(wording.urlParams.samlRequest);
 	const Signature = url.searchParams.get(wording.urlParams.signature);
@@ -162,9 +162,9 @@ test('create login request with redirect binding using default template and pars
 		octetString,
 	});
 	t.is(extract.issuer, 'https://sp.example.org/metadata');
-	t.is(typeof extract.request.id, 'string');
-	t.is(extract.nameIDPolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
-	t.is(extract.nameIDPolicy.allowCreate, 'false');
+	t.true(isString(extract.request?.id));
+	t.is(extract.nameIDPolicy?.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+	t.is(extract.nameIDPolicy?.allowCreate, 'false');
 });
 
 test('create login request with post binding using default template and parse it', async (t) => {
@@ -177,10 +177,13 @@ test('create login request with post binding using default template and parse it
 	t.is(result.type, 'SAMLRequest');
 	const { extract } = await idp.parseLoginRequest(sp, BindingNamespace.Post, { body: { SAMLRequest: result.context } });
 	t.is(extract.issuer, 'https://sp.example.org/metadata');
-	t.is(typeof extract.request.id, 'string');
-	t.is(extract.nameIDPolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
-	t.is(extract.nameIDPolicy.allowCreate, 'false');
-	t.is(typeof extract.signature, 'string');
+	t.true(isString(extract.request?.id));
+	t.true(isString(extract.request?.issueInstant));
+	t.is(extract.request?.destination, 'https://idp.example.org/sso/SingleSignOnService');
+	t.is(extract.request?.assertionConsumerServiceUrl, 'https://sp.example.org/sp/sso');
+	t.is(extract.nameIDPolicy?.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+	t.is(extract.nameIDPolicy?.allowCreate, 'false');
+	t.true(isString(extract.signature));
 });
 
 test('signed in sp is not matched with the signed notation in idp with post request', (t) => {
@@ -316,7 +319,8 @@ test('create logout response with redirect binding', (t) => {
 		'',
 		createTemplateCallback(idp, sp, {})
 	);
-	isString(id) && isString(context) ? t.pass() : t.fail();
+	t.true(isString(id));
+	t.true(isString(context));
 });
 
 test('create logout response with post binding', (t) => {
@@ -348,11 +352,11 @@ test('send response with signed assertion and parse it', async (t) => {
 	const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send response with signed assertion + custom transformation algorithms and parse it', async (t) => {
@@ -377,11 +381,11 @@ test('send response with signed assertion + custom transformation algorithms and
 	const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 
 	// Verify xmldsig#enveloped-signature is included in the response
 	if (samlContent.indexOf('http://www.w3.org/2000/09/xmldsig#enveloped-signature') === -1) {
@@ -405,13 +409,13 @@ test('send response with [custom template] signed assertion and parse it', async
 	const { samlContent, extract } = await sp.parseLoginResponse(idpcustomNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+	t.is(extract.attributes?.name, 'mynameinsp');
+	t.is(extract.attributes?.mail, 'user@esaml2.com');
+	t.is(extract.response?.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send response with signed message and parse it', async (t) => {
@@ -428,11 +432,11 @@ test('send response with signed message and parse it', async (t) => {
 	const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send response with [custom template] and signed message and parse it', async (t) => {
@@ -441,7 +445,7 @@ test('send response with [custom template] and signed message and parse it', asy
 	const user = { email: 'user@esaml2.com' };
 	const { id, context: SAMLResponse } = await idpcustomNoEncrypt.createLoginResponse(
 		spNoAssertSign,
-		{ extract: { authnrequest: { id: 'request_id' } } },
+		{ extract: { request: { id: 'request_id' } } },
 		BindingNamespace.Post,
 		{ email: 'user@esaml2.com' },
 		createTemplateCallback(idpcustomNoEncrypt, spNoAssertSign, user)
@@ -450,13 +454,13 @@ test('send response with [custom template] and signed message and parse it', asy
 	const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+	t.is(extract.attributes?.name, 'mynameinsp');
+	t.is(extract.attributes?.mail, 'user@esaml2.com');
+	t.is(extract.response?.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with signed assertion + signed message and parse it', async (t) => {
@@ -476,11 +480,11 @@ test('send login response with signed assertion + signed message and parse it', 
 	const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpNoEncrypt, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send login response with [custom template] and signed assertion + signed message and parse it', async (t) => {
@@ -491,7 +495,7 @@ test('send login response with [custom template] and signed assertion + signed m
 	const user = { email: 'user@esaml2.com' };
 	const { id, context: SAMLResponse } = await idpcustomNoEncrypt.createLoginResponse(
 		spWantMessageSign,
-		{ extract: { authnrequest: { id: 'request_id' } } },
+		{ extract: { request: { id: 'request_id' } } },
 		BindingNamespace.Post,
 		{ email: 'user@esaml2.com' },
 		createTemplateCallback(idpcustomNoEncrypt, spWantMessageSign, user)
@@ -504,13 +508,13 @@ test('send login response with [custom template] and signed assertion + signed m
 			body: { SAMLResponse },
 		}
 	);
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+	t.is(extract.attributes?.name, 'mynameinsp');
+	t.is(extract.attributes?.mail, 'user@esaml2.com');
+	t.is(extract.response?.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with encrypted non-signed assertion and parse it', async (t) => {
@@ -526,11 +530,11 @@ test('send login response with encrypted non-signed assertion and parse it', asy
 	const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idp, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send login response with encrypted signed assertion and parse it', async (t) => {
@@ -544,11 +548,11 @@ test('send login response with encrypted signed assertion and parse it', async (
 	);
 	// receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
 	const { samlContent, extract } = await sp.parseLoginResponse(idp, BindingNamespace.Post, { body: { SAMLResponse } });
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send login response with [custom template] and encrypted signed assertion and parse it', async (t) => {
@@ -564,13 +568,13 @@ test('send login response with [custom template] and encrypted signed assertion 
 	const { samlContent, extract } = await sp.parseLoginResponse(idpcustom, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+	t.is(extract.attributes?.name, 'mynameinsp');
+	t.is(extract.attributes?.mail, 'user@esaml2.com');
+	t.is(extract.response?.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 test('send login response with encrypted signed assertion + signed message and parse it', async (t) => {
@@ -591,11 +595,11 @@ test('send login response with encrypted signed assertion + signed message and p
 		body: { SAMLResponse },
 	});
 
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, 'request_id');
+	t.is(extract.response?.inResponseTo, 'request_id');
 });
 
 test('send login response with [custom template] encrypted signed assertion + signed message and parse it', async (t) => {
@@ -607,7 +611,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 	const user = { email: 'user@esaml2.com' };
 	const { id, context: SAMLResponse } = await idpcustom.createLoginResponse(
 		spWantMessageSign,
-		{ extract: { authnrequest: { id: 'request_id' } } },
+		{ extract: { request: { id: 'request_id' } } },
 		BindingNamespace.Post,
 		{ email: 'user@esaml2.com' },
 		createTemplateCallback(idpcustom, spWantMessageSign, user)
@@ -616,13 +620,13 @@ test('send login response with [custom template] encrypted signed assertion + si
 	const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpcustom, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');
-	t.is(extract.attributes.name, 'mynameinsp');
-	t.is(extract.attributes.mail, 'user@esaml2.com');
-	t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+	t.is(extract.attributes?.name, 'mynameinsp');
+	t.is(extract.attributes?.mail, 'user@esaml2.com');
+	t.is(extract.response?.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
 // simulate idp-init slo
@@ -630,8 +634,8 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 	const { id, context } = idp.createLogoutRequest(sp, BindingNamespace.Redirect, { logoutNameID: 'user@esaml2.com' });
 	const searchParams = new URL(context).searchParams;
 	t.is(searchParams.has('SAMLRequest'), true);
-	t.is(typeof id, 'string');
-	t.is(typeof context, 'string');
+	t.true(isString(id));
+	t.true(isString(context));
 	const originalURL = new URL(context);
 	const SAMLRequest = encodeURIComponent(originalURL.searchParams.get('SAMLRequest') as string);
 	let result: any;
@@ -639,11 +643,11 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 		query: { SAMLRequest },
 	}));
 	t.is(result.sigAlg, null);
-	t.is(typeof samlContent, 'string');
+	t.true(isString(samlContent));
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.signature, null);
-	t.is(typeof extract.request.id, 'string');
-	t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
+	t.true(isString(extract.request?.id));
+	t.is(extract.request?.destination, 'https://sp.example.org/sp/slo');
 	t.is(extract.issuer, 'https://idp.example.com/metadata');
 });
 
@@ -655,8 +659,8 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
 	t.is(searchParams.has('SAMLRequest'), true);
 	t.is(searchParams.has('SigAlg'), true);
 	t.is(searchParams.has('Signature'), true);
-	t.is(typeof id, 'string');
-	t.is(typeof context, 'string');
+	t.true(isString(id));
+	t.true(isString(context));
 	const originalURL = new URL(context);
 	const SAMLRequest = originalURL.searchParams.get('SAMLRequest');
 	const Signature = originalURL.searchParams.get('Signature');
@@ -671,8 +675,8 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
 	});
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.issuer, 'https://idp.example.com/metadata');
-	t.is(typeof extract.request.id, 'string');
-	t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
+	t.true(isString(extract.request?.id));
+	t.is(extract.request?.destination, 'https://sp.example.org/sp/slo');
 	t.is(extract.signature, null); // redirect binding doesn't embed the signature
 });
 
@@ -691,8 +695,8 @@ test('idp sends a post logout request without signature and sp parses it', async
 	});
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.issuer, 'https://idp.example.com/metadata');
-	t.is(typeof extract.request.id, 'string');
-	t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
+	t.true(isString(extract.request?.id));
+	t.is(extract.request?.destination, 'https://sp.example.org/sp/slo');
 	t.is(extract.signature, null);
 });
 
@@ -711,9 +715,9 @@ test('idp sends a post logout request with signature and sp parses it', async (t
 	});
 	t.is(extract.nameID, 'user@esaml2.com');
 	t.is(extract.issuer, 'https://idp.example.com/metadata');
-	t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
-	t.is(typeof extract.request.id, 'string');
-	t.is(typeof extract.signature, 'string');
+	t.is(extract.request?.destination, 'https://sp.example.org/sp/slo');
+	t.true(isString(extract.request?.id));
+	t.true(isString(extract.signature));
 });
 
 // simulate init-slo
@@ -730,8 +734,8 @@ test('sp sends a post logout response without signature and parse', async (t) =>
 	});
 	t.is(extract.signature, null);
 	t.is(extract.issuer, 'https://sp.example.org/metadata');
-	t.is(typeof extract.response.id, 'string');
-	t.is(extract.response.destination, 'https://idp.example.org/sso/SingleLogoutService');
+	t.true(isString(extract.response?.id));
+	t.is(extract.response?.destination, 'https://idp.example.org/sso/SingleLogoutService');
 });
 
 test('sp sends a post logout response with signature and parse', async (t) => {
@@ -745,10 +749,10 @@ test('sp sends a post logout response with signature and parse', async (t) => {
 	const { /*samlContent,*/ extract } = await idpWantLogoutResSign.parseLogoutResponse(sp, BindingNamespace.Post, {
 		body: { SAMLResponse },
 	});
-	t.is(typeof extract.signature, 'string');
+	t.true(isString(extract.signature));
 	t.is(extract.issuer, 'https://sp.example.org/metadata');
-	t.is(typeof extract.response.id, 'string');
-	t.is(extract.response.destination, 'https://idp.example.org/sso/SingleLogoutService');
+	t.true(isString(extract.response?.id));
+	t.is(extract.response?.destination, 'https://idp.example.org/sso/SingleLogoutService');
 });
 
 test('send login response with encrypted non-signed assertion with EncryptThenSign and parse it', async (t) => {
@@ -768,7 +772,7 @@ test('send login response with encrypted non-signed assertion with EncryptThenSi
 			body: { SAMLResponse },
 		}
 	);
-	t.is(typeof id, 'string');
+	t.true(isString(id));
 	t.is(samlContent.startsWith('<samlp:Response'), true);
 	t.is(samlContent.endsWith('/samlp:Response>'), true);
 	t.is(extract.nameID, 'user@esaml2.com');

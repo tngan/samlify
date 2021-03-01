@@ -28,9 +28,9 @@ export interface FlowOptions<From extends Entity = Entity, Self extends Entity =
 	supportBindings?: BindingNamespace[];
 }
 
-export interface FlowResult {
+export interface FlowResult<Extract = unknown> {
 	samlContent: string;
-	extract: any;
+	extract: Extract;
 }
 
 // get the default extractor fields based on the parserType
@@ -181,10 +181,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 		}
 	}
 
-	const parseResult = {
-		samlContent: samlContent,
-		extract: extract(samlContent, extractorFields),
-	};
+	const parseResult = { samlContent, extract: extract(samlContent, extractorFields) };
 
 	/**
 	 *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
@@ -230,7 +227,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 	return parseResult;
 }
 
-async function checkStatus(content: string, parserType: string): Promise<string> {
+async function checkStatus(content: string, parserType: string) {
 	// only check response parser
 	if (parserType !== urlParams.samlResponse && parserType !== urlParams.logoutResponse) {
 		return 'SKIPPED';

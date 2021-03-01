@@ -7,10 +7,10 @@ import postBinding from './binding-post';
 import { Entity, ESamlHttpRequest } from './entity';
 import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
-import { flow } from './flow';
+import { flow, FlowResult } from './flow';
 import type { CustomTagReplacement } from './libsaml';
 import metadataIdp, { MetadataIdp } from './metadata-idp';
-import type { IdentityProviderSettings } from './types';
+import type { IdentityProviderSettings, ParsedLoginRequest } from './types';
 import { BindingNamespace, ParserType } from './urn';
 
 /**
@@ -43,7 +43,7 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 	/**
 	 * @desc  Generates the login response for developers to design their own method
 	 * @param  sp                        object of service provider
-	 * @param  requestInfo               corresponding request, used to obtain the id
+	 * @param  Partial<FlowResult>       corresponding request, used to obtain the id
 	 * @param  binding                   protocol binding
 	 * @param  user                      current logged user (e.g. req.user)
 	 * @param  customTagReplacement      used when developers have their own login response template
@@ -51,7 +51,7 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 	 */
 	public async createLoginResponse(
 		sp: ServiceProvider,
-		requestInfo: Record<string, unknown>,
+		requestInfo: Partial<FlowResult<ParsedLoginRequest>>,
 		protocol: BindingNamespace,
 		user: { [key: string]: any },
 		customTagReplacement?: CustomTagReplacement,
@@ -61,10 +61,7 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 		if (protocol === BindingNamespace.Post) {
 			const context = await postBinding.base64LoginResponse(
 				requestInfo,
-				{
-					idp: this,
-					sp,
-				},
+				{ idp: this, sp },
 				user,
 				customTagReplacement,
 				encryptThenSign
@@ -84,7 +81,11 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 	 * @param binding Protocol binding
 	 * @param req RequesmessageSigningOrderst
 	 */
-	parseLoginRequest(sp: ServiceProvider, binding: BindingNamespace, req: ESamlHttpRequest) {
+	parseLoginRequest(
+		sp: ServiceProvider,
+		binding: BindingNamespace,
+		req: ESamlHttpRequest
+	): Promise<FlowResult<ParsedLoginRequest>> {
 		return flow({
 			from: sp,
 			self: this,
@@ -93,6 +94,6 @@ export class IdentityProvider extends Entity<IdentityProviderSettings, MetadataI
 			type: 'login',
 			binding: binding,
 			request: req,
-		});
+		}) as Promise<FlowResult<ParsedLoginRequest>>;
 	}
 }

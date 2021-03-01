@@ -135,3 +135,31 @@ export interface IdentityProviderSettings extends EntitySettings {
 	wantAuthnRequestsSigned?: boolean;
 	wantLogoutRequestSignedResponseSigned?: boolean;
 }
+
+export interface ParsedLoginRequest {
+	authnContextClassRef?: string;
+	issuer?: string;
+	nameIDPolicy?: { format?: string; allowCreate?: string };
+	request?: { id?: string; issueInstant?: string; destination?: string; assertionConsumerServiceUrl?: string };
+	signature?: string;
+}
+export interface ParsedLoginResponse {
+	attributes?: Record<string, string>;
+	audience?: string;
+	conditions?: { notBefore: string; notOnOrAfter: string };
+	issuer?: string;
+	nameID?: string;
+	response?: { id?: string; issueInstant?: string; destination?: string; inResponseTo?: string };
+	sessionIndex?: { authnInstant?: string; sessionNotOnOrAfter?: string; sessionIndex?: string };
+}
+export interface ParsedLogoutRequest {
+	request?: { id?: string; issueInstant?: string; destination?: string };
+	issuer?: string;
+	nameID?: string;
+	signature?: string;
+}
+export interface ParsedLogoutResponse {
+	response?: { id?: string; destination?: string; inResponseTo?: string };
+	issuer?: string;
+	signature?: string;
+}
