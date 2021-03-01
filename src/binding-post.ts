@@ -269,7 +269,7 @@ function base64LogoutRequest(
 
 	let values: Record<string, any> = {
 		ID: entity.init.generateID(),
-		Destination: metadata.target.getSingleLogoutService(BindingNamespace.Redirect),
+		Destination: metadata.target.getSingleLogoutService(BindingNamespace.Post),
 		Issuer: metadata.init.getEntityID(),
 		IssueInstant: new Date().toISOString(),
 		EntityID: metadata.init.getEntityID(),
