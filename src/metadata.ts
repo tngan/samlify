@@ -9,6 +9,23 @@ import { extract } from './extractor';
 import type { BindingNamespace } from './urn';
 import { isString } from './utility';
 
+export interface SSOService {
+	isDefault?: boolean;
+	Binding: BindingNamespace;
+	Location: string;
+}
+
+export interface MetadataOptions {
+	encryptCert?: string | Buffer;
+	entityID?: string;
+	nameIDFormat?: string[];
+	signingCert?: string | Buffer;
+	singleLogoutService?: SSOService[];
+	singleSignOnService?: SSOService[];
+}
+
+export type MetadataFile = string | Buffer;
+
 export class Metadata {
 	private xmlString: string;
 	protected meta: any;
@@ -17,7 +34,7 @@ export class Metadata {
 	 * @param  {string | Buffer} metadata xml
 	 * @param  {object} extraParse for custom metadata extractor
 	 */
-	constructor(xml: string | Buffer, extraParse: any = []) {
+	constructor(xml: MetadataFile, extraParse: any = []) {
 		this.xmlString = xml.toString();
 		this.meta = extract(
 			this.xmlString,

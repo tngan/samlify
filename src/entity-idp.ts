@@ -3,20 +3,38 @@
  * @author tngan
  * @desc  Declares the actions taken by identity provider
  */
+import type { ESamlHttpRequest } from './binding';
 import postBinding from './binding-post';
-import { Entity, ESamlHttpRequest } from './entity';
+import { Entity, EntitySettings } from './entity';
 import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow, FlowResult } from './flow';
-import type { CustomTagReplacement } from './libsaml';
-import metadataIdp, { MetadataIdp } from './metadata-idp';
-import type { IdentityProviderSettings, ParsedLoginRequest } from './types';
+import type { CustomTagReplacement, LoginResponseTemplate } from './libsaml';
+import type { SSOService } from './metadata';
+import { metadataIdp, MetadataIdp } from './metadata-idp';
 import { BindingNamespace, ParserType } from './urn';
+
+export interface IdentityProviderSettings extends EntitySettings {
+	/** template of login response */
+	loginResponseTemplate?: LoginResponseTemplate;
+
+	singleSignOnService?: SSOService[];
+	wantAuthnRequestsSigned?: boolean;
+	wantLogoutRequestSignedResponseSigned?: boolean;
+}
+
+export interface ParsedLoginRequest {
+	authnContextClassRef?: string;
+	issuer?: string;
+	nameIDPolicy?: { format?: string; allowCreate?: string };
+	request?: { id?: string; issueInstant?: string; destination?: string; assertionConsumerServiceUrl?: string };
+	signature?: string;
+}
 
 /**
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
-export default function (props: IdentityProviderSettings) {
+export function identityProvider(props: IdentityProviderSettings) {
 	return new IdentityProvider(props);
 }
 

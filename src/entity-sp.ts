@@ -3,21 +3,46 @@
  * @author tngan
  * @desc  Declares the actions taken by service provider
  */
+import type { BindingContext, ESamlHttpRequest, PostBindingContext } from './binding';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
-import { BindingContext, Entity, ESamlHttpRequest, PostBindingContext } from './entity';
+import { Entity, EntitySettings } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow, FlowResult } from './flow';
-import type { CustomTagReplacement } from './libsaml';
-import metadataSp, { MetadataSp } from './metadata-sp';
-import type { ParsedLoginResponse, ServiceProviderSettings } from './types';
+import type { CustomTagReplacement, SAMLDocumentTemplate } from './libsaml';
+import type { SSOService } from './metadata';
+import { metadataSp, MetadataSp } from './metadata-sp';
 import { BindingNamespace, ParserType } from './urn';
+
+export interface ServiceProviderSettings extends EntitySettings {
+	authnRequestsSigned?: boolean;
+	wantAssertionsSigned?: boolean;
+	wantMessageSigned?: boolean;
+	assertionConsumerService?: SSOService[];
+
+	/** template of login request */
+	loginRequestTemplate?: SAMLDocumentTemplate;
+
+	allowCreate?: boolean;
+	// will be deprecated soon
+	relayState?: string;
+}
+
+export interface ParsedLoginResponse {
+	attributes?: Record<string, string>;
+	audience?: string;
+	conditions?: { notBefore: string; notOnOrAfter: string };
+	issuer?: string;
+	nameID?: string;
+	response?: { id?: string; issueInstant?: string; destination?: string; inResponseTo?: string };
+	sessionIndex?: { authnInstant?: string; sessionNotOnOrAfter?: string; sessionIndex?: string };
+}
 
 /*
  * @desc interface function
  */
-export default function (props: ServiceProviderSettings) {
+export function serviceProvider(props: ServiceProviderSettings) {
 	return new ServiceProvider(props);
 }
 

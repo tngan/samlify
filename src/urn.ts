@@ -3,8 +3,6 @@
  * @author tngan
  * @desc  Includes all keywords need in samlify
  */
-import type { MetaElement } from './types';
-
 export enum BindingNamespace {
 	Redirect = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
 	Post = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
@@ -161,6 +159,15 @@ export const wording = {
 		encrypt: 'encryption',
 	},
 } as const;
+
+// https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
+export interface MetaElement {
+	AssertionConsumerService?: any[];
+	AttributeConsumingService?: any[];
+	KeyDescriptor?: any[];
+	NameIDFormat?: any[];
+	SingleLogoutService?: any[];
+}
 
 // https://wiki.shibboleth.net/confluence/display/CONCEPT/MetadataForSP
 // some idps restrict the order of elements in entity descriptors

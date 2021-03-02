@@ -4,14 +4,22 @@
  * @desc  An abstraction for identity provider and service provider.
  */
 import { v4 as uuid } from 'uuid';
+import type { BindingContext, ESamlHttpRequest, PostBindingContext } from './binding';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow, FlowResult } from './flow';
-import type { CustomTagReplacement } from './libsaml';
-import type { Metadata } from './metadata';
-import type { EntitySettings, ParsedLogoutRequest, ParsedLogoutResponse } from './types';
-import { algorithms, BindingNamespace, messageConfigurations, ParserType } from './urn';
+import type {
+	CustomTagReplacement,
+	EncryptionAlgorithm,
+	KeyEncryptionAlgorithm,
+	LogoutResponseTemplate,
+	RequestSignatureAlgorithm,
+	SAMLDocumentTemplate,
+	SignatureConfig,
+} from './libsaml';
+import type { Metadata, SSOService } from './metadata';
+import { algorithms, BindingNamespace, messageConfigurations, MessageSignatureOrder, ParserType } from './urn';
 import { isNonEmptyArray, isString } from './utility';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
@@ -32,27 +40,58 @@ const defaultEntitySetting = {
 	relayState: '',
 } as const;
 
-export interface ESamlHttpRequest {
-	query?: any;
-	body?: any;
-	octetString?: string;
+export interface EntitySettings {
+	metadata?: string | Buffer;
+	entityID?: string;
+	singleLogoutService?: SSOService[];
+
+	isAssertionEncrypted?: boolean;
+
+	/** signature algorithm */
+	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
+	dataEncryptionAlgorithm?: EncryptionAlgorithm;
+	keyEncryptionAlgorithm?: KeyEncryptionAlgorithm;
+
+	messageSigningOrder?: MessageSignatureOrder;
+	signatureConfig?: SignatureConfig;
+	transformationAlgorithms?: string[];
+	wantLogoutRequestSigned?: boolean;
+	wantLogoutResponseSigned?: boolean;
+
+	signingCert?: string | Buffer;
+	privateKey?: string | Buffer;
+	privateKeyPass?: string;
+
+	encryptCert?: string | Buffer;
+	encPrivateKey?: string | Buffer;
+	encPrivateKeyPass?: string;
+
+	/** template of logout request */
+	logoutRequestTemplate?: SAMLDocumentTemplate;
+	/** template of logout response */
+	logoutResponseTemplate?: LogoutResponseTemplate;
+
+	nameIDFormat?: string[];
+	// https://github.com/tngan/samlify/issues/337
+	clockDrifts?: [number, number];
+	/** customized function used for generating request ID */
+	generateID?: () => string;
+
+	/** Declare the tag of specific xml document node. `TagPrefixKey` currently supports `encryptedAssertion` only */
+	tagPrefix?: { encryptedAssertion?: string };
 }
 
-export interface BindingContext {
-	context: string;
-	id: string;
+export interface ParsedLogoutRequest {
+	request?: { id?: string; issueInstant?: string; destination?: string };
+	issuer?: string;
+	nameID?: string;
+	signature?: string;
 }
 
-export interface PostBindingContext extends BindingContext {
-	relayState?: string;
-	entityEndpoint: string;
-	type: 'SAMLRequest' | 'SAMLResponse';
-}
-
-export interface ParseResult {
-	samlContent: string;
-	extract: any;
-	sigAlg: string;
+export interface ParsedLogoutResponse {
+	response?: { id?: string; destination?: string; inResponseTo?: string };
+	issuer?: string;
+	signature?: string;
 }
 
 export class Entity<Settings extends EntitySettings = EntitySettings, Meta extends Metadata = Metadata> {

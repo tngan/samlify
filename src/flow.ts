@@ -1,4 +1,5 @@
-import type { Entity, ESamlHttpRequest } from './entity';
+import type { ESamlHttpRequest } from './binding';
+import type { Entity } from './entity';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import {
 	extract,
@@ -10,7 +11,7 @@ import {
 	logoutResponseFields,
 	logoutResponseStatusFields,
 } from './extractor';
-import libsaml from './libsaml';
+import { libsaml } from './libsaml';
 import { BindingNamespace, MessageSignatureOrder, ParserType, StatusCode, wording } from './urn';
 import { base64Decode, inflateString } from './utility';
 import { verifyTime } from './validator';

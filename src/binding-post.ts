@@ -4,13 +4,13 @@
  * @desc Binding-level API, declare the functions using POST binding
  */
 
-import type { BindingContext, Entity } from './entity';
-import type { IdentityProvider } from './entity-idp';
+import type { BindingContext } from './binding';
+import type { Entity, ParsedLogoutRequest } from './entity';
+import type { IdentityProvider, ParsedLoginRequest } from './entity-idp';
 import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import type { FlowResult } from './flow';
-import libsaml, { CustomTagReplacement } from './libsaml';
-import type { ParsedLoginRequest, ParsedLogoutRequest } from './types';
+import { CustomTagReplacement, libsaml } from './libsaml';
 import { BindingNamespace, StatusCode } from './urn';
 import { base64Decode, base64Encode, isNonEmptyArray } from './utility';
 

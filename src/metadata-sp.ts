@@ -4,16 +4,27 @@
  * @desc  Metadata of service provider
  */
 import xml from 'xml';
-import libsaml from './libsaml';
-import { Metadata } from './metadata';
-import type { MetadataSpConstructorOptions, MetaElement } from './types';
-import { BindingNamespace, elementsOrder as order, names } from './urn';
+import { libsaml } from './libsaml';
+import { Metadata, MetadataFile, MetadataOptions, SSOService } from './metadata';
+import { BindingNamespace, elementsOrder as order, MetaElement, names } from './urn';
 import { isNonEmptyArray, isString } from './utility';
+
+interface MetadataSpOptions extends MetadataOptions {
+	assertionConsumerService?: SSOService[];
+	authnRequestsSigned?: boolean;
+	elementsOrder?: (keyof MetaElement)[];
+	// TODO: Not sure if this is used. Consider removing.
+	signatureConfig?: Record<string, any>;
+	wantAssertionsSigned?: boolean;
+	wantMessageSigned?: boolean;
+}
+
+export type MetadataSpConstructorOptions = MetadataSpOptions | MetadataFile;
 
 /*
  * @desc interface function
  */
-export default function (meta: MetadataSpConstructorOptions) {
+export function metadataSp(meta: MetadataSpConstructorOptions) {
 	return new MetadataSp(meta);
 }
 
