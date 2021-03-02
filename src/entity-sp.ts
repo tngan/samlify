@@ -3,21 +3,47 @@
  * @author tngan
  * @desc  Declares the actions taken by service provider
  */
+import type { BindingContext, ESamlHttpRequest, PostBindingContext } from './binding';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
-import { BindingContext, Entity, ESamlHttpRequest, PostBindingContext } from './entity';
+import { Entity, EntitySettings } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { flow, FlowResult } from './flow';
-import type { CustomTagReplacement } from './libsaml';
-import metadataSp, { MetadataSp } from './metadata-sp';
-import type { ParsedLoginResponse, ServiceProviderSettings } from './types';
-import { BindingNamespace, ParserType } from './urn';
+import type { CustomTagReplacement, SAMLDocumentTemplate } from './libsaml';
+import type { SSOService } from './metadata';
+import { metadataSp, MetadataSp } from './metadata-sp';
+import { BindingNamespace, MetaElement, ParserType } from './urn';
+
+export interface ServiceProviderSettings extends EntitySettings {
+	assertionConsumerService?: SSOService[];
+	authnRequestsSigned?: boolean;
+	elementsOrder?: (keyof MetaElement)[];
+	wantAssertionsSigned?: boolean;
+	wantMessageSigned?: boolean;
+
+	/** template of login request */
+	loginRequestTemplate?: SAMLDocumentTemplate;
+
+	allowCreate?: boolean;
+	// will be deprecated soon
+	relayState?: string;
+}
+
+export interface ParsedLoginResponse {
+	attributes?: Record<string, string>;
+	audience?: string;
+	conditions?: { notBefore: string; notOnOrAfter: string };
+	issuer?: string;
+	nameID?: string;
+	response?: { id?: string; issueInstant?: string; destination?: string; inResponseTo?: string };
+	sessionIndex?: { authnInstant?: string; sessionNotOnOrAfter?: string; sessionIndex?: string };
+}
 
 /*
  * @desc interface function
  */
-export default function (props: ServiceProviderSettings) {
+export function serviceProvider(props: ServiceProviderSettings) {
 	return new ServiceProvider(props);
 }
 
@@ -31,14 +57,12 @@ export class ServiceProvider extends Entity<ServiceProviderSettings, MetadataSp>
 	 * @param {object} spSettings settings of service provider
 	 */
 	constructor(spSettings: ServiceProviderSettings) {
-		const entitySettings = Object.assign(
-			{
-				authnRequestsSigned: false,
-				wantAssertionsSigned: false,
-				wantMessageSigned: false,
-			},
-			spSettings
-		);
+		const entitySettings = {
+			authnRequestsSigned: false,
+			wantAssertionsSigned: false,
+			wantMessageSigned: false,
+			...spSettings,
+		};
 		const entityMeta = metadataSp(entitySettings.metadata || entitySettings);
 		// setting with metadata has higher precedence
 		entitySettings.authnRequestsSigned = entityMeta.isAuthnRequestSigned();

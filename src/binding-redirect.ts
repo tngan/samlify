@@ -3,13 +3,13 @@
  * @author tngan
  * @desc Binding-level API, declare the functions using Redirect binding
  */
-import type { BindingContext, Entity } from './entity';
+import type { BindingContext } from './binding';
+import type { Entity, ParsedLogoutRequest } from './entity';
 import type { IdentityProvider } from './entity-idp';
 import type { ServiceProvider } from './entity-sp';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import type { FlowResult } from './flow';
-import libsaml, { CustomTagReplacement } from './libsaml';
-import type { ParsedLogoutRequest, RequestSignatureAlgorithm } from './types';
+import { CustomTagReplacement, libsaml, RequestSignatureAlgorithm } from './libsaml';
 import { BindingNamespace, StatusCode, wording } from './urn';
 import { base64Encode, deflateString } from './utility';
 

@@ -5,7 +5,6 @@
  */
 
 import camelCase from 'camelcase';
-import type NodeRSA from 'node-rsa';
 import nrsa from 'node-rsa';
 import { FileKeyInfo, SignedXml } from 'xml-crypto';
 import xmlenc from 'xml-encryption';
@@ -16,7 +15,6 @@ import type { Entity } from './entity';
 import { SamlifyError, SamlifyErrorCode } from './error';
 import { extract, isNode } from './extractor';
 import type { Metadata } from './metadata';
-import type { RequestSignatureAlgorithm, SAMLDocumentTemplate, SignatureConfig } from './types';
 import { algorithms, names, wording } from './urn';
 import {
 	base64Encode,
@@ -27,6 +25,41 @@ import {
 	normalizeCerString,
 	readPrivateKey,
 } from './utility';
+
+export type { EncryptionAlgorithm, KeyEncryptionAlgorithm } from 'xml-encryption';
+
+export type RequestSignatureAlgorithm =
+	| 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
+	| 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
+	| 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512';
+
+export type SignatureConfig = Parameters<SignedXml['computeSignature']>[1];
+
+export interface SAMLDocumentTemplate {
+	context?: string;
+}
+export interface LoginResponseAttribute {
+	name: string;
+	nameFormat: string;
+	valueXsiType: string;
+	valueTag: string;
+	valueXmlnsXs?: string;
+	valueXmlnsXsi?: string;
+}
+export interface LoginResponseTemplate extends Required<SAMLDocumentTemplate> {
+	attributes?: LoginResponseAttribute[];
+}
+export type LoginRequestTemplate = Required<SAMLDocumentTemplate>;
+
+export type LogoutRequestTemplate = Required<SAMLDocumentTemplate>;
+
+export type LogoutResponseTemplate = Required<SAMLDocumentTemplate>;
+
+export interface CustomTagReplacement<
+	Values extends Record<string, number | string> = Record<string, number | string>
+> {
+	(template: string, values: Values): readonly [template?: string, values?: Values];
+}
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -46,7 +79,7 @@ const dom = DOMParser;
 // 	}
 // }
 
-export interface SignatureConstructor {
+interface SignatureConstructor {
 	rawSamlMessage: string;
 	referenceTagXPath?: string;
 	privateKey: string;
@@ -59,47 +92,16 @@ export interface SignatureConstructor {
 	transformationAlgorithms?: string[];
 }
 
-export interface SignatureVerifierOptions {
+interface SignatureVerifierOptions {
 	metadata?: Metadata;
 	keyFile?: string;
 	signatureAlgorithm?: RequestSignatureAlgorithm;
 }
 
-export interface ExtractorResult {
+type KeyUse = 'signing' | 'encryption';
+
+interface KeyComponent {
 	[key: string]: any;
-	signature?: string | string[];
-	issuer?: string | string[];
-	nameid?: string;
-	notexist?: boolean;
-}
-
-export interface LoginResponseAttribute {
-	name: string;
-	nameFormat: string;
-	valueXsiType: string;
-	valueTag: string;
-	valueXmlnsXs?: string;
-	valueXmlnsXsi?: string;
-}
-export interface LoginResponseTemplate extends Required<SAMLDocumentTemplate> {
-	attributes?: LoginResponseAttribute[];
-}
-export type LoginRequestTemplate = Required<SAMLDocumentTemplate>;
-
-export type LogoutRequestTemplate = Required<SAMLDocumentTemplate>;
-
-export type LogoutResponseTemplate = Required<SAMLDocumentTemplate>;
-
-export type KeyUse = 'signing' | 'encryption';
-
-export interface KeyComponent {
-	[key: string]: any;
-}
-
-export interface CustomTagReplacement<
-	Values extends Record<string, number | string> = Record<string, number | string>
-> {
-	(template: string, values: Values): readonly [template?: string, values?: Values];
 }
 
 const libSaml = () => {
@@ -166,7 +168,7 @@ const libSaml = () => {
 	 * @param {string} sigAlg    signature algorithm
 	 * @return {string} signing algorithm short-hand for the module node-rsa
 	 */
-	function getSigningScheme(sigAlg?: RequestSignatureAlgorithm): NodeRSA.Options['signingScheme'] {
+	function getSigningScheme(sigAlg?: RequestSignatureAlgorithm): nrsa.Options['signingScheme'] {
 		if (sigAlg) {
 			const algAlias = nrsaAliasMapping[sigAlg];
 			if (algAlias != null) return algAlias;
@@ -529,7 +531,7 @@ const libSaml = () => {
 		 */
 		verifyMessageSignature(
 			metadata: Metadata,
-			octetString: NodeRSA.Data,
+			octetString: nrsa.Data,
 			signature: Buffer,
 			verifyAlgorithm?: RequestSignatureAlgorithm
 		) {
@@ -707,4 +709,4 @@ ${targetEntityMetadata.getX509Certificate(certUse.encrypt)}
 	};
 };
 
-export default libSaml();
+export const libsaml = libSaml();

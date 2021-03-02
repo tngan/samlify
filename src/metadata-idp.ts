@@ -5,16 +5,22 @@
  */
 import xml from 'xml';
 import { SamlifyError, SamlifyErrorCode } from './error';
-import libsaml from './libsaml';
-import { Metadata } from './metadata';
-import type { MetadataIdpConstructorOptions } from './types';
+import { libsaml, RequestSignatureAlgorithm } from './libsaml';
+import { Metadata, MetadataFile, MetadataOptions } from './metadata';
 import { BindingNamespace, names } from './urn';
 import { isNonEmptyArray, isString } from './utility';
+
+interface MetadataIdpOptions extends MetadataOptions {
+	requestSignatureAlgorithm?: RequestSignatureAlgorithm;
+	wantAuthnRequestsSigned?: boolean;
+}
+
+export type MetadataIdpConstructorOptions = MetadataIdpOptions | MetadataFile;
 
 /*
  * @desc interface function
  */
-export default function (meta: MetadataIdpConstructorOptions) {
+export function metadataIdp(meta: MetadataIdpConstructorOptions) {
 	return new MetadataIdp(meta);
 }
 

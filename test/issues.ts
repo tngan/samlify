@@ -6,7 +6,7 @@ import { DOMParser as dom } from 'xmldom';
 import { identityProvider, serviceProvider } from '../src';
 import { isSamlifyError, SamlifyErrorCode } from '../src/error';
 import { extract, isElement } from '../src/extractor';
-import libsaml from '../src/libsaml';
+import { libsaml } from '../src/libsaml';
 import { BindingNamespace, wording } from '../src/urn';
 import { inflateString } from '../src/utility';
 

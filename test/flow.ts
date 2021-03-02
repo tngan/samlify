@@ -783,13 +783,12 @@ test('send login response with encrypted non-signed assertion with EncryptThenSi
 
 test('Customize prefix (saml2) for encrypted assertion tag', async (t) => {
 	const user = { email: 'test@email.com' };
-	const idpCustomizePfx = identityProvider(
-		Object.assign(defaultIdpConfig, {
-			tagPrefix: {
-				encryptedAssertion: 'saml2',
-			},
-		})
-	);
+	const idpCustomizePfx = identityProvider({
+		...defaultIdpConfig,
+		tagPrefix: {
+			encryptedAssertion: 'saml2',
+		},
+	});
 	const { /*id,*/ context: SAMLResponse } = await idpCustomizePfx.createLoginResponse(
 		sp,
 		sampleRequestInfo,
