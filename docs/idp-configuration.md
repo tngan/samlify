@@ -25,13 +25,13 @@ const idp = new IdentityProvider({
 OR
 
 - **entityID: String**<br/> Entity identifier. It is used to identify your entity, and match the equivalence in each saml request/response.
-  
+
 - **signingCert: String**<br/>
   _Optional_: Specify the certificate used for signing purpose if you construct the idp without a metadata.
 
 - **encryptCert: String**<br/>
   _Optional_: Specify the certificate used for encryption purpose if you construct the idp without a metadata.
-  
+
 - **singleSignOnService: SignOnService[]**<br/>
   _Optional_: Declare the single sign on service if you construct the idp without a metadata.
 
@@ -58,32 +58,32 @@ const idp = new IdentityProvider({
   Declare the tag of specific xml document node. `TagPrefixKey` currently supports `encryptedAssertion` only. (See more [#220](https://github.com/tngan/samlify/issues/220))
 
 - **loginResponseTemplate: {context: String, attributes: Attributes}**<br/>
-  Customize the login response template, and user can reuse it in the callback function to do runtime interpolation. (See [more](/template)) 
+  Customize the login response template, and user can reuse it in the callback function to do runtime interpolation. (See [more](/template))
 
-- **wantLogoutResponseSigned: Boolean**<br/> 
+- **wantLogoutResponseSigned: Boolean**<br/>
   Declare if idp guarantees the logout response from sp is signed.
 
 - **messageSigningOrder: SigningOrder**<br/>
   Declare the message signing order, either `sign-then-encrypt` (default) or `encrypt-then-sign`.
 
 - **relayState: String**<br/>
-  Specify the relayState of the request. 
+  Specify the relayState of the request.
 
   !> It will be deprecated soon and put into request level instead of entity level.
 
 - **isAssertionEncrypted: Boolean**<br/>
   Decalre if idp would encrypt the assertion in the response.
-  
+
   !> It will be deprecated soon, then samlify will automatically detect if the document is encrypted.
-  
+
 - **requestSignatureAlgorithm: SigningAlgorithm**<br/>
   The signature algorithm used in request. Default to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. We also support rsa-sha1 (not recommended) `http://www.w3.org/2000/09/xmldsig#rsa-sha1` and rsa-sha2 `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`.
-  
-- **dataEncryptionAlgorithm: EncryptionAlgorithm**<br/> 
+
+- **dataEncryptionAlgorithm: EncryptionAlgorithm**<br/>
   The encryption algorithm used in response. Default to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. We also support aes256 `http://www.w3.org/2001/04/xmlenc#aes256-cbc`, tripledes `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` and aes128 `http://www.w3.org/2009/xmlenc11#aes128-gcm`.
 
 - **keyEncryptionAlgorithm: KeyEncryptionAlgorithm**<br/>
-  The key encryption algorithm. Default to rsa-1_5 `http://www.w3.org/2001/04/xmlenc#rsa-1_5`. We also support rsa-oaep-mgf1p `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`.
+  The key encryption algorithm. Default to rsa-oaep-mgf1p `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`. We also support rsa-1_5 `http://www.w3.org/2001/04/xmlenc#rsa-1_5`.
 
 - **generateID: (): String**<br/>
   A function to generate the document identifier in root node. Default to `_${UUID_V4}`.

@@ -1,3 +1,13 @@
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # Logs
 logs
 *.log
@@ -18,18 +28,17 @@ coverage
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git-
 node_modules
 
-build
-types/
+/.build/
+/lib/
+/types/
 
 .yarnclean
 
 .nyc_output
+/test.txt
 
 #jetbrains IDEs
 .idea
-
-#vscode
-.vscode
 
 *.tgz
 

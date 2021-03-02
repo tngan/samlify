@@ -7,7 +7,7 @@ const idp = IdentityProvider({
   isAssertionEncrypted: true,
   metadata: fs.readFileSync('./metadata_idp.xml'),
   dataEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
-  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5' 
+  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p'
 });
 ```
 
@@ -46,7 +46,7 @@ Currently, we support the following encrpytion algorithms:
 * http://www.w3.org/2009/xmlenc11#aes128-gcm
 
 **Key encryption algorithms**
-* http://www.w3.org/2001/04/xmlenc#rsa-1_5
 * http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p
+* http://www.w3.org/2001/04/xmlenc#rsa-1_5
 
 Credits to [auth0/node-xml-encryption](https://github.com/auth0/node-xml-encryption)

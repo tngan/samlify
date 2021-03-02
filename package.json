@@ -1,71 +1,88 @@
 {
-  "name": "samlify",
-  "version": "2.7.6",
-  "description": "High-level API for Single Sign On (SAML 2.0)",
-  "main": "build/index.js",
-  "keywords": [
-    "nodejs",
-    "saml2",
-    "sso",
-    "slo",
-    "metadata"
-  ],
-  "typings": "types/index.d.ts",
-  "scripts": {
-    "build": "yarn audit;make rebuild",
-    "docs": "docsify serve -o docs",
-    "lint": "tslint -p .",
-    "lint:fix": "tslint -p . --fix",
-    "pretest": "make pretest",
-    "test": "NODE_ENV=test nyc ava",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
-  },
-  "contributors": [
-    "Tony Ngan <tonynwk919@gmail.com>"
-  ],
-  "author": "tngan",
-  "repository": {
-    "url": "https://github.com/tngan/samlify",
-    "type": "git"
-  },
-  "license": "MIT",
-  "dependencies": {
-    "@authenio/xml-encryption": "^1.2.2",
-    "camelcase": "^5.3.1",
-    "node-forge": "^0.10.0",
-    "node-rsa": "^1.0.5",
-    "pako": "^1.0.10",
-    "uuid": "^3.3.2",
-    "xml": "^1.0.1",
-    "xml-crypto": "^2.0.0",
-    "xmldom": "^0.1.27",
-    "xpath": "^0.0.27"
-  },
-  "devDependencies": {
-    "@ava/typescript": "^1.1.1",
-    "@types/node": "^11.11.3",
-    "@types/node-forge": "^0.9.5",
-    "@types/pako": "^1.0.1",
-    "@types/uuid": "3.0.0",
-    "@types/xmldom": "^0.1.28",
-    "ava": "^3.8.2",
-    "coveralls": "^3.1.0",
-    "nyc": "^15.0.1",
-    "timekeeper": "^2.2.0",
-    "ts-node": "^8.3.0",
-    "tslint": "^6.1.2",
-    "typescript": "^3.8.3"
-  },
-  "ava": {
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ],
-    "files": [
-      "!**/*.d.ts"
-    ]
-  }
+	"name": "samlify",
+	"version": "2.7.6",
+	"description": "High-level API for Single Sign On (SAML 2.0)",
+	"main": "lib/index.js",
+	"keywords": [
+		"nodejs",
+		"saml2",
+		"sso",
+		"slo",
+		"metadata"
+	],
+	"files": [
+		"lib"
+	],
+	"typings": "lib/index.d.ts",
+	"scripts": {
+		"build": "yarn audit;make rebuild",
+		"docs": "docsify serve -o docs",
+		"format": "prettier \"./**/*.{json,js,ts,css,html,xml,md}\" --write",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"pretest": "make pretest",
+		"test": "NODE_ENV=test nyc ava --cwd test",
+		"coverage": "nyc report --reporter=text-lcov | coveralls",
+		"hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
+	},
+	"contributors": [
+		"Tony Ngan <tonynwk919@gmail.com>",
+		"Jim Isaacs <jimisaacs@users.noreply.github.com>"
+	],
+	"author": "tngan",
+	"repository": {
+		"url": "https://github.com/tngan/samlify",
+		"type": "git"
+	},
+	"license": "MIT",
+	"dependencies": {
+		"camelcase": "^6.2.0",
+		"node-forge": "^0.10.0",
+		"node-rsa": "^1.1.1",
+		"pako": "^1.0.11",
+		"uuid": "^8.3.2",
+		"xml": "^1.0.1",
+		"xml-crypto": "^2.0.0",
+		"xml-encryption": "^1.2.2",
+		"xmldom": "^0.1.27",
+		"xpath": "^0.0.27"
+	},
+	"devDependencies": {
+		"@authenio/samlify-xsd-schema-validator": "^1.0.3",
+		"@ava/typescript": "^1.1.1",
+		"@prettier/plugin-xml": "^0.13.0",
+		"@types/node": "^14.14.31",
+		"@types/node-forge": "^0.9.7",
+		"@types/node-rsa": "^1.1.0",
+		"@types/pako": "^1.0.1",
+		"@types/uuid": "^8.3.0",
+		"@types/xml": "^1.0.5",
+		"@types/xml-crypto": "^1.4.1",
+		"@types/xml-encryption": "^1.2.0",
+		"@types/xmldom": "^0.1.30",
+		"@typescript-eslint/eslint-plugin": "^4.15.2",
+		"@typescript-eslint/parser": "^4.15.2",
+		"ava": "^3.8.2",
+		"coveralls": "^3.1.0",
+		"eslint": "^7.20.0",
+		"eslint-config-prettier": "^8.1.0",
+		"eslint-plugin-prettier": "^3.3.1",
+		"eslint-plugin-security": "^1.4.0",
+		"nyc": "^15.0.1",
+		"prettier": "^2.2.1",
+		"timekeeper": "^2.2.0",
+		"ts-node": "^9.1.1",
+		"typescript": "4.1.x"
+	},
+	"ava": {
+		"extensions": [
+			"ts"
+		],
+		"require": [
+			"ts-node/register"
+		],
+		"files": [
+			"!**/*.d.ts"
+		]
+	}
 }

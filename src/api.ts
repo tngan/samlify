@@ -1,25 +1,24 @@
+import { SamlifyError, SamlifyErrorCode } from './error';
+
 // global module configuration
-interface Context extends ValidatorContext {}
+type Context = ValidatorContext;
 
 interface ValidatorContext {
-  validate?: (xml: string) => Promise<any>;
+	validate?: (xml: string) => Promise<any>;
 }
 
 const context: Context = {
-  validate: undefined
+	validate: undefined,
 };
 
 export function getContext() {
-  return context;
+	return context;
 }
 
 export function setSchemaValidator(params: ValidatorContext) {
-
-  if (typeof params.validate !== 'function') {
-    throw new Error('validate must be a callback function having one arguemnt as xml input');
-  }
-
-  // assign the validate function to the context
-  context.validate = params.validate;
-
+	if (typeof params.validate !== 'function') {
+		throw new SamlifyError(SamlifyErrorCode.TypeError, 'validate must be a function having one argument as xml input');
+	}
+	// assign the validate function to the context
+	context.validate = params.validate;
 }

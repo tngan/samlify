@@ -1,0 +1,18 @@
+# Hidden but still want to process
+!.*.js
+!.*.json
+!.vscode
+# Do NOT want to process
+node_modules/
+package-lock.json
+*.lock
+*.yaml
+*.log
+*.d.ts
+/.build/
+/lib/
+/docs/
+/.nyc_output/
+/test/key/
+/test/misk/
+.idea/

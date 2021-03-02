@@ -1,33 +1,36 @@
 {
-  "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "declaration": true,
-    "declarationDir": "types",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "downlevelIteration": true,
-    "sourceMap": true,
-    "outDir": "./build",
-    "baseUrl": "./",
-    "removeComments": false,
-    "strictNullChecks": true,
-    "paths": {},
-    "lib": [
-      "dom",
-      "es2015.core",
-      "es2015.promise",
-      "es2015.iterable",
-      "es5"
-    ]
-  },
-  "atom": { "rewriteTsconfig": false },
-  "exclude": [
-    "node_modules",
-    "types/**/*.ts",
-    "test/**/*.ts"
-  ],
-  "compileOnSave": false,
-  "buildOnSave": false
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"compilerOptions": {
+		"allowJs": false,
+		"allowUnreachableCode": true,
+		"allowSyntheticDefaultImports": true,
+		"assumeChangesOnlyAffectDirectDependencies": true,
+		"composite": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		// "importHelpers": true,
+		"importsNotUsedAsValues": "error",
+		"incremental": true,
+		"isolatedModules": true,
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noImplicitAny": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"preserveSymlinks": true,
+		// "removeComments": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": false,
+		"strict": true,
+		"target": "ES2019", // using node 14! (or babel, in which packages opt-in to ESNEXT)
+		"tsBuildInfoFile": "./.build/caches/tsconfig.tsbuildinfo",
+		"typeRoots": ["@types"], // force to opt-in
+		"types": ["node"], // force to opt-in
+		"declaration": true,
+		"rootDir": "./src",
+		"outDir": "./lib"
+	},
+	"include": ["./src/**/*.ts"]
 }
