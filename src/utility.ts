@@ -114,7 +114,7 @@ export function inflateString(compressedString: string): string {
   const inputBuffer = Buffer.from(compressedString, BASE64_STR);
   const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
   return Array.from(inflate(input, { raw: true }))
-    .map(byte => String.fromCharCode(byte))
+    .map((byte: number) => String.fromCharCode(byte))
     .join('');
 }
 /**
