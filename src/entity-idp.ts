@@ -13,6 +13,8 @@ import {
 import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
+import redirectBinding from './binding-redirect';
+import simpleSignBinding from './binding-simplesign';
 import { flow, FlowResult } from './flow';
 import { isString } from './utility';
 import { BindingContext } from './entity';
@@ -28,7 +30,7 @@ export default function(props: IdentityProviderSettings) {
  * Identity prvider can be configured using either metadata importing or idpSetting
  */
 export class IdentityProvider extends Entity {
-  
+
   entityMeta: IdentityProviderMetadata;
 
   constructor(idpSetting: IdentityProviderSettings) {
@@ -42,8 +44,20 @@ export class IdentityProvider extends Entity {
     // build attribute part
     if (idpSetting.loginResponseTemplate) {
       if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
+        let attributeStatementTemplate;
+        let attributeTemplate;
+        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate) {
+          attributeStatementTemplate = libsaml.defaultAttributeStatementTemplate;
+        } else {
+          attributeStatementTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate!;
+        }
+        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate) {
+          attributeTemplate = libsaml.defaultAttributeTemplate;
+        } else {
+          attributeTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate!;
+        }
         const replacement = {
-          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes),
+          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes, attributeTemplate, attributeStatementTemplate),
         };
         entitySetting.loginResponseTemplate = {
           ...entitySetting.loginResponseTemplate,
@@ -64,6 +78,7 @@ export class IdentityProvider extends Entity {
   * @param  user                      current logged user (e.g. req.user)
   * @param  customTagReplacement      used when developers have their own login response template
   * @param  encryptThenSign           whether or not to encrypt then sign first (if signing)
+  * @param  relayState             the relayState from corresponding request
   */
   public async createLoginResponse(
     sp: ServiceProvider,
@@ -72,21 +87,41 @@ export class IdentityProvider extends Entity {
     user: { [key: string]: any },
     customTagReplacement?: (template: string) => BindingContext,
     encryptThenSign?: boolean,
+    relayState?: string,
   ) {
     const protocol = namespace.binding[binding];
-    // can only support post binding for login response
-    if (protocol === namespace.binding.post) {
-      const context = await postBinding.base64LoginResponse(requestInfo, {
-        idp: this,
-        sp,
-      }, user, customTagReplacement, encryptThenSign);
-     return {
-        ...context,
-        entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding),
-        type: 'SAMLResponse'
-      };
+    // can support post, redirect and post simple sign bindings for login response
+    let context: any = null;
+    switch (protocol) {
+      case namespace.binding.post:
+        context = await postBinding.base64LoginResponse(requestInfo, {
+          idp: this,
+          sp,
+        }, user, customTagReplacement, encryptThenSign);
+        break;
+
+      case namespace.binding.simpleSign:
+        context = await simpleSignBinding.base64LoginResponse( requestInfo, {
+          idp: this, sp,
+        }, user, relayState, customTagReplacement);
+        break;
+
+      case namespace.binding.redirect:
+        return redirectBinding.loginResponseRedirectURL(requestInfo, {
+          idp: this,
+          sp,
+        }, user, relayState, customTagReplacement);
+
+      default:
+        throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
     }
-    throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+
+    return {
+      ...context,
+      relayState,
+      entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding) as string,
+      type: 'SAMLResponse'
+    };
   }
 
   /**
@@ -104,7 +139,7 @@ export class IdentityProvider extends Entity {
       parserType: 'SAMLRequest',
       type: 'login',
       binding: binding,
-      request: req 
+      request: req
     });
   }
 }

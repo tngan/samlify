@@ -114,6 +114,105 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
   }
   throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
 }
+
+/**
+* @desc Redirect URL for login response
+* @param  {object} requestInfo             corresponding request, used to obtain the id
+* @param  {object} entity                      object includes both idp and sp
+* @param  {object} user                         current logged user (e.g. req.user)
+* @param  {String} relayState                the relaystate sent by sp corresponding request
+* @param  {function} customTagReplacement     used when developers have their own login response template
+*/
+function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+  const idpSetting = entity.idp.entitySetting;
+  const spSetting = entity.sp.entitySetting;
+  const metadata = {
+    idp: entity.idp.entityMeta,
+    sp: entity.sp.entityMeta,
+  };
+
+  let id: string = idpSetting.generateID();
+  if (metadata && metadata.idp && metadata.sp) {
+    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+    let rawSamlResponse: string;
+    //
+    const nameIDFormat = idpSetting.nameIDFormat;
+    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+    const nowTime = new Date();
+    // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
+    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000 );
+    const tvalue: any = {
+      ID: id,
+      AssertionID: idpSetting.generateID(),
+      Destination: base,
+      SubjectRecipient: base,
+      Issuer: metadata.idp.getEntityID(),
+      Audience: metadata.sp.getEntityID(),
+      EntityID: metadata.sp.getEntityID(),
+      IssueInstant: nowTime.toISOString(),
+      AssertionConsumerServiceURL: base,
+      StatusCode: namespace.statusCode.success,
+      // can be customized
+      ConditionsNotBefore: nowTime.toISOString(),
+      ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+      NameIDFormat: selectedNameIDFormat,
+      NameID: user.email || '',
+      InResponseTo: get(requestInfo, 'extract.request.id', ''),
+      AuthnStatement: '',
+      AttributeStatement: '',
+    };
+
+    if (idpSetting.loginResponseTemplate && customTagReplacement) {
+      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
+      id = get(template, 'id', null);
+      rawSamlResponse = get(template, 'context', null);
+    } else {
+
+      if (requestInfo !== null) {
+        tvalue.InResponseTo = requestInfo.extract.request.id;
+      }
+      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+    }
+
+    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+    const config = {
+      privateKey,
+      privateKeyPass,
+      signatureAlgorithm,
+      signingCert: metadata.idp.getX509Certificate('signing'),
+      isBase64Output: false,
+    };
+    // step: sign assertion ? -> encrypted ? -> sign message ?
+    if (metadata.sp.isWantAssertionsSigned()) {
+      rawSamlResponse = libsaml.constructSAMLSignature({
+        ...config,
+        rawSamlMessage: rawSamlResponse,
+        transformationAlgorithms: spSetting.transformationAlgorithms,
+        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
+        signatureConfig: {
+          prefix: 'ds',
+          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+        },
+      });
+    }
+
+    // Like in post binding, SAML response is always signed
+    return {
+      id,
+      context: buildRedirectURL({
+        baseUrl: base,
+        type: urlParams.samlResponse,
+        isSigned: true,
+        context: rawSamlResponse,
+        entitySetting: idpSetting,
+        relayState,
+      }),
+    };
+  }
+  throw new Error('ERR_GENERATE_REDIRECT_LOGIN_RESPONSE_MISSING_METADATA');
+}
+
 /**
 * @desc Redirect URL for logout request
 * @param  {object} user                        current logged user (e.g. req.user)
@@ -127,7 +226,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
   let id: string = initSetting.generateID();
   const nameIDFormat = initSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-  
+
   if (metadata && metadata.init && metadata.target) {
     const base = metadata.target.getSingleLogoutService(binding.redirect);
     let rawSamlRequest: string = '';
@@ -213,6 +312,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
 
 const redirectBinding = {
   loginRequestRedirectURL,
+  loginResponseRedirectURL,
   logoutRequestRedirectURL,
   logoutResponseRedirectURL,
 };
