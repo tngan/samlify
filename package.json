@@ -32,6 +32,7 @@
   "license": "MIT",
   "dependencies": {
     "@authenio/xml-encryption": "^1.2.2",
+    "@types/xmldom": "^0.1.30",
     "camelcase": "^5.3.1",
     "node-forge": "^0.10.0",
     "node-rsa": "^1.0.5",
@@ -39,7 +40,7 @@
     "uuid": "^3.3.2",
     "xml": "^1.0.1",
     "xml-crypto": "^2.1.0",
-    "xmldom": "^0.5.0",
+    "xmldom": "^0.6.0",
     "xpath": "^0.0.27"
   },
   "devDependencies": {
@@ -48,7 +49,6 @@
     "@types/node-forge": "^0.9.5",
     "@types/pako": "^1.0.1",
     "@types/uuid": "3.0.0",
-    "@types/xmldom": "^0.1.28",
     "ava": "^3.8.2",
     "coveralls": "^3.1.0",
     "nyc": "^15.0.1",
