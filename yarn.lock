@@ -2,15 +2,15 @@
 # yarn lockfile v1
 
 
-"@authenio/xml-encryption@^1.2.2":
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-1.2.2.tgz#87cbfe7a9efa9e283ba4c743f9ba5b4f6e06d36c"
-  integrity sha512-DARJx+HwQ/jgVF+rOFwYFDWqFIZGueIKmwSRsTBPlEw9tkCFWWv53MdwScKfVX0tiZFNJshRR99fdKnzXnxyvg==
+"@authenio/xml-encryption@^1.2.4":
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-1.2.4.tgz#6e3310a2d629859554404cc1a213a68f4f055c08"
+  integrity sha512-71ENOSuUbXh5WO5oVQx7JPMdbPoXOYxfZvxWlaQEMzy8/psz1UR2r2QVsFiqbnlaJUGaKUo/HoNPB3Bq97zVxg==
   dependencies:
     escape-html "^1.0.3"
     node-forge "^0.10.0"
-    xmldom "~0.1.15"
-    xpath "0.0.27"
+    xmldom "~0.6.0"
+    xpath "0.0.32"
 
 "@ava/typescript@^1.1.1":
   version "1.1.1"
@@ -2859,20 +2859,20 @@ xmldom@0.5.0:
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.5.0.tgz#193cb96b84aa3486127ea6272c4596354cb4962e"
   integrity sha512-Foaj5FXVzgn7xFzsKeNIde9g6aFBxTPi37iwsno8QvApmtg7KYrr+OPyRHcJF7dud2a5nGRBXK3n0dL62Gf7PA==
 
-xmldom@^0.6.0:
+xmldom@^0.6.0, xmldom@~0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.6.0.tgz#43a96ecb8beece991cef382c08397d82d4d0c46f"
   integrity sha512-iAcin401y58LckRZ0TkI4k0VSM1Qg0KGSc3i8rU+xrxe19A/BN1zHyVSJY7uoutVlaTSzYyk/v5AmkewAP7jtg==
-
-xmldom@~0.1.15:
-  version "0.1.31"
-  resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.31.tgz#b76c9a1bd9f0a9737e5a72dc37231cf38375e2ff"
-  integrity sha512-yS2uJflVQs6n+CyjHoaBmVSqIDevTAWrzMmjG1Gc7h1qQ7uVozNhEPJAwZXWyGQ/Gafo3fCwrcaokezLPupVyQ==
 
 xpath@0.0.27, xpath@^0.0.27:
   version "0.0.27"
   resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.27.tgz#dd3421fbdcc5646ac32c48531b4d7e9d0c2cfa92"
   integrity sha512-fg03WRxtkCV6ohClePNAECYsmpKKTv5L8y/X3Dn1hQrec3POx2jHZ/0P2qQ6HvsrU1BmeqXcof3NGGueG6LxwQ==
+
+xpath@0.0.32:
+  version "0.0.32"
+  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.32.tgz#1b73d3351af736e17ec078d6da4b8175405c48af"
+  integrity sha512-rxMJhSIoiO8vXcWvSifKqhvV96GjiD5wYb8/QHdoRyQvraTpp4IEv944nhGausZZ3u7dhQXteZuZbaqfpB7uYw==
 
 y18n@^4.0.0:
   version "4.0.1"
