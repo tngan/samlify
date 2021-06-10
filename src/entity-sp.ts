@@ -12,6 +12,7 @@ import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
+  ValidationSettings,
 } from './types';
 import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
@@ -50,12 +51,14 @@ export class ServiceProvider extends Entity {
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
-  * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {function} customTagReplacement      used when developers have their own login response template
+  * @param  {string}   relayState                optionally override default SP relayState
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
+    relayState?: string,
+    customTagReplacement?: (template: string) => BindingContext
   ): BindingContext | PostBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -63,8 +66,12 @@ export class ServiceProvider extends Entity {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }
 
+    if (relayState === undefined) {
+        relayState = this.entitySetting.relayState;
+    }
+
     if (protocol === nsBinding.redirect) {
-      return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+      return redirectBinding.loginRequestRedirectURL({ idp, sp: this, relayState }, customTagReplacement);
     }
 
     if (protocol === nsBinding.post) {
@@ -85,10 +92,12 @@ export class ServiceProvider extends Entity {
   * @param  {IdentityProvider}   idp             object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {request}   req                      request
+  * @param  {ValidationSettings}   validation    optionally skip some validations
   */
-  public parseLoginResponse(idp, binding, request: ESamlHttpRequest) {
+  public parseLoginResponse(idp, binding, request: ESamlHttpRequest, validation?: ValidationSettings) {
     const self = this;
-    return flow({
+
+    const options = {
       from: idp,
       self: self,
       checkSignature: true, // saml response must have signature
@@ -96,7 +105,13 @@ export class ServiceProvider extends Entity {
       type: 'login',
       binding: binding,
       request: request
-    });
+    };
+
+    if (validation) {
+      Object.assign(options, validation);
+    }
+
+    return flow(options);
   }
 
 }

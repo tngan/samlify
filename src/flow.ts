@@ -124,7 +124,10 @@ async function postFlow(options): Promise<FlowResult> {
     from,
     self,
     parserType,
-    checkSignature = true
+    checkSignature = true,
+    checkIssuer = true,
+    checkSessionTime = true,
+    checkTime = true
   } = options;
 
   const { body } = request;
@@ -200,6 +203,7 @@ async function postFlow(options): Promise<FlowResult> {
 
   // unmatched issuer
   if (
+    checkIssuer &&
     (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
     && extractedProperties
     && extractedProperties.issuer !== issuer
@@ -210,6 +214,7 @@ async function postFlow(options): Promise<FlowResult> {
   // invalid session time
   // only run the verifyTime when `SessionNotOnOrAfter` exists
   if (
+    checkSessionTime &&
     parserType === 'SAMLResponse'
     && extractedProperties.sessionIndex.sessionNotOnOrAfter
     && !verifyTime(
@@ -224,6 +229,7 @@ async function postFlow(options): Promise<FlowResult> {
   // invalid time
   // 2.4.1.2 https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
   if (
+    checkTime &&
     parserType === 'SAMLResponse'
     && extractedProperties.conditions
     && !verifyTime(

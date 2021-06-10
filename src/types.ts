@@ -125,3 +125,10 @@ export type IdentityProviderSettings = {
   wantLogoutRequestSignedResponseSigned?: boolean;
   tagPrefix?: { [key: string]: string };
 };
+
+export interface ValidationSettings {
+  checkSignature?: boolean;
+  checkIssuer?: boolean;
+  checkSessionTime?: boolean;
+  checkTime?: boolean;
+}
