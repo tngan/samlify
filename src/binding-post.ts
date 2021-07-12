@@ -228,7 +228,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       id = initSetting.generateID();
       const tvalue: any = {
         ID: id,
-        Destination: metadata.target.getSingleLogoutService(binding.redirect),
+        Destination: metadata.target.getSingleLogoutService(binding.post),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
