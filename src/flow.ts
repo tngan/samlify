@@ -1,4 +1,4 @@
-import { inflateString, base64Decode } from './utility';
+import { inflateString, base64Decode, isNonEmptyArray } from './utility';
 import { verifyTime } from './validator';
 import libsaml from './libsaml';
 import {
@@ -19,6 +19,7 @@ import {
   MessageSignatureOrder,
   StatusCode
 } from './urn';
+import simpleSignBinding from './binding-simplesign';
 
 const bindDict = wording.binding;
 const urlParams = wording.urlParams;
@@ -26,6 +27,7 @@ const urlParams = wording.urlParams;
 export interface FlowResult {
   samlContent: string;
   extract: any;
+  sigAlg?: string|null ;
 }
 
 // get the default extractor fields based on the parserType
@@ -49,9 +51,9 @@ function getDefaultExtractorFields(parserType: ParserType, assertion?: any): Ext
 }
 
 // proceed the redirect binding flow
-async function redirectFlow(options) {
+async function redirectFlow(options): Promise<FlowResult>  {
 
-  const { request, parserType, checkSignature = true, from } = options;
+  const { request, parserType, self, checkSignature = true, from } = options;
   const { query, octetString } = request;
   const { SigAlg: sigAlg, Signature: signature } = query;
 
@@ -68,29 +70,38 @@ async function redirectFlow(options) {
 
   const xmlString = inflateString(decodeURIComponent(content));
 
-  // validate the xml (remarks: login response must be gone through post flow)
-  if (
-    parserType === urlParams.samlRequest ||
-    parserType === urlParams.logoutRequest ||
-    parserType === urlParams.logoutResponse
-  ) {
-    try {
-      await libsaml.isValidXml(xmlString);
-    } catch (e) {
-      return Promise.reject('ERR_INVALID_XML');
+  // validate the xml
+  try {
+    await libsaml.isValidXml(xmlString);
+  } catch (e) {
+    return Promise.reject('ERR_INVALID_XML');
+  }
+
+  // check status based on different scenarios
+  await checkStatus(xmlString, parserType);
+
+  let assertion: string = '';
+
+  if (parserType === urlParams.samlResponse){
+    // Extract assertion shortcut
+    const verifiedDoc = extract(xmlString, [{
+      key: 'assertion',
+      localPath: ['~Response', 'Assertion'],
+      attributes: [],
+      context: true
+    }]);
+    if (verifiedDoc && verifiedDoc.assertion){
+      assertion = verifiedDoc.assertion as string;
     }
   }
 
-  const extractorFields = getDefaultExtractorFields(parserType);
+  const extractorFields = getDefaultExtractorFields(parserType, assertion.length > 0 ? assertion : null);
 
   const parseResult: { samlContent: string, extract: any, sigAlg: (string | null) } = {
     samlContent: xmlString,
     sigAlg: null,
     extract: extract(xmlString, extractorFields),
   };
-
-  // check status based on different scenarios
-  await checkStatus(xmlString, parserType);
 
   // see if signature check is required
   // only verify message signature is enough
@@ -111,6 +122,49 @@ async function redirectFlow(options) {
     }
 
     parseResult.sigAlg = decodeSigAlg;
+  }
+
+  /**
+   *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
+   */
+  const issuer = targetEntityMetadata.getEntityID();
+  const extractedProperties = parseResult.extract;
+
+  // unmatched issuer
+  if (
+    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    && extractedProperties
+    && extractedProperties.issuer !== issuer
+  ) {
+    return Promise.reject('ERR_UNMATCH_ISSUER');
+  }
+
+  // invalid session time
+  // only run the verifyTime when `SessionNotOnOrAfter` exists
+  if (
+    parserType === 'SAMLResponse'
+    && extractedProperties.sessionIndex.sessionNotOnOrAfter
+    && !verifyTime(
+      undefined,
+      extractedProperties.sessionIndex.sessionNotOnOrAfter,
+      self.entitySetting.clockDrifts
+    )
+  ) {
+    return Promise.reject('ERR_EXPIRED_SESSION');
+  }
+
+  // invalid time
+  // 2.4.1.2 https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+  if (
+    parserType === 'SAMLResponse'
+    && extractedProperties.conditions
+    && !verifyTime(
+      extractedProperties.conditions.notBefore,
+      extractedProperties.conditions.notOnOrAfter,
+      self.entitySetting.clockDrifts
+    )
+  ) {
+    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
 
   return Promise.resolve(parseResult);
@@ -149,7 +203,7 @@ async function postFlow(options): Promise<FlowResult> {
   if (parserType !== urlParams.samlResponse) {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
-  
+
   // check status based on different scenarios
   await checkStatus(samlContent, parserType);
 
@@ -238,6 +292,129 @@ async function postFlow(options): Promise<FlowResult> {
   return Promise.resolve(parseResult);
 }
 
+
+// proceed the post simple sign binding flow
+async function postSimpleSignFlow(options): Promise<FlowResult> {
+
+  const { request, parserType, self, checkSignature = true, from } = options;
+
+  const { body, octetString } = request;
+
+  const targetEntityMetadata = from.entityMeta;
+
+  // ?SAMLRequest= or ?SAMLResponse=
+  const direction = libsaml.getQueryParamByType(parserType);
+  const encodedRequest: string = body[direction];
+  const sigAlg: string = body['SigAlg'];
+  const signature: string = body['Signature'];
+
+  // query must contain the saml content
+  if (encodedRequest === undefined) {
+    return Promise.reject('ERR_SIMPLESIGN_FLOW_BAD_ARGS');
+  }
+
+  const xmlString = String(base64Decode(encodedRequest));
+
+  // validate the xml
+  try {
+    await libsaml.isValidXml(xmlString);
+  } catch (e) {
+    return Promise.reject('ERR_INVALID_XML');
+  }
+
+  // check status based on different scenarios
+  await checkStatus(xmlString, parserType);
+
+  let assertion: string = '';
+
+  if (parserType === urlParams.samlResponse){
+    // Extract assertion shortcut
+    const verifiedDoc = extract(xmlString, [{
+      key: 'assertion',
+      localPath: ['~Response', 'Assertion'],
+      attributes: [],
+      context: true
+    }]);
+    if (verifiedDoc && verifiedDoc.assertion){
+      assertion = verifiedDoc.assertion as string;
+    }
+  }
+
+  const extractorFields = getDefaultExtractorFields(parserType, assertion.length > 0 ? assertion : null);
+
+  const parseResult: { samlContent: string, extract: any, sigAlg: (string | null) } = {
+    samlContent: xmlString,
+    sigAlg: null,
+    extract: extract(xmlString, extractorFields),
+  };
+
+  // see if signature check is required
+  // only verify message signature is enough
+  if (checkSignature) {
+    if (!signature || !sigAlg) {
+      return Promise.reject('ERR_MISSING_SIG_ALG');
+    }
+
+    // put the below two assignemnts into verifyMessageSignature function
+    const base64Signature = Buffer.from(signature, 'base64');
+
+    const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);
+
+    if (!verified) {
+      // Fail to verify message signature
+      return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+    }
+
+    parseResult.sigAlg = sigAlg;
+  }
+
+  /**
+   *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
+   */
+  const issuer = targetEntityMetadata.getEntityID();
+  const extractedProperties = parseResult.extract;
+
+  // unmatched issuer
+  if (
+    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    && extractedProperties
+    && extractedProperties.issuer !== issuer
+  ) {
+    return Promise.reject('ERR_UNMATCH_ISSUER');
+  }
+
+  // invalid session time
+  // only run the verifyTime when `SessionNotOnOrAfter` exists
+  if (
+    parserType === 'SAMLResponse'
+    && extractedProperties.sessionIndex.sessionNotOnOrAfter
+    && !verifyTime(
+      undefined,
+      extractedProperties.sessionIndex.sessionNotOnOrAfter,
+      self.entitySetting.clockDrifts
+    )
+  ) {
+    return Promise.reject('ERR_EXPIRED_SESSION');
+  }
+
+  // invalid time
+  // 2.4.1.2 https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+  if (
+    parserType === 'SAMLResponse'
+    && extractedProperties.conditions
+    && !verifyTime(
+      extractedProperties.conditions.notBefore,
+      extractedProperties.conditions.notOnOrAfter,
+      self.entitySetting.clockDrifts
+    )
+  ) {
+    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+  }
+
+  return Promise.resolve(parseResult);
+}
+
+
 function checkStatus(content: string, parserType: string): Promise<string> {
 
   // only check response parser
@@ -269,10 +446,10 @@ export function flow(options): Promise<FlowResult> {
   const binding = options.binding;
   const parserType = options.parserType;
 
-  options.supportBindings = [BindingNamespace.Redirect, BindingNamespace.Post];
-  // saml response only allows POST
+  options.supportBindings = [BindingNamespace.Redirect, BindingNamespace.Post, BindingNamespace.SimpleSign];
+  // saml response  allows POST, REDIRECT
   if (parserType === ParserType.SAMLResponse) {
-    options.supportBindings = [BindingNamespace.Post];
+    options.supportBindings = [BindingNamespace.Post, BindingNamespace.Redirect, BindingNamespace.SimpleSign];
   }
 
   if (binding === bindDict.post) {
@@ -281,6 +458,10 @@ export function flow(options): Promise<FlowResult> {
 
   if (binding === bindDict.redirect) {
     return redirectFlow(options);
+  }
+
+  if (binding === bindDict.simpleSign) {
+    return postSimpleSignFlow(options);
   }
 
   return Promise.reject('ERR_UNEXPECTED_FLOW');

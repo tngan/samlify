@@ -58,13 +58,23 @@ export interface LoginResponseAttribute {
   valueXmlnsXsi?: string;
 }
 
+export interface LoginResponseAdditionalTemplates {
+  attributeStatementTemplate?: AttributeStatementTemplate;
+  attributeTemplate?:AttributeTemplate;
+}
+
 export interface BaseSamlTemplate {
   context: string;
 }
 
 export interface LoginResponseTemplate extends BaseSamlTemplate {
   attributes?: LoginResponseAttribute[];
+  additionalTemplates?: LoginResponseAdditionalTemplates;
 }
+export interface AttributeStatementTemplate extends BaseSamlTemplate { }
+
+export interface AttributeTemplate extends BaseSamlTemplate { }
+
 export interface LoginRequestTemplate extends BaseSamlTemplate { }
 
 export interface LogoutRequestTemplate extends BaseSamlTemplate { }
@@ -81,7 +91,7 @@ export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
-  attributeStatementBuilder: (attributes: LoginResponseAttribute[]) => string;
+  attributeStatementBuilder: (attributes: LoginResponseAttribute[], attributeTemplate : AttributeTemplate, attributeStatementTemplate : AttributeStatementTemplate) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts) => [boolean, any];
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
@@ -97,6 +107,8 @@ export interface LibSamlInterface {
   nrsaAliasMapping: any;
   defaultLoginRequestTemplate: LoginRequestTemplate;
   defaultLoginResponseTemplate: LoginResponseTemplate;
+  defaultAttributeStatementTemplate: AttributeStatementTemplate;
+  defaultAttributeTemplate: AttributeTemplate;
   defaultLogoutRequestTemplate: LogoutRequestTemplate;
   defaultLogoutResponseTemplate: LogoutResponseTemplate;
 }
@@ -138,6 +150,23 @@ const libSaml = () => {
   const defaultLogoutRequestTemplate = {
     context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>',
   };
+
+  /**
+  * @desc Default AttributeStatement template
+  * @type {AttributeStatementTemplate}
+  */
+  const defaultAttributeStatementTemplate = {
+    context: '<saml:AttributeStatement>{Attributes}</saml:AttributeStatement>',
+  };
+
+  /**
+  * @desc Default Attribute template
+  * @type {AttributeTemplate}
+  */
+  const defaultAttributeTemplate = {
+    context: '<saml:Attribute Name="{Name}" NameFormat="{NameFormat}"><AttributeValue xmlns:xs="{ValueXmlnsXs}" xmlns:xsi="{ValueXmlnsXsi}" xsi:type="{ValueXsiType}">{Value}</AttributeValue></Attribute>',
+  };
+
   /**
   * @desc Default login response template
   * @type {LoginResponseTemplate}
@@ -145,6 +174,10 @@ const libSaml = () => {
   const defaultLoginResponseTemplate = {
     context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AuthnStatement}{AttributeStatement}</saml:Assertion></samlp:Response>',
     attributes: [],
+    additionalTemplates:{
+      "attributeStatementTemplate": defaultAttributeStatementTemplate,
+      "attributeTemplate": defaultAttributeTemplate
+    }
   };
   /**
   * @desc Default logout response template
@@ -213,6 +246,8 @@ const libSaml = () => {
     getQueryParamByType,
     defaultLoginRequestTemplate,
     defaultLoginResponseTemplate,
+    defaultAttributeStatementTemplate,
+    defaultAttributeTemplate,
     defaultLogoutRequestTemplate,
     defaultLogoutResponseTemplate,
 
@@ -231,16 +266,32 @@ const libSaml = () => {
     /**
     * @desc Helper function to build the AttributeStatement tag
     * @param  {LoginResponseAttribute} attributes    an array of attribute configuration
+    * @param  {AttributeTemplate} attributeTemplate    the attribut tag template to be used
+    * @param  {AttributeStatementTemplate} attributeStatementTemplate    the attributStatement tag template to be used
     * @return {string}
     */
-    attributeStatementBuilder(attributes: LoginResponseAttribute[]): string {
-      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
-        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
-        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
-        return `<saml:Attribute Name="${name}" NameFormat="${nameFormat}"><saml:AttributeValue xmlns:xs="${valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs}" xmlns:xsi="${valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi}" xsi:type="${valueXsiType}">{${tagging('attr', valueTag)}}</saml:AttributeValue></saml:Attribute>`;
-      }).join('');
-      return `<saml:AttributeStatement>${attr}</saml:AttributeStatement>`;
-    },
+    attributeStatementBuilder(attributes: LoginResponseAttribute[], attributeTemplate : AttributeTemplate, attributeStatementTemplate : AttributeStatementTemplate): string {
+     if (!attributeStatementTemplate){
+       attributeStatementTemplate = defaultAttributeStatementTemplate;
+     }
+     if (!attributeTemplate){
+       attributeTemplate = defaultAttributeTemplate;
+     }
+    const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+      const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
+      const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
+      let attributeLine = attributeTemplate.context;
+      attributeLine = attributeLine.replace('{Name}',name);
+      attributeLine = attributeLine.replace('{NameFormat}',nameFormat);
+      attributeLine = attributeLine.replace('{ValueXmlnsXs}',valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
+      attributeLine = attributeLine.replace('{ValueXmlnsXsi}',valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi);
+      attributeLine = attributeLine.replace('{ValueXsiType}',valueXsiType);
+      attributeLine = attributeLine.replace('{Value}',`{${tagging('attr', valueTag)}}`);
+      return attributeLine;
+    }).join('');
+    return attributeStatementTemplate.context.replace('{Attributes}',attr);
+},
+
     /**
     * @desc Construct the XML signature for POST binding
     * @param  {string} rawSamlMessage      request/response xml string
@@ -366,11 +417,12 @@ const libSaml = () => {
           // normalise the certificate string
           metadataCert = metadataCert.map(utility.normalizeCerString);
 
-          if (certificateNode.length === 0) {
+          // no certificate in node  response nor metadata
+          if (certificateNode.length === 0 && metadataCert.length === 0) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
 
-          // no certificate node in response
+          // certificate node in response
           if (certificateNode.length !== 0) {
             const x509CertificateData = certificateNode[0].firstChild.data;
             const x509Certificate = utility.normalizeCerString(x509CertificateData);
@@ -386,9 +438,12 @@ const libSaml = () => {
 
             sig.keyInfoProvider = new this.getKeyInfo(x509Certificate);
 
+          } else {
+            // Select first one from metadata
+            sig.keyInfoProvider = new this.getKeyInfo(metadataCert[0]);
           }
 
-        } 
+        }
 
         sig.loadSignature(signatureNode);
 

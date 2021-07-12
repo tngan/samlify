@@ -57,7 +57,7 @@ const idp = new IdentityProvider({
 - **tagPrefix: {[key: TagPrefixKey]: string}**<br/>
   Declare the tag of specific xml document node. `TagPrefixKey` currently supports `encryptedAssertion` only. (See more [#220](https://github.com/tngan/samlify/issues/220))
 
-- **loginResponseTemplate: {context: String, attributes: Attributes}**<br/>
+- **loginResponseTemplate: {context: String, attributes: Attributes, additionalTemplates: LoginResponseAdditionalTemplates}**<br/>
   Customize the login response template, and user can reuse it in the callback function to do runtime interpolation. (See [more](/template)) 
 
 - **wantLogoutResponseSigned: Boolean**<br/> 

@@ -48,6 +48,17 @@ export interface PostBindingContext extends BindingContext {
   type: string;
 }
 
+export interface SimpleSignBindingContext extends PostBindingContext {
+  sigAlg?: string;
+  signature?: string;
+  keyInfo?: string;
+}
+
+export interface SimpleSignComputedContext extends BindingContext {
+  sigAlg?: string;
+  signature?: string;
+}
+
 export interface ParseResult {
   samlContent: string;
   extract: any;

@@ -7,6 +7,7 @@
 export enum BindingNamespace {
   Redirect = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
   Post = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+  SimpleSign = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign',
   Artifact = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'
 }
 
@@ -47,6 +48,7 @@ const namespace = {
   binding: {
     redirect: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
     post: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+    simpleSign: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign',
     artifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
   },
   names: {
@@ -184,6 +186,7 @@ const wording = {
   binding: {
     redirect: 'redirect',
     post: 'post',
+    simpleSign: 'simpleSign',
     artifact: 'artifact',
   },
   certUse: {
