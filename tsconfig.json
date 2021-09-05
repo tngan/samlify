@@ -13,6 +13,7 @@
     "baseUrl": "./",
     "removeComments": false,
     "strictNullChecks": true,
+    "esModuleInterop": true,
     "paths": {},
     "lib": [
       "dom",
