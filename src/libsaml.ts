@@ -4,7 +4,7 @@
 * @desc  A simple library including some common functions
 */
 
-import { DOMParser } from 'xmldom';
+import { DOMParser } from '@xmldom/xmldom';
 import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
 import { select, SelectedValue } from 'xpath';

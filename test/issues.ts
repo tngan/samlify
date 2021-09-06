@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
 import * as fs from 'fs';
 import * as url from 'url';
-import { DOMParser as dom } from 'xmldom';
+import { DOMParser as dom } from '@xmldom/xmldom';
 import { xpath as select } from 'xml-crypto';
 import { extract } from '../src/extractor';
 

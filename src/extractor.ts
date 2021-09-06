@@ -1,4 +1,4 @@
-import { DOMParser } from 'xmldom';
+import { DOMParser } from '@xmldom/xmldom';
 import { select, SelectedValue } from 'xpath';
 import { uniq, last, zipObject, notEmpty } from './utility';
 import camelCase from 'camelcase';
