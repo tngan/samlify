@@ -8,7 +8,7 @@ import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
 import { namespace } from './urn';
 import libsaml from './libsaml';
 import { isNonEmptyArray, isString } from './utility';
-import * as xml from 'xml';
+import xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
 

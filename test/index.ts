@@ -164,15 +164,15 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('verify stringified SAML message signed with RSA-SHA1', t => {
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetString, Buffer.from(signature, 'base64')), true);
+    t.is(libsaml.verifyMessageSignature(SPMetadata, octetString, Buffer.from(signature.toString(), 'base64')), true);
   });
   test('verify stringified SAML message signed with RSA-SHA256', t => {
     const signature = libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, Buffer.from(signature, 'base64')), true);
+    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, Buffer.from(signature.toString(), 'base64')), true);
   });
   test('verify stringified SAML message signed with RSA-SHA512', t => {
     const signature = libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, Buffer.from(signature, 'base64')), true);
+    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, Buffer.from(signature.toString(), 'base64')), true);
   });
   test('construct signature with RSA-SHA1', t => {
     t.is(libsaml.constructSAMLSignature({

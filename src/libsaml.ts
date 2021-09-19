@@ -7,9 +7,9 @@
 import { DOMParser } from '@xmldom/xmldom';
 import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
-import { select, SelectedValue } from 'xpath';
+import { select } from 'xpath';
 import { MetadataInterface } from './metadata';
-import * as nrsa from 'node-rsa';
+import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml, FileKeyInfo } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
@@ -60,7 +60,7 @@ export interface LoginResponseAttribute {
 
 export interface LoginResponseAdditionalTemplates {
   attributeStatementTemplate?: AttributeStatementTemplate;
-  attributeTemplate?:AttributeTemplate;
+  attributeTemplate?: AttributeTemplate;
 }
 
 export interface BaseSamlTemplate {
@@ -91,7 +91,7 @@ export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local, isExtractAll?: boolean) => string;
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
-  attributeStatementBuilder: (attributes: LoginResponseAttribute[], attributeTemplate : AttributeTemplate, attributeStatementTemplate : AttributeStatementTemplate) => string;
+  attributeStatementBuilder: (attributes: LoginResponseAttribute[], attributeTemplate: AttributeTemplate, attributeStatementTemplate: AttributeStatementTemplate) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts) => [boolean, any];
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
@@ -132,9 +132,9 @@ const libSaml = () => {
    *
    */
   const nrsaAliasMapping = {
-    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'sha1',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'sha256',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'sha512',
+    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'pkcs1-sha1',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'pkcs1-sha256',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'pkcs1-sha512',
   };
   /**
   * @desc Default login request template
@@ -164,7 +164,7 @@ const libSaml = () => {
   * @type {AttributeTemplate}
   */
   const defaultAttributeTemplate = {
-    context: '<saml:Attribute Name="{Name}" NameFormat="{NameFormat}"><AttributeValue xmlns:xs="{ValueXmlnsXs}" xmlns:xsi="{ValueXmlnsXsi}" xsi:type="{ValueXsiType}">{Value}</AttributeValue></Attribute>',
+    context: '<saml:Attribute Name="{Name}" NameFormat="{NameFormat}"><saml:AttributeValue xmlns:xs="{ValueXmlnsXs}" xmlns:xsi="{ValueXmlnsXsi}" xsi:type="{ValueXsiType}">{Value}</saml:AttributeValue></saml:Attribute>',
   };
 
   /**
@@ -174,7 +174,7 @@ const libSaml = () => {
   const defaultLoginResponseTemplate = {
     context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AuthnStatement}{AttributeStatement}</saml:Assertion></samlp:Response>',
     attributes: [],
-    additionalTemplates:{
+    additionalTemplates: {
       "attributeStatementTemplate": defaultAttributeStatementTemplate,
       "attributeTemplate": defaultAttributeTemplate
     }
@@ -192,14 +192,14 @@ const libSaml = () => {
   * @param {string} sigAlg    signature algorithm
   * @return {string/null} signing algorithm short-hand for the module node-rsa
   */
-  function getSigningScheme(sigAlg?: string): string | null {
+  function getSigningScheme(sigAlg?: string): SigningSchemeHash {
     if (sigAlg) {
       const algAlias = nrsaAliasMapping[sigAlg];
       if (!(algAlias === undefined)) {
         return algAlias;
       }
     }
-    return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]; // default value
+    return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
   }
   /**
   * @private
@@ -270,27 +270,25 @@ const libSaml = () => {
     * @param  {AttributeStatementTemplate} attributeStatementTemplate    the attributStatement tag template to be used
     * @return {string}
     */
-    attributeStatementBuilder(attributes: LoginResponseAttribute[], attributeTemplate : AttributeTemplate, attributeStatementTemplate : AttributeStatementTemplate): string {
-     if (!attributeStatementTemplate){
-       attributeStatementTemplate = defaultAttributeStatementTemplate;
-     }
-     if (!attributeTemplate){
-       attributeTemplate = defaultAttributeTemplate;
-     }
-    const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
-      const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
-      const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
-      let attributeLine = attributeTemplate.context;
-      attributeLine = attributeLine.replace('{Name}',name);
-      attributeLine = attributeLine.replace('{NameFormat}',nameFormat);
-      attributeLine = attributeLine.replace('{ValueXmlnsXs}',valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
-      attributeLine = attributeLine.replace('{ValueXmlnsXsi}',valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi);
-      attributeLine = attributeLine.replace('{ValueXsiType}',valueXsiType);
-      attributeLine = attributeLine.replace('{Value}',`{${tagging('attr', valueTag)}}`);
-      return attributeLine;
-    }).join('');
-    return attributeStatementTemplate.context.replace('{Attributes}',attr);
-},
+    attributeStatementBuilder(
+      attributes: LoginResponseAttribute[],
+      attributeTemplate: AttributeTemplate = defaultAttributeTemplate,
+      attributeStatementTemplate: AttributeStatementTemplate = defaultAttributeStatementTemplate
+    ): string {
+      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
+        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
+        let attributeLine = attributeTemplate.context;
+        attributeLine = attributeLine.replace('{Name}', name);
+        attributeLine = attributeLine.replace('{NameFormat}', nameFormat);
+        attributeLine = attributeLine.replace('{ValueXmlnsXs}', valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
+        attributeLine = attributeLine.replace('{ValueXmlnsXsi}', valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi);
+        attributeLine = attributeLine.replace('{ValueXsiType}', valueXsiType);
+        attributeLine = attributeLine.replace('{Value}', `{${tagging('attr', valueTag)}}`);
+        return attributeLine;
+      }).join('');
+      return attributeStatementTemplate.context.replace('{Attributes}', attr);
+    },
 
     /**
     * @desc Construct the XML signature for POST binding
@@ -537,12 +535,22 @@ const libSaml = () => {
     * @param  {string} signingAlgorithm          signing algorithm
     * @return {string} message signature
     */
-    constructMessageSignature(octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) {
+    constructMessageSignature(
+      octetString: string,
+      key: string,
+      passphrase?: string,
+      isBase64?: boolean,
+      signingAlgorithm?: string
+    ) {
       // Default returning base64 encoded signature
       // Embed with node-rsa module
-      const decryptedKey = new nrsa(utility.readPrivateKey(key, passphrase), {
-        signingScheme: getSigningScheme(signingAlgorithm),
-      });
+      const decryptedKey = new nrsa(
+        utility.readPrivateKey(key, passphrase),
+        'private',
+        {
+          signingScheme: getSigningScheme(signingAlgorithm),
+        }
+      );
       const signature = decryptedKey.sign(octetString);
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
@@ -555,11 +563,16 @@ const libSaml = () => {
     * @param  {string} verifyAlgorithm            algorithm used to verify
     * @return {boolean} verification result
     */
-    verifyMessageSignature(metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) {
+    verifyMessageSignature(
+      metadata,
+      octetString: string,
+      signature: string | Buffer,
+      verifyAlgorithm?: string
+    ) {
       const signCert = metadata.getX509Certificate(certUse.signing);
       const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), { signingScheme });
-      return key.verify(new Buffer(octetString), signature);
+      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
+      return key.verify(Buffer.from(octetString), Buffer.from(signature));
     },
     /**
     * @desc Get the public key in string format

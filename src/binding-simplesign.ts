@@ -60,7 +60,13 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
 
   const sigAlg = pvPair(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm);
   const octetString = context + relayState + sigAlg;
-  return libsaml.constructMessageSignature(queryParam + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, undefined, entitySetting.requestSignatureAlgorithm);
+  return libsaml.constructMessageSignature(
+    queryParam + '=' + octetString, 
+    entitySetting.privateKey, 
+    entitySetting.privateKeyPass, 
+    undefined, 
+    entitySetting.requestSignatureAlgorithm
+  ).toString();
 }
 
 /**

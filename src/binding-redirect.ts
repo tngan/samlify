@@ -62,7 +62,18 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
   if (isSigned) {
     const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
     const octetString = samlRequest + relayState + sigAlg;
-    return baseUrl + pvPair(queryParam, octetString, noParams) + pvPair(urlParams.signature, encodeURIComponent(libsaml.constructMessageSignature(queryParam + '=' + octetString, entitySetting.privateKey, entitySetting.privateKeyPass, undefined, entitySetting.requestSignatureAlgorithm)));
+    return baseUrl
+      + pvPair(queryParam, octetString, noParams)
+      + pvPair(urlParams.signature, encodeURIComponent(
+        libsaml.constructMessageSignature(
+          queryParam + '=' + octetString,
+          entitySetting.privateKey,
+          entitySetting.privateKeyPass,
+          undefined,
+          entitySetting.requestSignatureAlgorithm
+        ).toString()
+      )
+      );
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
@@ -140,7 +151,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
     const nowTime = new Date();
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
-    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000 );
+    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
