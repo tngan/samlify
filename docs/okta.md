@@ -93,7 +93,7 @@ axios.get(uri_okta_metadata)
     encPrivateKey: fs.readFileSync(__dirname + '/ssl/encrypt/privkey.pem'),             
     isAssertionEncrypted: true,
     assertionConsumerService: [{
-      Binding: saml.Constants.namespace.post,
+      Binding: saml.Constants.namespace.binding.post,
       Location: 'http://localhost:8080/sp/acs?encrypted=true',
     }]
   });
