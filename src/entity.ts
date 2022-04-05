@@ -26,7 +26,7 @@ const defaultEntitySetting = {
   isAssertionEncrypted: false,
   requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA256,
   dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
-  keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_1_5,
+  keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_OAEP_MGF1P,
   generateID: (): string => ('_' + uuid.v4()),
   relayState: '',
 };

@@ -1,4 +1,4 @@
-import esaml2 = require('../index');
+import * as esaml2 from '../index';
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
 import { verifyTime } from '../src/validator';
