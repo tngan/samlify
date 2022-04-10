@@ -302,7 +302,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         StatusCode: namespace.statusCode.success,
       };
       if (requestInfo && requestInfo.extract && requestInfo.extract.logoutRequest) {
-        tvalue.InResponseTo = requestInfo.extract.logoutRequest.id;
+        tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
