@@ -1,6 +1,6 @@
 ![logo](_media/lock.png)
 
-# samlify <small>2.7.0</small>
+# samlify <small>2.8.4</small>
 
 > Node.js SAML2 API
 

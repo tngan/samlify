@@ -45,7 +45,7 @@ export interface ExtractorResult {
   [key: string]: any;
   signature?: string | string[];
   issuer?: string | string[];
-  nameid?: string;
+  nameID?: string;
   notexist?: boolean;
 }
 

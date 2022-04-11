@@ -91,7 +91,7 @@ The callback function inside `sp.parseLoginResponse` returns an object named `pa
       notonorafter: "2015-10-26T11:46:43.500Z"
     },
     issuer: ['https://sp.example.org/sso/metadata'],
-    nameid: "user@esaml2.com"
+    nameID: "user@esaml2.com"
     signature: "<Signature ... </Signature>",
     statuscode: {
       value: "urn:oasis:names:tc:SAML:2.0:status:Success"
