@@ -23,6 +23,12 @@ export type CreateProps = {
   id: string;
 };
 
+export type LoadProps = {
+  //
+  id: string;
+  metadata: string;
+};
+
 export type BindOptions = {
 
 };
@@ -33,6 +39,9 @@ export interface IdentityProvider {
 
 /**
  * Create function and returns a set of helper functions
+ * 
+ * @param props 
+ * @returns 
  */
 export const create = (props: CreateProps): IdentityProvider => {
 
@@ -41,3 +50,18 @@ export const create = (props: CreateProps): IdentityProvider => {
   };
 
 }
+
+/**
+ * Create an idp by import a metadata, we separate the creation via metadata
+ * into another 
+ * 
+ * @param props 
+ * @returns 
+ */
+export const load = (props: LoadProps): IdentityProvider => {
+
+  return {
+    id: props.id
+  }
+
+};
