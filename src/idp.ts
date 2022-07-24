@@ -1,41 +1,17 @@
 /**
  * Define the identity provider interface, construction and feature
- * 
- * Usage:
- * 
- * const idp = create(props);
- * const sp = create(props);
- * 
- * // Perform the validation and pre-operation check before running into problem
- * // during runtime
- * 
- * const app = bind(idp, sp);
- * 
- * app.createLoginRequest();
- * app.createLogoutRequest();
- * app.processLoginRequest();
- * app.processLogoutRequest();
- * 
  */
-
 import { v4 } from "uuid";
 import { z } from "zod";
 import { extract } from "./extractor";
 import libsaml from "./libsaml";
 import xml from 'xml';
 import { namespace } from "./urn";
-
-const SSOServiceConfig = (minConfig: number = 1) => z.array(z.object({
-  isDefault: z.boolean().optional().default(false),
-  binding: z.string(),
-  location: z.string()
-})).refine((arg) => arg.length >= minConfig);
+import { SSOServiceConfig } from "./types";
 
 export const CreateProps = z.object({
-  // required
   wantAuthnRequestsSigned: z.boolean().default(false),
-  // optional
-  entityID: z.string().optional().default(v4()),
+  entityId: z.string().optional().default(v4()),
   signingCert: z.string().or(z.instanceof(Buffer)).optional(),
   encryptCert: z.string().or(z.instanceof(Buffer)).optional(),
   requestSignatureAlgorithm: z.string().optional(),
@@ -70,12 +46,15 @@ export interface IdentityProvider {
 
 export interface Metadata {
   wantAuthnRequestsSigned?: boolean;
-  sharedCertificate?: any;
   entityDescriptor?: any;
   singleSignOnService?: any;
   singleLogoutService?: any;
   entityID?: any;
-  certificate?: any;
+  sharedCertificate?: any;
+  certificate?: {
+    signing: string;
+    encryption: string;
+  };
   nameIDFormat?: any;
 }
 
@@ -86,7 +65,7 @@ export interface Metadata {
  * @returns 
  */
 const fetchEssentials = (xmlString: string): Metadata => {
-  return extract(xmlString, [
+  const metadata: Metadata = extract(xmlString, [
     {
       key: 'wantAuthnRequestsSigned',
       localPath: ['EntityDescriptor', 'IDPSSODescriptor'],
@@ -135,6 +114,15 @@ const fetchEssentials = (xmlString: string): Metadata => {
       attributes: [],
     }
   ]);
+
+  if (metadata.sharedCertificate)  {
+    metadata.certificate = {
+      signing: metadata.sharedCertificate,
+      encryption: metadata.sharedCertificate
+    };
+  }
+
+  return metadata;
 
 };
 
@@ -201,13 +189,13 @@ export const create = (props: CreateProps): IdentityProvider => {
         'xmlns': namespace.names.metadata,
         'xmlns:assertion': namespace.names.assertion,
         'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
-        props.entityID,
+        entityID: props.entityId,
       },
     }, { IDPSSODescriptor: entityDescriptors }],
   }]);
 
   return {
-    id: props.entityID,
+    id: props.entityId,
     metadata: fetchEssentials(metadataXml.toString()),
     rawMetadata: metadataXml.toString()
   };
