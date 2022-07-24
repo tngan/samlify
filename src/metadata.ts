@@ -31,41 +31,6 @@ export default class Metadata implements MetadataInterface {
   constructor(xml: string | Buffer, extraParse: any = []) {
     this.xmlString = xml.toString();
     this.meta = extract(this.xmlString, extraParse.concat([
-      {
-        key: 'entityDescriptor',
-        localPath: ['EntityDescriptor'],
-        attributes: [],
-        context: true
-      },
-      {
-        key: 'entityID',
-        localPath: ['EntityDescriptor'],
-        attributes: ['entityID']
-      },
-      {
-        // shared certificate for both encryption and signing
-        key: 'sharedCertificate',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor', 'KeyInfo', 'X509Data', 'X509Certificate'],
-        attributes: []
-      },
-      {
-        // explicit certificate declaration for encryption and signing
-        key: 'certificate',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
-        index: ['use'],
-        attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
-        attributes: []
-      },
-      {
-        key: 'singleLogoutService',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'SingleLogoutService'],
-        attributes: ['Binding', 'Location']
-      },
-      {
-        key: 'nameIDFormat',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'NameIDFormat'],
-        attributes: [],
-      }
     ]));
 
     // get shared certificate

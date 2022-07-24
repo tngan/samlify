@@ -6,28 +6,11 @@ export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
 export { ServiceProvider as ServiceProviderConstructor } from './entity-sp';
 export { SpMetadata as ServiceProviderMetadata } from './metadata-sp';
 
-export type MetadataFile = string | Buffer;
-
 type SSOService = {
   isDefault?: boolean;
   Binding: string;
   Location: string;
 };
-
-export interface MetadataIdpOptions {
-  entityID?: string;
-  signingCert?: string | Buffer;
-  encryptCert?: string | Buffer;
-  wantAuthnRequestsSigned?: boolean;
-  nameIDFormat?: string[];
-  singleSignOnService?: SSOService[];
-  singleLogoutService?: SSOService[];
-  requestSignatureAlgorithm?: string;
-}
-
-export type MetadataIdpConstructor =
-  | MetadataIdpOptions
-  | MetadataFile;
 
 export interface MetadataSpOptions {
   entityID?: string;
