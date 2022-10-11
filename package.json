@@ -32,7 +32,7 @@
   "license": "MIT",
   "dependencies": {
     "@authenio/xml-encryption": "^2.0.0",
-    "@xmldom/xmldom": "^0.7.4",
+    "@xmldom/xmldom": "^0.8.3",
     "camelcase": "^6.2.0",
     "node-forge": "^1.3.0",
     "node-rsa": "^1.1.1",
