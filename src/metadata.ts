@@ -116,7 +116,7 @@ export default class Metadata implements MetadataInterface {
   * @param  {string} use declares the type of certificate
   * @return {string} certificate in string format
   */
-  public getX509Certificate(use: string): string | string[] {
+  public getX509Certificate(use: string) {
     return this.meta.certificate[use] || null;
   }
 

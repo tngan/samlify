@@ -297,7 +297,7 @@ test('create login request with post simpleSign binding using [custom template]'
 test('create login response with undefined binding', async t => {
   const user = { email: 'user@esaml2.com' };
   const error = await t.throwsAsync(() => idp.createLoginResponse(sp, {}, 'undefined', user, createTemplateCallback(idp, sp, binding.post, user)));
-  t.is(error.message, 'ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+  t.is(error?.message, 'ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
 });
 
 test('create redirect login response', async t => {
