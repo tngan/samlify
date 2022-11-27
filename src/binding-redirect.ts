@@ -301,7 +301,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         IssueInstant: new Date().toISOString(),
         StatusCode: namespace.statusCode.success,
       };
-      if (requestInfo && requestInfo.extract && requestInfo.extract.logoutRequest) {
+      if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
         tvalue.InResponseTo = requestInfo.extract.request.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
