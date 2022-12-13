@@ -16,8 +16,8 @@ type SSOService = {
 
 export interface MetadataIdpOptions {
   entityID?: string;
-  signingCert?: string | Buffer;
-  encryptCert?: string | Buffer;
+  signingCert?: string | Buffer | (string | Buffer)[];
+  encryptCert?: string | Buffer | (string | Buffer)[];
   wantAuthnRequestsSigned?: boolean;
   nameIDFormat?: string[];
   singleSignOnService?: SSOService[];
@@ -31,8 +31,8 @@ export type MetadataIdpConstructor =
 
 export interface MetadataSpOptions {
   entityID?: string;
-  signingCert?: string | Buffer;
-  encryptCert?: string | Buffer;
+  signingCert?: string | Buffer | (string | Buffer)[];
+  encryptCert?: string | Buffer | (string | Buffer)[];
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
   wantMessageSigned?: boolean;
@@ -81,8 +81,8 @@ export type ServiceProviderSettings = {
   signatureConfig?: SignatureConfig;
   loginRequestTemplate?: SAMLDocumentTemplate;
   logoutRequestTemplate?: SAMLDocumentTemplate;
-  signingCert?: string | Buffer;
-  encryptCert?: string | Buffer;
+  signingCert?: string | Buffer | (string | Buffer)[];
+  encryptCert?: string | Buffer | (string | Buffer)[];
   transformationAlgorithms?: string[];
   nameIDFormat?: string[];
   allowCreate?: boolean;
@@ -110,8 +110,8 @@ export type IdentityProviderSettings = {
   entityID?: string;
   privateKey?: string | Buffer;
   privateKeyPass?: string;
-  signingCert?: string | Buffer;
-  encryptCert?: string | Buffer; /** todo */
+  signingCert?: string | Buffer | (string | Buffer)[];
+  encryptCert?: string | Buffer | (string | Buffer)[];
   nameIDFormat?: string[];
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];

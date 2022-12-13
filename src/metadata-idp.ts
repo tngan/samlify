@@ -7,7 +7,7 @@ import Metadata, { MetadataInterface } from './metadata';
 import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
 import { namespace } from './urn';
 import libsaml from './libsaml';
-import { isNonEmptyArray, isString } from './utility';
+import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
@@ -46,16 +46,12 @@ export class IdpMetadata extends Metadata {
         },
       }];
 
-      if (signingCert) {
-        IDPSSODescriptor.push(libsaml.createKeySection('signing', signingCert));
-      } else {
-        //console.warn('Construct identity provider - missing signing certificate');
+      for(const cert of castArrayOpt(signingCert)) {
+        IDPSSODescriptor.push(libsaml.createKeySection('signing', cert));
       }
 
-      if (encryptCert) {
-        IDPSSODescriptor.push(libsaml.createKeySection('encryption', encryptCert));
-      } else {
-        //console.warn('Construct identity provider - missing encrypt certificate');
+      for(const cert of castArrayOpt(encryptCert)) {
+        IDPSSODescriptor.push(libsaml.createKeySection('encryption', cert));
       }
 
       if (isNonEmptyArray(nameIDFormat)) {

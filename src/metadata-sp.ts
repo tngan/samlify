@@ -7,7 +7,7 @@ import Metadata, { MetadataInterface } from './metadata';
 import { MetadataSpConstructor, MetadataSpOptions } from './types';
 import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
-import { isNonEmptyArray, isString } from './utility';
+import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
 
 export interface SpMetadataInterface extends MetadataInterface {
@@ -80,16 +80,12 @@ export class SpMetadata extends Metadata {
         console.warn('Construct service provider - missing signatureConfig');
       }
 
-      if (signingCert) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('signing', signingCert).KeyDescriptor);
-      } else {
-        //console.warn('Construct service provider - missing signing certificate');
+      for(const cert of castArrayOpt(signingCert)) {
+        descriptors.KeyDescriptor!.push(libsaml.createKeySection('signing', cert).KeyDescriptor);
       }
 
-      if (encryptCert) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', encryptCert).KeyDescriptor);
-      } else {
-        //console.warn('Construct service provider - missing encrypt certificate');
+      for(const cert of castArrayOpt(encryptCert)) {
+        descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', cert).KeyDescriptor);
       }
 
       if (isNonEmptyArray(nameIDFormat)) {

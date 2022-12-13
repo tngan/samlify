@@ -331,6 +331,28 @@ test('getAssertionConsumerService with two bindings', t => {
 
 })();
 
+test('idp with multiple signing and encryption certificates', t => {
+  const localIdp = identityProvider({
+    signingCert: [
+      readFileSync('./test/key/sp/cert.cer'),
+      readFileSync('./test/key/sp/cert2.cer').toString(),
+    ],
+    encryptCert: [
+      readFileSync('./test/key/idp/encryptionCert.cer'),
+      readFileSync('./test/key/idp/encryptionCert.cer').toString(),
+    ]
+  })
+
+  const signingCertificate = localIdp.entityMeta.getX509Certificate('signing');
+  const encryptionCertificate = localIdp.entityMeta.getX509Certificate('encryption');
+
+  t.is(Array.isArray(signingCertificate), true);
+  t.is(signingCertificate.length, 2);
+
+  t.is(Array.isArray(encryptionCertificate), true);
+  t.is(encryptionCertificate.length, 2);
+})
+
 test('verify time with and without drift tolerance', t => {
   
   const now = new Date();

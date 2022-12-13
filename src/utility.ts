@@ -201,6 +201,11 @@ export function isNonEmptyArray(a) {
   return Array.isArray(a) && a.length > 0;
 }
 
+export function castArrayOpt<T>(a?: T | T[]): T[] {
+  if (a === undefined) return []
+  return Array.isArray(a) ? a : [a]
+}
+
 export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
   return value !== null && value !== undefined;
 }
