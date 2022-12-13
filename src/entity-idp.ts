@@ -20,14 +20,14 @@ import { isString } from './utility';
 import { BindingContext } from './entity';
 
 /**
- * Identity prvider can be configured using either metadata importing or idpSetting
+ * Identity provider can be configured using either metadata importing or idpSetting
  */
 export default function(props: IdentityProviderSettings) {
   return new IdentityProvider(props);
 }
 
 /**
- * Identity prvider can be configured using either metadata importing or idpSetting
+ * Identity provider can be configured using either metadata importing or idpSetting
  */
 export class IdentityProvider extends Entity {
 

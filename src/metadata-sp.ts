@@ -36,14 +36,14 @@ export default function(meta: MetadataSpConstructor) {
 export class SpMetadata extends Metadata {
 
   /**
-  * @param  {object/string} meta (either xml string or configuation in object)
+  * @param  {object/string} meta (either xml string or configuration in object)
   * @return {object} prototypes including public functions
   */
   constructor(meta: MetadataSpConstructor) {
 
     const isFile = isString(meta) || meta instanceof Buffer;
 
-    // use object configuation instead of importing metadata file directly
+    // use object configuration instead of importing metadata file directly
     if (!isFile) {
 
       const {

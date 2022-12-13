@@ -16,7 +16,7 @@ export function getContext() {
 export function setSchemaValidator(params: ValidatorContext) {
 
   if (typeof params.validate !== 'function') {
-    throw new Error('validate must be a callback function having one arguemnt as xml input');
+    throw new Error('validate must be a callback function having one argument as xml input');
   }
 
   // assign the validate function to the context
