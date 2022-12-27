@@ -1,4 +1,4 @@
-import { inflateString, base64Decode, isNonEmptyArray } from './utility';
+import { inflateString, base64Decode } from './utility';
 import { verifyTime } from './validator';
 import libsaml from './libsaml';
 import {
@@ -19,7 +19,6 @@ import {
   MessageSignatureOrder,
   StatusCode
 } from './urn';
-import simpleSignBinding from './binding-simplesign';
 
 const bindDict = wording.binding;
 const urlParams = wording.urlParams;
@@ -110,7 +109,7 @@ async function redirectFlow(options): Promise<FlowResult>  {
       return Promise.reject('ERR_MISSING_SIG_ALG');
     }
 
-    // put the below two assignemnts into verifyMessageSignature function
+    // put the below two assignments into verifyMessageSignature function
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
 
@@ -125,7 +124,7 @@ async function redirectFlow(options): Promise<FlowResult>  {
   }
 
   /**
-   *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
+   *  Validation part: validate the context of response after signature is verified and decrypted (optional)
    */
   const issuer = targetEntityMetadata.getEntityID();
   const extractedProperties = parseResult.extract;
@@ -207,7 +206,7 @@ async function postFlow(options): Promise<FlowResult> {
   // check status based on different scenarios
   await checkStatus(samlContent, parserType);
 
-  // verify the signatures (the repsonse is encrypted then signed, then verify first then decrypt)
+  // verify the signatures (the response is encrypted then signed, then verify first then decrypt)
   if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
@@ -227,7 +226,7 @@ async function postFlow(options): Promise<FlowResult> {
     extractorFields = getDefaultExtractorFields(parserType, result[1]);
   }
 
-  // verify the signatures (the repsonse is signed then encrypted, then decrypt first then verify)
+  // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
   if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
@@ -246,7 +245,7 @@ async function postFlow(options): Promise<FlowResult> {
   };
 
   /**
-   *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
+   *  Validation part: validate the context of response after signature is verified and decrypted (optional)
    */
   const targetEntityMetadata = from.entityMeta;
   const issuer = targetEntityMetadata.getEntityID();
@@ -355,7 +354,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
       return Promise.reject('ERR_MISSING_SIG_ALG');
     }
 
-    // put the below two assignemnts into verifyMessageSignature function
+    // put the below two assignments into verifyMessageSignature function
     const base64Signature = Buffer.from(signature, 'base64');
 
     const verified = libsaml.verifyMessageSignature(targetEntityMetadata, octetString, base64Signature, sigAlg);
@@ -369,7 +368,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
   }
 
   /**
-   *  Validation part: validate the context of response after signature is verified and decrpyted (optional)
+   *  Validation part: validate the context of response after signature is verified and decrypted (optional)
    */
   const issuer = targetEntityMetadata.getEntityID();
   const extractedProperties = parseResult.extract;

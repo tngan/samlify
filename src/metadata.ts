@@ -25,7 +25,7 @@ export default class Metadata implements MetadataInterface {
   meta: any;
 
   /**
-  * @param  {string | Buffer} metadata xml
+  * @param  {string | Buffer} xml
   * @param  {object} extraParse for custom metadata extractor
   */
   constructor(xml: string | Buffer, extraParse: any = []) {
@@ -140,7 +140,7 @@ export default class Metadata implements MetadataInterface {
       if (!(singleLogoutService instanceof Array)) {
         singleLogoutService = [singleLogoutService];
        }
-      const service = singleLogoutService.find(obj => obj.binding === bindType);      
+      const service = singleLogoutService.find(obj => obj.binding === bindType);
       if (service) {
         return service.location;
       }

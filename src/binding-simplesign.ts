@@ -39,7 +39,7 @@ function pvPair(param: string, value: string, first?: boolean): string {
 }
 /**
 * @private
-* @desc Refractored part of simple signature generation for login/logout request
+* @desc Refactored part of simple signature generation for login/logout request
 * @param  {string} type
 * @param  {string} rawSamlRequest
 * @param  {object} entitySetting
@@ -61,10 +61,10 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
   const sigAlg = pvPair(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm);
   const octetString = context + relayState + sigAlg;
   return libsaml.constructMessageSignature(
-    queryParam + '=' + octetString, 
-    entitySetting.privateKey, 
-    entitySetting.privateKeyPass, 
-    undefined, 
+    queryParam + '=' + octetString,
+    entitySetting.privateKey,
+    entitySetting.privateKeyPass,
+    undefined,
     entitySetting.requestSignatureAlgorithm
   ).toString();
 }

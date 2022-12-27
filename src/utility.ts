@@ -15,7 +15,7 @@ const BASE64_STR = 'base64';
  */
 export function zipObject(arr1: string[], arr2: any[], skipDuplicated = true) {
   return arr1.reduce((res, l, i) => {
-    
+
     if (skipDuplicated) {
       res[l] = arr2[i];
       return res;
@@ -61,19 +61,19 @@ export function uniq(input: string[]) {
   return [... set];
 }
 /**
- * @desc Alternative to lodash.get 
+ * @desc Alternative to lodash.get
  * @reference https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
- * @param obj 
- * @param path 
- * @param defaultValue 
+ * @param obj
+ * @param path
+ * @param defaultValue
  */
 export function get(obj, path, defaultValue) {
   return path.split('.')
   .reduce((a, c) => (a && a[c] ? a[c] : (defaultValue || null)), obj);
 }
 /**
- * @desc Check if the input is string 
- * @param {any} input 
+ * @desc Check if the input is string
+ * @param {any} input
  */
 export function isString(input: any) {
   return typeof input === 'string';
@@ -180,7 +180,7 @@ function getPublicKeyPemFromCertificate(x509Certificate: string) {
 }
 /**
 * @desc Read private key from pem-formatted string
-* @param {string | Buffer} keyString pem-formattted string
+* @param {string | Buffer} keyString pem-formatted string
 * @param {string} protected passphrase of the key
 * @return {string} string in pem format
 * If passphrase is used to protect the .pem content (recommend)
@@ -199,6 +199,11 @@ function convertToString(input, isOutputString) {
  */
 export function isNonEmptyArray(a) {
   return Array.isArray(a) && a.length > 0;
+}
+
+export function castArrayOpt<T>(a?: T | T[]): T[] {
+  if (a === undefined) return []
+  return Array.isArray(a) ? a : [a]
 }
 
 export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {

@@ -8,7 +8,6 @@ import { wording, namespace, StatusCode } from './urn';
 import { BindingContext } from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
-import { LogoutResponseTemplate } from './libsaml';
 
 const binding = wording.binding;
 
@@ -145,7 +144,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         ...config,
         rawSamlMessage: rawSamlResponse,
         transformationAlgorithms: spSetting.transformationAlgorithms,
-        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']", 
+        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
         signatureConfig: {
           prefix: 'ds',
           location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
@@ -315,7 +314,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
               reference: "/*[local-name(.)='LogoutResponse']/*[local-name(.)='Issuer']",
               action: 'after'
             }
-          } 
+          }
         }),
       };
     }

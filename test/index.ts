@@ -1,5 +1,5 @@
 import * as esaml2 from '../index';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import test from 'ava';
 import { verifyTime } from '../src/validator';
 
@@ -234,7 +234,7 @@ test('getAssertionConsumerService with two bindings', t => {
       t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
     }
   });
-  
+
   test('verify a XML signature with metadata but with rolling certificate', t => {
 
     const responseSignedByCert1 = String(readFileSync('./test/misc/response_signed_cert1.xml'));
@@ -331,8 +331,30 @@ test('getAssertionConsumerService with two bindings', t => {
 
 })();
 
+test('idp with multiple signing and encryption certificates', t => {
+  const localIdp = identityProvider({
+    signingCert: [
+      readFileSync('./test/key/sp/cert.cer'),
+      readFileSync('./test/key/sp/cert2.cer').toString(),
+    ],
+    encryptCert: [
+      readFileSync('./test/key/idp/encryptionCert.cer'),
+      readFileSync('./test/key/idp/encryptionCert.cer').toString(),
+    ]
+  })
+
+  const signingCertificate = localIdp.entityMeta.getX509Certificate('signing');
+  const encryptionCertificate = localIdp.entityMeta.getX509Certificate('encryption');
+
+  t.is(Array.isArray(signingCertificate), true);
+  t.is(signingCertificate.length, 2);
+
+  t.is(Array.isArray(encryptionCertificate), true);
+  t.is(encryptionCertificate.length, 2);
+})
+
 test('verify time with and without drift tolerance', t => {
-  
+
   const now = new Date();
   const timeBefore10Mins = new Date(new Date().setMinutes(now.getMinutes() - 10)).toISOString();
   const timeBefore5Mins = new Date(new Date().setMinutes(now.getMinutes() - 5)).toISOString();
@@ -343,7 +365,7 @@ test('verify time with and without drift tolerance', t => {
   t.true(verifyTime(timeBefore5Mins, timeAfter5Mins));
   t.true(verifyTime(timeBefore5Mins, undefined));
   t.true(verifyTime(undefined, timeAfter5Mins));
-  
+
   t.false(verifyTime(undefined, timeBefore5Mins));
   t.false(verifyTime(timeAfter5Mins, undefined));
   t.false(verifyTime(timeBefore10Mins, timeBefore5Mins));
@@ -361,7 +383,7 @@ test('verify time with and without drift tolerance', t => {
   t.true(verifyTime(timeAfter5Mins, undefined, drifts));
   t.true(verifyTime(timeBefore10Mins, timeBefore5Mins, drifts));
   t.true(verifyTime(timeAfter5Mins, timeAfter10Mins, drifts));
-  
+
   t.true(verifyTime(undefined, undefined, drifts));
 });
 
