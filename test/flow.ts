@@ -973,7 +973,7 @@ test('send login response with [custom template] encrypted signed assertion + si
 
 // simulate idp-init slo
 test('idp sends a redirect logout request without signature and sp parses it', async t => {
-  const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
+  const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com', sessionIndex: '_664ade6a050f55a2c7cb2fb0571df7280365c0c7' });
   const query = url.parse(context).query;
   t.is(query!.includes('SAMLRequest='), true);
   t.is(typeof id, 'string');
@@ -985,6 +985,7 @@ test('idp sends a redirect logout request without signature and sp parses it', a
   t.is(result.sigAlg, null);
   t.is(typeof samlContent, 'string');
   t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.sessionIndex, '_664ade6a050f55a2c7cb2fb0571df7280365c0c7')
   t.is(extract.signature, null);
   t.is(typeof extract.request.id, 'string');
   t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
@@ -992,7 +993,7 @@ test('idp sends a redirect logout request without signature and sp parses it', a
 });
 
 test('idp sends a redirect logout request with signature and sp parses it', async t => {
-  const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
+  const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com', sessionIndex: '_664ade6a050f55a2c7cb2fb0571df7280365c0c7' });
   const query = url.parse(context).query;
   t.is(query!.includes('SAMLRequest='), true);
   t.is(query!.includes('SigAlg='), true);
@@ -1007,6 +1008,7 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
   const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
   const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
   t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.sessionIndex, '_664ade6a050f55a2c7cb2fb0571df7280365c0c7')
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(typeof extract.request.id, 'string');
   t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
@@ -1014,13 +1016,14 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
 });
 
 test('idp sends a post logout request without signature and sp parses it', async t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com', sessionIndex: '_664ade6a050f55a2c7cb2fb0571df7280365c0c7' }) as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
   const { extract } = await sp.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
   t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.sessionIndex, '_664ade6a050f55a2c7cb2fb0571df7280365c0c7')
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(typeof extract.request.id, 'string');
   t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
@@ -1028,13 +1031,14 @@ test('idp sends a post logout request without signature and sp parses it', async
 });
 
 test('idp sends a post logout request with signature and sp parses it', async t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
+  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'user@esaml2.com', sessionIndex: '_664ade6a050f55a2c7cb2fb0571df7280365c0c7' }) as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
   t.is(typeof entityEndpoint, 'string');
   t.is(type, 'SAMLRequest');
   const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
   t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.sessionIndex, '_664ade6a050f55a2c7cb2fb0571df7280365c0c7')
   t.is(extract.issuer, 'https://idp.example.com/metadata');
   t.is(extract.request.destination, 'https://sp.example.org/sp/slo');
   t.is(typeof extract.request.id, 'string');
