@@ -334,13 +334,17 @@ test('getAssertionConsumerService with two bindings', t => {
 test('idp with multiple signing and encryption certificates', t => {
   const localIdp = identityProvider({
     signingCert: [
-      readFileSync('./test/key/sp/cert.cer'),
-      readFileSync('./test/key/sp/cert2.cer').toString(),
+      readFileSync('./test/key/idp/cert.cer'),
+      readFileSync('./test/key/idp/cert2.cer').toString(),
     ],
     encryptCert: [
       readFileSync('./test/key/idp/encryptionCert.cer'),
       readFileSync('./test/key/idp/encryptionCert.cer').toString(),
-    ]
+    ],
+    singleSignOnService: [{
+      Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+      Location: 'idp.example.com/sso',
+    }]
   })
 
   const signingCertificate = localIdp.entityMeta.getX509Certificate('signing');

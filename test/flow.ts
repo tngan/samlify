@@ -252,6 +252,42 @@ test('create login request with redirect binding using [custom template]', t => 
   (id === 'exposed_testing_id' && isString(context)) ? t.pass() : t.fail();
 });
 
+test('create login request with redirect binding signing with unencrypted PKCS#8', t => {
+  const _sp = serviceProvider({
+    authnRequestsSigned: true,
+    signingCert: readFileSync('./test/key/sp/cert.unencrypted.pkcs8.cer'),
+    privateKey: readFileSync('./test/key/sp/privkey.unencrypted.pkcs8.pem'),
+    privateKeyPass: undefined,
+  });
+
+  const { context } = _sp.createLoginRequest(idp, 'redirect');
+
+  const parsed: Record<string, any> = url.parse(context, true).query;
+  const octetString = libsaml.octetStringBuilder('SAMLRequest', parsed);
+  const signature =  Buffer.from(parsed.Signature, 'base64');
+
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
+  t.true(valid, 'signature did not validate');
+});
+
+test('create login request with redirect binding signing with encrypted PKCS#8', t => {
+  const _sp = serviceProvider({
+    authnRequestsSigned: true,
+    signingCert: readFileSync('./test/key/sp/cert.encrypted.pkcs8.cer'),
+    privateKey: readFileSync('./test/key/sp/privkey.encrypted.pkcs8.pem'),
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+  });
+
+  const { context } = _sp.createLoginRequest(idp, 'redirect');
+
+  const parsed: Record<string, any> = url.parse(context, true).query;
+  const octetString = libsaml.octetStringBuilder('SAMLRequest', parsed);
+  const signature =  Buffer.from(parsed.Signature, 'base64');
+
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
+  t.true(valid, 'signature did not validate');
+});
+
 test('create login request with post binding using [custom template]', t => {
   const _sp = serviceProvider({
     ...defaultSpConfig, loginRequestTemplate: {
