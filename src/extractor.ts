@@ -166,6 +166,11 @@ export const logoutRequestFields: ExtractorFields = [
     attributes: []
   },
   {
+    key: 'sessionIndex',
+    localPath: ['LogoutRequest', 'SessionIndex'],
+    attributes: []
+  },
+  {
     key: 'signature',
     localPath: ['LogoutRequest', 'Signature'],
     attributes: [],
