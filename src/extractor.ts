@@ -336,7 +336,7 @@ export function extract(context: string, fields) {
       const attributeValues = baseNode.map((node: string) => {
         const nodeDoc = new dom().parseFromString(node);
         const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
-          r[camelCase(n.name, {locale: 'en_US.UTF-8'})] = n.value;
+          r[camelCase(n.name, {locale: 'en-us'})] = n.value;
           return r;
         }, {});
         return values;
