@@ -14,34 +14,42 @@ type SSOService = {
   Location: string;
 };
 
-export interface MetadataIdpOptions {
+interface MetadataOptions {
   entityID?: string;
   signingCert?: string | Buffer | (string | Buffer)[];
   encryptCert?: string | Buffer | (string | Buffer)[];
-  wantAuthnRequestsSigned?: boolean;
   nameIDFormat?: string[];
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
+  elementsOrder?: string[];
+  customAttributes?: {
+    _attr?: Record<string, string>,
+    name?: string,
+    value?: string
+  }[]
+}
+export interface MetadataIdpOptions extends MetadataOptions {
+  wantAuthnRequestsSigned?: boolean;
   requestSignatureAlgorithm?: string;
+  organization?: {
+    name?: string,
+    displayName?: string,
+    url?: string
+  },
+  technicalContact?: { name: string, email: string },
+  supportContact?: { name: string, email: string },
 }
 
 export type MetadataIdpConstructor =
   | MetadataIdpOptions
   | MetadataFile;
 
-export interface MetadataSpOptions {
-  entityID?: string;
-  signingCert?: string | Buffer | (string | Buffer)[];
-  encryptCert?: string | Buffer | (string | Buffer)[];
+export interface MetadataSpOptions extends MetadataOptions {
   authnRequestsSigned?: boolean;
   wantAssertionsSigned?: boolean;
   wantMessageSigned?: boolean;
   signatureConfig?: { [key: string]: any };
-  nameIDFormat?: string[];
-  singleSignOnService?: SSOService[];
-  singleLogoutService?: SSOService[];
   assertionConsumerService?: SSOService[];
-  elementsOrder?: string[];
 }
 
 export type MetadataSpConstructor =
