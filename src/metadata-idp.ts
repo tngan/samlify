@@ -5,7 +5,7 @@
 */
 import Metadata, { MetadataInterface } from './metadata';
 import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
-import {elementsOrder as order, namespace} from './urn';
+import { namespace } from './urn';
 import libsaml from './libsaml';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
@@ -37,42 +37,25 @@ export class IdpMetadata extends Metadata {
         nameIDFormat = [],
         singleSignOnService = [],
         singleLogoutService = [],
-        organization,
-        technicalContact,
-        supportContact,
-        elementsOrder = order.default,
-        customAttributes= []
       } = meta as MetadataIdpOptions;
 
-      const descriptors = {
-        KeyDescriptor: [],
-        SingleLogoutService: [],
-        NameIDFormat: [],
-        SingleSignOnService: [],
-        AssertionConsumerService: [],
-        AttributeConsumingService: [],
-        CustomAttributes: []
-      } as Record<string, any[]>;
-
-      const IDPSSODescriptor: any[] = [ {
+      const IDPSSODescriptor: any[] = [{
         _attr: {
           WantAuthnRequestsSigned: String(wantAuthnRequestsSigned),
           protocolSupportEnumeration: namespace.names.protocol,
         },
-      } ];
-
+      }];
 
       for(const cert of castArrayOpt(signingCert)) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('signing', cert).KeyDescriptor);
+        IDPSSODescriptor.push(libsaml.createKeySection('signing', cert));
       }
 
       for(const cert of castArrayOpt(encryptCert)) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', cert).KeyDescriptor);
+        IDPSSODescriptor.push(libsaml.createKeySection('encryption', cert));
       }
 
-
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
+        nameIDFormat.forEach(f => IDPSSODescriptor.push({ NameIDFormat: f }));
       }
 
       if (isNonEmptyArray(singleSignOnService)) {
@@ -84,7 +67,7 @@ export class IdpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.SingleSignOnService!.push([ { _attr: attr } ]);
+          IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
         });
       } else {
         throw new Error('ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE');
@@ -98,66 +81,22 @@ export class IdpMetadata extends Metadata {
           }
           attr.Binding = a.Binding;
           attr.Location = a.Location;
-          descriptors.SingleLogoutService!.push([ { _attr: attr } ]);
+          IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
         });
       } else {
         console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
       }
-
-
-      // handle element order
-      const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
-      existedElements.forEach(name => {
-        descriptors[name].forEach(e => IDPSSODescriptor.push({ [name]: e }));
-      });
-
-      if (isNonEmptyArray(customAttributes)){
-        customAttributes.forEach(attr => {
-          IDPSSODescriptor.push({ [attr.name || 'Attribute']: [ { _attr: attr._attr || {} }, attr.value ] });
-        });
-      }
-
-      const OrgDescriptor = organization ? {
-        Organization: [
-          { _attr: {} },
-          organization.name && { OrganizationName: [ { _attr: { 'xml:lang': 'en-US' } }, organization.name ] } ,
-          organization.displayName && { OrganizationDisplayName: [ { _attr: { 'xml:lang': 'en-US' } },organization.displayName ] } ,
-          organization.url && { OrganizationURL: [ { _attr: { 'xml:lang': 'en-US' } },organization.url ] }
-        ].filter(v => !!v)
-      } : {};
-
-      const TechnicalContactDescriptor = technicalContact ? {
-        ContactPerson: [
-          {
-            _attr: { contactType: 'technical' }
-          },
-          technicalContact.name && { GivenName: technicalContact.name },
-          technicalContact.email && { EmailAddress: technicalContact.email }
-        ].filter(v => !!v)
-      } : {};
-
-      const SupportContactDescriptor = supportContact ? {
-        ContactPerson: [
-          {
-            _attr: { contactType: 'support' }
-          },
-          supportContact.name && { GivenName: supportContact.name },
-          supportContact.email && { EmailAddress: supportContact.email }
-        ].filter(v => !!v)
-      } : {};
       // Create a new metadata by setting
-      meta = xml([ {
-        EntityDescriptor: [ {
+      meta = xml([{
+        EntityDescriptor: [{
           _attr: {
             'xmlns': namespace.names.metadata,
             'xmlns:assertion': namespace.names.assertion,
             'xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
             entityID,
           },
-        }, {
-          IDPSSODescriptor,
-        },  OrgDescriptor, TechnicalContactDescriptor, SupportContactDescriptor ],
-      } ]);
+        }, { IDPSSODescriptor }],
+      }]);
     }
 
     super(meta as string | Buffer, [

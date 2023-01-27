@@ -57,7 +57,6 @@ export class SpMetadata extends Metadata {
         signatureConfig,
         nameIDFormat = [],
         singleLogoutService = [],
-        customAttributes = [],
         assertionConsumerService = [],
       } = meta as MetadataSpOptions;
 
@@ -131,12 +130,6 @@ export class SpMetadata extends Metadata {
       existedElements.forEach(name => {
         descriptors[name].forEach(e => SPSSODescriptor.push({ [name]: e }));
       });
-
-      if (isNonEmptyArray(customAttributes)){
-        customAttributes.forEach(attr => {
-          SPSSODescriptor.push({ [attr.name || 'Attribute']: [ { _attr: attr._attr || {} }, attr.value ] });
-        });
-      }
 
       // Re-assign the meta reference as a XML string|Buffer for use with the parent constructor
       meta = xml([{
