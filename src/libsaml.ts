@@ -236,7 +236,7 @@ const libSaml = () => {
    * @return {string}
    */
   function tagging(prefix: string, content: string): string {
-    const camelContent = camelCase(content);
+    const camelContent = camelCase(content, {locale: 'en-us'});
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
