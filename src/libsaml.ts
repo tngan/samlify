@@ -545,7 +545,7 @@ const libSaml = () => {
       // Embed with node-rsa module
       const decryptedKey = new nrsa(
         utility.readPrivateKey(key, passphrase),
-        'private',
+        undefined,
         {
           signingScheme: getSigningScheme(signingAlgorithm),
         }
