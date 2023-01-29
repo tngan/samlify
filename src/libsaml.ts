@@ -240,34 +240,6 @@ const libSaml = () => {
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
-  /**
-   * Create the octet string for the signature algorithm as defined in the Bindings OASIS Standard, Section 3.4.4.1.
-   *
-   * @public
-   * @param {string} direction "SAMLRequest" or "SAMLResponse"
-   * @param {object} values Object that includes SAMLRequest/SAMLResponse, SigAlg, and optional RelayState. All other values are ignored.
-   * @return {string}
-   */
-  function octetStringBuilder(direction: string, values: Record<string, string>): string {
-    if (!values[direction]) {
-      throw Error('ERR_BAD_ARGS_CONTENT');
-    }
-
-    if (!values.SigAlg) {
-      throw Error('ERR_BAD_ARGS_SIG_ALG');
-    }
-
-    const params = new URLSearchParams([[direction, values[direction]]]);
-
-    if (values.RelayState) {
-      params.set('RelayState', values.RelayState);
-    }
-
-    params.set('SigAlg', values.SigAlg);
-
-    return params.toString();
-  }
-
   return {
 
     createXPath,
@@ -278,7 +250,6 @@ const libSaml = () => {
     defaultAttributeTemplate,
     defaultLogoutRequestTemplate,
     defaultLogoutResponseTemplate,
-    octetStringBuilder,
 
     /**
     * @desc Replace the tag (e.g. {tag}) inside the raw XML

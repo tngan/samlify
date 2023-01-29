@@ -77,7 +77,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
 
 // Parse Redirect Url context
 
-const parseRedirectUrlContextCallBack = (_context) => {
+const parseRedirectUrlContextCallBack = (_context: string) => {
   const originalURL = url.parse(_context, true);
   const _SAMLResponse = originalURL.query.SAMLResponse;
   const _Signature = originalURL.query.Signature;
@@ -262,11 +262,10 @@ test('create login request with redirect binding signing with unencrypted PKCS#8
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
 
-  const parsed: Record<string, any> = url.parse(context, true).query;
-  const octetString = libsaml.octetStringBuilder('SAMLRequest', parsed);
-  const signature =  Buffer.from(parsed.Signature, 'base64');
+  const parsed = parseRedirectUrlContextCallBack(context)
+  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
   t.true(valid, 'signature did not validate');
 });
 
@@ -280,11 +279,10 @@ test('create login request with redirect binding signing with encrypted PKCS#8',
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
 
-  const parsed: Record<string, any> = url.parse(context, true).query;
-  const octetString = libsaml.octetStringBuilder('SAMLRequest', parsed);
-  const signature =  Buffer.from(parsed.Signature, 'base64');
+  const parsed = parseRedirectUrlContextCallBack(context)
+  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
   t.true(valid, 'signature did not validate');
 });
 
