@@ -28,17 +28,6 @@ export interface BindingSimpleSignContext {
 
 /**
 * @private
-* @desc Helper of generating URL param/value pair
-* @param  {string} param     key
-* @param  {string} value     value of key
-* @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
-* @return {string}
-*/
-function pvPair(param: string, value: string, first?: boolean): string {
-  return (first === true ? '?' : '&') + param + '=' + value;
-}
-/**
-* @private
 * @desc Refactored part of simple signature generation for login/logout request
 * @param  {string} type
 * @param  {string} rawSamlRequest
@@ -51,17 +40,16 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
     context,
     entitySetting,
   } = opts;
-  let { relayState = '' } = opts;
-  const queryParam = libsaml.getQueryParamByType(type);
+  // ?SAMLRequest= or ?SAMLResponse=
+  const direction = libsaml.getQueryParamByType(type);
+  const octetString =  libsaml.octetStringBuilder(binding.simpleSign, direction, {
+    [direction]: context,
+    [urlParams.relayState]: opts.relayState,
+    [urlParams.sigAlg]: entitySetting.requestSignatureAlgorithm,
+  });
 
-  if (relayState !== '') {
-    relayState = pvPair(urlParams.relayState, relayState);
-  }
-
-  const sigAlg = pvPair(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm);
-  const octetString = context + relayState + sigAlg;
   return libsaml.constructMessageSignature(
-    queryParam + '=' + octetString,
+    octetString,
     entitySetting.privateKey,
     entitySetting.privateKeyPass,
     undefined,
@@ -117,7 +105,7 @@ function base64LoginRequest(entity: any, customTagReplacement?: (template: strin
           sigAlg: spSetting.requestSignatureAlgorithm,
         };
     }
-    // No need to embeded XML signature
+    // No need to embed XML signature
     return {
       id,
       context: utility.base64Encode(rawSamlRequest),
