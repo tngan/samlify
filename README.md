@@ -27,12 +27,12 @@ Starting from v2.6, multiple schema validators are now supported. You can simply
 import * as samlify from 'samlify';
 import * as validator from '@authenio/samlify-xsd-schema-validator';
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
-// import * as validator from '@authenio/samlify-node-xmllint';
+// import * as validator from 'samlify-validator-js';
 // import * as validator from '@authenio/samlify-libxml-xsd'; // only support for version of nodejs <= 8
 
 // const validator = require('@authenio/samlify-xsd-schema-validator');
 // const validator = require('@authenio/samlify-validate-with-xmllint');
-// const validator = require('@authenio/samlify-node-xmllint');
+// const validator = require('samlify-validator-js');
 // const validator = require('@authenio/samlify-libxml-xsd');
 
 samlify.setSchemaValidator(validator);
