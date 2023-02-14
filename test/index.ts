@@ -261,11 +261,11 @@ test('getAssertionConsumerService with two bindings', t => {
   });
   test('encrypt assertion response without assertion returns error', async t => {
     const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, wrongResponse));
-    t.is(error?.message, 'ERR_MULTIPLE_ASSERTION');
+    t.is(error?.message, 'ERR_NO_ASSERTION');
   });
   test('encrypt assertion with invalid xml syntax returns error', async t => {
     const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
-    t.is(error?.message, 'ERR_MULTIPLE_ASSERTION');
+    t.is(error?.message, 'ERR_NO_ASSERTION');
   });
   test('encrypt assertion with empty string returns error', async t => {
     const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, ''));
