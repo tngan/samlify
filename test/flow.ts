@@ -1129,7 +1129,7 @@ test('avoid malformatted response', async t => {
   const attackResponse = `<NameID>evil@evil.com${rawResponse}</NameID>`;
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(attackResponse) } });
-    t.fail()
+    t.fail();
   } catch (e) {
     // it must throw an error
     t.is(true, true);
@@ -1151,7 +1151,7 @@ test('avoid malformatted response with redirect binding', async t => {
   const octetString = 'SAMLResponse=' + encodeURIComponent(utility.base64Encode(utility.deflateString(attackResponse))) + '&SigAlg=' + encodeURIComponent(sigAlg as string);
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'redirect', { query :{ SAMLResponse, SigAlg: sigAlg, Signature: signature}, octetString });
-    t.fail()
+    t.fail();
   } catch (e) {
     // it must throw an error
     t.is(true, true);
@@ -1167,7 +1167,7 @@ test('avoid malformatted response with simplesign binding', async t => {
   const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse: utility.base64Encode(attackResponse), Signature: signature, SigAlg:sigAlg }, octetString });
-    t.fail()
+    t.fail();
   } catch (e) {
     // it must throw an error
     t.is(true, true);
@@ -1193,7 +1193,7 @@ test('should reject signature wrapped response - case 1', async t => {
   const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
   }
@@ -1218,7 +1218,7 @@ test('should reject signature wrapped response - case 2', async t => {
   const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
   }
@@ -1227,7 +1227,7 @@ test('should reject signature wrapped response - case 2', async t => {
 test('should throw two-tiers code error when the response does not return success status', async t => {
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(failedResponse) } });
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e.message, 'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy');
   }
@@ -1240,7 +1240,7 @@ test('should throw two-tiers code error when the response by redirect does not r
     const encodedSigAlg = encodeURIComponent(sigAlg);
     const octetString = 'SAMLResponse=' + encodeURIComponent(SAMLResponse) + '&SigAlg=' + encodedSigAlg;
     await sp.parseLoginResponse(idpNoEncrypt, 'redirect',{ query :{ SAMLResponse, SigAlg: encodedSigAlg} , octetString}   );
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e.message, 'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy');
   }
@@ -1249,7 +1249,7 @@ test('should throw two-tiers code error when the response by redirect does not r
 test('should throw two-tiers code error when the response over simpleSign does not return success status', async t => {
   try {
     await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse: utility.base64Encode(failedResponse) } });
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e.message, 'ERR_FAILED_STATUS with top tier code: urn:oasis:names:tc:SAML:2.0:status:Requester, second tier code: urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy');
   }
@@ -1270,7 +1270,7 @@ test.serial('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response 
     tk.freeze(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
     // test failed, it shouldn't happen
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e, 'ERR_SUBJECT_UNCONFIRMED');
   } finally {
@@ -1293,7 +1293,7 @@ test.serial('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response 
     tk.freeze(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'redirect', parseRedirectUrlContextCallBack(SAMLResponse));
     // test failed, it shouldn't happen
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e, 'ERR_SUBJECT_UNCONFIRMED');
   } finally {
@@ -1315,7 +1315,7 @@ test.serial('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response 
     tk.freeze(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
     // test failed, it shouldn't happen
-    t.fail()
+    t.fail();
   } catch (e) {
     t.is(e, 'ERR_SUBJECT_UNCONFIRMED');
   } finally {

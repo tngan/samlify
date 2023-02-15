@@ -612,7 +612,7 @@ const libSaml = () => {
         if (assertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
-        const rawAssertionNode = assertions[0]
+        const rawAssertionNode = assertions[0];
 
         // Perform encryption depends on the setting, default is false
         if (sourceEntitySetting.isAssertionEncrypted) {
@@ -664,7 +664,7 @@ const libSaml = () => {
         if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
           throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
         }
-        if (encryptedAssertions.length !== 1) {
+        if (encryptedAssertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
         const encAssertionNode = encryptedAssertions[0];
