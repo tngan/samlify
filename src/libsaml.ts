@@ -606,19 +606,20 @@ const libSaml = () => {
         const targetEntityMetadata = targetEntity.entityMeta;
         const doc = new dom().parseFromString(xml);
         const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
-        if (!Array.isArray(assertions)) {
+        if (!Array.isArray(assertions) || assertions.length === 0) {
           throw new Error('ERR_NO_ASSERTION');
         }
-        if (assertions.length !== 1) {
+        if (assertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
+        const rawAssertionNode = assertions[0];
 
         // Perform encryption depends on the setting, default is false
         if (sourceEntitySetting.isAssertionEncrypted) {
 
           const publicKeyPem = utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt));
 
-          xmlenc.encrypt(assertions[0].toString(), {
+          xmlenc.encrypt(rawAssertionNode.toString(), {
             // use xml-encryption module
             rsa_pub: Buffer.from(publicKeyPem), // public key from certificate
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
@@ -633,8 +634,8 @@ const libSaml = () => {
               return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
             }
             const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
-            const encryptAssertionNode = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
-            doc.replaceChild(encryptAssertionNode, assertions[0]);
+            const encryptAssertionDoc = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
+            doc.documentElement.replaceChild(encryptAssertionDoc.documentElement, rawAssertionNode);
             return resolve(utility.base64Encode(doc.toString()));
           });
         } else {
@@ -658,15 +659,17 @@ const libSaml = () => {
         }
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
-        const xml = new dom().parseFromString(entireXML);
-        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", xml) as Node[];
-        if (!Array.isArray(encryptedAssertions)) {
+        const doc = new dom().parseFromString(entireXML);
+        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
+        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
           throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
         }
-        if (encryptedAssertions.length !== 1) {
+        if (encryptedAssertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
-        return xmlenc.decrypt(encryptedAssertions[0].toString(), {
+        const encAssertionNode = encryptedAssertions[0];
+
+        return xmlenc.decrypt(encAssertionNode.toString(), {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
@@ -676,9 +679,9 @@ const libSaml = () => {
           if (!res) {
             return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
           }
-          const assertionNode = new dom().parseFromString(res);
-          xml.replaceChild(assertionNode, encryptedAssertions[0]);
-          return resolve([xml.toString(), res]);
+          const rawAssertionDoc = new dom().parseFromString(res);
+          doc.documentElement.replaceChild(rawAssertionDoc.documentElement, encAssertionNode);
+          return resolve([doc.toString(), res]);
         });
       });
     },
