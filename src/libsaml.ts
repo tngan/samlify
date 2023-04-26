@@ -444,8 +444,6 @@ const libSaml = () => {
 
         sig.loadSignature(signatureNode);
 
-        doc.removeChild(signatureNode);
-
         verified = verified && sig.checkSignature(doc.toString());
 
         // immediately throw error when any one of the signature is failed to get verified
