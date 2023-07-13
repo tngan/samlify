@@ -248,6 +248,7 @@ const libSaml = () => {
     '"': '&quot;',
   };
   function escapeCharacterEntities(text: string): string {
+    if (!text || typeof text !== 'string') return text;
     return text.replace(/[<>&'"]/g, character => characterEntitiesMapping[character]);
   }
 
