@@ -240,6 +240,17 @@ const libSaml = () => {
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
+  const characterEntitiesMapping = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '\'': '&apos;',
+    '"': '&quot;',
+  };
+  function escapeCharacterEntities(text: string): string {
+    return text.replace(/[<>&'"]/g, (character) => characterEntitiesMapping[character]);
+  }
+
   return {
 
     createXPath,
@@ -259,7 +270,10 @@ const libSaml = () => {
     */
     replaceTagsByValue(rawXML: string, tagValues: any): string {
       Object.keys(tagValues).forEach(t => {
-        rawXML = rawXML.replace(new RegExp(`{${t}}`, 'g'), tagValues[t]);
+        rawXML = rawXML.replace(
+          new RegExp(`{${t}}`, 'g'),
+          escapeCharacterEntities(tagValues[t])
+        );
       });
       return rawXML;
     },
