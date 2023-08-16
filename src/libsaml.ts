@@ -247,9 +247,12 @@ const libSaml = () => {
     '\'': '&apos;',
     '"': '&quot;',
   };
-  function escapeCharacterEntities(text: string): string {
-    if (!text || typeof text !== 'string') return text;
-    return text.replace(/[<>&'"]/g, character => characterEntitiesMapping[character]);
+  function escapeCharacterEntities(text: string): (...args: string[]) => string {
+    return (match: string, quote?: string) => {
+      // not having a quote means this interpolation isn't for an attribute, and so does not need escaping
+      if (!quote || !text || typeof text !== 'string') return (quote || '') + text;
+      return '"' + text.replace(/[<>&'"]/g, character => characterEntitiesMapping[character]);
+    }
   }
 
   return {
@@ -272,7 +275,7 @@ const libSaml = () => {
     replaceTagsByValue(rawXML: string, tagValues: any): string {
       Object.keys(tagValues).forEach(t => {
         rawXML = rawXML.replace(
-          new RegExp(`{${t}}`, 'g'),
+          new RegExp(`("?)\\{${t}\\}`, 'g'),
           escapeCharacterEntities(tagValues[t])
         );
       });
