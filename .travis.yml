@@ -1,9 +1,9 @@
 language: node_js
 
 node_js:
-  - "12"
-  - "14"
   - "16"
+  - "18"
+  - "20"
 
 env:
   - INSTALL_JDK=1
