@@ -2,6 +2,7 @@
 import IdentityProvider, { IdentityProvider as IdentityProviderInstance } from './src/entity-idp';
 import ServiceProvider, { ServiceProvider as ServiceProviderInstance } from './src/entity-sp';
 
+export { default as Metadata } from './src/metadata';
 export { default as IdPMetadata } from './src/metadata-idp';
 export { default as SPMetadata } from './src/metadata-sp';
 export { default as Utility } from './src/utility';
