@@ -145,7 +145,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
   if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.simpleSign);
+    const base = metadata.sp.getAssertionConsumerService(binding.simpleSign, requestInfo.extract.request.assertionConsumerServiceIndex);
     let rawSamlResponse: string;
     const nowTime = new Date();
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)

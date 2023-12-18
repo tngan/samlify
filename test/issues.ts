@@ -164,4 +164,13 @@ test('#31 query param for sso/slo returns error', t => {
     const index = Object.keys(authnRequest.attributes).find((i: string) => authnRequest.attributes[i].nodeName === 'AssertionConsumerServiceURL') as any;
     t.is(authnRequest.attributes[index].nodeValue, 'https://example.org/response');
   });
+
+  const spACSIndex = serviceProvider({ metadata: fs.readFileSync('./test/misc/sp_metadata_437.xml') });
+  test('#437 return acl for sp metadata with acs index', t => {
+    const urlIndex0 = spACSIndex.entityMeta.getAssertionConsumerService('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', 0);
+    const urlIndex1 = spACSIndex.entityMeta.getAssertionConsumerService('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', 1);
+    t.is(urlIndex0,'https://example.org/responseForIndex0');
+    t.is(urlIndex1,'https://example.org/responseForIndex1');
+  });
+
 })();

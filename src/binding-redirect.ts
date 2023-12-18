@@ -144,7 +144,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 
   let id: string = idpSetting.generateID();
   if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+    const base = metadata.sp.getAssertionConsumerService(binding.redirect, requestInfo.extract.request.assertionConsumerServiceIndex);
     let rawSamlResponse: string;
     //
     const nameIDFormat = idpSetting.nameIDFormat;
