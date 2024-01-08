@@ -279,6 +279,9 @@ export function extract(context: string, fields) {
           if (childValues.length === 1) {
             return childValues[0];
           }
+          if (childValues.length === 0) {
+            return null;
+          }
           return childValues;
         }
         if (attributes.length > 0) {
