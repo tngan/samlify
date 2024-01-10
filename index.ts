@@ -11,8 +11,8 @@ export { default as SamlLib } from './src/libsaml';
 import * as Constants from './src/urn';
 import * as Extractor from './src/extractor';
 
-// exposed methods for customising samlify
-import { setSchemaValidator } from './src/api';
+// exposed methods for customizing samlify
+import { setSchemaValidator, setDOMParserOptions } from './src/api';
 
 export {
   Constants,
@@ -23,5 +23,6 @@ export {
   ServiceProvider,
   ServiceProviderInstance,
   // set context
-  setSchemaValidator
+  setSchemaValidator,
+  setDOMParserOptions
 };
