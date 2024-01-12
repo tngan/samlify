@@ -1,9 +1,7 @@
-import { DOMParser } from '@xmldom/xmldom';
 import { select, SelectedValue } from 'xpath';
 import { uniq, last, zipObject, notEmpty } from './utility';
 import { getContext } from './api';
 import camelCase from 'camelcase';
-const dom = DOMParser;
 
 interface ExtractorField {
   key: string;
@@ -199,8 +197,8 @@ export const logoutResponseFields: ExtractorFields = [
 ];
 
 export function extract(context: string, fields) {
-  const { domParserOpts } = getContext();
-  const rootDoc = new dom(domParserOpts).parseFromString(context);
+  const { dom } = getContext();
+  const rootDoc = dom.parseFromString(context);
 
   return fields.reduce((result: any, field) => {
     // get essential fields
@@ -219,7 +217,7 @@ export function extract(context: string, fields) {
     // if shortcut is used, then replace the doc
     // it's a design for overriding the doc used during runtime
     if (shortcut) {
-      targetDoc = new dom(domParserOpts).parseFromString(shortcut);
+      targetDoc = dom.parseFromString(shortcut);
     }
 
     // special case: multiple path
@@ -274,7 +272,7 @@ export function extract(context: string, fields) {
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
       // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
       const childAttributes = parentNodes.map(node => {
-        const nodeDoc = new dom(domParserOpts).parseFromString(node.toString());
+        const nodeDoc = dom.parseFromString(node.toString());
         if (attributes.length === 0) {
           const childValues = select(fullChildXPath, nodeDoc).map((n: Node) => n.nodeValue);
           if (childValues.length === 1) {
@@ -335,7 +333,7 @@ export function extract(context: string, fields) {
       const baseNode = select(baseXPath, targetDoc).map(n => n.toString());
       const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
-        const nodeDoc = new dom(domParserOpts).parseFromString(node);
+        const nodeDoc = dom.parseFromString(node);
         const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
           r[camelCase(n.name, {locale: 'en-us'})] = n.value;
           return r;
