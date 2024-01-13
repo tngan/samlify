@@ -4,7 +4,6 @@
 * @desc  A simple library including some common functions
 */
 
-import { DOMParser } from '@xmldom/xmldom';
 import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
@@ -20,7 +19,6 @@ const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
 const urlParams = wording.urlParams;
-const dom = DOMParser;
 
 export interface SignatureConstructor {
   rawSamlMessage: string;
@@ -93,7 +91,7 @@ export interface LibSamlInterface {
   replaceTagsByValue: (rawXML: string, tagValues: any) => string;
   attributeStatementBuilder: (attributes: LoginResponseAttribute[], attributeTemplate: AttributeTemplate, attributeStatementTemplate: AttributeStatementTemplate) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
-  verifySignature: (xml: string, opts) => [boolean, any];
+  verifySignature: (xml: string, opts: SignatureVerifierOptions) => [boolean, any];
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
@@ -355,8 +353,8 @@ const libSaml = () => {
     * @return {boolean} verification result
     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
-
-      const doc = new dom().parseFromString(xml);
+      const { dom } = getContext();
+      const doc = dom.parseFromString(xml);
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
       // message signature (logout response / saml response)
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
@@ -604,7 +602,8 @@ const libSaml = () => {
 
         const sourceEntitySetting = sourceEntity.entitySetting;
         const targetEntityMetadata = targetEntity.entityMeta;
-        const doc = new dom().parseFromString(xml);
+        const { dom } = getContext();
+        const doc = dom.parseFromString(xml);
         const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
         if (!Array.isArray(assertions) || assertions.length === 0) {
           throw new Error('ERR_NO_ASSERTION');
@@ -634,7 +633,7 @@ const libSaml = () => {
               return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
             }
             const { encryptedAssertion: encAssertionPrefix } = sourceEntitySetting.tagPrefix;
-            const encryptAssertionDoc = new dom().parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
+            const encryptAssertionDoc = dom.parseFromString(`<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`);
             doc.documentElement.replaceChild(encryptAssertionDoc.documentElement, rawAssertionNode);
             return resolve(utility.base64Encode(doc.toString()));
           });
@@ -659,7 +658,8 @@ const libSaml = () => {
         }
         // Perform encryption depends on the setting of where the message is sent, default is false
         const hereSetting = here.entitySetting;
-        const doc = new dom().parseFromString(entireXML);
+        const { dom  } = getContext();
+        const doc = dom.parseFromString(entireXML);
         const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
         if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
           throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
@@ -679,7 +679,7 @@ const libSaml = () => {
           if (!res) {
             return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
           }
-          const rawAssertionDoc = new dom().parseFromString(res);
+          const rawAssertionDoc = dom.parseFromString(res);
           doc.documentElement.replaceChild(rawAssertionDoc.documentElement, encAssertionNode);
           return resolve([doc.toString(), res]);
         });

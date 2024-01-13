@@ -1,12 +1,19 @@
+import { DOMParser as dom, Options as DOMParserOptions } from '@xmldom/xmldom';
+
 // global module configuration
-interface Context extends ValidatorContext {}
+interface Context extends ValidatorContext, DOMParserContext {}
 
 interface ValidatorContext {
   validate?: (xml: string) => Promise<any>;
 }
 
+interface DOMParserContext {
+  dom: dom;
+}
+
 const context: Context = {
-  validate: undefined
+  validate: undefined,
+  dom: new dom()
 };
 
 export function getContext() {
@@ -22,4 +29,8 @@ export function setSchemaValidator(params: ValidatorContext) {
   // assign the validate function to the context
   context.validate = params.validate;
 
+}
+
+export function setDOMParserOptions(options: DOMParserOptions = {}) {
+  context.dom = new dom(options);
 }
