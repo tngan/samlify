@@ -40,6 +40,7 @@
     "uuid": "^8.3.2",
     "xml": "^1.0.1",
     "xml-crypto": "^3.0.1",
+    "xml-escape": "^1.1.0",
     "xpath": "^0.0.32"
   },
   "devDependencies": {

@@ -15,6 +15,7 @@ import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
 import camelCase from 'camelcase';
 import { getContext } from './api';
+import xmlEscape from 'xml-escape';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -240,18 +241,10 @@ const libSaml = () => {
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
-  const characterEntitiesMapping = {
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    '\'': '&apos;',
-    '"': '&quot;',
-  };
-  function escapeCharacterEntities(text: string): (...args: string[]) => string {
+  function escapeTag(text: string): (...args: string[]) => string {
     return (match: string, quote?: string) => {
       // not having a quote means this interpolation isn't for an attribute, and so does not need escaping
-      if (!quote || !text || typeof text !== 'string') return (quote || '') + text;
-      return '"' + text.replace(/[<>&'"]/g, character => characterEntitiesMapping[character]);
+      return quote ? `${quote}${xmlEscape(text || '')}` : text;
     }
   }
 
@@ -276,7 +269,7 @@ const libSaml = () => {
       Object.keys(tagValues).forEach(t => {
         rawXML = rawXML.replace(
           new RegExp(`("?)\\{${t}\\}`, 'g'),
-          escapeCharacterEntities(tagValues[t])
+          escapeTag(tagValues[t])
         );
       });
       return rawXML;
