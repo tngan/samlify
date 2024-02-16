@@ -82,29 +82,14 @@ const parseRedirectUrlContextCallBack = (_context: string) => {
   const _SAMLResponse = originalURL.query.SAMLResponse;
   const _Signature = originalURL.query.Signature;
   const _SigAlg = originalURL.query.SigAlg;
-  delete originalURL.query.Signature;
-  const _octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
+  const octetString = libsaml.octetStringBuilder('redirect','SAMLResponse', originalURL.query);
 
   return { query: {
     SAMLResponse: _SAMLResponse,
     Signature: _Signature,
     SigAlg: _SigAlg, },
-    octetString: _octetString,
+    octetString,
   };
-};
-
-// Build SimpleSign octetString
-const buildSimpleSignOctetString = (type:string, context:string, sigAlg:string|undefined, relayState:string|undefined, signature: string|undefined) =>{
-  const rawRequest = String(utility.base64Decode(context, true));
-  let octetString:string = '';
-  octetString += type + '=' + rawRequest;
-  if (relayState !== undefined && relayState.length > 0){
-    octetString += '&RelayState=' + relayState;
-  }
-  if (signature !== undefined && signature.length >0 && sigAlg && sigAlg.length > 0){
-    octetString += '&SigAlg=' + sigAlg;
-  }
-  return octetString;
 };
 
 // Define of metadata
@@ -160,10 +145,6 @@ const spNoAssertSignCustomConfig = serviceProvider({ ...defaultSpConfig,
 });
 const spWithClockDrift = serviceProvider({ ...defaultSpConfig, clockDrifts: [-2000, 2000] });
 
-function writer(str) {
-  writeFileSync('test.txt', str);
-}
-
 test('create login request with redirect binding using default template and parse it', async t => {
   const { id, context } = sp.createLoginRequest(idp, 'redirect');
   t.is(typeof id, 'string');
@@ -182,11 +163,10 @@ test('create login request with redirect binding using default template and pars
 });
 
 test('create login request with post simpleSign binding using default template and parse it', async t => {
-  const { relayState, id, context: SAMLRequest, type, sigAlg, signature } = sp.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
+  const { id, context: SAMLRequest, type, sigAlg, signature } = sp.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof SAMLRequest, 'string');
-  const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState,signature);
-  const { samlContent, extract } = await idp.parseLoginRequest(sp, 'simpleSign', { body: { SAMLRequest, Signature: signature, SigAlg:sigAlg }, octetString});
+  const { extract } = await idp.parseLoginRequest(sp, 'simpleSign', { body: { SAMLRequest, Signature: signature, SigAlg:sigAlg }});
   t.is(extract.issuer, 'https://sp.example.org/metadata');
   t.is(typeof extract.request.id, 'string');
   t.is(extract.nameIDPolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
@@ -194,7 +174,7 @@ test('create login request with post simpleSign binding using default template a
 });
 
 test('create login request with post binding using default template and parse it', async t => {
-  const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
+  const { type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
   t.is(typeof id, 'string');
   t.is(typeof SAMLRequest, 'string');
   t.is(typeof entityEndpoint, 'string');
@@ -262,10 +242,11 @@ test('create login request with redirect binding signing with unencrypted PKCS#8
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
 
-  const parsed = parseRedirectUrlContextCallBack(context)
-  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
+  const parsed: Record<string, any> = url.parse(context, true).query;
+  const octetString = libsaml.octetStringBuilder('redirect','SAMLRequest', parsed)
+  const signature =  Buffer.from(parsed.Signature, 'base64');
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
   t.true(valid, 'signature did not validate');
 });
 
@@ -279,10 +260,11 @@ test('create login request with redirect binding signing with encrypted PKCS#8',
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
 
-  const parsed = parseRedirectUrlContextCallBack(context)
-  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
+  const parsed: Record<string, any> = url.parse(context, true).query;
+  const octetString = libsaml.octetStringBuilder('redirect','SAMLRequest', parsed)
+  const signature =  Buffer.from(parsed.Signature, 'base64');
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
+  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, octetString, signature, parsed.SigAlg);
   t.true(valid, 'signature did not validate');
 });
 
@@ -442,8 +424,7 @@ test('send response with signed assertion by post simplesign and parse it', asyn
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg: sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -525,7 +506,7 @@ test('send response with signed assertion + custom transformation algorithms by 
   );
 
   const user = { email: 'user@esaml2.com' }
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(
+  const { id, context: SAMLResponse, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(
     signedAssertionSp,
     sampleRequestInfo,
     'simpleSign',
@@ -535,8 +516,7 @@ test('send response with signed assertion + custom transformation algorithms by 
     'relaystate'
     ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -606,7 +586,7 @@ test('send response with [custom template] signed assertion by post simpleSign a
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const requestInfo = { extract: { request: { id: 'request_id' } } };
   const user = { email: 'user@esaml2.com'};
-  const { id, context: SAMLResponse, type, sigAlg, signature, entityEndpoint, relayState } = await idpcustomNoEncrypt.createLoginResponse(
+  const { id, context: SAMLResponse, sigAlg, signature, entityEndpoint, relayState } = await idpcustomNoEncrypt.createLoginResponse(
     sp,
     requestInfo,
     'simpleSign',
@@ -617,8 +597,7 @@ test('send response with [custom template] signed assertion by post simpleSign a
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await sp.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await sp.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -673,7 +652,7 @@ test('send response with signed message by redirect and parse it', async t => {
 test('send response with signed message by post simplesign and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(
+  const { id, context: SAMLResponse, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(
     spNoAssertSign,
     sampleRequestInfo,
     'simpleSign',
@@ -683,8 +662,7 @@ test('send response with signed message by post simplesign and parse it', async 
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -745,9 +723,8 @@ test('send response with [custom template] and signed message by redirect and pa
 
 test('send response with [custom template] and signed message by post simplesign and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
   const user = { email: 'user@esaml2.com'};
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpcustomNoEncrypt.createLoginResponse(
+  const { id, context: SAMLResponse, sigAlg, signature, relayState } = await idpcustomNoEncrypt.createLoginResponse(
     spNoAssertSign,
     { extract: { authnrequest: { id: 'request_id' } } }, 'simpleSign',
     { email: 'user@esaml2.com' },
@@ -756,8 +733,7 @@ test('send response with [custom template] and signed message by post simplesign
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -821,15 +797,14 @@ test('send login response with signed assertion + signed message by post simples
     wantMessageSigned: true,
   });
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(spWantMessageSign, sampleRequestInfo,
+  const { id, context: SAMLResponse, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(spWantMessageSign, sampleRequestInfo,
     'simpleSign', user,
     createTemplateCallback(idpNoEncrypt, spWantMessageSign, binding.simpleSign, user),
     undefined,
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse (idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse (idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -900,7 +875,7 @@ test('send login response with [custom template] and signed assertion + signed m
     wantMessageSigned: true,
   });
   const user = { email: 'user@esaml2.com'};
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpcustomNoEncrypt.createLoginResponse(
+  const { id, context: SAMLResponse, sigAlg, signature, relayState } = await idpcustomNoEncrypt.createLoginResponse(
     spWantMessageSign,
     { extract: { authnrequest: { id: 'request_id' } } },
     'simpleSign',
@@ -910,8 +885,7 @@ test('send login response with [custom template] and signed assertion + signed m
     'relaystate'
   ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+  const { samlContent, extract } = await spWantMessageSign.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
@@ -1158,15 +1132,14 @@ test('avoid malformatted response with redirect binding', async t => {
   }
 });
 
-test('avoid malformatted response with simplesign binding', async t => {
+test('avoid malformed response with simplesign binding', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const user = { email: 'user@email.com' };
-  const { context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idpNoEncrypt, sp, binding.simpleSign, user), undefined, 'relaystate');
+  const { context: SAMLResponse, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idpNoEncrypt, sp, binding.simpleSign, user), undefined, 'relaystate');
   const rawResponse = String(utility.base64Decode(SAMLResponse, true));
   const attackResponse = `<NameID>evil@evil.com${rawResponse}</NameID>`;
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
   try {
-    await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse: utility.base64Encode(attackResponse), Signature: signature, SigAlg:sigAlg }, octetString });
+    await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse: utility.base64Encode(attackResponse), Signature: signature, SigAlg:sigAlg }});
     t.fail();
   } catch (e) {
     // it must throw an error
@@ -1309,11 +1282,10 @@ test.serial('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response 
   const user = { email: 'user@esaml2.com' };
 
   try {
-    const { context: SAMLResponse, type, sigAlg, signature, relayState } = await idp.createLoginResponse(sp, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, sp, binding.simpleSign, user), undefined, 'relaystate');
-    const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
+    const { context: SAMLResponse, sigAlg, signature, relayState } = await idp.createLoginResponse(sp, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, sp, binding.simpleSign, user), undefined, 'relaystate');
     // simulate the time on client side when response arrives after 5.1 sec
     tk.freeze(fiveMinutesOneSecLater);
-    await sp.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+    await sp.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
     // test failed, it shouldn't happen
     t.fail();
   } catch (e) {
@@ -1372,11 +1344,10 @@ test.serial('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
   const user = { email: 'user@esaml2.com' };
 
   try {
-    const { context: SAMLResponse, type, signature, sigAlg, relayState } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, spWithClockDrift, binding.simpleSign, user), undefined, 'relaystate');
-    const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
+    const { context: SAMLResponse, signature, sigAlg, relayState } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, spWithClockDrift, binding.simpleSign, user), undefined, 'relaystate');
     // simulate the time on client side when response arrives after 5.1 sec
     tk.freeze(fiveMinutesOneSecLater);
-    await spWithClockDrift.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
+    await spWithClockDrift.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, RelayState: relayState, Signature: signature, SigAlg:sigAlg }});
     t.is(true, true);
   } catch (e) {
     // test failed, it shouldn't happen

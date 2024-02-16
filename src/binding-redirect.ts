@@ -25,58 +25,59 @@ export interface BuildRedirectConfig {
 
 /**
 * @private
-* @desc Helper of generating URL param/value pair
-* @param  {string} param     key
-* @param  {string} value     value of key
-* @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
-* @return {string}
-*/
-function pvPair(param: string, value: string, first?: boolean): string {
-  return (first === true ? '?' : '&') + param + '=' + value;
-}
-/**
-* @private
-* @desc Refractored part of URL generation for login/logout request
+* @desc Refactored part of URL generation for login/logout request
 * @param  {string} type
 * @param  {boolean} isSigned
 * @param  {string} rawSamlRequest
 * @param  {object} entitySetting
 * @return {string}
 */
-function buildRedirectURL(opts: BuildRedirectConfig) {
+function buildRedirectURL(opts: BuildRedirectConfig): string {
   const {
     baseUrl,
     type,
-    isSigned,
     context,
-    entitySetting,
+    relayState,
+    isSigned,
+    entitySetting
   } = opts;
-  let { relayState = '' } = opts;
-  const noParams = (url.parse(baseUrl).query || []).length === 0;
-  const queryParam = libsaml.getQueryParamByType(type);
-  // In general, this xmlstring is required to do deflate -> base64 -> urlencode
-  const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
-  if (relayState !== '') {
-    relayState = pvPair(urlParams.relayState, encodeURIComponent(relayState));
+
+  const redirectUrl = new url.URL(baseUrl)
+
+  const direction = libsaml.getQueryParamByType(type);
+  // In general, this XML string is required to do deflate -> base64 -> URL encode
+  const encodedContext = utility.base64Encode(utility.deflateString(context));
+  redirectUrl.searchParams.set(direction, encodedContext);
+
+  if (relayState) {
+    redirectUrl.searchParams.set(urlParams.relayState, relayState);
   }
+
   if (isSigned) {
-    const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm));
-    const octetString = samlRequest + relayState + sigAlg;
-    return baseUrl
-      + pvPair(queryParam, octetString, noParams)
-      + pvPair(urlParams.signature, encodeURIComponent(
-        libsaml.constructMessageSignature(
-          queryParam + '=' + octetString,
-          entitySetting.privateKey,
-          entitySetting.privateKeyPass,
-          undefined,
-          entitySetting.requestSignatureAlgorithm
-        ).toString()
-      )
-      );
+    const octetString = libsaml.octetStringBuilder(
+      binding.redirect,
+      direction,
+      { // can just be `Object.fromEntries(redirectUrl.searchParams)` when the targeted Node version is updated.
+        [direction]: encodedContext,
+        [urlParams.relayState]: relayState,
+        [urlParams.sigAlg]: entitySetting.requestSignatureAlgorithm,
+      }
+    );
+    const signature = libsaml.constructMessageSignature(
+      octetString,
+      entitySetting.privateKey,
+      entitySetting.privateKeyPass,
+      true,
+      entitySetting.requestSignatureAlgorithm
+    ).toString();
+
+    redirectUrl.searchParams.set(urlParams.signature, signature);
+    redirectUrl.searchParams.set(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm);
   }
-  return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
+
+  return redirectUrl.toString();
 }
+
 /**
 * @desc Redirect URL for login request
 * @param  {object} entity                       object includes both idp and sp

@@ -53,7 +53,7 @@ function getDefaultExtractorFields(parserType: ParserType, assertion?: any): Ext
 async function redirectFlow(options): Promise<FlowResult>  {
 
   const { request, parserType, self, checkSignature = true, from } = options;
-  const { query, octetString } = request;
+  const { query } = request;
   const { SigAlg: sigAlg, Signature: signature } = query;
 
   const targetEntityMetadata = from.entityMeta;
@@ -108,6 +108,9 @@ async function redirectFlow(options): Promise<FlowResult>  {
     if (!signature || !sigAlg) {
       return Promise.reject('ERR_MISSING_SIG_ALG');
     }
+
+    // Look for the octet string on the request object first as a backwards compat feature
+    const octetString = request.octetString || libsaml.octetStringBuilder(bindDict.redirect, direction, query)
 
     // put the below two assignments into verifyMessageSignature function
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
@@ -296,9 +299,7 @@ async function postFlow(options): Promise<FlowResult> {
 async function postSimpleSignFlow(options): Promise<FlowResult> {
 
   const { request, parserType, self, checkSignature = true, from } = options;
-
-  const { body, octetString } = request;
-
+  const { body } = request;
   const targetEntityMetadata = from.entityMeta;
 
   // ?SAMLRequest= or ?SAMLResponse=
@@ -353,6 +354,19 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
     if (!signature || !sigAlg) {
       return Promise.reject('ERR_MISSING_SIG_ALG');
     }
+
+    // Look for the octet string on the request object first as a backwards compat feature
+    const octetString = request.octetString || libsaml.octetStringBuilder(
+      bindDict.simpleSign,
+      direction,
+      {
+        ...body,
+        // SimpleSign wants the XML already base64-decoded before computing the octet string.
+        // For encapsulation, it would be nice to have the helper decode it,
+        // but for optimization, lets not decode it twice.
+        [direction]: xmlString
+      }
+    )
 
     // put the below two assignments into verifyMessageSignature function
     const base64Signature = Buffer.from(signature, 'base64');
