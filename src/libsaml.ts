@@ -242,7 +242,8 @@ const libSaml = () => {
   function escapeTag(text: string): (...args: string[]) => string {
     return (match: string, quote?: string) => {
       // not having a quote means this interpolation isn't for an attribute, and so does not need escaping
-      return quote ? `${quote}${xmlEscape(text || '')}` : text;
+      const value = text === undefined || text === null ? "" : `${text}`;
+      return quote ? `${quote}${xmlEscape(value)}` : text;
     }
   }
 
