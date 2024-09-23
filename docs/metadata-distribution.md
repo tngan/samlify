@@ -2,7 +2,7 @@
 
 ?> Metadata is used to exchange information between Identity Provider and Service Provider. Simply there are two major ways to exchange Metadata.
 
-**Release in public **
+**Release in public**
 
 Display the Metadata in a specific URL. Everyone has the URL can watch the Metadata. Therefore, the Metadata is distributed publicly. We provide an API to do it once you've configure your SP.
 
