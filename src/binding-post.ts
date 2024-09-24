@@ -90,7 +90,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
   if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.post);
+    const base = metadata.sp.getAssertionConsumerService(binding.post, requestInfo.extract.request.assertionConsumerServiceIndex);
     let rawSamlResponse: string;
     const nowTime = new Date();
     const spEntityID = metadata.sp.getEntityID();
@@ -98,7 +98,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
     const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
-    const acl = metadata.sp.getAssertionConsumerService(binding.post);
+    const acl = metadata.sp.getAssertionConsumerService(binding.post, requestInfo.extract.request.assertionConsumerServiceIndex);
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
