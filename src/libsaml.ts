@@ -455,7 +455,7 @@ const libSaml = () => {
 
         doc.removeChild(signatureNode);
 
-        verified = verified && sig.checkSignature(doc.toString());
+        verified = verified && sig.checkSignature(xml);
 
         // immediately throw error when any one of the signature is failed to get verified
         if (!verified) {
