@@ -9,6 +9,21 @@ import { inflate, deflate } from 'pako';
 const BASE64_STR = 'base64';
 
 /**
+ * An Error class with a "cause".
+ *
+ * This can be replaced by the native option, once the minimum supported version is >=16.9.0.
+ * https://nodejs.org/docs/latest-v16.x/api/errors.html#errorcause
+ */
+export class WrappedError extends Error {
+  public cause: any;
+
+  constructor(message: string, options: { cause: any }) {
+    super(message);
+    this.cause = options.cause;
+  }
+}
+
+/**
  * @desc Mimic lodash.zipObject
  * @param arr1 {string[]}
  * @param arr2 {[]}
