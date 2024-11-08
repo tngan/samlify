@@ -19,7 +19,7 @@ import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
 import simpleSignBinding from './binding-simplesign';
 import { flow, FlowResult } from './flow';
-
+import {SAMLDocumentTemplate} from './types'
 /*
  * @desc interface function
  */
@@ -57,7 +57,7 @@ export class ServiceProvider extends Entity {
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
+    customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext,
   ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -82,7 +82,7 @@ export class ServiceProvider extends Entity {
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,
