@@ -1,4 +1,4 @@
-import { DOMParser as dom, Options as DOMParserOptions } from '@xmldom/xmldom';
+import { DOMParser as dom } from '@xmldom/xmldom';
 
 // global module configuration
 interface Context extends ValidatorContext, DOMParserContext {}
@@ -31,6 +31,6 @@ export function setSchemaValidator(params: ValidatorContext) {
 
 }
 
-export function setDOMParserOptions(options: DOMParserOptions = {}) {
+export function setDOMParserOptions(options: any = {}) {
   context.dom = new dom(options);
 }
