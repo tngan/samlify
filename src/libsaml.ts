@@ -399,7 +399,7 @@ const libSaml = () => {
       // need to refactor later on
       selection.forEach(signatureNode => {
 
-        sig.signatureAlgorithm = opts.signatureAlgorithm;
+        sig.signatureAlgorithm = opts.signatureAlgorithm!;
 
         if (!opts.keyFile && !opts.metadata) {
           throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
