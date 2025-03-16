@@ -180,11 +180,15 @@ export class SpMetadata extends Metadata {
   * @param  {string} binding         protocol binding (e.g. redirect, post)
   * @return {string/[string]} URL of endpoint(s)
   */
-  public getAssertionConsumerService(binding: string): string | string[] {
+  public getAssertionConsumerService(binding: string, index?: number): string | string[] {
     if (isString(binding)) {
       let location;
       const bindName = namespace.binding[binding];
       if (isNonEmptyArray(this.meta.assertionConsumerService)) {
+        if(index != undefined && this.meta.assertionConsumerService.length >= index + 1) {
+          return this.meta.assertionConsumerService[index].location;
+        }
+        
         this.meta.assertionConsumerService.forEach(obj => {
           if (obj.binding === bindName) {
             location = obj.location;

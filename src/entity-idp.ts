@@ -119,7 +119,7 @@ export class IdentityProvider extends Entity {
     return {
       ...context,
       relayState,
-      entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding) as string,
+      entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding, requestInfo.extract.request.assertionConsumerServiceIndex) as string,
       type: 'SAMLResponse'
     };
   }
