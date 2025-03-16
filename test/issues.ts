@@ -1,5 +1,5 @@
 import esaml2 = require('../index');
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import test from 'ava';
 import * as fs from 'fs';
 import * as url from 'url';
@@ -10,8 +10,6 @@ import { extract } from '../src/extractor';
 const {
   IdentityProvider: identityProvider,
   ServiceProvider: serviceProvider,
-  IdPMetadata: idpMetadata,
-  SPMetadata: spMetadata,
   Utility: utility,
   SamlLib: libsaml,
   Constants: ref,
@@ -43,17 +41,17 @@ test('#31 query param for sso/slo returns error', t => {
     nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
     assertionConsumerService: [{
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-      Location: 'sp.example.com/acs',
+      Location: 'https://sp.example.com/acs',
     }, {
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-      Location: 'sp.example.com/acs',
+      Location: 'https://sp.example.com/acs',
     }],
     singleLogoutService: [{
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-      Location: 'sp.example.com/slo',
+      Location: 'https://sp.example.com/slo',
     }, {
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-      Location: 'sp.example.com/slo',
+      Location: 'https://sp.example.com/slo',
     }],
   };
   const idpcfg = {
@@ -61,17 +59,17 @@ test('#31 query param for sso/slo returns error', t => {
     nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
     singleSignOnService: [{
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-      Location: 'idp.example.com/sso',
+      Location: 'https://idp.example.com/sso',
     }, {
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-      Location: 'idp.example.com/sso',
+      Location: 'https://idp.example.com/sso',
     }],
     singleLogoutService: [{
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-      Location: 'idp.example.com/sso/slo',
+      Location: 'https://idp.example.com/sso/slo',
     }, {
       Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-      Location: 'idp.example.com/sso/slo',
+      Location: 'https://idp.example.com/sso/slo',
     }],
   };
   const idp = identityProvider(idpcfg);
@@ -151,11 +149,11 @@ test('#31 query param for sso/slo returns error', t => {
   });
 
   test('#91 idp gets single sign on service from the metadata', t => {
-    t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
+    t.is(idp.entityMeta.getSingleSignOnService('post'), 'https://idp.example.com/sso');
   });
-  
+
   test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
-    const { id, context } = sp98.createLoginRequest(idp, 'redirect');
+    const { context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
     const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));

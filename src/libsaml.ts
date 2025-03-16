@@ -246,6 +246,55 @@ const libSaml = () => {
     }
   }
 
+  /**
+   * Create the octet string for the signature algorithms.
+   *
+   * Used in both Redirect and POST-SimpleSign bindings.
+   * HTTP-Redirect Binding as defined in the Bindings OASIS Standard, Section 3.4.4.1.
+   * http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
+   * HTTP-POST-SimpleSign Binding as defined in the "SimpleSign" Binding OASIS Committee Draft.
+   * https://www.oasis-open.org/committees/download.php/30234/sstc-saml-binding-simplesign-cd-04.pdf
+   *
+   * @public
+   * @param {string} binding "redirect" or "simpleSign"
+   * @param {string} direction "SAMLRequest" or "SAMLResponse"
+   * @param {object} values Object that includes SAMLRequest/SAMLResponse, SigAlg, and optional RelayState. All other values are ignored.
+   * @return {string}
+   */
+  function octetStringBuilder(binding: string, direction: string, values: Record<string, unknown>): string {
+    const content = values[direction]
+    const sigAlg = values[urlParams.sigAlg]
+    const relayState = values[urlParams.relayState]
+
+    if (typeof content !== 'string') {
+      throw Error('ERR_OCTET_BAD_ARGS_CONTENT')
+    }
+
+    if (typeof sigAlg !== 'string') {
+      throw Error('ERR_MISSING_SIG_ALG')
+    }
+
+    const params: string[][] = [[direction, content]]
+
+    if (typeof relayState === 'string' && relayState.length !== 0) {
+      params.push([urlParams.relayState, relayState])
+    }
+
+    params.push([urlParams.sigAlg, sigAlg])
+
+    // Redirect binding needs each param URL encoded, `URLSearchParams` gives us this out of the box and maintains order.
+    if (binding === wording.binding.redirect){
+      return new URLSearchParams(params).toString()
+    }
+
+    // The SimpleSign octet string combines the params with &,= but doesn't encode for URLs.
+    if (binding === wording.binding.simpleSign){
+      return params.map(([k,v]) => `${k}=${v}`).join('&')
+    }
+
+    throw Error('ERR_OCTET_UNDEFINED_BINDING')
+  }
+
   return {
 
     createXPath,
@@ -256,6 +305,7 @@ const libSaml = () => {
     defaultAttributeTemplate,
     defaultLogoutRequestTemplate,
     defaultLogoutResponseTemplate,
+    octetStringBuilder,
 
     /**
     * @desc Replace the tag (e.g. {tag}) inside the raw XML
