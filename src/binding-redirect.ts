@@ -10,6 +10,7 @@ import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
 import * as url from 'url';
 import { wording, namespace } from './urn';
+import {SAMLDocumentTemplate} from './types'
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -83,7 +84,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
 * @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} redirect URL
 */
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
 
   const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting: any = entity.sp.entitySetting;
@@ -134,7 +135,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 * @param  {String} relayState                the relaystate sent by sp corresponding request
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const metadata = {
@@ -231,7 +232,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 * @param  {function} customTagReplacement     used when developers have their own login response template
 * @return {string} redirect URL
 */
-function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {
+function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: SAMLDocumentTemplate, tags: object) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   let id: string = initSetting.generateID();
@@ -278,7 +279,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,

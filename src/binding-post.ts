@@ -8,6 +8,7 @@ import { wording, namespace, StatusCode } from './urn';
 import { BindingContext } from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
+import {SAMLDocumentTemplate} from './types'
 
 const binding = wording.binding;
 
@@ -17,7 +18,7 @@ const binding = wording.binding;
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
@@ -79,7 +80,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 * @param  {function} customTagReplacement     used when developers have their own login response template
 * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
 */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -212,7 +213,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 * @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} base64 encoded request
 */
-function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
@@ -270,7 +271,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
+function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: SAMLDocumentTemplate) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,
