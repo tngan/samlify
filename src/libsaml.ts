@@ -204,14 +204,10 @@ const libSaml = () => {
   * @private
   * @desc Get the digest algorithms by signature algorithms
   * @param {string} sigAlg    signature algorithm
-  * @return {string/null} digest algorithm
+  * @return {string/undefined} digest algorithm
   */
-  function getDigestMethod(sigAlg: string): string | null {
-    const digestAlg = digestAlgorithms[sigAlg];
-    if (!(digestAlg === undefined)) {
-      return digestAlg;
-    }
-    return null; // default value
+  function getDigestMethod(sigAlg: string): string | undefined {
+    return digestAlgorithms[sigAlg];
   }
   /**
   * @public
@@ -239,10 +235,12 @@ const libSaml = () => {
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 
-  function escapeTag(text: string): (...args: string[]) => string {
-    return (match: string, quote?: string) => {
+  function escapeTag(replacement: unknown): (...args: string[]) => string {
+    return (_match: string, quote?: string) => {
+      const text: string = (replacement === null || replacement === undefined) ? '' : String(replacement);
+
       // not having a quote means this interpolation isn't for an attribute, and so does not need escaping
-      return quote ? `${quote}${xmlEscape(text || '')}` : text;
+      return quote ? `${quote}${xmlEscape(text)}` : text;
     }
   }
 
@@ -263,7 +261,7 @@ const libSaml = () => {
     * @param  {array} tagValues    tag values
     * @return {string}
     */
-    replaceTagsByValue(rawXML: string, tagValues: any): string {
+    replaceTagsByValue(rawXML: string, tagValues: Record<string, unknown>): string {
       Object.keys(tagValues).forEach(t => {
         rawXML = rawXML.replace(
           new RegExp(`("?)\\{${t}\\}`, 'g'),
