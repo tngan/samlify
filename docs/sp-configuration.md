@@ -63,6 +63,9 @@ const sp = new ServiceProvider({
 
 #### Optional Parameters
 
+- **allowCreate: Boolean**<br/>
+	Declare if identitiy provider is allowed, in the course of fulfilling the request, to create a new identifier to represent the principal, default to `false`
+
 - **loginRequestTemplate: {context: String, attributes: Attributes}**<br/>
   Customize the login request template, and user can reuse it in the callback function to do runtime interpolation. (See [more](/template)) 
 
