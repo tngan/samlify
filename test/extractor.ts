@@ -108,6 +108,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
     t.is(result.attributes.uid, 'test');
     t.is(result.attributes.mail, 'test@example.com');
     t.is(result.attributes.eduPersonAffiliation.length, 2);
+    t.is(result.attributes.missing, null);
   });
 
   test('fetch with one attribute as key, another as value', t => {
