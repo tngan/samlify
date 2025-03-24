@@ -31,6 +31,8 @@ const {
 
 const binding = ref.namespace.binding;
 
+const xmlProlog = '<?xml version="1.0" encoding="utf-8"?>';
+
 // Custom template
 const loginResponseTemplate = {
   context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}" InResponseTo="{InResponseTo}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions>{AttributeStatement}</saml:Assertion></samlp:Response>',
@@ -146,6 +148,14 @@ const idp = identityProvider(defaultIdpConfig);
 const sp = serviceProvider(defaultSpConfig);
 const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
 const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
+const idpcustomPrologNoEncrypt = identityProvider({
+   ...defaultIdpConfig,
+   isAssertionEncrypted: false,
+   loginResponseTemplate: {
+    ...loginResponseTemplate,
+    context: xmlProlog + loginResponseTemplate.context,
+  }
+});
 const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
 const idpEncryptThenSign = identityProvider({ ...defaultIdpConfig, messageSigningOrder: 'encrypt-then-sign' });
 const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
@@ -155,7 +165,7 @@ const spNoAssertSignCustomConfig = serviceProvider({ ...defaultSpConfig,
   metadata: spmetaNoAssertSign,
   signatureConfig: {
     prefix: 'ds',
-    location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
+    location: { reference: "/*[local-name(.)='Response']", action: 'prepend' },
   },
 });
 const spWithClockDrift = serviceProvider({ ...defaultSpConfig, clockDrifts: [-2000, 2000] });
@@ -406,6 +416,28 @@ test('send response with signed assertion and parse it', async t => {
   t.is(samlContent.endsWith('/samlp:Response>'), true);
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.response.inResponseTo, 'request_id');
+});
+
+// + XML prolog
+test('send response with [prolog + custom template] signed assertion and parse it', async t => {
+  //const requestInfo = { extract: { request: { id: 'request_id' } } };
+  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const user = { email: 'user@esaml2.com'};
+  const { id, context: SAMLResponse } = await idpcustomPrologNoEncrypt.createLoginResponse(
+    spNoAssertSignCustomConfig,
+    sampleRequestInfo,
+    'post',
+    user,
+    createTemplateCallback(idpcustomPrologNoEncrypt, spNoAssertSignCustomConfig, binding.post, user),
+  );
+  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const { samlContent, extract } = await spNoAssertSignCustomConfig.parseLoginResponse(idpcustomPrologNoEncrypt, 'post', { body: { SAMLResponse } });
+  t.is(typeof id, 'string');
+  t.is(samlContent.startsWith(xmlProlog), true);
+  t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(extract.nameID, 'user@esaml2.com');
+  t.is(extract.attributes.name, 'mynameinsp');
+  t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
 });
 
 // + REDIRECT
