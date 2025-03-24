@@ -1,10 +1,9 @@
-import esaml2 = require('../index');
-import { readFileSync, writeFileSync } from 'fs';
+import * as esaml2 from '../index';
+import { readFileSync } from 'fs';
 import test from 'ava';
 import * as fs from 'fs';
 import * as url from 'url';
 import { DOMParser as dom } from '@xmldom/xmldom';
-import { xpath as select } from 'xml-crypto';
 import { extract } from '../src/extractor';
 
 const {
@@ -153,15 +152,14 @@ test('#31 query param for sso/slo returns error', t => {
   test('#91 idp gets single sign on service from the metadata', t => {
     t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
   });
-  
+
   test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
-    const { id, context } = sp98.createLoginRequest(idp, 'redirect');
+    const { context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
     const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
-    const authnRequest = select(xml, "/*[local-name(.)='AuthnRequest']")[0];
-    const index = Object.keys(authnRequest.attributes).find((i: string) => authnRequest.attributes[i].nodeName === 'AssertionConsumerServiceURL') as any;
-    t.is(authnRequest.attributes[index].nodeValue, 'https://example.org/response');
+    const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
+    t.is(acsUrl, 'https://example.org/response');
   });
 })();

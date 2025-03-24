@@ -1077,7 +1077,7 @@ test('idp sends a post logout request with signature and sp parses it', async t 
 
 // simulate init-slo
 test('sp sends a post logout response without signature and parse', async t => {
-  const { context: SAMLResponse } = sp.createLogoutResponse(idp, null, 'post', '', createTemplateCallback(idp, sp, binding.post, {})) as PostBindingContext;
+  const { context: SAMLResponse } = sp.createLogoutResponse(idp, sampleRequestInfo, 'post', '', createTemplateCallback(idp, sp, binding.post, {})) as PostBindingContext;
   const { extract } = await idp.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   t.is(extract.signature, null);
   t.is(extract.issuer, 'https://sp.example.org/metadata');
