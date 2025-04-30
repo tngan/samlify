@@ -243,7 +243,13 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifySignature(responseSignedByCert2, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
 
   });
-
+  test('verify a XML signature with metadata but with multiple anonymous certificates, where some of them are incorrect', t => {
+      const responseSignedByCert1 = String(readFileSync('./test/misc/response_signed_cert1.xml'));
+      const metadata = idpMetadata(
+        readFileSync("./test/misc/idpmeta_multiple_anonymous_certs.xml")
+      );
+      t.is(libsaml.verifySignature(responseSignedByCert1, { metadata: metadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
+  });
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
     const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));
     t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0], true);
@@ -440,4 +446,24 @@ test('contains explicit certificate declaration for signing and encryption in me
   t.not(signingCertificate, null);
   t.not(encryptionCertificate, null);
   t.not(signingCertificate, encryptionCertificate);
+});
+
+test('returns different certificates for signing and encryption when metadata contains one signing and one anonymous certificate', t => {
+  const metadata = idpMetadata(
+    readFileSync("./test/misc/idpmeta_one_signing_and_one_anonymous_cert.xml")
+  );
+  const signingCertificate = metadata.getX509Certificate("signing");
+  const encryptionCertificate = metadata.getX509Certificate("encryption");
+  t.not(signingCertificate, encryptionCertificate);
+});
+
+test('returns the same certificate for signing and encryption when multiple anonymous certificates are present', t => {
+  const metadata = idpMetadata(
+    readFileSync("./test/misc/idpmeta_multiple_anonymous_certs.xml")
+  );
+  const signingCertificate = metadata.getX509Certificate("signing");
+  const encryptionCertificate = metadata.getX509Certificate("encryption");
+  t.not(signingCertificate, null);
+  t.not(encryptionCertificate, null);
+  t.is(signingCertificate, encryptionCertificate);
 });
