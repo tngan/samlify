@@ -1,6 +1,6 @@
 {
   "name": "samlify",
-  "version": "2.9.1",
+  "version": "2.9.0",
   "description": "High-level API for Single Sign On (SAML 2.0)",
   "main": "build/index.js",
   "keywords": [
@@ -39,7 +39,7 @@
     "pako": "^1.0.10",
     "uuid": "^8.3.2",
     "xml": "^1.0.1",
-    "xml-crypto": "^3.2.1",
+    "xml-crypto": "^6.1.0",
     "xml-escape": "^1.1.0",
     "xpath": "^0.0.32"
   },

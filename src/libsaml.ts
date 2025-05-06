@@ -9,12 +9,14 @@ import { algorithms, wording, namespace } from './urn';
 import { select } from 'xpath';
 import { MetadataInterface } from './metadata';
 import nrsa, { SigningSchemeHash } from 'node-rsa';
-import { SignedXml, FileKeyInfo } from 'xml-crypto';
+import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
 import camelCase from 'camelcase';
 import { getContext } from './api';
 import xmlEscape from 'xml-escape';
+import * as fs from 'fs';
+import {DOMParser} from '@xmldom/xmldom';
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -95,6 +97,7 @@ export interface LibSamlInterface {
   verifySignature: (xml: string, opts: SignatureVerifierOptions) => [boolean, any];
   createKeySection: (use: KeyUse, cert: string | Buffer) => {};
   constructMessageSignature: (octetString: string, key: string, passphrase?: string, isBase64?: boolean, signingAlgorithm?: string) => string;
+
   verifyMessageSignature: (metadata, octetString: string, signature: string | Buffer, verifyAlgorithm?: string) => boolean;
   getKeyInfo: (x509Certificate: string, signatureConfig?: any) => void;
   encryptAssertion: (sourceEntity, targetEntity, entireXML: string) => Promise<string>;
@@ -326,28 +329,28 @@ const libSaml = () => {
       } = opts;
       const sig = new SignedXml();
       // Add assertion sections as reference
+      const digestAlgorithm = getDigestMethod(signatureAlgorithm);
       if (referenceTagXPath) {
-        sig.addReference(
-          referenceTagXPath,
-          transformationAlgorithms,
-          getDigestMethod(signatureAlgorithm)
-        );
+        sig.addReference({
+          xpath: referenceTagXPath,
+          transforms: transformationAlgorithms,
+          digestAlgorithm: digestAlgorithm
+        });
       }
       if (isMessageSigned) {
-        sig.addReference(
+        sig.addReference({
           // reference to the root node
-          '/*',
-          transformationAlgorithms,
-          getDigestMethod(signatureAlgorithm),
-          '',
-          '',
-          '',
-          false,
-        );
+          xpath: '/*',
+          transforms: transformationAlgorithms,
+          digestAlgorithm
+        });
       }
       sig.signatureAlgorithm = signatureAlgorithm;
-      sig.keyInfoProvider = new this.getKeyInfo(signingCert, signatureConfig);
-      sig.signingKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
+      sig.publicCert = this.getKeyInfo(signingCert, signatureConfig).getKey();
+      sig.getKeyInfoContent = this.getKeyInfo(signingCert, signatureConfig).getKeyInfo;
+      sig.privateKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
+      sig.canonicalizationAlgorithm = 'http://www.w3.org/2001/10/xml-exc-c14n#';
+
       if (signatureConfig) {
         sig.computeSignature(rawSamlMessage, signatureConfig);
       } else {
@@ -359,11 +362,15 @@ const libSaml = () => {
     * @desc Verify the XML signature
     * @param  {string} xml xml
     * @param  {SignatureVerifierOptions} opts cert declares the X509 certificate
-    * @return {boolean} verification result
-    */
+     * @return {[boolean, string | null]} - A tuple where:
+     *   - The first element is `true` if the signature is valid, `false` otherwise.
+     *   - The second element is the cryptographically authenticated assertion node as a string, or `null` if not found.
+     */
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const { dom } = getContext();
       const doc = dom.parseFromString(xml);
+
+      const docParser = new DOMParser();
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
       // message signature (logout response / saml response)
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
@@ -374,7 +381,6 @@ const libSaml = () => {
 
       // select the signature node
       let selection: any = [];
-      let assertionNode: string | null = null;
       const messageSignatureNode = select(messageSignatureXpath, doc);
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
       const wrappingElementNode = select(wrappingElementsXPath, doc);
@@ -392,10 +398,11 @@ const libSaml = () => {
         throw new Error('ERR_ZERO_SIGNATURE');
       }
 
-      const sig = new SignedXml();
-      let verified = true;
+
       // need to refactor later on
-      selection.forEach(signatureNode => {
+      for (const signatureNode of selection){
+        const sig = new SignedXml();
+        let verified = false;
 
         sig.signatureAlgorithm = opts.signatureAlgorithm!;
 
@@ -404,7 +411,7 @@ const libSaml = () => {
         }
 
         if (opts.keyFile) {
-          sig.keyInfoProvider = new FileKeyInfo(opts.keyFile);
+          sig.publicCert = fs.readFileSync(opts.keyFile)
         }
 
         if (opts.metadata) {
@@ -440,28 +447,56 @@ const libSaml = () => {
               throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
             }
 
-            sig.keyInfoProvider = new this.getKeyInfo(x509Certificate);
+            sig.publicCert = this.getKeyInfo(x509Certificate).getKey();
 
           } else {
             // Select first one from metadata
-            sig.keyInfoProvider = new this.getKeyInfo(metadataCert[0]);
+            sig.publicCert = this.getKeyInfo(metadataCert[0]).getKey();
           }
-
         }
 
         sig.loadSignature(signatureNode);
 
         doc.removeChild(signatureNode);
 
-        verified = verified && sig.checkSignature(doc.toString());
+        verified = sig.checkSignature(doc.toString());
 
         // immediately throw error when any one of the signature is failed to get verified
         if (!verified) {
           throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
         }
+        // attempt is made to get the signed Reference as a string();
+        // note, we don't have access to the actual signedReferences API unfortunately
+        // mainly a sanity check here for SAML. (Although ours would still be secure, if multiple references are used)
+        if (!(sig.getReferences().length >= 1)) {
+          throw new Error('NO_SIGNATURE_REFERENCES')
+        }
+        const signedVerifiedXML = sig.getSignedReferences()[0];
+        const rootNode = docParser.parseFromString(signedVerifiedXML, 'text/xml').documentElement;
+        // process the verified signature:
+        // case 1, rootSignedDoc is a response:
+        if (rootNode.localName === 'Response') {
 
-      });
+          // try getting the Xml from the first assertion
+          const assertions = select(
+            "./*[local-name()='Assertion']",
+            rootNode
+          );
+          // now we can process the assertion as an assertion
+          if (assertions.length === 1) {
+            return [true, assertions[0].toString()];
+          }
+        } else if (rootNode.localName === 'Assertion') {
+          return [true, rootNode.toString()];
+        } else {
+          return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
+        }
+      };
 
+      // something has gone seriously wrong if we are still here
+      throw new Error('ERR_ZERO_SIGNATURE');
+
+      /*
       // response must be signed, either entire document or assertion
       // default we will take the assertion section under root
       if (messageSignatureNode.length === 1) {
@@ -503,7 +538,7 @@ const libSaml = () => {
         assertionNode = verifiedDoc.assertion.toString();
       }
 
-      return [verified, assertionNode];
+      return [verified, assertionNode];*/
     },
     /**
     * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
@@ -586,12 +621,14 @@ const libSaml = () => {
     * @return {string} public key
     */
     getKeyInfo(x509Certificate: string, signatureConfig: any = {}) {
-      this.getKeyInfo = key => {
-        const prefix = signatureConfig.prefix ? `${signatureConfig.prefix}:` : '';
-        return `<${prefix}X509Data><${prefix}X509Certificate>${x509Certificate}</${prefix}X509Certificate></${prefix}X509Data>`;
-      };
-      this.getKey = keyInfo => {
-        return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
+      const prefix = signatureConfig.prefix ? `${signatureConfig.prefix}:` : '';
+      return {
+        getKeyInfo: () => {
+          return `<${prefix}X509Data><${prefix}X509Certificate>${x509Certificate}</${prefix}X509Certificate></${prefix}X509Data>`;
+        },
+        getKey: () => {
+          return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
+        },
       };
     },
     /**
