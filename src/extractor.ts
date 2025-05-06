@@ -209,6 +209,7 @@ export function extract(context: string, fields) {
     const shortcut = field.shortcut;
     // get optional fields
     const index = field.index;
+    const excludeAttribute = field.excludeAttribute;
     const attributePath = field.attributePath;
 
     // set allowing overriding if there is a shortcut injected
@@ -361,6 +362,30 @@ export function extract(context: string, fields) {
         [key]: attributeValues[0]
       };
     }
+
+    // case: single excluded attribute
+    /*
+      {
+        key: 'sharedCertificate',
+        excludeAttribute: 'use',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
+        attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
+        attributes: [],
+      }
+    */
+      if (excludeAttribute) {
+        const fullPath = `${baseXPath}[not(@${excludeAttribute})]${buildAbsoluteXPath(attributePath)}`;
+        const node = select(fullPath, targetDoc);
+        return {
+          ...result,
+          [key]: node.length > 0
+            ? node
+                .filter((n: Node) => n.firstChild)
+                .map((n: Node) => n.firstChild!.nodeValue)
+            : undefined
+        };
+      }
+
     // case: zero attribute
     /*
       {
