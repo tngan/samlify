@@ -9,7 +9,7 @@ import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
-
+import {AttrService,ServiceName,RequestedAttribute,AttributeConsumingService} from './types'
 export interface SpMetadataInterface extends MetadataInterface {
 
 }
@@ -58,6 +58,7 @@ export class SpMetadata extends Metadata {
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
+        attributeConsumingService = []
       } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
@@ -124,13 +125,98 @@ export class SpMetadata extends Metadata {
       } else {
         // console.warn('Missing endpoint of AssertionConsumerService');
       }
+/*      if (isNonEmptyArray(attributeConsumingService)) {
+        let indexCount = 0;
+        attributeConsumingService.forEach(a => {
+          console.log(a);
+          console.log("是神------------")
+          const attr: any = {
+            index: String(indexCount++),
+          };
+
+          descriptors.AttributeConsumingService!.push([{ _attr: attr },{
+
+          }]);
+        });
+      } else {
+        // console.warn('Missing endpoint of AssertionConsumerService');
+      }*/
+      // 修改原有处理逻辑
+      if (isNonEmptyArray(attributeConsumingService)) {
+        attributeConsumingService.forEach((service,index)=> {
+          // 1. 构建AttributeConsumingService主元素
+          let indexCount = 0;
+          let  attrConsumingService: any[] = [{
+            _attr: {
+              index: String(index + 1),
+            }
+          }];
+          if (service.isDefault) {
+            attrConsumingService[0]._attr.isDefault = true;
+          }
+          console.log(service);
+          // 2. 添加ServiceName子元素
+          if (isNonEmptyArray(  service.serviceName)){
+            service.serviceName.forEach(({ value, lang }) => {
+              attrConsumingService.push({
+                ServiceName: [
+                  {
+                    _attr: lang ? { 'xml:lang': lang } : {},
+
+                  },
+                  value
+                ]
+              });
+            });
+          }
+
+          if (isNonEmptyArray(  service.serviceDescription)){
+            service.serviceDescription.forEach(({ value, lang }) => {
+              attrConsumingService.push({
+                ServiceDescription: [
+                  {
+                    _attr: lang ? { 'xml:lang': lang } : {},
+
+                  },
+                  value
+                ]
+              });
+            });
+          }
+
+
+          // 3. 添加RequestedAttribute子元素
+          if (isNonEmptyArray(service.requestedAttributes)) {
+            service.requestedAttributes.forEach(attr => {
+              const requestedAttr: any = {
+                _attr: {
+                  ...(attr.isRequired && { isRequired: String(attr.isRequired) }),
+                  Name: attr.name,
+                  ...(attr.friendlyName && { FriendlyName: attr.friendlyName }),
+                }
+              };
+/*              // 处理属性值白名单
+              if (isNonEmptyArray(attr.attributeValue)) {
+                requestedAttr[namespace.tags.attributeValue] = attr.attributeValue.map(val => ({
+                  _: val
+                }));
+              }*/
+              attrConsumingService.push({
+                RequestedAttribute: [requestedAttr]
+              });
+            });
+          }
+
+          // 4. 将完整元素加入描述符
+          descriptors.AttributeConsumingService!.push(attrConsumingService);
+        });
+      }
 
       // handle element order
       const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
       existedElements.forEach(name => {
         descriptors[name].forEach(e => SPSSODescriptor.push({ [name]: e }));
       });
-
       // Re-assign the meta reference as a XML string|Buffer for use with the parent constructor
       meta = xml([{
         EntityDescriptor: [{

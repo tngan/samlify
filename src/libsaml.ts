@@ -10,7 +10,7 @@ import { select } from 'xpath';
 import { MetadataInterface } from './metadata';
 import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
-import * as xmlenc from '@authenio/xml-encryption';
+import * as xmlenc from 'xml-encryption';
 import { extract } from './extractor';
 import camelCase from 'camelcase';
 import { getContext } from './api';
@@ -57,6 +57,7 @@ export interface LoginResponseAttribute {
   valueTag: string;
   valueXmlnsXs?: string;
   valueXmlnsXsi?: string;
+  type?: string | string[];
 }
 
 export interface LoginResponseAdditionalTemplates {
@@ -285,10 +286,15 @@ const libSaml = () => {
       attributeTemplate: AttributeTemplate = defaultAttributeTemplate,
       attributeStatementTemplate: AttributeStatementTemplate = defaultAttributeStatementTemplate
     ): string {
-      const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
+      const attr = attributes.map(({name, nameFormat, valueTag, valueXsiType,type, valueXmlnsXs, valueXmlnsXsi }) => {
         const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
         const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
-        let attributeLine = attributeTemplate.context;
+      let attributeLine = attributeTemplate.context;
+      if (attributeLine && typeof attributeLine === 'function') {
+        // 安全调用
+        // @ts-ignore
+        return attributeLine({ name, nameFormat, valueTag, valueXsiType,type, valueXmlnsXs: valueXmlnsXs ?? defaultValueXmlnsXs, valueXmlnsXsi :valueXmlnsXsi ?? defaultValueXmlnsXsi })
+      }else{
         attributeLine = attributeLine.replace('{Name}', name);
         attributeLine = attributeLine.replace('{NameFormat}', nameFormat);
         attributeLine = attributeLine.replace('{ValueXmlnsXs}', valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
@@ -296,8 +302,10 @@ const libSaml = () => {
         attributeLine = attributeLine.replace('{ValueXsiType}', valueXsiType);
         attributeLine = attributeLine.replace('{Value}', `{${tagging('attr', valueTag)}}`);
         return attributeLine;
-      }).join('');
-      return attributeStatementTemplate.context.replace('{Attributes}', attr);
+      }
+
+    }).join('');
+  return attributeStatementTemplate.context.replace('{Attributes}', attr);
     },
 
     /**
@@ -317,7 +325,7 @@ const libSaml = () => {
         referenceTagXPath,
         privateKey,
         privateKeyPass,
-        signatureAlgorithm = signatureAlgorithms.RSA_SHA256,
+        signatureAlgorithm = signatureAlgorithms.RSA_SHA512,
         transformationAlgorithms = [
           'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
           'http://www.w3.org/2001/10/xml-exc-c14n#',
@@ -415,7 +423,6 @@ const libSaml = () => {
         }
 
         if (opts.metadata) {
-
           const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
           // certificate in metadata
           let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
@@ -437,7 +444,6 @@ const libSaml = () => {
           if (certificateNode.length !== 0) {
             const x509CertificateData = certificateNode[0].firstChild.data;
             const x509Certificate = utility.normalizeCerString(x509CertificateData);
-
             if (
               metadataCert.length >= 1 &&
               !metadataCert.find(cert => cert.trim() === x509Certificate.trim())
@@ -452,6 +458,7 @@ const libSaml = () => {
           } else {
             // Select first one from metadata
             sig.publicCert = this.getKeyInfo(metadataCert[0]).getKey();
+
           }
         }
 
@@ -465,6 +472,7 @@ const libSaml = () => {
         if (!verified) {
           throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
         }
+
         // attempt is made to get the signed Reference as a string();
         // note, we don't have access to the actual signedReferences API unfortunately
         // mainly a sanity check here for SAML. (Although ours would still be secure, if multiple references are used)
@@ -478,14 +486,26 @@ const libSaml = () => {
         if (rootNode.localName === 'Response') {
 
           // try getting the Xml from the first assertion
-          const assertions = select(
-            "./*[local-name()='Assertion']",
-            rootNode
+          const EncryptedAssertions = select(
+              "./*[local-name()='EncryptedAssertion']",
+              rootNode
           );
-          // now we can process the assertion as an assertion
+          const assertions = select(
+              "./*[local-name()='Assertion']",
+              rootNode
+          );
+
+            // now we can process the assertion as an assertion
+            if (EncryptedAssertions.length === 1) {
+
+              return [true, EncryptedAssertions[0].toString()];
+            }
+
           if (assertions.length === 1) {
+
             return [true, assertions[0].toString()];
           }
+
         } else if (rootNode.localName === 'Assertion') {
           return [true, rootNode.toString()];
         } else {
@@ -496,11 +516,10 @@ const libSaml = () => {
       // something has gone seriously wrong if we are still here
       throw new Error('ERR_ZERO_SIGNATURE');
 
-      /*
       // response must be signed, either entire document or assertion
       // default we will take the assertion section under root
-      if (messageSignatureNode.length === 1) {
-        const node = select("/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']", doc);
+/*      if (messageSignatureNode.length === 1) {
+        const node = select("/!*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/!*[local-name(.)='Assertion']", doc);
         if (node.length === 1) {
           assertionNode = node[0].toString();
         }
@@ -670,6 +689,9 @@ const libSaml = () => {
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
+            keyEncryptionDigest: 'SHA-512',
+            disallowEncryptionWithInsecureAlgorithm: true,
+            warnInsecureAlgorithm: true
           }, (err, res) => {
             if (err) {
               console.error(err);
@@ -714,7 +736,6 @@ const libSaml = () => {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
         const encAssertionNode = encryptedAssertions[0];
-
         return xmlenc.decrypt(encAssertionNode.toString(), {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {

@@ -197,7 +197,7 @@ function convertToString(input, isOutputString) {
 /**
  * @desc Check if the input is an array with non-zero size
  */
-export function isNonEmptyArray(a) {
+export function isNonEmptyArray(a:any) {
   return Array.isArray(a) && a.length > 0;
 }
 

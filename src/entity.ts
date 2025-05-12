@@ -24,8 +24,8 @@ const defaultEntitySetting = {
   wantLogoutRequestSigned: false,
   allowCreate: false,
   isAssertionEncrypted: false,
-  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA256,
-  dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
+  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA512,
+  dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256_GCM,
   keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_OAEP_MGF1P,
   generateID: (): string => ('_' + uuid.v4()),
   relayState: '',
@@ -83,13 +83,13 @@ export default class Entity {
     switch (entityType) {
       case 'idp':
         this.entityMeta = IdpMetadata(metadata);
-        // setting with metadata has higher precedence 
+        // setting with metadata has higher precedence
         this.entitySetting.wantAuthnRequestsSigned = this.entityMeta.isWantAuthnRequestsSigned();
         this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;
         break;
       case 'sp':
         this.entityMeta = SpMetadata(metadata);
-        // setting with metadata has higher precedence 
+        // setting with metadata has higher precedence
         this.entitySetting.authnRequestsSigned = this.entityMeta.isAuthnRequestSigned();
         this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
         this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;

@@ -193,7 +193,6 @@ async function postFlow(options): Promise<FlowResult> {
   };
 
   const decryptRequired = from.entitySetting.isAssertionEncrypted;
-
   let extractorFields: ExtractorFields = [];
 
   // validate the xml first

@@ -7,6 +7,7 @@
 
 Highly configuarable Node.js SAML 2.0 library for Single Sign On
 
+## 🔄 此仓库为 [samlify](https://github.com/tngan/samlify) 的维护分支，修复了以下问题
 ## Welcome PRs
 
 Welcome all PRs for maintaining this project, or provide a link to the repositories especially for use cases alongside with different frameworks.

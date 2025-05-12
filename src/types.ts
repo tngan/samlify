@@ -13,7 +13,32 @@ type SSOService = {
   Binding: string;
   Location: string;
 };
+// 1. 定义服务名称类型
+export type ServiceName = {
+  value: string;
+  /** @description 语言标识符（如 en/zh-CN） */
+  lang?: string;
+};
 
+// 2. 定义请求属性类型
+export type RequestedAttribute = {
+  name: string;
+  friendlyName?: string;
+  isRequired?: boolean;
+  nameFormat?: string;
+  attributeValue?: string[];
+};
+
+// 3. 定义属性消费服务类型
+export type AttributeConsumingService = {
+  isDefault: boolean;
+  serviceName: ServiceName[]; // 修复点：确保属性名为 serviceName（驼峰命名）
+  serviceDescription: ServiceName[]; // 修复点：确保属性名为 serviceName（驼峰命名）
+  requestedAttributes: RequestedAttribute[];
+};
+
+// 4. 定义顶层服务配置类型
+export type AttrService = AttributeConsumingService[];
 export interface MetadataIdpOptions {
   entityID?: string;
   signingCert?: string | Buffer | (string | Buffer)[];
@@ -41,6 +66,7 @@ export interface MetadataSpOptions {
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
   assertionConsumerService?: SSOService[];
+  attributeConsumingService?: AttributeConsumingService[];
   elementsOrder?: string[];
 }
 
