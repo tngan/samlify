@@ -10,15 +10,6 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@authenio/xml-encryption@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-2.0.2.tgz#df1f491dacb9b1f65bc7a9a554c189644f72bbe0"
-  integrity sha512-cTlrKttbrRHEw3W+0/I609A2Matj5JQaRvfLtEIGZvlN0RaPi+3ANsMeqAyCAVlH/lUIW2tmtBlSMni74lcXeg==
-  dependencies:
-    "@xmldom/xmldom" "^0.8.6"
-    escape-html "^1.0.3"
-    xpath "0.0.32"
-
 "@ava/typescript@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@ava/typescript/-/typescript-1.1.1.tgz#3dcaba3aced8026fdb584d927d809752854dc6e6"
@@ -451,7 +442,7 @@
   resolved "https://registry.yarnpkg.com/@xmldom/is-dom-node/-/is-dom-node-1.0.1.tgz#83b9f3e1260fb008061c6fa787b93a00f9be0629"
   integrity sha512-CJDxIgE5I0FH+ttq/Fxy6nRpxP70+e2O048EPe85J2use3XKdatVM7dDVvFNjQudd9B49NPoZ+8PG49zj4Er8Q==
 
-"@xmldom/xmldom@^0.8.10":
+"@xmldom/xmldom@^0.8.10", "@xmldom/xmldom@^0.8.5":
   version "0.8.10"
   resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.8.10.tgz#a1337ca426aa61cef9fe15b5b28e340a72f6fa99"
   integrity sha512-2WALfTl4xo2SkGCYRt6rDTFfk9R1czmBvUQy12gK2KuRKIpWEhcbbzy8EZXtz/jkRqHX8bFEc6FC1HjX4TUWYw==
@@ -2530,6 +2521,15 @@ xml-crypto@^6.1.0:
     "@xmldom/is-dom-node" "^1.0.1"
     "@xmldom/xmldom" "^0.8.10"
     xpath "^0.0.33"
+
+xml-encryption@^3.0.1:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/xml-encryption/-/xml-encryption-3.1.0.tgz#f3e91c4508aafd0c21892151ded91013dcd51ca2"
+  integrity sha512-PV7qnYpoAMXbf1kvQkqMScLeQpjCMixddAKq9PtqVrho8HnYbBOWNfG0kA4R7zxQDo7w9kiYAyzS/ullAyO55Q==
+  dependencies:
+    "@xmldom/xmldom" "^0.8.5"
+    escape-html "^1.0.3"
+    xpath "0.0.32"
 
 xml-escape@^1.1.0:
   version "1.1.0"

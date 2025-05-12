@@ -12,7 +12,7 @@
   ],
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "yarn audit;make rebuild",
+    "build": "tsc",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
