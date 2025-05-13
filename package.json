@@ -1,6 +1,6 @@
 {
   "name": "@veclea/samlify",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "description": "High-level API for Single Sign On (SAML 2.0) 维护分支：修复原项目samlify的一些问题 ",
   "main": "build/index.js",
   "keywords": [
@@ -22,11 +22,11 @@
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
-    "Tony Ngan <tonynwk919@gmail.com>"
+    "Veclea <vemocle@gmail.com>"
   ],
-  "author": "tngan",
+  "author": "Veclea",
   "repository": {
-    "url": "https://github.com/tngan/samlify",
+    "url": "https://github.com/Veclea/samlify.git",
     "type": "git"
   },
   "license": "MIT",

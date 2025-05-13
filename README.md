@@ -8,8 +8,14 @@
 Highly configuarable Node.js SAML 2.0 library for Single Sign On
 
 ## 🔄 此仓库为 [samlify](https://github.com/tngan/samlify) 的维护分支，修复了以下问题
-更新了xml-encryption版本 将依赖切换到xml-encryption 支持
-修复了断言加密的一些错误,sp支持 attributeConsumingService参数配置属性 增加了对属性的批量替换功能 还支持attributeValue多值模式  将签名算法默认提升到sha246 加密算法默认为ES_256_GCM
+
+- 将依赖包 @authenio/xml-encryption 更换成 xml-encryption并升级了版本,xml-encryption最新版本添加对 sha256/512 加密密钥 OAEP 摘要方法的支持，并将默认密钥签名算法指定为 sha-512
+- 修复了断言加密的一些错误 如libsaml.ts对加密断言仍然采用Assertion字段提取获取，增加了EncryptedAssertion字段提取逻辑
+- 默认elementsOrder增加了 AttributeConsumingService，并在参数增加了 attributeConsumingService字段能够根据字段生成attributeElement包括attributeValue
+- 默认替换增加了自定义函数模板 增加了对多值的attributeValue支持与替换
+- 默认替签名算法替换为SHA-256及更高，加密算法为默认AES_256_GCM模式
+
+
 ## Welcome PRs
 
 Welcome all PRs for maintaining this project, or provide a link to the repositories especially for use cases alongside with different frameworks.

@@ -123,24 +123,8 @@ export class SpMetadata extends Metadata {
           descriptors.AssertionConsumerService!.push([{ _attr: attr }]);
         });
       } else {
-        // console.warn('Missing endpoint of AssertionConsumerService');
+        console.warn('Missing endpoint of AssertionConsumerService');
       }
-/*      if (isNonEmptyArray(attributeConsumingService)) {
-        let indexCount = 0;
-        attributeConsumingService.forEach(a => {
-          console.log(a);
-          console.log("是神------------")
-          const attr: any = {
-            index: String(indexCount++),
-          };
-
-          descriptors.AttributeConsumingService!.push([{ _attr: attr },{
-
-          }]);
-        });
-      } else {
-        // console.warn('Missing endpoint of AssertionConsumerService');
-      }*/
       // 修改原有处理逻辑
       if (isNonEmptyArray(attributeConsumingService)) {
         attributeConsumingService.forEach((service,index)=> {
@@ -154,7 +138,6 @@ export class SpMetadata extends Metadata {
           if (service.isDefault) {
             attrConsumingService[0]._attr.isDefault = true;
           }
-          console.log(service);
           // 2. 添加ServiceName子元素
           if (isNonEmptyArray(  service.serviceName)){
             service.serviceName.forEach(({ value, lang }) => {
@@ -162,7 +145,6 @@ export class SpMetadata extends Metadata {
                 ServiceName: [
                   {
                     _attr: lang ? { 'xml:lang': lang } : {},
-
                   },
                   value
                 ]
@@ -176,15 +158,12 @@ export class SpMetadata extends Metadata {
                 ServiceDescription: [
                   {
                     _attr: lang ? { 'xml:lang': lang } : {},
-
                   },
                   value
                 ]
               });
             });
           }
-
-
           // 3. 添加RequestedAttribute子元素
           if (isNonEmptyArray(service.requestedAttributes)) {
             service.requestedAttributes.forEach(attr => {
