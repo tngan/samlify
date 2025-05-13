@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  A simple library including some common functions
 */
-
+import { createSign, createPrivateKey } from 'node:crypto';
 import utility, { flattenDeep, isString } from './utility.js';
 import { algorithms, wording, namespace } from './urn.js';
 import { select } from 'xpath';
@@ -22,7 +22,22 @@ const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
 const urlParams = wording.urlParams;
+/**
+ * 算法名称映射表 (兼容 X.509 和 SAML 规范)
+ */
+function mapSignAlgorithm(algorithm: string): string {
+  const algorithmMap =  {
+    'rsa-sha1': 'RSA-SHA1',
+    'rsa-sha256': 'RSA-SHA256',
+    'rsa-sha384': 'RSA-SHA384',
+    'rsa-sha512': 'RSA-SHA512',
+    'ecdsa-sha256': 'ECDSA-SHA256',
+    'ecdsa-sha384': 'ECDSA-SHA384',
+    'ecdsa-sha512': 'ECDSA-SHA512'
+  };
 
+  return algorithmMap[algorithm.toLowerCase()] || algorithm;
+}
 export interface SignatureConstructor {
   rawSamlMessage: string;
   referenceTagXPath?: string;
@@ -587,6 +602,55 @@ const libSaml = () => {
           }],
       };
     },
+
+    /**
+     * SAML 消息签名 (符合 SAML V2.0 绑定规范)
+     * @param octetString - 要签名的原始数据 (OCTET STRING)
+     * @param key - PEM 格式私钥
+     * @param passphrase - 私钥密码 (如果有加密)
+     * @param isBase64 - 是否返回 base64 编码 (默认 true)
+     * @param signingAlgorithm - 签名算法 (默认 'rsa-sha256')
+     * @returns 消息签名
+     */
+
+    constructMessageSignature2(
+      octetString: string | Buffer,
+    key: string | Buffer,
+    passphrase?: string,
+    isBase64: boolean = true,
+    signingAlgorithm: string = nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]
+): string | Buffer {
+    try {
+      // 1. 标准化输入数据
+      const inputData = Buffer.isBuffer(octetString)
+        ? octetString
+        : Buffer.from(octetString, 'utf8');
+
+      // 2. 创建签名器并设置算法
+      console.log(signingAlgorithm);
+      console.log('我得到的算法---------')
+      const signer = createSign('SHA256');
+
+
+      // 3. 加载私钥
+      const privateKey = createPrivateKey({
+        key: key,
+        format: 'pem',
+        passphrase: passphrase,
+        encoding: 'utf8'
+      });
+      signer.write(octetString);
+      signer.end();
+      const signature = signer.sign(privateKey, 'base64');
+      console.log(signature);
+      console.log('啦啦啦啦')
+      // 5. 处理编码输出
+      return isBase64 ? signature.toString() : signature;
+    } catch (error) {
+      throw new Error(`SAML 签名失败: ${error.message}`);
+    }
+  },
+
     /**
     * @desc Constructs SAML message
     * @param  {string} octetString               see "Bindings for the OASIS Security Assertion Markup Language (SAML V2.0)" P.17/46
@@ -611,9 +675,20 @@ const libSaml = () => {
           signingScheme: getSigningScheme(signingAlgorithm),
         }
       );
-      console.log(decryptedKey);
+      console.log('-------------------签名值-------------')
+      console.log(signingAlgorithm);
+      console.log(getSigningScheme(signingAlgorithm));
+      console.log('signingScheme')
       console.log('解密的这就是我喜欢看--------------')
+
       const signature = decryptedKey.sign(octetString);
+      console.log(signature.toString('base64'));
+
+
+      console.log('看下算法=======================')
+      const result =  this.constructMessageSignature2(octetString, key,passphrase, isBase64, getSigningScheme(signingAlgorithm))
+      console.log(result);
+      console.log('看下算法=======================')
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
     },

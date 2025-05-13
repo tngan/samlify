@@ -1,16 +1,16 @@
 /**
-* @file binding-redirect.ts
-* @author tngan
-* @desc Binding-level API, declare the functions using Redirect binding
-*/
-import utility, { get } from './utility.js';
+ * @file binding-redirect.ts
+ * @author tngan
+ * @desc Binding-level API, declare the functions using Redirect binding
+ */
+import utility, {get} from './utility.js';
 import libsaml from './libsaml.js';
-import { BindingContext } from './entity.js';
-import { IdentityProvider as Idp } from './entity-idp.js';
-import { ServiceProvider as Sp } from './entity-sp.js';
+import {BindingContext} from './entity.js';
+import {IdentityProvider as Idp} from './entity-idp.js';
+import {ServiceProvider as Sp} from './entity-sp.js';
 import * as url from 'url';
-import url2  from 'node:url'
-import { wording, namespace } from './urn.js';
+import url2 from 'node:url'
+import {wording, namespace} from './urn.js';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -25,25 +25,26 @@ export interface BuildRedirectConfig {
 }
 
 /**
-* @private
-* @desc Helper of generating URL param/value pair
-* @param  {string} param     key
-* @param  {string} value     value of key
-* @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
-* @return {string}
-*/
+ * @private
+ * @desc Helper of generating URL param/value pair
+ * @param  {string} param     key
+ * @param  {string} value     value of key
+ * @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
+ * @return {string}
+ */
 function pvPair(param: string, value: string, first?: boolean): string {
   return (first === true ? '?' : '&') + param + '=' + value;
 }
+
 /**
-* @private
-* @desc Refractored part of URL generation for login/logout request
-* @param  {string} type
-* @param  {boolean} isSigned
-* @param  {string} rawSamlRequest
-* @param  {object} entitySetting
-* @return {string}
-*/
+ * @private
+ * @desc Refractored part of URL generation for login/logout request
+ * @param  {string} type
+ * @param  {boolean} isSigned
+ * @param  {string} rawSamlRequest
+ * @param  {object} entitySetting
+ * @return {string}
+ */
 function buildRedirectURL(opts: BuildRedirectConfig) {
   const {
     baseUrl,
@@ -52,15 +53,14 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     context,
     entitySetting,
   } = opts;
-  let { relayState = '' } = opts;
-  console.log('这里是没问题的')
-  console.log(baseUrl);
-  const myURL = new URL('/saml/idp/authnRequest?SAMLRequest=nJJBb5tAEIX%2FCto7sLtmg1kFJDdWVUtpa8VuD71EGzxxVoJZujOkzb%2BvwK7qXnzIFea9%2Bd7buSXXd4NdjfyCD%2FBzBOLkd98h2elHLcaINjjyZNH1QJZbu1t9vrc6k9YRQWQfUFxIhuuaIQYObehEslnX4jV07WMhC7kwapnqpXNpUZUqfQIHadkCVCU8l0YbkXyHSD5gLXQmRbIhGmGDxA65Flpqk0qTqsVeFVbdWFNki2X1QyRrIPboeFa%2BMA9k81xVOlM3y8xkurRGSplP4Lk%2FDLm76EEkq78B7wLS2EPcQXz1LXx7uP%2FnRv6IHrMpCuDRI2Rt6E%2BOREEk23PiDx4PHo%2FX63k6DZH9tN9v0%2B3X3V408xPZOXFMPobYO75uMn3xh%2FR5HrWA7PlNNNd5tZKqXKiqKGf0x5EgTvy3%2BcX25nwtX1wPm%2FU2dL59ewcRR4fkAaeGuy78uovgGGrBcQSRN6eV%2F99k8ycAAP%2F%2F&RelayState=https%3A%2F%2Fconsole.volcengine.com&SigAlg=http%3A%2F%2Fwww.w3.org%2F2000%2F09%2Fxmldsig%23rsa-sha1&Signature=C%2BldoMXH96RTzqul5Kg1c7SAJ4mCrR3%2Bw4V%2BvO42Yqf0Nm6lSqZxQyc3jCzqJqBSzXyHaR3VM6W8YQ0Vo%2BoaT9JAgJPb%2FTpbFORAwK2pC9ZqVHdk0hgjDtbej9G%2FfAyP44tnw3tlq4SX6286%2Fek6hZOSzBnelPj9B8acRNSSPzpVzmSTD3h8oXfYE7xNWSENLcXDGkb8sHJtJuWccvV2zrelyWXFyVvmmJJj9dqiC2RSDQZvxFw0JQWGm9l8aaY4wqN%2BsfylLpO3J2DW4UkXWo2f7jbpA39Pq6j4Gl2I9a2SMWkyLhX9rB970R4WAvib%2FmaHBvJgUgYWY%2FtEBIUyeQ%3D%3D\n');
-  console.log(myURL.searchParams);
+  let {relayState = ''} = opts;
+  let noParams = true
+  try {
+    noParams = new URL(baseUrl)?.searchParams?.size === 0
+  } catch {
+    noParams = true
+  }
 
-  const noParams = (url.parse(baseUrl).query || []).length === 0;
-  console.log(noParams);
-  console.log('这里是有问题的')
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
   const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
@@ -73,27 +73,31 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     return baseUrl
       + pvPair(queryParam, octetString, noParams)
       + pvPair(urlParams.signature, encodeURIComponent(
-        libsaml.constructMessageSignature(
-          queryParam + '=' + octetString,
-          entitySetting.privateKey,
-          entitySetting.privateKeyPass,
-          undefined,
-          entitySetting.requestSignatureAlgorithm
-        ).toString()
-      )
+          libsaml.constructMessageSignature(
+            queryParam + '=' + octetString,
+            entitySetting.privateKey,
+            entitySetting.privateKeyPass,
+            undefined,
+            entitySetting.requestSignatureAlgorithm
+          ).toString()
+        )
       );
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
-/**
-* @desc Redirect URL for login request
-* @param  {object} entity                       object includes both idp and sp
-* @param  {function} customTagReplacement      used when developers have their own login response template
-* @return {string} redirect URL
-*/
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
 
-  const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+/**
+ * @desc Redirect URL for login request
+ * @param  {object} entity                       object includes both idp and sp
+ * @param  {function} customTagReplacement      used when developers have their own login response template
+ * @return {string} redirect URL
+ */
+function loginRequestRedirectURL(entity: {
+  idp: Idp,
+  sp: Sp
+}, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+
+  const metadata: any = {idp: entity.idp.entityMeta, sp: entity.sp.entityMeta};
   const spSetting: any = entity.sp.entitySetting;
   let id: string = '';
 
@@ -135,13 +139,13 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 }
 
 /**
-* @desc Redirect URL for login response
-* @param  {object} requestInfo             corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                         current logged user (e.g. req.user)
-* @param  {String} relayState                the relaystate sent by sp corresponding request
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Redirect URL for login response
+ * @param  {object} requestInfo             corresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {object} user                         current logged user (e.g. req.user)
+ * @param  {String} relayState                the relaystate sent by sp corresponding request
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
@@ -152,7 +156,11 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 
   let id: string = idpSetting.generateID();
   if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+    const base = metadata.sp.getAssertionConsumerService(binding.redirect) ?? 'https://signin.volcengine.com/saml/sso';
+    if(!base){
+      throw new Error('dont have a base url');
+    }
+
     let rawSamlResponse: string;
     //
     const nameIDFormat = idpSetting.nameIDFormat;
@@ -194,7 +202,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
 
-    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+    const {privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = idpSetting;
     const config = {
       privateKey,
       privateKeyPass,
@@ -211,7 +219,10 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
         referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
         signatureConfig: {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+          location: {
+            reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']",
+            action: 'after'
+          },
         },
       });
     }
@@ -233,14 +244,14 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 }
 
 /**
-* @desc Redirect URL for logout request
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @return {string} redirect URL
-*/
+ * @desc Redirect URL for logout request
+ * @param  {object} user                        current logged user (e.g. req.user)
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @return {string} redirect URL
+ */
 function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {
-  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const metadata = {init: entity.init.entityMeta, target: entity.target.entityMeta};
   const initSetting = entity.init.entitySetting;
   let id: string = initSetting.generateID();
   const nameIDFormat = initSetting.nameIDFormat;
@@ -280,12 +291,13 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
   }
   throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Redirect URL for logout response
-* @param  {object} requescorresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Redirect URL for logout response
+ * @param  {object} requescorresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
