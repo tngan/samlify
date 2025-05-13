@@ -33,7 +33,7 @@ export default function(props: ServiceProviderSettings) {
 
 */
 export class ServiceProvider extends Entity {
-  entityMeta: ServiceProviderMetadata;
+  declare  entityMeta: ServiceProviderMetadata;
 
   /**
   * @desc  Inherited from Entity
@@ -82,7 +82,7 @@ export class ServiceProvider extends Entity {
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,

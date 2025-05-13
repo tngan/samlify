@@ -31,7 +31,7 @@ export default function(props: IdentityProviderSettings) {
  */
 export class IdentityProvider extends Entity {
 
-  entityMeta: IdentityProviderMetadata;
+  declare entityMeta: IdentityProviderMetadata;
 
   constructor(idpSetting: IdentityProviderSettings) {
     const defaultIdpEntitySetting = {

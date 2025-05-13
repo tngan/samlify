@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "ES2022",
     "moduleResolution": "node",
     "declaration": true,
     "declarationDir": "types",
@@ -15,12 +15,13 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "paths": {},
+    "types": [
+      "node"
+  ],
     "lib": [
       "dom",
-      "es2015.core",
-      "es2015.promise",
-      "es2015.iterable",
-      "es5"
+      "es2022", // 建议升级到 ES2022
+      "dom.iterable"
     ]
   },
   "atom": { "rewriteTsconfig": false },
