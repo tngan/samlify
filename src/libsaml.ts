@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  A simple library including some common functions
 */
-import { createSign, createPrivateKey } from 'node:crypto';
+import { createSign, createPrivateKey,createVerify } from 'node:crypto';
 import utility, { flattenDeep, isString } from './utility.js';
 import { algorithms, wording, namespace } from './urn.js';
 import { select } from 'xpath';
@@ -154,6 +154,11 @@ const libSaml = () => {
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'pkcs1-sha256',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'pkcs1-sha512',
   };
+  const nrsaAliasMappingForNode = {
+    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'RSA-SHA1',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'RSA-SHA256',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'RSA-SHA512',
+  };
   /**
   * @desc Default login request template
   * @type {LoginRequestTemplate}
@@ -218,6 +223,15 @@ const libSaml = () => {
       }
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
+  }
+  function getSigningSchemeForNode(sigAlg?: string): SigningSchemeHash {
+    if (sigAlg) {
+      const algAlias = nrsaAliasMappingForNode[sigAlg];
+      if (!(algAlias === undefined)) {
+        return algAlias;
+      }
+    }
+    return nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA1];
   }
   /**
   * @private
@@ -613,24 +627,21 @@ const libSaml = () => {
      * @returns 消息签名
      */
 
-    constructMessageSignature2(
+    constructMessageSignature(
       octetString: string | Buffer,
     key: string | Buffer,
     passphrase?: string,
     isBase64: boolean = true,
-    signingAlgorithm: string = nrsaAliasMapping[signatureAlgorithms.RSA_SHA1]
+    signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA1]
 ): string | Buffer {
     try {
       // 1. 标准化输入数据
       const inputData = Buffer.isBuffer(octetString)
         ? octetString
         : Buffer.from(octetString, 'utf8');
-
-      // 2. 创建签名器并设置算法
-      console.log(signingAlgorithm);
-      console.log('我得到的算法---------')
-      const signer = createSign('SHA256');
-
+      // 2. 创建签名器并设置算
+      const signingAlgorithmValue = getSigningSchemeForNode(signingAlgorithm)
+      const signer = createSign(signingAlgorithmValue)
 
       // 3. 加载私钥
       const privateKey = createPrivateKey({
@@ -642,8 +653,8 @@ const libSaml = () => {
       signer.write(octetString);
       signer.end();
       const signature = signer.sign(privateKey, 'base64');
-      console.log(signature);
-      console.log('啦啦啦啦')
+      console.log(signature.toString());
+      console.log('dayingyixia')
       // 5. 处理编码输出
       return isBase64 ? signature.toString() : signature;
     } catch (error) {
@@ -651,47 +662,7 @@ const libSaml = () => {
     }
   },
 
-    /**
-    * @desc Constructs SAML message
-    * @param  {string} octetString               see "Bindings for the OASIS Security Assertion Markup Language (SAML V2.0)" P.17/46
-    * @param  {string} key                       declares the pem-formatted private key
-    * @param  {string} passphrase                passphrase of private key [optional]
-    * @param  {string} signingAlgorithm          signing algorithm
-    * @return {string} message signature
-    */
-    constructMessageSignature(
-      octetString: string,
-      key: string,
-      passphrase?: string,
-      isBase64?: boolean,
-      signingAlgorithm?: string
-    ) {
-      // Default returning base64 encoded signature
-      // Embed with node-rsa module
-      const decryptedKey = new nrsa(
-        utility.readPrivateKey(key, passphrase),
-        undefined,
-        {
-          signingScheme: getSigningScheme(signingAlgorithm),
-        }
-      );
-      console.log('-------------------签名值-------------')
-      console.log(signingAlgorithm);
-      console.log(getSigningScheme(signingAlgorithm));
-      console.log('signingScheme')
-      console.log('解密的这就是我喜欢看--------------')
 
-      const signature = decryptedKey.sign(octetString);
-      console.log(signature.toString('base64'));
-
-
-      console.log('看下算法=======================')
-      const result =  this.constructMessageSignature2(octetString, key,passphrase, isBase64, getSigningScheme(signingAlgorithm))
-      console.log(result);
-      console.log('看下算法=======================')
-      // Use private key to sign data
-      return isBase64 !== false ? signature.toString('base64') : signature;
-    },
     /**
     * @desc Verifies message signature
     * @param  {Metadata} metadata                 metadata object of identity provider or service provider
@@ -709,8 +680,27 @@ const libSaml = () => {
       const signCert = metadata.getX509Certificate(certUse.signing);
       const signingScheme = getSigningScheme(verifyAlgorithm);
       const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
+      this.verifyMessageSignature2(metadata,octetString,signature,verifyAlgorithm)
       return key.verify(Buffer.from(octetString), Buffer.from(signature));
     },
+    verifyMessageSignature2(
+      metadata,
+      octetString: string,
+      signature: string | Buffer,
+      verifyAlgorithm?: string
+    ) {
+      const signCert = metadata.getX509Certificate(certUse.signing);
+      const signingScheme = getSigningSchemeForNode(verifyAlgorithm);
+      const verifier = createVerify(signingScheme);
+      verifier.update(octetString);
+      const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert),       Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
+      console.log(isValid);
+      console.log('验证结果-------------')
+      return isValid
+
+    },
+
+
     /**
     * @desc Get the public key in string format
     * @param  {string} x509Certificate certificate
