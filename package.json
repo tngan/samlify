@@ -1,6 +1,6 @@
 {
   "name": "@veclea/samlify",
-  "version": "2.11.1",
+  "version": "2.11.4",
   "description": "High-level API for Single Sign On (SAML 2.0) 维护分支：修复原项目samlify的一些问题 ",
   "main": "build/index.js",
   "keywords": [

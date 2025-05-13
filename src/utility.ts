@@ -6,8 +6,6 @@
 import { pki, util, asn1 } from 'node-forge';
 import { X509Certificate } from 'node:crypto';
 
-const x509 = new X509Certificate('{... pem encoded cert ...}');
-
 import { inflate, deflate } from 'pako';
 
 const BASE64_STR = 'base64';
