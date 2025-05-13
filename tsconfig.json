@@ -1,27 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
+    "target": "ESNext",
+    "module": "ESNext",          // 修改为ES模块
     "moduleResolution": "node",
     "declaration": true,
     "declarationDir": "types",
+    "allowSyntheticDefaultImports": true,
+
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "sourceMap": true,
-    "outDir": "./build",
+    "outDir": "./build",         // 输出目录保持不变
     "baseUrl": "./",
     "removeComments": false,
     "strictNullChecks": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true,     // 保持ES模块互操作性
     "paths": {},
-    "types": [
-      "node"
-  ],
+    "types": ["node"],
     "lib": [
       "dom",
-      "es2022", // 建议升级到 ES2022
-      "dom.iterable"
+      "es2015.core",
+      "es2015.promise",
+      "es2015.iterable",
+      "es5"
     ]
   },
   "atom": { "rewriteTsconfig": false },

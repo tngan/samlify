@@ -183,9 +183,13 @@ function applyDefault(obj1, obj2) {
 
 
 
-function getPublicKeyPemFromCertificate(x509Certificate: string): string {
+function getPublicKeyPemFromCertificate(x509CertificateString: string): string {
+  const certDerBytes = util.decode64(x509CertificateString);
+  const obj = asn1.fromDer(certDerBytes);
+  const cert2 = pki.certificateFromAsn1(obj);
+let cert2Result = pki.publicKeyToPem(cert2.publicKey);
   // 将 Base64 字符串转为 Buffer（DER 编码）
-  const derBuffer = Buffer.from(x509Certificate, 'base64');
+  const derBuffer = Buffer.from(x509CertificateString, 'base64');
 
   // 解析 X.509 证书
   const cert =  new X509Certificate(derBuffer);

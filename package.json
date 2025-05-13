@@ -1,6 +1,6 @@
 {
   "name": "@veclea/samlify",
-  "version": "2.11.4",
+  "version": "2.12.3",
   "description": "High-level API for Single Sign On (SAML 2.0) 维护分支：修复原项目samlify的一些问题 ",
   "main": "build/index.js",
   "keywords": [
@@ -11,6 +11,7 @@
     "metadata"
   ],
   "typings": "types/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "docs": "docsify serve -o docs",
@@ -25,7 +26,6 @@
     "Veclea <vemocle@gmail.com>"
   ],
 
-  "type": "module",
   "author": "Veclea",
   "repository": {
     "url": "https://github.com/Veclea/samlify.git",
@@ -46,7 +46,7 @@
     "xpath": "^0.0.32"
   },
   "devDependencies": {
-    "@ava/typescript": "^1.1.1",
+    "typescript": "5.8.3",
     "@types/node": "^22.15.17",
     "@types/node-forge": "^1.0.1",
     "@types/node-rsa": "^1.1.1",
@@ -58,8 +58,7 @@
     "nyc": "^17.1.0",
     "timekeeper": "^2.2.0",
     "ts-node": "^10.9.2",
-    "tslint": "^6.1.3",
-    "typescript": "^4.4.2"
+    "tslint": "^6.1.3"
   },
   "ava": {
     "extensions": [
