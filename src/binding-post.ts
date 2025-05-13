@@ -4,10 +4,10 @@
 * @desc Binding-level API, declare the functions using POST binding
 */
 
-import { wording, namespace, StatusCode } from './urn';
-import { BindingContext } from './entity';
-import libsaml from './libsaml';
-import utility, { get } from './utility';
+import { wording, namespace, StatusCode } from './urn.js';
+import { BindingContext } from './entity.js';
+import libsaml from './libsaml.js';
+import utility, { get } from './utility.js';
 
 const binding = wording.binding;
 

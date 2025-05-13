@@ -1,6 +1,6 @@
 import { select, SelectedValue } from 'xpath';
-import { uniq, last, zipObject, notEmpty } from './utility';
-import { getContext } from './api';
+import { uniq, last, zipObject, notEmpty } from './utility.js';
+import { getContext } from './api.js';
 import camelCase from 'camelcase';
 
 interface ExtractorField {

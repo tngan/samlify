@@ -3,21 +3,21 @@
 * @author tngan
 * @desc  Declares the actions taken by identity provider
 */
-import Entity, { ESamlHttpRequest } from './entity';
+import Entity, { ESamlHttpRequest } from './entity.js';
 import {
   ServiceProviderConstructor as ServiceProvider,
   ServiceProviderMetadata,
   IdentityProviderMetadata,
   IdentityProviderSettings,
-} from './types';
-import libsaml from './libsaml';
-import { namespace } from './urn';
-import postBinding from './binding-post';
-import redirectBinding from './binding-redirect';
-import simpleSignBinding from './binding-simplesign';
-import { flow, FlowResult } from './flow';
-import { isString } from './utility';
-import { BindingContext } from './entity';
+} from './types.js';
+import libsaml from './libsaml.js';
+import { namespace } from './urn.js';
+import postBinding from './binding-post.js';
+import redirectBinding from './binding-redirect.js';
+import simpleSignBinding from './binding-simplesign.js';
+import { flow, FlowResult } from  './flow.js';
+import { isString } from './utility.js';
+import { BindingContext } from './entity.js';
 
 /**
  * Identity provider can be configured using either metadata importing or idpSetting

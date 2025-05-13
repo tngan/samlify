@@ -1,6 +1,6 @@
-import { inflateString, base64Decode } from './utility';
-import { verifyTime } from './validator';
-import libsaml from './libsaml';
+import { inflateString, base64Decode } from './utility.js';
+import { verifyTime } from './validator.js';
+import libsaml from './libsaml.js';
 import {
   extract,
   loginRequestFields,
@@ -10,7 +10,7 @@ import {
   ExtractorFields,
   logoutResponseStatusFields,
   loginResponseStatusFields
-} from './extractor';
+} from './extractor.js';
 
 import {
   BindingNamespace,
@@ -18,7 +18,7 @@ import {
   wording,
   MessageSignatureOrder,
   StatusCode
-} from './urn';
+} from './urn.js';
 
 const bindDict = wording.binding;
 const urlParams = wording.urlParams;

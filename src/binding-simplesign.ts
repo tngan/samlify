@@ -4,10 +4,10 @@
 * @desc Binding-level API, declare the functions using POST SimpleSign binding
 */
 
-import { wording, StatusCode } from './urn';
-import { BindingContext, SimpleSignComputedContext } from './entity';
-import libsaml from './libsaml';
-import utility, { get } from './utility';
+import { wording, StatusCode } from './urn.js';
+import { BindingContext, SimpleSignComputedContext } from './entity.js';
+import libsaml from './libsaml.js';
+import utility, { get } from './utility.js';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;

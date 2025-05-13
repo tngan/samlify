@@ -8,17 +8,17 @@ import Entity, {
   PostBindingContext,
   ESamlHttpRequest,
   SimpleSignBindingContext,
-} from './entity';
+} from './entity.js';
 import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
-} from './types';
-import { namespace } from './urn';
-import redirectBinding from './binding-redirect';
-import postBinding from './binding-post';
-import simpleSignBinding from './binding-simplesign';
-import { flow, FlowResult } from './flow';
+} from './types.js';
+import { namespace } from './urn.js';
+import redirectBinding from './binding-redirect.js';
+import postBinding from './binding-post.js';
+import simpleSignBinding from './binding-simplesign.js';
+import { flow, FlowResult } from  './flow.js';
 
 /*
  * @desc interface function

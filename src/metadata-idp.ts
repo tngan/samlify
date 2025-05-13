@@ -3,11 +3,11 @@
 * @author tngan
 * @desc  Metadata of identity provider
 */
-import Metadata, { MetadataInterface } from './metadata';
-import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
-import { namespace } from './urn';
-import libsaml from './libsaml';
-import { castArrayOpt, isNonEmptyArray, isString } from './utility';
+import Metadata, { MetadataInterface } from './metadata.js';
+import { MetadataIdpOptions, MetadataIdpConstructor } from './types.js';
+import { namespace } from './urn.js';
+import libsaml from './libsaml.js';
+import { castArrayOpt, isNonEmptyArray, isString } from './utility.js';
 import xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {

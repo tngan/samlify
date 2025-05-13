@@ -3,13 +3,13 @@
 * @author tngan
 * @desc Binding-level API, declare the functions using Redirect binding
 */
-import utility, { get } from './utility';
-import libsaml from './libsaml';
-import { BindingContext } from './entity';
-import { IdentityProvider as Idp } from './entity-idp';
-import { ServiceProvider as Sp } from './entity-sp';
+import utility, { get } from './utility.js';
+import libsaml from './libsaml.js';
+import { BindingContext } from './entity.js';
+import { IdentityProvider as Idp } from './entity-idp.js';
+import { ServiceProvider as Sp } from './entity-sp.js';
 import * as url from 'url';
-import { wording, namespace } from './urn';
+import { wording, namespace } from './urn.js';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;

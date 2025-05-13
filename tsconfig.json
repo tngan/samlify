@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "node",
+
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "declarationDir": "types",
     "emitDecoratorMetadata": true,
@@ -20,12 +22,13 @@
   ],
     "lib": [
       "dom",
-      "es2022", // 建议升级到 ES2022
-      "dom.iterable"
     ]
   },
   "atom": { "rewriteTsconfig": false },
   "exclude": [
+    "dist",
+    "examples",
+    "build",
     "node_modules",
     "types/**/*.ts",
     "test/**/*.ts"

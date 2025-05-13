@@ -3,15 +3,15 @@
 * @author tngan
 * @desc  An abstraction for identity provider and service provider.
 */
-import { isString, isNonEmptyArray } from './utility';
-import { namespace, wording, algorithms, messageConfigurations } from './urn';
+import { isString, isNonEmptyArray } from './utility.js';
+import { namespace, wording, algorithms, messageConfigurations } from './urn.js';
 import * as uuid from 'uuid';
-import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
-import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
-import redirectBinding from './binding-redirect';
-import postBinding from './binding-post';
-import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
-import { flow, FlowResult } from './flow';
+import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp.js';
+import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp.js';
+import redirectBinding from './binding-redirect.js';
+import postBinding from './binding-post.js';
+import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types.js';
+import { flow, FlowResult } from  './flow.js';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;

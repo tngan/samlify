@@ -6,7 +6,6 @@
 import { pki, util, asn1 } from 'node-forge';
 import { X509Certificate } from 'node:crypto';
 
-const x509 = new X509Certificate('{... pem encoded cert ...}');
 
 import { inflate, deflate } from 'pako';
 
@@ -176,16 +175,16 @@ function applyDefault(obj1, obj2) {
 * @param {string} x509 certificate
 * @return {string} public key fetched from the certificate
 */
-/*function getPublicKeyPemFromCertificate(x509Certificate: string) {
-  const certDerBytes = util.decode64(x509Certificate);
+function getPublicKeyPemFromCertificate(x509CertificateString: string) {
+  const certDerBytes = util.decode64(x509CertificateString);
   const obj = asn1.fromDer(certDerBytes);
   const cert = pki.certificateFromAsn1(obj);
   return pki.publicKeyToPem(cert.publicKey);
-}*/
+}
 
 
 
-function getPublicKeyPemFromCertificate(x509Certificate: string): string {
+/*function getPublicKeyPemFromCertificate(x509Certificate: string): string {
   // 将 Base64 字符串转为 Buffer（DER 编码）
   const derBuffer = Buffer.from(x509Certificate, 'base64');
 
@@ -196,7 +195,7 @@ function getPublicKeyPemFromCertificate(x509Certificate: string): string {
   console.log(cert.publicKey?.toString())
   console.log("这就是我的打印")
   return cert.publicKey?.toString();
-}
+}*/
 /**
 * @desc Read private key from pem-formatted string
 * @param {string | Buffer} keyString pem-formatted string

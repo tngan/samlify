@@ -1,10 +1,10 @@
-import { LoginResponseTemplate } from './libsaml';
+import { LoginResponseTemplate } from './libsaml.js';
 
-export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
-export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
+export { IdentityProvider as IdentityProviderConstructor } from './entity-idp.js';
+export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp.js';
 
-export { ServiceProvider as ServiceProviderConstructor } from './entity-sp';
-export { SpMetadata as ServiceProviderMetadata } from './metadata-sp';
+export { ServiceProvider as ServiceProviderConstructor } from './entity-sp.js';
+export { SpMetadata as ServiceProviderMetadata } from './metadata-sp.js';
 
 export type MetadataFile = string | Buffer;
 

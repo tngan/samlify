@@ -4,16 +4,16 @@
 * @desc  A simple library including some common functions
 */
 
-import utility, { flattenDeep, isString } from './utility';
-import { algorithms, wording, namespace } from './urn';
+import utility, { flattenDeep, isString } from './utility.js';
+import { algorithms, wording, namespace } from './urn.js';
 import { select } from 'xpath';
-import { MetadataInterface } from './metadata';
+import { MetadataInterface } from './metadata.js';
 import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
-import { extract } from './extractor';
+import { extract } from './extractor.js';
 import camelCase from 'camelcase';
-import { getContext } from './api';
+import { getContext } from './api.js';
 import xmlEscape from 'xml-escape';
 import * as fs from 'fs';
 import {DOMParser} from '@xmldom/xmldom';
