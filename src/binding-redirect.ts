@@ -9,6 +9,7 @@ import { BindingContext } from './entity.js';
 import { IdentityProvider as Idp } from './entity-idp.js';
 import { ServiceProvider as Sp } from './entity-sp.js';
 import * as url from 'url';
+import url2  from 'node:url'
 import { wording, namespace } from './urn.js';
 
 const binding = wording.binding;
@@ -52,7 +53,14 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     entitySetting,
   } = opts;
   let { relayState = '' } = opts;
+  console.log('这里是没问题的')
+  console.log(baseUrl);
+  const myURL = new URL('/saml/idp/authnRequest?SAMLRequest=nJJBb5tAEIX%2FCto7sLtmg1kFJDdWVUtpa8VuD71EGzxxVoJZujOkzb%2BvwK7qXnzIFea9%2Bd7buSXXd4NdjfyCD%2FBzBOLkd98h2elHLcaINjjyZNH1QJZbu1t9vrc6k9YRQWQfUFxIhuuaIQYObehEslnX4jV07WMhC7kwapnqpXNpUZUqfQIHadkCVCU8l0YbkXyHSD5gLXQmRbIhGmGDxA65Flpqk0qTqsVeFVbdWFNki2X1QyRrIPboeFa%2BMA9k81xVOlM3y8xkurRGSplP4Lk%2FDLm76EEkq78B7wLS2EPcQXz1LXx7uP%2FnRv6IHrMpCuDRI2Rt6E%2BOREEk23PiDx4PHo%2FX63k6DZH9tN9v0%2B3X3V408xPZOXFMPobYO75uMn3xh%2FR5HrWA7PlNNNd5tZKqXKiqKGf0x5EgTvy3%2BcX25nwtX1wPm%2FU2dL59ewcRR4fkAaeGuy78uovgGGrBcQSRN6eV%2F99k8ycAAP%2F%2F&RelayState=https%3A%2F%2Fconsole.volcengine.com&SigAlg=http%3A%2F%2Fwww.w3.org%2F2000%2F09%2Fxmldsig%23rsa-sha1&Signature=C%2BldoMXH96RTzqul5Kg1c7SAJ4mCrR3%2Bw4V%2BvO42Yqf0Nm6lSqZxQyc3jCzqJqBSzXyHaR3VM6W8YQ0Vo%2BoaT9JAgJPb%2FTpbFORAwK2pC9ZqVHdk0hgjDtbej9G%2FfAyP44tnw3tlq4SX6286%2Fek6hZOSzBnelPj9B8acRNSSPzpVzmSTD3h8oXfYE7xNWSENLcXDGkb8sHJtJuWccvV2zrelyWXFyVvmmJJj9dqiC2RSDQZvxFw0JQWGm9l8aaY4wqN%2BsfylLpO3J2DW4UkXWo2f7jbpA39Pq6j4Gl2I9a2SMWkyLhX9rB970R4WAvib%2FmaHBvJgUgYWY%2FtEBIUyeQ%3D%3D\n');
+  console.log(myURL.searchParams);
+
   const noParams = (url.parse(baseUrl).query || []).length === 0;
+  console.log(noParams);
+  console.log('这里是有问题的')
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
   const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));

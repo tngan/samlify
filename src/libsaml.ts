@@ -611,6 +611,8 @@ const libSaml = () => {
           signingScheme: getSigningScheme(signingAlgorithm),
         }
       );
+      console.log(decryptedKey);
+      console.log('解密的这就是我喜欢看--------------')
       const signature = decryptedKey.sign(octetString);
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
