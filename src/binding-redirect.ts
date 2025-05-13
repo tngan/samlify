@@ -8,8 +8,7 @@ import libsaml from './libsaml.js';
 import {BindingContext} from './entity.js';
 import {IdentityProvider as Idp} from './entity-idp.js';
 import {ServiceProvider as Sp} from './entity-sp.js';
-import * as url from 'url';
-import url2 from 'node:url'
+
 import {wording, namespace} from './urn.js';
 
 const binding = wording.binding;

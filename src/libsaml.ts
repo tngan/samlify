@@ -8,7 +8,7 @@ import utility, { flattenDeep, isString } from './utility.js';
 import { algorithms, wording, namespace } from './urn.js';
 import { select } from 'xpath';
 import { MetadataInterface } from './metadata.js';
-import nrsa, { SigningSchemeHash } from 'node-rsa';
+
 import { SignedXml } from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
 import { extract } from './extractor.js';
@@ -209,22 +209,8 @@ const libSaml = () => {
   const defaultLogoutResponseTemplate = {
     context: '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>',
   };
-  /**
-  * @private
-  * @desc Get the signing scheme alias by signature algorithms, used by the node-rsa module
-  * @param {string} sigAlg    signature algorithm
-  * @return {string/null} signing algorithm short-hand for the module node-rsa
-  */
-  function getSigningScheme(sigAlg?: string): SigningSchemeHash {
-    if (sigAlg) {
-      const algAlias = nrsaAliasMapping[sigAlg];
-      if (!(algAlias === undefined)) {
-        return algAlias;
-      }
-    }
-    return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
-  }
-  function getSigningSchemeForNode(sigAlg?: string): SigningSchemeHash {
+
+  function getSigningSchemeForNode(sigAlg?: string){
     if (sigAlg) {
       const algAlias = nrsaAliasMappingForNode[sigAlg];
       if (!(algAlias === undefined)) {
@@ -661,29 +647,7 @@ const libSaml = () => {
       throw new Error(`SAML 签名失败: ${error.message}`);
     }
   },
-
-
-    /**
-    * @desc Verifies message signature
-    * @param  {Metadata} metadata                 metadata object of identity provider or service provider
-    * @param  {string} octetString                see "Bindings for the OASIS Security Assertion Markup Language (SAML V2.0)" P.17/46
-    * @param  {string} signature                  context of XML signature
-    * @param  {string} verifyAlgorithm            algorithm used to verify
-    * @return {boolean} verification result
-    */
     verifyMessageSignature(
-      metadata,
-      octetString: string,
-      signature: string | Buffer,
-      verifyAlgorithm?: string
-    ) {
-      const signCert = metadata.getX509Certificate(certUse.signing);
-      const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
-      this.verifyMessageSignature2(metadata,octetString,signature,verifyAlgorithm)
-      return key.verify(Buffer.from(octetString), Buffer.from(signature));
-    },
-    verifyMessageSignature2(
       metadata,
       octetString: string,
       signature: string | Buffer,
