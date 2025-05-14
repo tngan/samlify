@@ -166,7 +166,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: '',
       AttributeStatement: '',

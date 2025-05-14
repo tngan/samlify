@@ -115,7 +115,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       ConditionsNotOnOrAfter: fiveMinutesLater,
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: '',
       AttributeStatement: '',
@@ -234,7 +234,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
         NameIDFormat: selectedNameIDFormat,
-        NameID: user.logoutNameID,
+        NameID: user.NameID || '',
       };
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }

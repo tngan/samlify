@@ -183,7 +183,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
       ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: '',
       AttributeStatement: '',
@@ -266,7 +266,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       Issuer: metadata.init.getEntityID(),
       IssueInstant: new Date().toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.logoutNameID,
+      NameID: user.NameID || '',
       SessionIndex: user.sessionIndex,
     };
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
