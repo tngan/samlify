@@ -82,7 +82,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
-  const id = get(requestInfo, 'extract.request.id', idpSetting.generateID());
+  const id = idpSetting.generateID();
   const metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
@@ -125,7 +125,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo.extract.request.id ?? '';
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -294,7 +294,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         StatusCode: StatusCode.Success,
-        InResponseTo: get(requestInfo, 'extract.request.id', null)
+        InResponseTo: get(requestInfo, 'extract.request.id', '')
       };
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
