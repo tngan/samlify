@@ -15,8 +15,7 @@ import {
   ServiceProviderConstructor as ServiceProvider,
   ServiceProviderMetadata,
   IdentityProviderMetadata,
-  IdentityProviderSettings,
-  CreateLoginResponseParams
+  IdentityProviderSettings
 } from './types.js';
 import libsaml from './libsaml.js';
 import { namespace } from './urn.js';
@@ -82,7 +81,15 @@ export class IdentityProvider extends Entity {
    * @desc  Generates the login response for developers to design their own method
    * @param params
    */
-  public async createLoginResponse(params:CreateLoginResponseParams) {
+  public async createLoginResponse(params:{
+    sp: ServiceProvider;
+    requestInfo: Record<string, any>;
+    binding?: string;  // 可选参数，带默认值
+    user: Record<string, any>;
+    customTagReplacement?: (template: string) => BindingContext,
+    encryptThenSign?: boolean,
+    relayState?: string,
+  }) {
 const bindType = params?.binding ?? 'post';
     const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState=''} = params
     const protocol = namespace.binding[bindType];
