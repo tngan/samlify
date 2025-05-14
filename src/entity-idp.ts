@@ -3,12 +3,20 @@
 * @author tngan
 * @desc  Declares the actions taken by identity provider
 */
+import {
+  wording,
+} from './urn.js';
+const binding = wording.binding
+
+
+
 import Entity, { ESamlHttpRequest } from './entity.js';
 import {
   ServiceProviderConstructor as ServiceProvider,
   ServiceProviderMetadata,
   IdentityProviderMetadata,
   IdentityProviderSettings,
+  CreateLoginResponseParams
 } from './types.js';
 import libsaml from './libsaml.js';
 import { namespace } from './urn.js';
@@ -71,25 +79,13 @@ export class IdentityProvider extends Entity {
   }
 
   /**
-  * @desc  Generates the login response for developers to design their own method
-  * @param  sp                        object of service provider
-  * @param  requestInfo               corresponding request, used to obtain the id
-  * @param  binding                   protocol binding
-  * @param  user                      current logged user (e.g. req.user)
-  * @param  customTagReplacement      used when developers have their own login response template
-  * @param  encryptThenSign           whether or not to encrypt then sign first (if signing)
-  * @param  relayState             the relayState from corresponding request
-  */
-  public async createLoginResponse(
-    sp: ServiceProvider,
-    requestInfo: { [key: string]: any },
-    binding: string,
-    user: { [key: string]: any },
-    customTagReplacement?: (template: string) => BindingContext,
-    encryptThenSign?: boolean,
-    relayState?: string,
-  ) {
-    const protocol = namespace.binding[binding];
+   * @desc  Generates the login response for developers to design their own method
+   * @param params
+   */
+  public async createLoginResponse(params:CreateLoginResponseParams) {
+const bindType = params?.binding ?? 'post';
+    const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState=''} = params
+    const protocol = namespace.binding[bindType];
     // can support post, redirect and post simple sign bindings for login response
     let context: any = null;
     switch (protocol) {
@@ -111,15 +107,18 @@ export class IdentityProvider extends Entity {
           idp: this,
           sp,
         }, user, relayState, customTagReplacement);
-
       default:
-        throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+        context = await postBinding.base64LoginResponse(requestInfo, {
+          idp: this,
+          sp,
+        }, user, customTagReplacement, encryptThenSign);
+ /*       throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');*/
     }
 
     return {
       ...context,
       relayState,
-      entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding) as string,
+      entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(bindType ?? 'post') as string,
       type: 'SAMLResponse'
     };
   }

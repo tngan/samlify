@@ -217,7 +217,7 @@ const libSaml = () => {
         return algAlias;
       }
     }
-    return nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA1];
+    return nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256];
   }
   /**
   * @private
@@ -618,7 +618,7 @@ const libSaml = () => {
     key: string | Buffer,
     passphrase?: string,
     isBase64: boolean = true,
-    signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA1]
+    signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256]
 ): string | Buffer {
     try {
       // 1. 标准化输入数据

@@ -167,8 +167,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
           location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
         },
       });
-      console.log(rawSamlResponse);
-      console.log("这他妈是什么------------------")
     }
 
     // console.debug('after message signed', rawSamlResponse);

@@ -1,4 +1,6 @@
 import { LoginResponseTemplate } from './libsaml.js';
+import {BindingType, ServiceProviderConstructor as ServiceProvider} from "../types/src/types";
+import {BindingContext} from "../types/src/entity";
 
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp.js';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp.js';
@@ -49,6 +51,16 @@ export interface MetadataIdpOptions {
   singleLogoutService?: SSOService[];
   requestSignatureAlgorithm?: string;
 }
+export  interface CreateLoginResponseParams {
+  sp: ServiceProvider;
+  requestInfo: Record<string, any>;
+  binding?: string;  // 可选参数，带默认值
+  user: Record<string, any>;
+  customTagReplacement?: (template: string) => BindingContext,
+  encryptThenSign?: boolean,
+  relayState?: string,
+}
+
 
 export type MetadataIdpConstructor =
   | MetadataIdpOptions
