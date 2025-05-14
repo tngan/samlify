@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "2.12.3",
+  "version": "2.12.5",
   "description": "High-level API for Single Sign On (SAML 2.0) 维护分支：修复原项目samlify的一些问题 ",
   "main": "build/index.js",
   "keywords": [
