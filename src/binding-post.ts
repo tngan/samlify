@@ -82,7 +82,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
 async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
-  const id = idpSetting.generateID();
+  const id = get(requestInfo, 'extract.request.id', idpSetting.generateID());
   const metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
