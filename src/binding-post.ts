@@ -72,14 +72,15 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
 /**
-* @desc Generate a base64 encoded login response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
-*/
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
+ * @desc Generate a base64 encoded login response
+ * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {object} user                        current logged user (e.g. req.user)
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
+ * @param AttributeStatement
+ */
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false ,AttributeStatement=''): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -89,16 +90,24 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   };
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
+
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
-    let rawSamlResponse: string;
-    const nowTime = new Date();
-    const spEntityID = metadata.sp.getEntityID();
-    const fiveMinutesLaterTime = new Date(nowTime.getTime());
-    fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
-    const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
+    let rawSamlResponse;
+    let  nowTime = new Date();
+    let  spEntityID = metadata.sp.getEntityID();
+    let  oneMinutesLaterTime = new Date(nowTime.getTime());
+    oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
+    const OneMinutesLater = oneMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
+    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
+    console.log(`现在是两分钟时间:${oneMinutesLaterTime.toLocaleString()}`)
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
+    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -112,20 +121,20 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       StatusCode: StatusCode.Success,
       // can be customized
       ConditionsNotBefore: now,
-      ConditionsNotOnOrAfter: fiveMinutesLater,
-      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
+      ConditionsNotOnOrAfter: OneMinutesLater,
+      SubjectConfirmationDataNotOnOrAfter: OneMinutesLater,
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.NameID || '',
+      NameID: user?.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
-      AuthnStatement: '',
-      AttributeStatement: '',
+      AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: AttributeStatement,
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
       rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id ?? '';
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id ?? '';
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -204,6 +213,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     });
 
   }
+
+
   throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
 /**

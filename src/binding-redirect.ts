@@ -144,8 +144,9 @@ function loginRequestRedirectURL(entity: {
  * @param  {object} user                         current logged user (e.g. req.user)
  * @param  {String} relayState                the relaystate sent by sp corresponding request
  * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param AttributeStatement
  */
-function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext,AttributeStatement=''): BindingContext {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const metadata = {
@@ -159,7 +160,6 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     if(!base){
       throw new Error('dont have a base url');
     }
-
     let rawSamlResponse: string;
     //
     const nameIDFormat = idpSetting.nameIDFormat;
@@ -167,6 +167,12 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     const nowTime = new Date();
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
     const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+    const now = nowTime.toISOString();
+    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
+    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -185,8 +191,8 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
       NameIDFormat: selectedNameIDFormat,
       NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
-      AuthnStatement: '',
-      AttributeStatement: '',
+      AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: AttributeStatement,
     };
 
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
@@ -196,7 +202,7 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     } else {
 
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -321,7 +327,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         StatusCode: namespace.statusCode.success,
       };
       if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }

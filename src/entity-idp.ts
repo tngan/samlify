@@ -89,9 +89,11 @@ export class IdentityProvider extends Entity {
     customTagReplacement?: (template: string) => BindingContext,
     encryptThenSign?: boolean,
     relayState?: string,
+    context: Record<string, any>,
+    AttributeStatement:string
   }) {
 const bindType = params?.binding ?? 'post';
-    const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState=''} = params
+    const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState='',AttributeStatement=''} = params
     const protocol = namespace.binding[bindType];
     // can support post, redirect and post simple sign bindings for login response
     let context: any = null;
@@ -100,25 +102,25 @@ const bindType = params?.binding ?? 'post';
         context = await postBinding.base64LoginResponse(requestInfo, {
           idp: this,
           sp,
-        }, user, customTagReplacement, encryptThenSign);
+        }, user, customTagReplacement, encryptThenSign,AttributeStatement);
         break;
 
       case namespace.binding.simpleSign:
         context = await simpleSignBinding.base64LoginResponse( requestInfo, {
           idp: this, sp,
-        }, user, relayState, customTagReplacement);
+        }, user, relayState, customTagReplacement,AttributeStatement);
         break;
 
       case namespace.binding.redirect:
         return redirectBinding.loginResponseRedirectURL(requestInfo, {
           idp: this,
           sp,
-        }, user, relayState, customTagReplacement);
+        }, user, relayState, customTagReplacement,AttributeStatement);
       default:
         context = await postBinding.base64LoginResponse(requestInfo, {
           idp: this,
           sp,
-        }, user, customTagReplacement, encryptThenSign);
+        }, user, customTagReplacement, encryptThenSign,AttributeStatement);
  /*       throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');*/
     }
 
