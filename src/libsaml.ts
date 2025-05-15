@@ -361,42 +361,52 @@ const libSaml = () => {
     /** For Test */
     attributeStatementBuilder(attributeData: any[]): string {
 // 构建 XML 元素数组
-      const elements = attributeData.map(attr => ({
-        // 单个 Attribute 元素
-        "saml:Attribute": [
-          // 命名空间和属性
-          { _attr: {
-              Name: attr.Name,
-              NameFormat: attr.NameFormat,
-              FriendlyName: attr.FriendlyName,
-              // 显式声明命名空间
-              "xmlns:saml": "urn:oasis:names:tc:SAML:2.0:assertion",
-              "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-              "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
-            }},
-          // 子元素 AttributeValue
-          ...attr.valueArray.map((valueObj: any) => ({
-            "saml:AttributeValue": [
-              // 数据类型属性
-              { _attr: attr.ValueType === 1 ? { "xsi:type": "xs:string" } : {} },
-              // 文本内容
-              valueObj.value
+      // 构建 XML 结构
+      const attributeStatement = {
+        'saml:AttributeStatement': [
+          // 命名空间声明（在 AttributeStatement 上定义）
+          {
+            _attr: {
+              'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
+              'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+              'xmlns:xs': 'http://www.w3.org/2001/XMLSchema'
+            }
+          },
+          // 遍历生成多个 Attribute
+          ...attributeData.map(attr => ({
+            'saml:Attribute': [
+              // Attribute 属性
+              {
+                _attr: {
+                  Name: attr.Name,
+                  NameFormat: attr.NameFormat,
+                  FriendlyName: attr.FriendlyName
+                }
+              },
+              // 遍历生成多个 AttributeValue
+              ...attr.valueArray.map((valueObj: any) => ({
+                'saml:AttributeValue': [
+                  // 数据类型（根据 ValueType）
+                  {
+                    _attr: attr.ValueType === 1
+                      ? { 'xsi:type': 'xs:string' }
+                      : {}
+                  },
+                  // 值内容
+                  { _text: valueObj.value }
+                ]
+              }))
             ]
           }))
         ]
-      }));
+      };
 
-      // 生成 XML（通过临时根节点包裹）
-      const xmlString = xml([{ root: elements }], { declaration: false, indent: '  ' });
-      console.log(xmlString
-        .replace(/<(\/)?root>/g, '')
-        .trim());
-      console.log("------------看一下------------------")
-      // 移除临时根节点标签
+      // 生成 XML（关闭自动声明头）
+      let xmlString =  xml([attributeStatement], { declaration: false, indent: '  ' });
       return xmlString
         .replace(/<(\/)?root>/g, '')
         .trim();
-  },
+    },
     /**
      * @desc Construct the XML signature for POST binding
      * @param  {string} rawSamlMessage      request/response xml string

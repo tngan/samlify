@@ -204,7 +204,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }
-
+    console.log(rawSamlResponse);
+    console.log("看一下---------------------------")
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
