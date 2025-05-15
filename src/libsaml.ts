@@ -366,11 +366,7 @@ const libSaml = () => {
         'saml:AttributeStatement': [
           // 命名空间声明（在 AttributeStatement 上定义）
           {
-            _attr: {
-              'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
-              'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-              'xmlns:xs': 'http://www.w3.org/2001/XMLSchema'
-            }
+
           },
           // 遍历生成多个 Attribute
           ...attributeData.map(attr => ({
@@ -380,7 +376,9 @@ const libSaml = () => {
                 _attr: {
                   Name: attr.Name,
                   NameFormat: attr.NameFormat,
-                  FriendlyName: attr.FriendlyName
+                  FriendlyName: attr.FriendlyName,
+                  'xmlns:xs':"http://www.w3.org/2001/XMLSchema" ,
+                  "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance" ,
                 }
               },
               // 遍历生成多个 AttributeValue
@@ -388,9 +386,7 @@ const libSaml = () => {
                 'saml:AttributeValue': [
                   // 数据类型（根据 ValueType）
                   {
-                    _attr: attr.ValueType === 1
-                      ? { 'xsi:type': 'xs:string' }
-                      : {}
+
                   },
                   // 值内容
                   { _text: valueObj.value }
