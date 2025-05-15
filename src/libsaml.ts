@@ -491,7 +491,7 @@ const libSaml = () => {
         // attempt is made to get the signed Reference as a string();
         // note, we don't have access to the actual signedReferences API unfortunately
         // mainly a sanity check here for SAML. (Although ours would still be secure, if multiple references are used)
-        if (!(sig.getReferences().length >= 1)) {
+        if (!(sig.getSignedReferences().length >= 1)) {
           throw new Error('NO_SIGNATURE_REFERENCES')
         }
         const signedVerifiedXML = sig.getSignedReferences()[0];
