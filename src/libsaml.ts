@@ -3,6 +3,7 @@
  * @author tngan
  * @desc  A simple library including some common functions
  */
+import xml from 'xml'
 import {createSign, createPrivateKey, createVerify} from 'node:crypto';
 import utility, {flattenDeep, isString} from './utility.js';
 import {algorithms, wording, namespace} from './urn.js';
@@ -359,33 +360,42 @@ const libSaml = () => {
     },*/
     /** For Test */
     attributeStatementBuilder(attributeData: any[]): string {
-    const root = create({
-      // 关键配置：关闭 XML 声明头和独立文档标识
-      headless: true
-    }).ele('saml:AttributeStatement', {
-      index: 1
-    });
+// 构建 XML 元素数组
+      const elements = attributeData.map(attr => ({
+        // 单个 Attribute 元素
+        "saml:Attribute": [
+          // 命名空间和属性
+          { _attr: {
+              Name: attr.Name,
+              NameFormat: attr.NameFormat,
+              FriendlyName: attr.FriendlyName,
+              // 显式声明命名空间
+              "xmlns:saml": "urn:oasis:names:tc:SAML:2.0:assertion",
+              "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+              "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+            }},
+          // 子元素 AttributeValue
+          ...attr.valueArray.map((valueObj: any) => ({
+            "saml:AttributeValue": [
+              // 数据类型属性
+              { _attr: attr.ValueType === 1 ? { "xsi:type": "xs:string" } : {} },
+              // 文本内容
+              valueObj.value
+            ]
+          }))
+        ]
+      }));
 
-    attributeData.forEach(attr => {
-      const attribute = root.ele('saml:Attribute', {
-        Name: attr.Name,
-        NameFormat: attr.NameFormat,
-        FriendlyName: attr.FriendlyName
-      });
-
-      attr.valueArray.forEach(valueObj => {
-        const valueElement = attribute.ele('saml:AttributeValue');
-
-        // 根据 ValueType 添加数据类型
-        /*     if (attr.ValueType === 1) {
-               valueElement.att('xsi:type', 'xs:string');
-             } // 可扩展其他类型...*/
-
-        valueElement.txt(valueObj.value);
-      });
-    });
-
-    return root.end({prettyPrint: true});
+      // 生成 XML（通过临时根节点包裹）
+      const xmlString = xml([{ root: elements }], { declaration: false, indent: '  ' });
+      console.log(xmlString
+        .replace(/<(\/)?root>/g, '')
+        .trim());
+      console.log("------------看一下------------------")
+      // 移除临时根节点标签
+      return xmlString
+        .replace(/<(\/)?root>/g, '')
+        .trim();
   },
     /**
      * @desc Construct the XML signature for POST binding
