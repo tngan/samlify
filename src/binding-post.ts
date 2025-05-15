@@ -95,9 +95,9 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
     let rawSamlResponse;
-    let  nowTime = new Date();
-    let  spEntityID = metadata.sp.getEntityID();
-    let  oneMinutesLaterTime = new Date(nowTime.getTime());
+    const  nowTime = new Date();
+    const  spEntityID = metadata.sp.getEntityID();
+    const  oneMinutesLaterTime = new Date(nowTime.getTime());
     oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
     const OneMinutesLater = oneMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
@@ -205,7 +205,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       });
     }
     console.log(rawSamlResponse);
-    console.log("看一下---------------------------")
+    console.log('看一下---------------------------')
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
