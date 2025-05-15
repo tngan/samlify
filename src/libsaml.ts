@@ -9,7 +9,6 @@ import utility, {flattenDeep, isString} from './utility.js';
 import {algorithms, wording, namespace} from './urn.js';
 import {select} from 'xpath';
 import {MetadataInterface} from './metadata.js';
-import {create} from 'xmlbuilder2'
 import {SignedXml} from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
 import {extract} from './extractor.js';
@@ -370,26 +369,26 @@ const libSaml = () => {
           },
           // 遍历生成多个 Attribute
           ...attributeData.map(attr => ({
-            'saml:Attribute': [
+            'saml:Attribute ': [
               // Attribute 属性
               {
                 _attr: {
                   Name: attr.Name,
                   NameFormat: attr.NameFormat,
                   FriendlyName: attr.FriendlyName,
-                  'xmlns:xs':"http://www.w3.org/2001/XMLSchema" ,
-                  "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance" ,
                 }
               },
               // 遍历生成多个 AttributeValue
               ...attr.valueArray.map((valueObj: any) => ({
-                'saml:AttributeValue': [
+                'saml:AttributeValue ': [
                   // 数据类型（根据 ValueType）
                   {
-
+                    _attr: attr.ValueType === 1
+                      ? { 'xsi:type': 'xs:string' }
+                      : {}
                   },
                   // 值内容
-                  { _text: valueObj.value }
+                  valueObj.value
                 ]
               }))
             ]
@@ -398,10 +397,8 @@ const libSaml = () => {
       };
 
       // 生成 XML（关闭自动声明头）
-      let xmlString =  xml([attributeStatement], { declaration: false, indent: '  ' });
-      return xmlString
-        .replace(/<(\/)?root>/g, '')
-        .trim();
+      const xmlString =  xml([attributeStatement], { declaration: false});
+      return xmlString.trim();
     },
     /**
      * @desc Construct the XML signature for POST binding
@@ -469,6 +466,7 @@ const libSaml = () => {
      *   - The first element is `true` if the signature is valid, `false` otherwise.
      *   - The second element is the cryptographically authenticated assertion node as a string, or `null` if not found.
      */
+    // tslint:disable-next-line:no-shadowed-variable
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const {dom} = getContext();
       const doc = dom.parseFromString(xml);
@@ -768,6 +766,7 @@ const libSaml = () => {
      * @param  {string} xml                      response in xml string format
      * @return {Promise} a promise to resolve the finalized xml
      */
+    // tslint:disable-next-line:no-shadowed-variable
     encryptAssertion(sourceEntity, targetEntity, xml?: string) {
       // Implement encryption after signature if it has
       return new Promise<string>((resolve, reject) => {
