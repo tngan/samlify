@@ -187,7 +187,14 @@ const libSaml = () => {
   * @type {AttributeTemplate}
   */
   const defaultAttributeTemplate = {
-    context: '<saml:Attribute Name="{Name}" NameFormat="{NameFormat}"><saml:AttributeValue xmlns:xs="{ValueXmlnsXs}" xmlns:xsi="{ValueXmlnsXsi}" xsi:type="{ValueXsiType}">{Value}</saml:AttributeValue></saml:Attribute>',
+    context: '<saml:Attribute Name="{Name}" NameFormat="{NameFormat}">{AttributeValues}</saml:Attribute>',
+  };
+  /**
+   * @desc Default AttributeValue template
+   * @type {AttributeTemplate}
+   */
+  const defaultAttributeValueTemplate = {
+    context: '<saml:AttributeValue xmlns:xs="{ValueXmlnsXs}" xmlns:xsi="{ValueXmlnsXsi}" xsi:type="{ValueXsiType}">{Value}</saml:AttributeValue>',
   };
 
   /**
@@ -273,7 +280,7 @@ const libSaml = () => {
     defaultAttributeTemplate,
     defaultLogoutRequestTemplate,
     defaultLogoutResponseTemplate,
-
+    defaultAttributeValueTemplate,
     /**
     * @desc Replace the tag (e.g. {tag}) inside the raw XML
     * @param  {string} rawXML      raw XML string used to do keyword replacement
@@ -526,7 +533,7 @@ const libSaml = () => {
         } else {
           return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
-      };
+      }
 
       // something has gone seriously wrong if we are still here
       throw new Error('ERR_ZERO_SIGNATURE');
@@ -659,7 +666,7 @@ const libSaml = () => {
       verifier.update(octetString);
       const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert),       Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
       console.log(isValid);
-      console.log('验证结果-------------')
+      console.log('-------------签名验证结果-------------')
       return isValid
 
     },
