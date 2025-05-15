@@ -374,8 +374,7 @@ const libSaml = () => {
               {
                 _attr: {
                   Name: attr.Name,
-                  NameFormat: attr.NameFormat,
-                  FriendlyName: attr.FriendlyName,
+                  NameFormat: attr.NameFormat
                 }
               },
               // 遍历生成多个 AttributeValue
