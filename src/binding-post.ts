@@ -80,7 +80,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
  * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
  * @param AttributeStatement
  */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false ,AttributeStatement=''): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false , AttributeStatement=[]): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -127,7 +127,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       NameID: user?.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
-      AttributeStatement: AttributeStatement,
+      AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);

@@ -135,7 +135,7 @@ function base64LoginRequest(entity: any, customTagReplacement?: (template: strin
  * @param  {function} customTagReplacement     used when developers have their own login response template
  * @param AttributeStatement
  */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext,AttributeStatement=''): Promise<BindingSimpleSignContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext, AttributeStatement:[] = []): Promise<BindingSimpleSignContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -176,7 +176,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
       AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
-      AttributeStatement: AttributeStatement,
+      AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);

@@ -49,7 +49,7 @@ export class IdentityProvider extends Entity {
     };
     const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
     // build attribute part
-    if (idpSetting.loginResponseTemplate) {
+/*    if (idpSetting.loginResponseTemplate) {
       if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
         let attributeStatementTemplate;
         let attributeTemplate;
@@ -73,7 +73,7 @@ export class IdentityProvider extends Entity {
       } else {
         console.warn('Invalid login response template');
       }
-    }
+    }*/
     super(entitySetting, 'idp');
   }
 
@@ -90,10 +90,10 @@ export class IdentityProvider extends Entity {
     encryptThenSign?: boolean,
     relayState?: string,
     context: Record<string, any>,
-    AttributeStatement:string
+    AttributeStatement:[]
   }) {
 const bindType = params?.binding ?? 'post';
-    const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState='',AttributeStatement=''} = params
+    const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState='',AttributeStatement= [] } = params
     const protocol = namespace.binding[bindType];
     // can support post, redirect and post simple sign bindings for login response
     let context: any = null;

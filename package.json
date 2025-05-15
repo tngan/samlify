@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "2.12.10",
+  "version": "2.12.11",
   "description": "High-level API for Single Sign On (SAML 2.0) 维护分支：修复原项目samlify的一些问题 ",
   "main": "build/index.js",
   "keywords": [
@@ -24,7 +24,6 @@
   "contributors": [
     "Veclea <vemocle@gmail.com>"
   ],
-
   "author": "Veclea",
   "repository": {
     "url": "https://github.com/Veclea/samlify.git",
@@ -32,14 +31,15 @@
   },
   "license": "MIT",
   "dependencies": {
-    "xml-encryption": "^3.0.1",
     "@xmldom/xmldom": "^0.8.6",
     "camelcase": "^6.2.0",
     "pako": "^1.0.10",
     "uuid": "^10.0.0",
     "xml": "^1.0.1",
     "xml-crypto": "^6.1.0",
+    "xml-encryption": "^3.0.1",
     "xml-escape": "^1.1.0",
+    "xmlbuilder2": "^3.1.1",
     "xpath": "^0.0.32"
   },
   "devDependencies": {
