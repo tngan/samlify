@@ -4,21 +4,22 @@
 * @desc  Declares the actions taken by service provider
 */
 import Entity, {
-  BindingContext,
+
+} from './entity.js';
+import  type {  BindingContext,
   PostBindingContext,
   ESamlHttpRequest,
-  SimpleSignBindingContext,
-} from './entity.js';
+  SimpleSignBindingContext,}from './entity.js';
 import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
-  ServiceProviderSettings,
+  type ServiceProviderSettings,
 } from './types.js';
 import { namespace } from './urn.js';
 import redirectBinding from './binding-redirect.js';
 import postBinding from './binding-post.js';
 import simpleSignBinding from './binding-simplesign.js';
-import { flow, FlowResult } from  './flow.js';
+import { flow, type FlowResult } from  './flow.js';
 
 /*
  * @desc interface function

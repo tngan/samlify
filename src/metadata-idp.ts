@@ -3,8 +3,8 @@
 * @author tngan
 * @desc  Metadata of identity provider
 */
-import Metadata, { MetadataInterface } from './metadata.js';
-import { MetadataIdpOptions, MetadataIdpConstructor } from './types.js';
+import Metadata, { type  MetadataInterface } from './metadata.js';
+import  type { MetadataIdpOptions, MetadataIdpConstructor } from './types.js';
 import { namespace } from './urn.js';
 import libsaml from './libsaml.js';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility.js';

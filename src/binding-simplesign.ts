@@ -5,7 +5,7 @@
 */
 
 import { wording, StatusCode } from './urn.js';
-import { BindingContext, SimpleSignComputedContext } from './entity.js';
+import  type { BindingContext, SimpleSignComputedContext } from './entity.js';
 import libsaml from './libsaml.js';
 import utility, { get } from './utility.js';
 

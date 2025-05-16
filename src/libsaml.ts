@@ -8,7 +8,7 @@ import {createSign, createPrivateKey, createVerify} from 'node:crypto';
 import utility, {flattenDeep, isString} from './utility.js';
 import {algorithms, wording, namespace} from './urn.js';
 import {select} from 'xpath';
-import {MetadataInterface} from './metadata.js';
+import type {MetadataInterface} from './metadata.js';
 import {SignedXml} from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
 import {extract} from './extractor.js';

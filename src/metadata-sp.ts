@@ -3,13 +3,14 @@
 * @author tngan
 * @desc  Metadata of service provider
 */
-import Metadata, { MetadataInterface } from './metadata.js';
-import { MetadataSpConstructor, MetadataSpOptions } from './types.js';
+import Metadata, {type MetadataInterface} from './metadata.js';
+import   type{  MetadataSpOptions } from './types.js';
+import type { MetadataSpConstructor } from './types.js';
 import { namespace, elementsOrder as order } from './urn.js';
 import libsaml from './libsaml.js';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility.js';
 import xml from 'xml';
-import {AttrService,ServiceName,RequestedAttribute,AttributeConsumingService} from './types.js'
+import  type {AttrService,ServiceName,RequestedAttribute,AttributeConsumingService} from './types.js'
 export interface SpMetadataInterface extends MetadataInterface {
 
 }

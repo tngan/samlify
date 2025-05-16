@@ -1,5 +1,5 @@
-import { DOMParser as dom, Options as DOMParserOptions } from '@xmldom/xmldom';
-
+import { DOMParser as dom } from '@xmldom/xmldom';
+import type { Options as DOMParserOptions } from '@xmldom/xmldom';
 // global module configuration
 interface Context extends ValidatorContext, DOMParserContext {}
 
@@ -16,11 +16,11 @@ const context: Context = {
   dom: new dom()
 };
 
-export function getContext() {
+export function getContext():Context {
   return context;
 }
 
-export function setSchemaValidator(params: ValidatorContext) {
+export function setSchemaValidator(params: ValidatorContext):void {
 
   if (typeof params.validate !== 'function') {
     throw new Error('validate must be a callback function having one argument as xml input');
@@ -31,6 +31,6 @@ export function setSchemaValidator(params: ValidatorContext) {
 
 }
 
-export function setDOMParserOptions(options: DOMParserOptions = {}) {
+export function setDOMParserOptions(options: DOMParserOptions = {}):void {
   context.dom = new dom(options);
 }

@@ -10,8 +10,8 @@ import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-i
 import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp.js';
 import redirectBinding from './binding-redirect.js';
 import postBinding from './binding-post.js';
-import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types.js';
-import { flow, FlowResult } from  './flow.js';
+import  type { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types.js';
+import { flow, type FlowResult } from  './flow.js';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;

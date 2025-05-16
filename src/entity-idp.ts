@@ -10,21 +10,21 @@ const binding = wording.binding
 
 
 
-import Entity, { ESamlHttpRequest } from './entity.js';
+import Entity, { type ESamlHttpRequest } from './entity.js';
 import {
   ServiceProviderConstructor as ServiceProvider,
   ServiceProviderMetadata,
   IdentityProviderMetadata,
-  IdentityProviderSettings
+  type IdentityProviderSettings
 } from './types.js';
 import libsaml from './libsaml.js';
 import { namespace } from './urn.js';
 import postBinding from './binding-post.js';
 import redirectBinding from './binding-redirect.js';
 import simpleSignBinding from './binding-simplesign.js';
-import { flow, FlowResult } from  './flow.js';
+import { flow, type FlowResult } from  './flow.js';
 import { isString } from './utility.js';
-import { BindingContext } from './entity.js';
+import type  { BindingContext } from './entity.js';
 
 /**
  * Identity provider can be configured using either metadata importing or idpSetting

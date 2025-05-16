@@ -5,7 +5,7 @@
  */
 import utility, {get} from './utility.js';
 import libsaml from './libsaml.js';
-import {BindingContext} from './entity.js';
+import type {BindingContext} from './entity.js';
 import {IdentityProvider as Idp} from './entity-idp.js';
 import {ServiceProvider as Sp} from './entity-sp.js';
 

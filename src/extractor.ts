@@ -1,4 +1,4 @@
-import { select, SelectedValue } from 'xpath';
+import { select, type SelectedValue } from 'xpath';
 import { uniq, last, zipObject, notEmpty } from './utility.js';
 import { getContext } from './api.js';
 import camelCase from 'camelcase';

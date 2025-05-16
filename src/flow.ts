@@ -7,7 +7,7 @@ import {
   loginResponseFields,
   logoutRequestFields,
   logoutResponseFields,
-  ExtractorFields,
+ type  ExtractorFields,
   logoutResponseStatusFields,
   loginResponseStatusFields
 } from './extractor.js';

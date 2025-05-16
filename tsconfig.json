@@ -1,11 +1,17 @@
 {
   "compilerOptions": {
-
-    "skipLibCheck": true,
+    // 代码质量
+    "noImplicitAny": false, // 允许参数/变量隐式推断为 any
+    "strict": false ,        // 关闭所有严格模式（包含 noImplicitAny）
+    "skipLibCheck": true ,        // 跳过第三方库类型检查
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
-    "declaration": true,
+    "declaration": true,//生成声明文件.d.ts
+    "declarationMap": true, //生成声明原映射 方便类型调试定义
+    "verbatimModuleSyntax": false, //保持模块儿语法原样 不自动转换
+    "useDefineForClassFields": false, //使用现代类初始化方式
+    "isolatedDeclarations": false,//独立模块儿编译
     "declarationDir": "types",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -13,15 +19,20 @@
     "sourceMap": true,
     "outDir": "./build",
     "baseUrl": "./",
+
     "removeComments": false,
     "strictNullChecks": true,
-    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true, //大小写一致性
+    // 语法兼容性
+    "esModuleInterop": true,     // 允许 CJS/ESM 互操作
+    "allowSyntheticDefaultImports": true, // 允许默认导入无默认导出的模块
     "paths": {},
     "types": [
       "node"
   ],
+
     "lib": [
-      "dom",
+      "dom"
     ]
   },
   "atom": { "rewriteTsconfig": false },
@@ -33,6 +44,7 @@
     "types/**/*.ts",
     "test/**/*.ts"
   ],
+  "include": ["src/**/*","index.ts"],
   "compileOnSave": false,
   "buildOnSave": false
 }

@@ -1,4 +1,4 @@
-import { LoginResponseTemplate } from './libsaml.js';
+import  type { LoginResponseTemplate } from './libsaml.js';
 
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp.js';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp.js';

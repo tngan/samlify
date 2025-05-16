@@ -5,7 +5,7 @@
 */
 
 import { wording, namespace, StatusCode } from './urn.js';
-import { BindingContext } from './entity.js';
+import type { BindingContext } from './entity.js';
 import libsaml from './libsaml.js';
 import utility, { get } from './utility.js';
 
@@ -224,7 +224,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 * @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} base64 encoded request
 */
-function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:string, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
@@ -254,7 +254,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       return {
         id,
         context: libsaml.constructSAMLSignature({
-          referenceTagXPath,
+           referenceTagXPath,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
