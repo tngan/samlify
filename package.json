@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "2.14.0",
+  "version": "2.14.1",
   "description": "High-level API for Single Sign On (SAML 2.0) baseed on samlify ",
   "main": "build/index.js",
   "keywords": [
