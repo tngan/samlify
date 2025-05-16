@@ -114,7 +114,7 @@ export function base64Decode(base64Message: string, isBytes?: boolean): string |
  */
 function deflateString(message: string): number[] {
   const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
-  return Array.from(deflate(input as  Uint8Array | number[] | string, {raw: true}));
+  return Array.from(deflate(input as  Uint8Array | ArrayBuffer, {raw: true}));
 }
 
 /**
