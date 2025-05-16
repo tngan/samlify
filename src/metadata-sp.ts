@@ -22,6 +22,7 @@ interface MetaElement {
   SingleLogoutService?: any[];
   AssertionConsumerService?: any[];
   AttributeConsumingService?: any[];
+  ArtifactResolutionService?: any[];
 }
 
 /*
@@ -194,14 +195,15 @@ export class SpMetadata extends Metadata {
         });
       }
       if (isNonEmptyArray(artifactResolutionService)) {
-        artifactResolutionService.forEach((a, indexCount) => {
-          const attr: any = {};
+        artifactResolutionService.forEach(a => {
+          const attr: any = {
+            Binding: a.Binding,
+            Location: a.Location,
+          };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          descriptors.push({ ArtifactResolutionService: [{ _attr: attr }] });
+          descriptors.ArtifactResolutionService!.push([{ _attr: attr }]);
         });
       } else {
         console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
