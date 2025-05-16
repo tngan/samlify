@@ -44,8 +44,8 @@
     "pako": "^2.1.0",
     "uuid": "^10.0.0",
     "xml": "^1.0.1",
-    "xml-crypto": "^6.1.0",
-    "xml-encryption": "^3.0.1",
+    "xml-crypto": "^6.1.2",
+    "xml-encryption": "^3.1.0",
     "xml-escape": "^1.1.0",
     "xmlbuilder2": "^3.1.1",
     "xpath": "^0.0.32"
