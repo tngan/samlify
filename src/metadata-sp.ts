@@ -59,7 +59,8 @@ export class SpMetadata extends Metadata {
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
-        attributeConsumingService = []
+        attributeConsumingService = [],
+        artifactResolutionService = []
       } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
@@ -191,7 +192,19 @@ export class SpMetadata extends Metadata {
           descriptors.AttributeConsumingService!.push(attrConsumingService);
         });
       }
-
+      if (isNonEmptyArray(artifactResolutionService)) {
+        artifactResolutionService.forEach((a, indexCount) => {
+          const attr: any = {};
+          if (a.isDefault) {
+            attr.isDefault = true;
+          }
+          attr.Binding = a.Binding;
+          attr.Location = a.Location;
+          descriptors.push({ ArtifactResolutionService: [{ _attr: attr }] });
+        });
+      } else {
+        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
+      }
       // handle element order
       const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
       existedElements.forEach(name => {

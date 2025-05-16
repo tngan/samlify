@@ -47,6 +47,7 @@ export interface MetadataIdpOptions {
   nameIDFormat?: string[];
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
+  artifactResolutionService?:SSOService[];
   requestSignatureAlgorithm?: string;
 }
 

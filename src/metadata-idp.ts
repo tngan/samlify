@@ -37,6 +37,7 @@ export class IdpMetadata extends Metadata {
         nameIDFormat = [],
         singleSignOnService = [],
         singleLogoutService = [],
+        artifactResolutionService:[]
       } = meta as MetadataIdpOptions;
 
       const IDPSSODescriptor: any[] = [{
@@ -85,6 +86,19 @@ export class IdpMetadata extends Metadata {
         });
       } else {
         console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
+      }
+      if (isNonEmptyArray(artifactResolutionService)) {
+        artifactResolutionService.forEach((a, indexCount) => {
+          const attr: any = {};
+          if (a.isDefault) {
+            attr.isDefault = true;
+          }
+          attr.Binding = a.Binding;
+          attr.Location = a.Location;
+          IDPSSODescriptor.push({ ArtifactResolutionService: [{ _attr: attr }] });
+        });
+      } else {
+        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
       }
       // Create a new metadata by setting
       meta = xml([{

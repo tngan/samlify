@@ -48,32 +48,6 @@ export class IdentityProvider extends Entity {
       },
     };
     const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
-    // build attribute part
-/*    if (idpSetting.loginResponseTemplate) {
-      if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
-        let attributeStatementTemplate;
-        let attributeTemplate;
-        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate) {
-          attributeStatementTemplate = libsaml.defaultAttributeStatementTemplate;
-        } else {
-          attributeStatementTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate!;
-        }
-        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate) {
-          attributeTemplate = libsaml.defaultAttributeTemplate;
-        } else {
-          attributeTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate!;
-        }
-        const replacement = {
-          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes, attributeTemplate, attributeStatementTemplate),
-        };
-        entitySetting.loginResponseTemplate = {
-          ...entitySetting.loginResponseTemplate,
-          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate!.context, replacement),
-        };
-      } else {
-        console.warn('Invalid login response template');
-      }
-    }*/
     super(entitySetting, 'idp');
   }
 

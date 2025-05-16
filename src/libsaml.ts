@@ -323,40 +323,6 @@ const libSaml = () => {
      * @param  {AttributeStatementTemplate} attributeStatementTemplate    the attributeStatement tag template to be used
      * @return {string}
      */
-/*    attributeStatementBuilder(
-      attributes: LoginResponseAttribute[],
-      attributeTemplate: AttributeTemplate = defaultAttributeTemplate,
-      attributeStatementTemplate: AttributeStatementTemplate = defaultAttributeStatementTemplate
-    ): string {
-      const attr = attributes.map(({name, nameFormat, valueTag, valueXsiType, type, valueXmlnsXs, valueXmlnsXsi}) => {
-        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
-        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
-        let attributeLine = attributeTemplate.context;
-        if (attributeLine && typeof attributeLine === 'function') {
-          // 安全调用
-          // @ts-ignore
-          return attributeLine({
-            name,
-            nameFormat,
-            valueTag,
-            valueXsiType,
-            type,
-            valueXmlnsXs: valueXmlnsXs ?? defaultValueXmlnsXs,
-            valueXmlnsXsi: valueXmlnsXsi ?? defaultValueXmlnsXsi
-          })
-        } else {
-          attributeLine = attributeLine.replace('{Name}', name);
-          attributeLine = attributeLine.replace('{NameFormat}', nameFormat);
-          attributeLine = attributeLine.replace('{ValueXmlnsXs}', valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
-          attributeLine = attributeLine.replace('{ValueXmlnsXsi}', valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi);
-          attributeLine = attributeLine.replace('{ValueXsiType}', valueXsiType);
-          attributeLine = attributeLine.replace('{Value}', `{${tagging('attr', valueTag)}}`);
-          return attributeLine;
-        }
-
-      }).join('');
-      return attributeStatementTemplate.context.replace('{Attributes}', attr);
-    },*/
     /** For Test */
     attributeStatementBuilder(attributeData: any[]): string {
 // 构建 XML 元素数组
