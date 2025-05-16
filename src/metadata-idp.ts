@@ -37,7 +37,7 @@ export class IdpMetadata extends Metadata {
         nameIDFormat = [],
         singleSignOnService = [],
         singleLogoutService = [],
-        artifactResolutionService:[]
+        artifactResolutionService=[]
       } = meta as MetadataIdpOptions;
 
       const IDPSSODescriptor: any[] = [{

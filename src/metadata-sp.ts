@@ -69,6 +69,7 @@ export class SpMetadata extends Metadata {
         SingleLogoutService: [],
         AssertionConsumerService: [],
         AttributeConsumingService: [],
+        ArtifactResolutionService:[]
       };
 
       const SPSSODescriptor: any[] = [{

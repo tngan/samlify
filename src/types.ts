@@ -68,6 +68,7 @@ export interface MetadataSpOptions {
   singleLogoutService?: SSOService[];
   assertionConsumerService?: SSOService[];
   attributeConsumingService?: AttributeConsumingService[];
+  artifactResolutionService?:SSOService[];
   elementsOrder?: string[];
 }
 
