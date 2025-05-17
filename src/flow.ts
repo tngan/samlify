@@ -71,7 +71,9 @@ async function redirectFlow(options): Promise<FlowResult>  {
 
   // validate the xml
   try {
-    await libsaml.isValidXml(xmlString);
+   let result =  await libsaml.isValidXml(xmlString);
+    console.log(result);
+    console.log("验证和结果=====================")
   } catch (e) {
     return Promise.reject('ERR_INVALID_XML');
   }
@@ -191,34 +193,51 @@ async function postFlow(options): Promise<FlowResult> {
     metadata: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
-
-  const decryptRequired = from.entitySetting.isAssertionEncrypted;
+/** 断言是否加密应根据响应里面的字段判断*/
+  let  decryptRequired = from.entitySetting.isAssertionEncrypted;
   let extractorFields: ExtractorFields = [];
 
   // validate the xml first
-  await libsaml.isValidXml(samlContent);
-
+ let res =  await libsaml.isValidXml(samlContent);
+  console.log(res);
+  console.log("验证结果---------------")
   if (parserType !== urlParams.samlResponse) {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
-
+  console.log(parserType);
   // check status based on different scenarios
   await checkStatus(samlContent, parserType);
+console.log("========走不到这里来=============")
+  /**检查签名顺序 */
 
-  // verify the signatures (the response is encrypted then signed, then verify first then decrypt)
-  if (
+/*  if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
   ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
+    console.log("===============我走的这里=========================")
+    const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+    console.log(verified);
+    console.log("verified")
+    decryptRequired = isDecryptRequired
     if (!verified) {
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
     if (!decryptRequired) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
-  }
+  }*/
 
+  console.log("===============我走的这里=========================")
+  const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+  console.log(verified);
+  console.log("verified")
+  decryptRequired = isDecryptRequired
+  if (!verified) {
+    return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+  }
+  if (!decryptRequired) {
+    extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+  }
   if (parserType === 'SAMLResponse' && decryptRequired) {
     const result = await libsaml.decryptAssertion(self, samlContent);
     samlContent = result[0];
@@ -226,17 +245,24 @@ async function postFlow(options): Promise<FlowResult> {
   }
 
   // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
-  if (
+/*  if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
   ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
+    console.log("走不到这里来========================================")
+    console.log("走不到这里来========================================")
+    console.log("走不到这里来========================================")
+    console.log("走不到这里来========================================")
+    console.log("走不到这里来========================================")
+
+    const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+    decryptRequired = isDecryptRequired
     if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     } else {
       return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
     }
-  }
+  }*/
 
   const parseResult = {
     samlContent: samlContent,
@@ -286,6 +312,12 @@ async function postFlow(options): Promise<FlowResult> {
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
+  //valid destination
+  //There is no validation of the response here. The upper-layer application
+  // should verify the result by itself to see if the destination is equal to the SP acs and
+  // whether the response.id is used to prevent replay attacks.
+
+
 
   return Promise.resolve(parseResult);
 }
@@ -425,7 +457,7 @@ function checkStatus(content: string, parserType: string): Promise<string> {
     : logoutResponseStatusFields;
 
   const {top, second} = extract(content, fields);
-
+  console.log(top, second);
   // only resolve when top-tier status code is success
   if (top === StatusCode.Success) {
     return Promise.resolve('OK');

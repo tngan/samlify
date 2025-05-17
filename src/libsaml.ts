@@ -423,6 +423,97 @@ const libSaml = () => {
       }
       return isBase64Output !== false ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
+
+    checkSamlSignatureOrder(samlResponseXml) {
+      const {dom} = getContext();
+      const doc = dom.parseFromString(samlResponseXml,'application/xml');
+
+      // 获取 Response 根节点
+      const response = doc.documentElement;
+      if (!response || response.localName !== "Response") {
+        throw new Error("Invalid SAML Response");
+      }
+
+      // 获取 Response 的 ID
+      const responseId = response.getAttribute("ID");
+
+      // 查找 Response 下的直接子节点
+      const children = Array.from(response.childNodes).filter(
+          (node) => node.nodeType === 1
+      ); // 过滤非元素节点
+
+      // 1. 查找签名块 (可能带不同前缀: ds: 或 dsig:)
+      const signature = children.find((node) => {
+        // @ts-ignore
+        const localName = node.nodeName;
+        console.log("这就是名字1")
+        console.log(localName);
+        // @ts-ignore
+        const ns = node.namespaceURI;
+        return (
+            (localName.includes("Signature") && ns === "http://www.w3.org/2000/09/xmldsig#")
+            || node.nodeName.includes("Signature")
+        );
+      });
+
+      if (!signature) {
+        throw new Error("SAML Response is not signed");
+      }
+      // @ts-ignore
+
+      // 2. 检查签名的 Reference URI
+      // @ts-ignore
+      console.log(signature.getElementsByTagName("Reference"));
+      console.log("找到了神恶魔---------------")
+      // @ts-ignore
+      const reference = Array.from(signature.getElementsByTagName("Reference")).find(
+
+          (ref) =>{
+            // @ts-ignore
+            console.log(ref?.parentNode?.localName);
+            console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            // @ts-ignore
+           return ref?.parentNode?.localName ?.includes("SignedInfo")
+          }
+      );
+      console.log(reference);
+      console.log("给我看一下-----------------")
+      // @ts-ignore
+      const referenceUri = reference?.getAttribute("URI") || "";
+      console.log("1他妈的-------------------")
+      console.log(referenceUri);
+      console.log(`#${responseId}`);
+      console.log("他妈的-------------------")
+      // 是否对整个 Response 签名
+      const isSignWholeResponse = referenceUri === `#${responseId}`;
+
+      // 3. 查找 EncryptedAssertion
+      const encryptedAssertion = children.find((node) => {
+        // @ts-ignore
+        const localName = node?.localName;
+        return (
+            (localName === "EncryptedAssertion" )
+            || node.nodeName.includes("EncryptedAssertion")
+        );
+      });
+
+      if (!encryptedAssertion) {
+        throw new Error("EncryptedAssertion not found");
+      }
+
+      // 4. 比较签名和加密断言的位置索引
+      const signatureIndex = children.indexOf(signature);
+      const encryptedIndex = children.indexOf(encryptedAssertion);
+      console.log(signatureIndex);
+      console.log(encryptedIndex);
+      console.log("66666666666666666")
+      // 判断逻辑
+      if (isSignWholeResponse && encryptedIndex > signatureIndex) {
+        return "encrypt-then-sign"; // 先加密后签名
+      } else {
+        return "sign-then-encrypt"; // 先签名后加密
+      }
+    },
     /**
      * @desc Verify the XML signature
      * @param  {string} xml xml
@@ -552,21 +643,23 @@ const libSaml = () => {
             "./*[local-name()='Assertion']",
             rootNode
           );
-
+          /**第三个参数代表是否加密*/
           // now we can process the assertion as an assertion
           if (EncryptedAssertions.length === 1) {
-
-            return [true, EncryptedAssertions[0].toString()];
+           /** 已加密*/
+            return [true, EncryptedAssertions[0].toString(),true];
           }
 
           if (assertions.length === 1) {
 
-            return [true, assertions[0].toString()];
+            return [true, assertions[0].toString(),false];
           }
 
         } else if (rootNode.localName === 'Assertion') {
-          return [true, rootNode.toString()];
-        } else {
+          return [true, rootNode.toString(),false];
+        } else if (rootNode.localName === 'EncryptedAssertion') {
+          return [true, rootNode.toString(),true];
+        }else {
           return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       }
