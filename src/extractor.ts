@@ -107,7 +107,7 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
   {
     key: 'response',
     localPath: ['Response'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo'],
+    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo','Version'],
   },
   {
     key: 'audience',

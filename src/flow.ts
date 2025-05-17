@@ -167,6 +167,14 @@ async function redirectFlow(options): Promise<FlowResult>  {
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
+  let destination =  extractedProperties?.response?.destination
+  let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+    return item?.Location === destination
+  })
+  if(isExit?.length === 0){
+    return Promise.reject('ERR_Destination_URL');
+  }
+
 
   return Promise.resolve(parseResult);
 }
@@ -245,6 +253,7 @@ console.log("========走不到这里来=============")
   }
 
   // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
+
 /*  if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
@@ -316,8 +325,13 @@ console.log("========走不到这里来=============")
   //There is no validation of the response here. The upper-layer application
   // should verify the result by itself to see if the destination is equal to the SP acs and
   // whether the response.id is used to prevent replay attacks.
-
-
+  let destination =  extractedProperties?.response?.destination
+  let isExit = self.entitySetting?.assertionConsumerService?.filter((item)=>{
+    return item?.Location === destination
+  })
+  if(isExit?.length === 0){
+    return Promise.reject('ERR_Destination_URL');
+  }
 
   return Promise.resolve(parseResult);
 }
@@ -440,6 +454,15 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
+
+  let destination =  extractedProperties?.response?.destination
+  let isExit = self.entitySetting?.assertionConsumerService?.filter((item)=>{
+    return item?.Location === destination
+  })
+  if(isExit?.length === 0){
+    return Promise.reject('ERR_Destination_URL');
+  }
+
 
   return Promise.resolve(parseResult);
 }
