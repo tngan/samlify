@@ -67,8 +67,10 @@ async function redirectFlow(options): Promise<FlowResult>  {
     return Promise.reject('ERR_REDIRECT_FLOW_BAD_ARGS');
   }
 
-  const xmlString = inflateString(decodeURIComponent(content));
+/*  const xmlString = inflateString(decodeURIComponent(content));*/
 
+  // @ts-ignore
+  let  {xml:xmlString} = libsaml.validateAndInflateSamlResponse(content);
   // validate the xml
   try {
    let result =  await libsaml.isValidXml(xmlString);

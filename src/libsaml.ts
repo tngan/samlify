@@ -17,6 +17,7 @@ import {getContext} from './api.js';
 import xmlEscape from 'xml-escape';
 import * as fs from 'fs';
 import {DOMParser} from '@xmldom/xmldom';
+import {inflate} from 'pako'
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -234,7 +235,41 @@ const libSaml = () => {
   const defaultLogoutResponseTemplate = {
     context: '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>',
   };
+  function validateAndInflateSamlResponse(urlEncodedResponse) {
+    // 3. 尝试DEFLATE解压（SAML规范要求使用原始DEFLATE）
+    let xml ="";
+    let compressed = true;
 
+
+
+    try {        // 1. URL解码
+      const base64Encoded = decodeURIComponent(urlEncodedResponse);
+
+      // 2. Base64解码为Uint8Array
+      const binaryStr = atob(base64Encoded);
+      const compressedData = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        compressedData[i] = binaryStr.charCodeAt(i);
+      }
+
+      xml = inflate(compressedData, { to: 'string', raw: true });
+    } catch (inflateError) {
+      // 4. 解压失败，尝试直接解析为未压缩的XML
+      console.log("错误了-------------------------")
+      try {
+        const base64Encoded = decodeURIComponent(urlEncodedResponse);
+        xml = Buffer.from(base64Encoded, 'base64').toString('utf-8')
+        console.log(xml);
+        console.log("真的还是假的------------------------------------l")
+        return { compressed:false, xml, error: null };
+      } catch (xmlError) {
+return Promise.resolve({ compressed:false, xml, error: true })
+      }
+    }
+
+    return { compressed, xml, error: null };
+
+  }
   function getSigningSchemeForNode(sigAlg?: string) {
     if (sigAlg) {
       const algAlias = nrsaAliasMappingForNode[sigAlg];
@@ -301,6 +336,7 @@ const libSaml = () => {
     defaultLogoutRequestTemplate,
     defaultLogoutResponseTemplate,
     defaultAttributeValueTemplate,
+    validateAndInflateSamlResponse,
     /**
      * @desc Replace the tag (e.g. {tag}) inside the raw XML
      * @param  {string} rawXML      raw XML string used to do keyword replacement
