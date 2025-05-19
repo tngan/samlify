@@ -1,5 +1,7 @@
 import { DOMParser as dom } from '@xmldom/xmldom';
 import type { Options as DOMParserOptions } from '@xmldom/xmldom';
+import {validate as defaultValidator} from "./schemaValidator.js";
+
 // global module configuration
 interface Context extends ValidatorContext, DOMParserContext {}
 
@@ -12,7 +14,7 @@ interface DOMParserContext {
 }
 
 const context: Context = {
-  validate: undefined,
+  validate: defaultValidator,
   dom: new dom()
 };
 

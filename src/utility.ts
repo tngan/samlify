@@ -262,13 +262,11 @@ export function readPrivateKey(
     if (keyObject.asymmetricKeyType !== 'rsa') {
       throw new Error('仅支持 RSA 私钥类型');
     }
-
     // 强制转换为 PKCS#1 格式
     const exported = keyObject.export({
       type: 'pkcs1',      // 明确指定 RSA 传统格式
       format: 'pem'      // 输出为 PEM 格式
     }) as string;
-
     return isOutputString ? String(exported) : Buffer.from(exported, 'utf8');
   } catch (error) {
     throw new Error(`私钥读取失败: ${error.message}`);

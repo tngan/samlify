@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "2.14.7",
+  "version": "2.14.8",
   "description": "High-level API for Single Sign On (SAML 2.0) baseed on samlify ",
   "main": "build/index.js",
   "keywords": [
@@ -28,7 +28,10 @@
       "import": "./build/index.js"
     }
   },
-  "files": ["build","types"],
+  "files": [
+    "build",
+    "types"
+  ],
   "contributors": [
     "Veclea <vemocle@gmail.com>"
   ],
@@ -47,16 +50,17 @@
     "xml-crypto": "^6.1.2",
     "xml-encryption": "^3.1.0",
     "xml-escape": "^1.1.0",
+    "xmllint-wasm": "^4.0.2",
     "xpath": "^0.0.32"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "7.52.8",
     "@types/node": "^22.15.17",
     "@types/pako": "2.0.3",
     "@types/uuid": "10.0.0",
-    "esbuild": "^0.25.4",
-    "@microsoft/api-extractor": "7.52.8",
     "ava": "^4.1.0",
     "coveralls": "^3.1.1",
+    "esbuild": "^0.25.4",
     "nyc": "^17.1.0",
     "timekeeper": "^2.2.0",
     "typescript": "5.8.3"

@@ -32,6 +32,9 @@ importers:
       xml-escape:
         specifier: ^1.1.0
         version: 1.1.0
+      xmllint-wasm:
+        specifier: ^4.0.2
+        version: 4.0.2
       xpath:
         specifier: ^0.0.32
         version: 0.0.32
@@ -1579,6 +1582,10 @@ packages:
   xml@1.0.1:
     resolution: {integrity: sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==}
 
+  xmllint-wasm@4.0.2:
+    resolution: {integrity: sha512-tJxQzA9krv9gaQxYFJ/NVrpLf/wpWYPKjweCLMNbjooBTsW7/O26pyc3Pd0Lp0oTLUMFir/MEX3ybY/hhRjIpw==}
+    engines: {node: '>=12.4.0'}
+
   xpath@0.0.32:
     resolution: {integrity: sha512-rxMJhSIoiO8vXcWvSifKqhvV96GjiD5wYb8/QHdoRyQvraTpp4IEv944nhGausZZ3u7dhQXteZuZbaqfpB7uYw==}
     engines: {node: '>=0.6.0'}
@@ -3111,6 +3118,8 @@ snapshots:
   xml-escape@1.1.0: {}
 
   xml@1.0.1: {}
+
+  xmllint-wasm@4.0.2: {}
 
   xpath@0.0.32: {}
 
