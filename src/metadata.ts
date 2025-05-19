@@ -4,9 +4,9 @@
 * @desc An abstraction for metadata of identity provider and service provider
 */
 import * as fs from 'fs';
-import { namespace } from './urn';
-import { extract } from './extractor';
-import { isString } from './utility';
+import { namespace } from './urn.js';
+import { extract } from './extractor.js';
+import { isString } from './utility.js';
 
 export interface MetadataInterface {
   xmlString: string;

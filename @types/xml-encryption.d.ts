@@ -5,6 +5,9 @@ declare module "xml-encryption" {
     encryptionAlgorithm: string;
     keyEncryptionAlgorithm: string;
     input_encoding?: string;
+    keyEncryptionDigest?: string,
+    warnInsecureAlgorithm?: boolean,
+    disallowEncryptionWithInsecureAlgorithm?: boolean,
   }
   export interface DecryptOptions {
     key: string | Buffer;

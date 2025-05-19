@@ -1,16 +1,16 @@
-import { inflateString, base64Decode } from './utility';
-import { verifyTime } from './validator';
-import libsaml from './libsaml';
+import { inflateString, base64Decode } from './utility.js';
+import { verifyTime } from './validator.js';
+import libsaml from './libsaml.js';
 import {
   extract,
   loginRequestFields,
   loginResponseFields,
   logoutRequestFields,
   logoutResponseFields,
-  ExtractorFields,
+ type  ExtractorFields,
   logoutResponseStatusFields,
   loginResponseStatusFields
-} from './extractor';
+} from './extractor.js';
 
 import {
   BindingNamespace,
@@ -18,7 +18,7 @@ import {
   wording,
   MessageSignatureOrder,
   StatusCode
-} from './urn';
+} from './urn.js';
 
 const bindDict = wording.binding;
 const urlParams = wording.urlParams;
@@ -67,11 +67,15 @@ async function redirectFlow(options): Promise<FlowResult>  {
     return Promise.reject('ERR_REDIRECT_FLOW_BAD_ARGS');
   }
 
-  const xmlString = inflateString(decodeURIComponent(content));
+/*  const xmlString = inflateString(decodeURIComponent(content));*/
 
+  // @ts-ignore
+  let  {xml:xmlString} = libsaml.validateAndInflateSamlResponse(content);
   // validate the xml
   try {
-    await libsaml.isValidXml(xmlString);
+   let result =  await libsaml.isValidXml(xmlString);
+    console.log(result);
+    console.log("验证和结果=====================")
   } catch (e) {
     return Promise.reject('ERR_INVALID_XML');
   }
@@ -166,6 +170,18 @@ async function redirectFlow(options): Promise<FlowResult>  {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
 
+  if(   parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
+  }
+
+
+
   return Promise.resolve(parseResult);
 }
 
@@ -191,35 +207,44 @@ async function postFlow(options): Promise<FlowResult> {
     metadata: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
   };
-
-  const decryptRequired = from.entitySetting.isAssertionEncrypted;
-
+/** 断言是否加密应根据响应里面的字段判断*/
+  let  decryptRequired = from.entitySetting.isAssertionEncrypted;
   let extractorFields: ExtractorFields = [];
 
   // validate the xml first
-  await libsaml.isValidXml(samlContent);
-
+ let res =  await libsaml.isValidXml(samlContent);
   if (parserType !== urlParams.samlResponse) {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
-
   // check status based on different scenarios
   await checkStatus(samlContent, parserType);
+  /**检查签名顺序 */
 
-  // verify the signatures (the response is encrypted then signed, then verify first then decrypt)
-  if (
+/*  if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
   ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
+    console.log("===============我走的这里=========================")
+    const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+    console.log(verified);
+    console.log("verified")
+    decryptRequired = isDecryptRequired
     if (!verified) {
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
     if (!decryptRequired) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
-  }
+  }*/
 
+  const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+  decryptRequired = isDecryptRequired
+  if (!verified) {
+    return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+  }
+  if (!decryptRequired) {
+    extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+  }
   if (parserType === 'SAMLResponse' && decryptRequired) {
     const result = await libsaml.decryptAssertion(self, samlContent);
     samlContent = result[0];
@@ -227,17 +252,19 @@ async function postFlow(options): Promise<FlowResult> {
   }
 
   // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
-  if (
+
+/*  if (
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
   ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
+    const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
+    decryptRequired = isDecryptRequired
     if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     } else {
       return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
     }
-  }
+  }*/
 
   const parseResult = {
     samlContent: samlContent,
@@ -287,6 +314,27 @@ async function postFlow(options): Promise<FlowResult> {
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
+  //valid destination
+  //There is no validation of the response here. The upper-layer application
+  // should verify the result by itself to see if the destination is equal to the SP acs and
+  // whether the response.id is used to prevent replay attacks.
+  let destination =  extractedProperties?.response?.destination
+  let isExit = self.entitySetting?.assertionConsumerService?.filter((item)=>{
+    return item?.Location === destination
+  })
+  if(isExit?.length === 0){
+    return Promise.reject('ERR_Destination_URL');
+  }
+  if( parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
+  }
+
 
   return Promise.resolve(parseResult);
 }
@@ -410,6 +458,17 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
 
+  if( parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
+  }
+
+
   return Promise.resolve(parseResult);
 }
 
@@ -426,7 +485,7 @@ function checkStatus(content: string, parserType: string): Promise<string> {
     : logoutResponseStatusFields;
 
   const {top, second} = extract(content, fields);
-
+  console.log(top, second);
   // only resolve when top-tier status code is success
   if (top === StatusCode.Success) {
     return Promise.resolve('OK');

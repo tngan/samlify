@@ -4,21 +4,22 @@
 * @desc  Declares the actions taken by service provider
 */
 import Entity, {
-  BindingContext,
+
+} from './entity.js';
+import  type {  BindingContext,
   PostBindingContext,
   ESamlHttpRequest,
-  SimpleSignBindingContext,
-} from './entity';
+  SimpleSignBindingContext,}from './entity.js';
 import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
-  ServiceProviderSettings,
-} from './types';
-import { namespace } from './urn';
-import redirectBinding from './binding-redirect';
-import postBinding from './binding-post';
-import simpleSignBinding from './binding-simplesign';
-import { flow, FlowResult } from './flow';
+  type ServiceProviderSettings,
+} from './types.js';
+import { namespace } from './urn.js';
+import redirectBinding from './binding-redirect.js';
+import postBinding from './binding-post.js';
+import simpleSignBinding from './binding-simplesign.js';
+import { flow, type FlowResult } from  './flow.js';
 
 /*
  * @desc interface function
@@ -33,7 +34,7 @@ export default function(props: ServiceProviderSettings) {
 
 */
 export class ServiceProvider extends Entity {
-  entityMeta: ServiceProviderMetadata;
+  declare  entityMeta: ServiceProviderMetadata;
 
   /**
   * @desc  Inherited from Entity
@@ -82,7 +83,7 @@ export class ServiceProvider extends Entity {
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,

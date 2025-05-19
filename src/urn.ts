@@ -151,6 +151,7 @@ const algorithms = {
     data: {
       AES_128: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
       AES_256: 'http://www.w3.org/2001/04/xmlenc#aes256-cbc',
+      AES_256_GCM: 'http://www.w3.org/2009/xmlenc11#aes256-gcm',
       TRI_DEC: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc',
       AES_128_GCM: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
     },
@@ -202,8 +203,8 @@ const wording = {
 // https://wiki.shibboleth.net/confluence/display/CONCEPT/MetadataForSP
 // some idps restrict the order of elements in entity descriptors
 const elementsOrder = {
-  default: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
-  onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
+  default: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
+  onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
   shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService'],
 };
 

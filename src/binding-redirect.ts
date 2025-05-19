@@ -1,15 +1,15 @@
 /**
-* @file binding-redirect.ts
-* @author tngan
-* @desc Binding-level API, declare the functions using Redirect binding
-*/
-import utility, { get } from './utility';
-import libsaml from './libsaml';
-import { BindingContext } from './entity';
-import { IdentityProvider as Idp } from './entity-idp';
-import { ServiceProvider as Sp } from './entity-sp';
-import * as url from 'url';
-import { wording, namespace } from './urn';
+ * @file binding-redirect.ts
+ * @author tngan
+ * @desc Binding-level API, declare the functions using Redirect binding
+ */
+import utility, {get} from './utility.js';
+import libsaml from './libsaml.js';
+import type {BindingContext} from './entity.js';
+import {IdentityProvider as Idp} from './entity-idp.js';
+import {ServiceProvider as Sp} from './entity-sp.js';
+
+import {wording, namespace} from './urn.js';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -24,25 +24,26 @@ export interface BuildRedirectConfig {
 }
 
 /**
-* @private
-* @desc Helper of generating URL param/value pair
-* @param  {string} param     key
-* @param  {string} value     value of key
-* @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
-* @return {string}
-*/
+ * @private
+ * @desc Helper of generating URL param/value pair
+ * @param  {string} param     key
+ * @param  {string} value     value of key
+ * @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
+ * @return {string}
+ */
 function pvPair(param: string, value: string, first?: boolean): string {
   return (first === true ? '?' : '&') + param + '=' + value;
 }
+
 /**
-* @private
-* @desc Refractored part of URL generation for login/logout request
-* @param  {string} type
-* @param  {boolean} isSigned
-* @param  {string} rawSamlRequest
-* @param  {object} entitySetting
-* @return {string}
-*/
+ * @private
+ * @desc Refractored part of URL generation for login/logout request
+ * @param  {string} type
+ * @param  {boolean} isSigned
+ * @param  {string} rawSamlRequest
+ * @param  {object} entitySetting
+ * @return {string}
+ */
 function buildRedirectURL(opts: BuildRedirectConfig) {
   const {
     baseUrl,
@@ -51,8 +52,14 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     context,
     entitySetting,
   } = opts;
-  let { relayState = '' } = opts;
-  const noParams = (url.parse(baseUrl).query || []).length === 0;
+  let {relayState = ''} = opts;
+  let noParams = true
+  try {
+    noParams = new URL(baseUrl)?.searchParams?.size === 0
+  } catch {
+    noParams = true
+  }
+
   const queryParam = libsaml.getQueryParamByType(type);
   // In general, this xmlstring is required to do deflate -> base64 -> urlencode
   const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
@@ -65,27 +72,31 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
     return baseUrl
       + pvPair(queryParam, octetString, noParams)
       + pvPair(urlParams.signature, encodeURIComponent(
-        libsaml.constructMessageSignature(
-          queryParam + '=' + octetString,
-          entitySetting.privateKey,
-          entitySetting.privateKeyPass,
-          undefined,
-          entitySetting.requestSignatureAlgorithm
-        ).toString()
-      )
+          libsaml.constructMessageSignature(
+            queryParam + '=' + octetString,
+            entitySetting.privateKey,
+            entitySetting.privateKeyPass,
+            undefined,
+            entitySetting.requestSignatureAlgorithm
+          ).toString()
+        )
       );
   }
   return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
-/**
-* @desc Redirect URL for login request
-* @param  {object} entity                       object includes both idp and sp
-* @param  {function} customTagReplacement      used when developers have their own login response template
-* @return {string} redirect URL
-*/
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
 
-  const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+/**
+ * @desc Redirect URL for login request
+ * @param  {object} entity                       object includes both idp and sp
+ * @param  {function} customTagReplacement      used when developers have their own login response template
+ * @return {string} redirect URL
+ */
+function loginRequestRedirectURL(entity: {
+  idp: Idp,
+  sp: Sp
+}, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+
+  const metadata: any = {idp: entity.idp.entityMeta, sp: entity.sp.entityMeta};
   const spSetting: any = entity.sp.entitySetting;
   let id: string = '';
 
@@ -127,14 +138,15 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
 }
 
 /**
-* @desc Redirect URL for login response
-* @param  {object} requestInfo             corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                         current logged user (e.g. req.user)
-* @param  {String} relayState                the relaystate sent by sp corresponding request
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+ * @desc Redirect URL for login response
+ * @param  {object} requestInfo             corresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {object} user                         current logged user (e.g. req.user)
+ * @param  {String} relayState                the relaystate sent by sp corresponding request
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param AttributeStatement
+ */
+function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext,AttributeStatement =[]): BindingContext {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const metadata = {
@@ -144,7 +156,10 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 
   let id: string = idpSetting.generateID();
   if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+    const base = metadata.sp.getAssertionConsumerService(binding.redirect) ;
+    if(!base){
+      throw new Error('dont have a base url');
+    }
     let rawSamlResponse: string;
     //
     const nameIDFormat = idpSetting.nameIDFormat;
@@ -152,6 +167,12 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     const nowTime = new Date();
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
     const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+    const now = nowTime.toISOString();
+    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
+    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -168,10 +189,10 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
       ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
-      AuthnStatement: '',
-      AttributeStatement: '',
+      AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
 
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
@@ -181,12 +202,12 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
     } else {
 
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
 
-    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+    const {privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = idpSetting;
     const config = {
       privateKey,
       privateKeyPass,
@@ -203,7 +224,10 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
         referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
         signatureConfig: {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+          location: {
+            reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']",
+            action: 'after'
+          },
         },
       });
     }
@@ -225,14 +249,14 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 }
 
 /**
-* @desc Redirect URL for logout request
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @return {string} redirect URL
-*/
+ * @desc Redirect URL for logout request
+ * @param  {object} user                        current logged user (e.g. req.user)
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @return {string} redirect URL
+ */
 function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {
-  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const metadata = {init: entity.init.entityMeta, target: entity.target.entityMeta};
   const initSetting = entity.init.entitySetting;
   let id: string = initSetting.generateID();
   const nameIDFormat = initSetting.nameIDFormat;
@@ -248,7 +272,7 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
       Issuer: metadata.init.getEntityID(),
       IssueInstant: new Date().toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.logoutNameID,
+      NameID: user.NameID || '',
       SessionIndex: user.sessionIndex,
     };
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
@@ -272,12 +296,13 @@ function logoutRequestRedirectURL(user, entity, relayState?: string, customTagRe
   }
   throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Redirect URL for logout response
-* @param  {object} requescorresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Redirect URL for logout response
+ * @param  {object} requescorresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: string, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
@@ -302,7 +327,7 @@ function logoutResponseRedirectURL(requestInfo: any, entity: any, relayState?: s
         StatusCode: namespace.statusCode.success,
       };
       if (requestInfo && requestInfo.extract && requestInfo.extract.request) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }

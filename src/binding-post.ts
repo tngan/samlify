@@ -4,10 +4,10 @@
 * @desc Binding-level API, declare the functions using POST binding
 */
 
-import { wording, namespace, StatusCode } from './urn';
-import { BindingContext } from './entity';
-import libsaml from './libsaml';
-import utility, { get } from './utility';
+import { wording, namespace, StatusCode } from './urn.js';
+import type { BindingContext } from './entity.js';
+import libsaml from './libsaml.js';
+import utility, { get } from './utility.js';
 
 const binding = wording.binding;
 
@@ -72,14 +72,15 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
 /**
-* @desc Generate a base64 encoded login response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
-*/
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
+ * @desc Generate a base64 encoded login response
+ * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {object} user                        current logged user (e.g. req.user)
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
+ * @param AttributeStatement
+ */
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false , AttributeStatement=[]): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -89,16 +90,24 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   };
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+
+
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
-    let rawSamlResponse: string;
-    const nowTime = new Date();
-    const spEntityID = metadata.sp.getEntityID();
-    const fiveMinutesLaterTime = new Date(nowTime.getTime());
-    fiveMinutesLaterTime.setMinutes(fiveMinutesLaterTime.getMinutes() + 5);
-    const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
+    let rawSamlResponse;
+    const  nowTime = new Date();
+    const  spEntityID = metadata.sp.getEntityID();
+    const  oneMinutesLaterTime = new Date(nowTime.getTime());
+    oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
+    const OneMinutesLater = oneMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
+    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
+    console.log(`现在是两分钟时间:${oneMinutesLaterTime.toLocaleString()}`)
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
+    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -112,20 +121,20 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       StatusCode: StatusCode.Success,
       // can be customized
       ConditionsNotBefore: now,
-      ConditionsNotOnOrAfter: fiveMinutesLater,
-      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
+      ConditionsNotOnOrAfter: OneMinutesLater,
+      SubjectConfirmationDataNotOnOrAfter: OneMinutesLater,
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user?.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
-      AuthnStatement: '',
-      AttributeStatement: '',
+      AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
       rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id ?? '';
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
@@ -195,13 +204,16 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }
-
+    console.log(rawSamlResponse);
+    console.log('看一下---------------------------')
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
     });
 
   }
+
+
   throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
 /**
@@ -212,7 +224,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 * @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} base64 encoded request
 */
-function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:string, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
@@ -232,7 +244,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
         NameIDFormat: selectedNameIDFormat,
-        NameID: user.logoutNameID,
+        NameID: user.NameID || '',
       };
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
@@ -242,7 +254,7 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       return {
         id,
         context: libsaml.constructSAMLSignature({
-          referenceTagXPath,
+           referenceTagXPath,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
@@ -292,7 +304,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         StatusCode: StatusCode.Success,
-        InResponseTo: get(requestInfo, 'extract.request.id', null)
+        InResponseTo: get(requestInfo, 'extract.request.id', '')
       };
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
