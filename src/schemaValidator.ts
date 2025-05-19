@@ -8,7 +8,9 @@ const schemas = [
   'saml-schema-assertion-2.0.xsd',
   'xmldsig-core-schema.xsd',
   'XMLSchema.dtd',
-  'xenc-schema.xsd'
+  'xenc-schema.xsd',
+  'saml-schema-metadata-2.0.xsd',
+  'xmldsig-core-schema.xsd'
 ];
 
 export const validate = async (xml: string) => {

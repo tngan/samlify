@@ -41,7 +41,7 @@ Welcome contributions or integration examples with frameworks
 ---
 
 ## 安装 / Installation
-宁应该在使用的前提下首先设置验证其
+您应该在使用的前提下首先设置验证其
 ```js
 
 import * as validator from '@authenio/samlify-xsd-schema-validator';
@@ -81,7 +81,7 @@ if (request.method === 'POST') {
 	infoQuery.body = request.body
 	dataResult = Extractor.extract(Base64.decode(decodeURIComponent(data.SAMLResponse)), loginResponseFields)
 }
-/** 宁应该自行实施根据响应提取出来的Issur去数据库查找元数据*/
+/** 您应该自行实施根据响应提取出来的Issur去数据库查找元数据*/
 // 1. 提取SAML发行者信息
 if (!dataResult.issuer) {
 	return reply.view('errorHtml.html', {
@@ -106,9 +106,11 @@ if(upaboveFieldCheckAllSuccess){
 	return repla.view('success.ejs',{...your template data})
 }
 /*success.ejs template example */
-/**/
-<!-- 隐藏的 SAML 表单 -->
-/*
+
+```
+
+```html
+<!-- 实例用于提交post 请求隐藏的表单 -->
 <form id="saml-form" method="post" action="<%= entityEndpoint %>" style="display: none;">
 	<input type="hidden" name="<%= type %>" value="<%= context %>" />
 	<input type="hidden" name="RelayState" value="<%= relayState %>" />
@@ -124,6 +126,5 @@ if(upaboveFieldCheckAllSuccess){
 	document.querySelector('.loading-subtext').textContent =
 		'跳转时间较长，请检查网络或联系系统管理员';
 }, 1500);
-</script>*/
-
+</script>
 ```
