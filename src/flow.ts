@@ -169,13 +169,17 @@ async function redirectFlow(options): Promise<FlowResult>  {
   ) {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
-  let destination =  extractedProperties?.response?.destination
-  let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
-    return item?.Location === destination
-  })
-  if(isExit?.length === 0){
-    return Promise.reject('ERR_Destination_URL');
+
+  if(   parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
   }
+
 
 
   return Promise.resolve(parseResult);
@@ -209,15 +213,11 @@ async function postFlow(options): Promise<FlowResult> {
 
   // validate the xml first
  let res =  await libsaml.isValidXml(samlContent);
-  console.log(res);
-  console.log("验证结果---------------")
   if (parserType !== urlParams.samlResponse) {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
-  console.log(parserType);
   // check status based on different scenarios
   await checkStatus(samlContent, parserType);
-console.log("========走不到这里来=============")
   /**检查签名顺序 */
 
 /*  if (
@@ -237,10 +237,7 @@ console.log("========走不到这里来=============")
     }
   }*/
 
-  console.log("===============我走的这里=========================")
   const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
-  console.log(verified);
-  console.log("verified")
   decryptRequired = isDecryptRequired
   if (!verified) {
     return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
@@ -260,12 +257,6 @@ console.log("========走不到这里来=============")
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
   ) {
-    console.log("走不到这里来========================================")
-    console.log("走不到这里来========================================")
-    console.log("走不到这里来========================================")
-    console.log("走不到这里来========================================")
-    console.log("走不到这里来========================================")
-
     const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
     decryptRequired = isDecryptRequired
     if (verified) {
@@ -334,6 +325,16 @@ console.log("========走不到这里来=============")
   if(isExit?.length === 0){
     return Promise.reject('ERR_Destination_URL');
   }
+  if( parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
+  }
+
 
   return Promise.resolve(parseResult);
 }
@@ -457,12 +458,14 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
     return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
   }
 
-  let destination =  extractedProperties?.response?.destination
-  let isExit = self.entitySetting?.assertionConsumerService?.filter((item)=>{
-    return item?.Location === destination
-  })
-  if(isExit?.length === 0){
-    return Promise.reject('ERR_Destination_URL');
+  if( parserType === 'SAMLResponse'){
+    let destination =  extractedProperties?.response?.destination
+    let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; })=>{
+      return item?.Location === destination
+    })
+    if(isExit?.length === 0){
+      return Promise.reject('ERR_Destination_URL');
+    }
   }
 
 
