@@ -7,6 +7,8 @@
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
+    "emitDeclarationOnly": false,
+    "noEmit": false,
     "declaration": true,//生成声明文件.d.ts
     "declarationMap": true, //生成声明原映射 方便类型调试定义
     "verbatimModuleSyntax": false, //保持模块儿语法原样 不自动转换
@@ -44,7 +46,9 @@
     "types/**/*.ts",
     "test/**/*.ts"
   ],
-  "include": ["src/**/*","index.ts"],
+
+  "include": ["src/**/*","index.ts", "src/schema/*", "src/schema/**/*.xsd", // 明确包含XSD
+   "src/schema/**/*.dtd" ],
   "compileOnSave": false,
   "buildOnSave": false
 }

@@ -13,7 +13,7 @@
   "type": "module",
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && copyfiles -u 1 src/schema/**/* build/src",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
@@ -59,6 +59,7 @@
     "@types/pako": "2.0.3",
     "@types/uuid": "10.0.0",
     "ava": "^4.1.0",
+    "copyfiles": "^2.4.1",
     "coveralls": "^3.1.1",
     "esbuild": "^0.25.4",
     "nyc": "^17.1.0",
