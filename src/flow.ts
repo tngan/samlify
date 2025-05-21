@@ -211,7 +211,7 @@ async function postFlow(options): Promise<FlowResult> {
     checkSignature &&
     from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
   ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
+    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions, decryptRequired);
     if (!verified) {
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
