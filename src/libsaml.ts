@@ -366,7 +366,7 @@ const libSaml = () => {
      *   - The first element is `true` if the signature is valid, `false` otherwise.
      *   - The second element is the cryptographically authenticated assertion node as a string, or `null` if not found.
      */
-    verifySignature(xml: string, opts: SignatureVerifierOptions) {
+    verifySignature(xml: string, opts: SignatureVerifierOptions, isAssertionEncrypted: boolean) {
       const { dom } = getContext();
       const doc = dom.parseFromString(xml);
 
@@ -485,6 +485,8 @@ const libSaml = () => {
           // now we can process the assertion as an assertion
           if (assertions.length === 1) {
             return [true, assertions[0].toString()];
+          } else if (isAssertionEncrypted) {
+            return [true, null];
           }
         } else if (rootNode.localName === 'Assertion') {
           return [true, rootNode.toString()];
