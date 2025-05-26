@@ -141,12 +141,8 @@ test('#31 query param for sso/slo returns error', t => {
   });
 
   test('#87 add existence check for signature verification', t => {
-    try {
-      libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
-      t.fail();
-    } catch ({ message }) {
-      t.is(message, 'ERR_ZERO_SIGNATURE');
-    }
+    const res = libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
+    t.is(res[0], false) // signature is invalid because one doesn't exist
   });
 
   test('#91 idp gets single sign on service from the metadata', t => {

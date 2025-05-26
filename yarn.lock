@@ -10,6 +10,13 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
+"@authenio/samlify-xsd-schema-validator@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@authenio/samlify-xsd-schema-validator/-/samlify-xsd-schema-validator-1.0.5.tgz#bef7fe43928714e473cd95e1577b46d028b945ed"
+  integrity sha512-HJjmjM1WbeB/z4nVbYEcmtIWTLPKqjrqRGEpC9lu7s03Usc4nxxfrJGjHgh3M8MvBJy4neVUoeM9rP4ym3GLgg==
+  dependencies:
+    "@authenio/xsd-schema-validator" "^0.7.3"
+
 "@authenio/xml-encryption@^2.0.2":
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-2.0.2.tgz#df1f491dacb9b1f65bc7a9a554c189644f72bbe0"
@@ -18,6 +25,11 @@
     "@xmldom/xmldom" "^0.8.6"
     escape-html "^1.0.3"
     xpath "0.0.32"
+
+"@authenio/xsd-schema-validator@^0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@authenio/xsd-schema-validator/-/xsd-schema-validator-0.7.3.tgz#abbf5710705bfab3394aca8b9d5a9e8429873897"
+  integrity sha512-Jhc/Hxv90bacZr0Fv+u+PEb440zPh4mO6rw+bzEAIBiFLKCtRa/BvKGRxPdCAwsGRPuwl2hFqQGF+Lfz6Q8kFg==
 
 "@ava/typescript@^1.1.1":
   version "1.1.1"
@@ -2522,10 +2534,10 @@ write-file-atomic@^4.0.1:
     imurmurhash "^0.1.4"
     signal-exit "^3.0.7"
 
-xml-crypto@^6.1.0:
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-6.1.0.tgz#c8224808525e5f15478c50b9fe706112a4e6ef1b"
-  integrity sha512-0TYPBRPwXLnRGc2F0f9Zc/H076YcP7tkCa2US4jpguuPTEx7TWFqSysIfJ1hP4r2KF82IYzhnzepnsUEsOjlOw==
+xml-crypto@^6.1.1:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-6.1.2.tgz#ed93e87d9538f92ad1ad2db442e9ec586723d07d"
+  integrity sha512-leBOVQdVi8FvPJrMYoum7Ici9qyxfE4kVi+AkpUoYCSXaQF4IlBm1cneTK9oAxR61LpYxTx7lNcsnBIeRpGW2w==
   dependencies:
     "@xmldom/is-dom-node" "^1.0.1"
     "@xmldom/xmldom" "^0.8.10"
