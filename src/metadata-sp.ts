@@ -269,13 +269,13 @@ export class SpMetadata extends Metadata {
       if (isNonEmptyArray(this.meta.assertionConsumerService)) {
         this.meta.assertionConsumerService.forEach(obj => {
           if (obj.binding === bindName) {
-            location = obj.location;
+            location = obj.Location;
             return;
           }
         });
       } else {
         if (this.meta.assertionConsumerService.binding === bindName) {
-          location = this.meta.assertionConsumerService.location;
+          location = this.meta.assertionConsumerService.Location;
         }
       }
       return location;
