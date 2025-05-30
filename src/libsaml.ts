@@ -255,12 +255,9 @@ const libSaml = () => {
       xml = inflate(compressedData, { to: 'string', raw: true });
     } catch (inflateError) {
       // 4. 解压失败，尝试直接解析为未压缩的XML
-      console.log("错误了-------------------------")
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
         xml = Buffer.from(base64Encoded, 'base64').toString('utf-8')
-        console.log(xml);
-        console.log("真的还是假的------------------------------------l")
         return { compressed:false, xml, error: null };
       } catch (xmlError) {
 return Promise.resolve({ compressed:false, xml, error: true })
@@ -721,8 +718,6 @@ return Promise.resolve({ compressed:false, xml, error: true })
         signer.write(octetString);
         signer.end();
         const signature = signer.sign(privateKey, 'base64');
-        console.log(signature.toString());
-        console.log('dayingyixia')
         // 5. 处理编码输出
         return isBase64 ? signature.toString() : signature;
       } catch (error) {
@@ -740,8 +735,6 @@ return Promise.resolve({ compressed:false, xml, error: true })
       const verifier = createVerify(signingScheme);
       verifier.update(octetString);
       const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert), Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
-      console.log(isValid);
-      console.log('-------------签名验证结果-------------')
       return isValid
 
     },
@@ -808,7 +801,6 @@ return Promise.resolve({ compressed:false, xml, error: true })
             warnInsecureAlgorithm: true
           }, (err, res) => {
             if (err) {
-              console.error(err);
               return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_ENCRYPTION'));
             }
             if (!res) {
