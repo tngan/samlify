@@ -10,7 +10,7 @@ export { default as SamlLib } from './src/libsaml.js';
 // new name convention in version >= 3.0
 import * as Constants from './src/urn.js';
 import * as Extractor from './src/extractor.js';
-
+import {validate} from './src/schemaValidator.js'
 // exposed methods for customizing samlify
 import { setSchemaValidator, setDOMParserOptions } from './src/api.js';
 
@@ -24,5 +24,6 @@ export {
   ServiceProviderInstance,
   // set context
   setSchemaValidator,
-  setDOMParserOptions
+  setDOMParserOptions,
+  validate
 };
