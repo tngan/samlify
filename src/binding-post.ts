@@ -101,8 +101,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
     const OneMinutesLater = oneMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
-    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
-    console.log(`现在是两分钟时间:${oneMinutesLaterTime.toLocaleString()}`)
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
     const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
     const tenHoursLaterTime = new Date(nowTime.getTime());
@@ -204,8 +202,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }
-    console.log(rawSamlResponse);
-    console.log('看一下---------------------------')
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
