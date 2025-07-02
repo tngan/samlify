@@ -74,8 +74,6 @@ async function redirectFlow(options): Promise<FlowResult>  {
   // validate the xml
   try {
    let result =  await libsaml.isValidXml(xmlString);
-    console.log(result);
-    console.log("验证和结果=====================")
   } catch (e) {
     return Promise.reject('ERR_INVALID_XML');
   }

@@ -7,7 +7,7 @@
 import {X509Certificate,createPrivateKey } from 'node:crypto';
 
 
-import {inflate, deflate} from 'pako';
+import {inflate, deflate,deflateRaw} from 'pako';
 
 const BASE64_STR = 'base64';
 
@@ -113,9 +113,9 @@ export function base64Decode(base64Message: string, isBytes?: boolean): string |
  * @return {string} compressed string
  */
 function deflateString(message: string): number[] {
-  const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
-  let unit8 = new Uint8Array(input)
-  return Array.from(deflate(unit8 as  Uint8Array | ArrayBuffer, ));
+  const encoder = new TextEncoder();
+  const uint8Array = encoder.encode(message);
+  return Array.from(deflateRaw(uint8Array));
 }
 
 /**
