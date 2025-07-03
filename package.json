@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@microsoft/api-extractor": "7.52.8",
-    "@types/node": "^22.15.34",
+    "@types/node": "^24.0.10",
     "@types/pako": "2.0.3",
     "@types/uuid": "10.0.0",
     "ava": "^4.3.3",

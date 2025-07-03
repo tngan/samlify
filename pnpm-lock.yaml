@@ -34,17 +34,17 @@ importers:
         version: 1.1.0
       xmllint-wasm:
         specifier: ^5.0.0
-        version: 5.0.0(@types/node@22.15.34)
+        version: 5.0.0(@types/node@24.0.10)
       xpath:
         specifier: ^0.0.32
         version: 0.0.32
     devDependencies:
       '@microsoft/api-extractor':
         specifier: 7.52.8
-        version: 7.52.8(@types/node@22.15.34)
+        version: 7.52.8(@types/node@24.0.10)
       '@types/node':
-        specifier: ^22.15.34
-        version: 22.15.34
+        specifier: ^24.0.10
+        version: 24.0.10
       '@types/pako':
         specifier: 2.0.3
         version: 2.0.3
@@ -367,8 +367,8 @@ packages:
   '@types/argparse@1.0.38':
     resolution: {integrity: sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA==}
 
-  '@types/node@22.15.34':
-    resolution: {integrity: sha512-8Y6E5WUupYy1Dd0II32BsWAx5MWdcnRd8L84Oys3veg1YrYtNtzgO4CFhiBg6MDSjk7Ay36HYOnU7/tuOzIzcw==}
+  '@types/node@24.0.10':
+    resolution: {integrity: sha512-ENHwaH+JIRTDIEEbDK6QSQntAYGtbvdDXnMXnZaZ6k13Du1dPMmprkEHIL7ok2Wl2aZevetwTAb5S+7yIF+enA==}
 
   '@types/pako@2.0.3':
     resolution: {integrity: sha512-bq0hMV9opAcrmE0Byyo0fY3Ew4tgOevJmQ9grUhpXQhYfyLJ1Kqg3P33JT5fdbT2AjeAjR51zqqVjAL/HMkx7Q==}
@@ -1549,8 +1549,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+  undici-types@7.8.0:
+    resolution: {integrity: sha512-9UJ2xGDvQ43tYyVMpuHlsgApydB8ZKfVYTsLDhXkFL/6gfkp+U8xTGdh8pMJv1SpZna0zxG1DwsKZsreLbXBxw==}
 
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
@@ -1900,23 +1900,23 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.2
 
-  '@microsoft/api-extractor-model@7.30.6(@types/node@22.15.34)':
+  '@microsoft/api-extractor-model@7.30.6(@types/node@24.0.10)':
     dependencies:
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.13.1(@types/node@22.15.34)
+      '@rushstack/node-core-library': 5.13.1(@types/node@24.0.10)
     transitivePeerDependencies:
       - '@types/node'
 
-  '@microsoft/api-extractor@7.52.8(@types/node@22.15.34)':
+  '@microsoft/api-extractor@7.52.8(@types/node@24.0.10)':
     dependencies:
-      '@microsoft/api-extractor-model': 7.30.6(@types/node@22.15.34)
+      '@microsoft/api-extractor-model': 7.30.6(@types/node@24.0.10)
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.13.1(@types/node@22.15.34)
+      '@rushstack/node-core-library': 5.13.1(@types/node@24.0.10)
       '@rushstack/rig-package': 0.5.3
-      '@rushstack/terminal': 0.15.3(@types/node@22.15.34)
-      '@rushstack/ts-command-line': 5.0.1(@types/node@22.15.34)
+      '@rushstack/terminal': 0.15.3(@types/node@24.0.10)
+      '@rushstack/ts-command-line': 5.0.1(@types/node@24.0.10)
       lodash: 4.17.21
       minimatch: 3.0.8
       resolve: 1.22.10
@@ -1947,7 +1947,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@rushstack/node-core-library@5.13.1(@types/node@22.15.34)':
+  '@rushstack/node-core-library@5.13.1(@types/node@24.0.10)':
     dependencies:
       ajv: 8.13.0
       ajv-draft-04: 1.0.0(ajv@8.13.0)
@@ -1958,23 +1958,23 @@ snapshots:
       resolve: 1.22.10
       semver: 7.5.4
     optionalDependencies:
-      '@types/node': 22.15.34
+      '@types/node': 24.0.10
 
   '@rushstack/rig-package@0.5.3':
     dependencies:
       resolve: 1.22.10
       strip-json-comments: 3.1.1
 
-  '@rushstack/terminal@0.15.3(@types/node@22.15.34)':
+  '@rushstack/terminal@0.15.3(@types/node@24.0.10)':
     dependencies:
-      '@rushstack/node-core-library': 5.13.1(@types/node@22.15.34)
+      '@rushstack/node-core-library': 5.13.1(@types/node@24.0.10)
       supports-color: 8.1.1
     optionalDependencies:
-      '@types/node': 22.15.34
+      '@types/node': 24.0.10
 
-  '@rushstack/ts-command-line@5.0.1(@types/node@22.15.34)':
+  '@rushstack/ts-command-line@5.0.1(@types/node@24.0.10)':
     dependencies:
-      '@rushstack/terminal': 0.15.3(@types/node@22.15.34)
+      '@rushstack/terminal': 0.15.3(@types/node@24.0.10)
       '@types/argparse': 1.0.38
       argparse: 1.0.10
       string-argv: 0.3.2
@@ -1983,9 +1983,9 @@ snapshots:
 
   '@types/argparse@1.0.38': {}
 
-  '@types/node@22.15.34':
+  '@types/node@24.0.10':
     dependencies:
-      undici-types: 6.21.0
+      undici-types: 7.8.0
 
   '@types/pako@2.0.3': {}
 
@@ -3165,7 +3165,7 @@ snapshots:
 
   typescript@5.8.3: {}
 
-  undici-types@6.21.0: {}
+  undici-types@7.8.0: {}
 
   universalify@2.0.1: {}
 
@@ -3245,9 +3245,9 @@ snapshots:
 
   xml@1.0.1: {}
 
-  xmllint-wasm@5.0.0(@types/node@22.15.34):
+  xmllint-wasm@5.0.0(@types/node@24.0.10):
     dependencies:
-      '@types/node': 22.15.34
+      '@types/node': 24.0.10
 
   xpath@0.0.32: {}
 

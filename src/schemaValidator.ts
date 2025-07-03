@@ -15,8 +15,36 @@ const schemas = [
   'saml-schema-ecp-2.0.xsd',
   'saml-schema-dce-2.0.xsd'
 ];
+function detectXXEIndicators(samlString:string) {
+  const xxePatterns = [
+    /<!DOCTYPE\s[^>]*>/i,
+    /<!ENTITY\s+[^\s>]+\s+(?:SYSTEM|PUBLIC)\s+['"][^>]*>/i,
+    /&[a-zA-Z0-9._-]+;/g,
+    /SYSTEM\s*=/i,
+    /PUBLIC\s*=/i,
+    /file:\/\//,
+    /\.dtd['"]?/
+  ];
 
+  const matches = {};
+  xxePatterns.forEach((pattern, index) => {
+    const found = samlString.match(pattern);
+    if (found) {
+      matches[`pattern_${index}`] = {
+        pattern: pattern.toString(),
+        matches: found
+      };
+    }
+  });
+
+  return Object.keys(matches).length > 0 ? matches : null;
+}
 export const validate = async (xml: string) => {
+  const indicators = detectXXEIndicators(xml);
+  if (indicators) {
+    console.error('XXE风险特征:', indicators);
+    throw new Error('ERR_EXCEPTION_VALIDATE_XML');
+  }
 
   const schemaPath = path.resolve(__dirname, 'schema');
   const [schema, ...preload] = await Promise.all(schemas.map(async file => ({

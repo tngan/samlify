@@ -276,6 +276,12 @@ return Promise.resolve({ compressed:false, xml, error: true })
     }
     return nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256];
   }
+  /**
+   * @private
+   * @desc Get the signing scheme alias by signature algorithms, used by the node-rsa module
+   * @param {string} sigAlg    signature algorithm
+   * @return {string/null} signing algorithm short-hand for the module node-rsa
+   */
 
   /**
    * @private
@@ -724,6 +730,27 @@ return Promise.resolve({ compressed:false, xml, error: true })
         throw new Error(`SAML 签名失败: ${error.message}`);
       }
     },
+
+/*    constructMessageSignature(
+      octetString: string,
+      key: string,
+      passphrase?: string,
+      isBase64?: boolean,
+      signingAlgorithm?: string
+    ) {
+      // Default returning base64 encoded signature
+      // Embed with node-rsa module
+      const decryptedKey = new nrsa(
+        utility.readPrivateKey(key, passphrase),
+        undefined,
+        {
+          signingScheme: getSigningScheme(signingAlgorithm),
+        }
+      );
+      const signature = decryptedKey.sign(octetString);
+      // Use private key to sign data
+      return isBase64 !== false ? signature.toString('base64') : signature;
+    },*/
     verifyMessageSignature(
       metadata,
       octetString: string,
