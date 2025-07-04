@@ -667,6 +667,230 @@ return Promise.resolve({ compressed:false, xml, error: true })
 
             return [verified, assertionNode];*/
     },
+
+    verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
+      const { dom } = getContext();
+      const doc = dom.parseFromString(xml);
+      const docParser = new DOMParser();
+
+      let selection: any = [];
+
+      if (opts.isAssertion) {
+        // 断言模式下的专用逻辑
+        const assertionSignatureXpath = "./*[local-name()='Signature']";
+        const signatureNode = select(assertionSignatureXpath, doc.documentElement);
+
+        if (signatureNode.length === 0) {
+          throw new Error('ERR_ASSERTION_SIGNATURE_NOT_FOUND');
+        }
+
+        selection = selection.concat(signatureNode);
+      } else {
+        // 原始的SOAP响应验证逻辑
+        const messageSignatureXpath =
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Signature'] | " +
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Response']/*[local-name()='Signature']";
+
+        const assertionSignatureXpath =
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
+            "/*[local-name()='Assertion']/*[local-name()='Signature'] | " +
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
+            "/*[local-name()='EncryptedAssertion']";
+
+        const wrappingElementsXPath =
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
+            "/*[local-name()='Assertion']/*[local-name()='Subject']" +
+            "/*[local-name()='SubjectConfirmation']" +
+            "/*[local-name()='SubjectConfirmationData']" +
+            "//*[local-name()='Assertion' or local-name()='Signature']";
+
+        const messageSignatureNode = select(messageSignatureXpath, doc);
+        const assertionSignatureNode = select(assertionSignatureXpath, doc);
+        const wrappingElementNode = select(wrappingElementsXPath, doc);
+
+        // 检测包装攻击
+        if (wrappingElementNode.length !== 0) {
+          throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+        }
+
+        // 保证响应中至少有一个签名
+        if (messageSignatureNode.length === 0 && assertionSignatureNode.length === 0) {
+          throw new Error('ERR_ZERO_SIGNATURE');
+        }
+
+        selection = selection.concat(messageSignatureNode, assertionSignatureNode);
+      }
+
+      for (const signatureNode of selection) {
+        const sig = new SignedXml();
+        let verified = false;
+
+        sig.signatureAlgorithm = opts.signatureAlgorithm!;
+
+        if (!opts.keyFile && !opts.metadata) {
+          throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
+        }
+
+        if (opts.keyFile) {
+          sig.publicCert = fs.readFileSync(opts.keyFile, 'utf-8');
+        }
+
+        if (opts.metadata) {
+          const certificateNodes = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any[];
+
+          // 获取元数据中的证书
+          let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
+
+          // 规范化元数据证书
+          if (Array.isArray(metadataCert)) {
+            metadataCert = flattenDeep(metadataCert);
+          } else if (typeof metadataCert === 'string') {
+            metadataCert = [metadataCert];
+          }
+
+          metadataCert = metadataCert.map(utility.normalizeCerString);
+
+          // 检查证书可用性
+          if (certificateNodes.length === 0 && metadataCert.length === 0) {
+            throw new Error('NO_SELECTED_CERTIFICATE');
+          }
+
+          // 响应中有证书节点
+          if (certificateNodes.length !== 0) {
+            // 安全获取证书数据
+            let x509CertificateData = '';
+            if (certificateNodes[0].firstChild) {
+              x509CertificateData = certificateNodes[0].firstChild.data;
+            } else if (certificateNodes[0].textContent) {
+              x509CertificateData = certificateNodes[0].textContent;
+            }
+
+            const x509Certificate = utility.normalizeCerString(x509CertificateData);
+
+            // 验证证书匹配
+            if (
+                metadataCert.length >= 1 &&
+                !metadataCert.find(cert => cert.trim() === x509Certificate.trim())
+            ) {
+              throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+            }
+
+            sig.publicCert = this.getKeyInfo(x509Certificate).getKey();
+          } else {
+            // 使用元数据中的第一个证书
+            sig.publicCert = this.getKeyInfo(metadataCert[0]).getKey();
+          }
+        }
+
+        // 加载签名
+        sig.loadSignature(signatureNode);
+
+        // 使用原始 XML 进行验证
+        verified = sig.checkSignature(xml);
+
+        console.log("签名验证结果:", verified);
+
+        if (!verified) {
+          console.error("签名验证失败");
+          throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
+        }
+
+        // 检查签名引用
+        if (!(sig.getSignedReferences().length >= 1)) {
+          throw new Error('NO_SIGNATURE_REFERENCES');
+        }
+
+        const signedVerifiedXML = sig.getSignedReferences()[0];
+        const verifiedDoc = docParser.parseFromString(signedVerifiedXML, 'text/xml');
+        const rootNode = verifiedDoc.documentElement;
+
+        console.log("签名引用根节点:", rootNode.localName);
+
+        // 断言模式专用返回逻辑
+        if (opts.isAssertion) {
+          if (rootNode.localName === 'Assertion') {
+            return [true, rootNode.toString(), false];
+          } else {
+            throw new Error('ERR_INVALID_ASSERTION_SIGNATURE');
+          }
+        }
+
+        // 处理已验证的签名
+        if (rootNode.localName === 'ArtifactResponse') {
+          // 在 ArtifactResponse 中查找 Response
+          const responseNodes = select(
+              "./*[local-name()='Response']",
+              rootNode
+          ) as Element[];
+
+          if (responseNodes.length === 0) {
+            console.warn("ArtifactResponse 中没有找到 Response 元素");
+            continue;
+          }
+
+          const responseNode = responseNodes[0];
+
+          // 在 Response 中查找断言
+          const encryptedAssertions = select(
+              "./*[local-name()='EncryptedAssertion']",
+              responseNode
+          ) as Element[];
+
+          const assertions = select(
+              "./*[local-name()='Assertion']",
+              responseNode
+          ) as Element[];
+
+          if (encryptedAssertions.length === 1) {
+            return [true, encryptedAssertions[0].toString(), true];
+          }
+
+          if (assertions.length === 1) {
+            return [true, assertions[0].toString(), false];
+          }
+        }
+        // 直接处理 Response
+        else if (rootNode.localName === 'Response') {
+          const encryptedAssertions = select(
+              "./*[local-name()='EncryptedAssertion']",
+              rootNode
+          ) as Element[];
+
+          const assertions = select(
+              "./*[local-name()='Assertion']",
+              rootNode
+          ) as Element[];
+
+          if (encryptedAssertions.length === 1) {
+            return [true, encryptedAssertions[0].toString(), true];
+          }
+
+          if (assertions.length === 1) {
+            return [true, assertions[0].toString(), false];
+          }
+        }
+        // 直接处理 Assertion
+        else if (rootNode.localName === 'Assertion') {
+          return [true, rootNode.toString(), false];
+        }
+        // 直接处理 EncryptedAssertion
+        else if (rootNode.localName === 'EncryptedAssertion') {
+          return [true, rootNode.toString(), true];
+        } else {
+          console.warn("未知的根节点类型:", rootNode.localName);
+        }
+      }
+
+      throw new Error('ERR_ZERO_SIGNATURE');
+    },
+
+
+
     /**
      * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
      * @param  {string} use          type of certificate (e.g. signing, encrypt)
@@ -738,6 +962,7 @@ return Promise.resolve({ compressed:false, xml, error: true })
         throw new Error(`SAML 签名失败: ${error.message}`);
       }
     },
+
 
 /*    constructMessageSignature(
       octetString: string,
@@ -893,6 +1118,83 @@ return Promise.resolve({ compressed:false, xml, error: true })
         });
       });
     },
+
+    /**
+     * 解密 SOAP 响应中的加密断言
+     * @param self 当前实体（SP 或 IdP）
+     * @param entireXML 完整的 SOAP XML 响应
+     * @returns [解密后的完整 SOAP XML, 解密后的断言 XML]
+     */
+     async decryptAssertionSoap(self: any, entireXML: string): Promise<[string, string]> {
+      const { dom } = getContext();
+
+      try {
+        // 1. 解析 XML
+        const doc = dom.parseFromString(entireXML);
+
+        // 2. 定位加密断言
+        const encryptedAssertions = select(
+            "/*[local-name()='Envelope']/*[local-name()='Body']" +
+            "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
+            "/*[local-name()='EncryptedAssertion']",
+            doc
+        ) as Node[];
+
+        if (!encryptedAssertions || encryptedAssertions.length === 0) {
+          throw new Error('ERR_ENCRYPTED_ASSERTION_NOT_FOUND');
+        }
+
+        if (encryptedAssertions.length > 1) {
+          console.warn('发现多个加密断言，仅处理第一个');
+        }
+
+        const encAssertionNode = encryptedAssertions[0];
+
+        // 3. 准备解密密钥
+        const privateKey = utility.readPrivateKey(
+            self.entitySetting.encPrivateKey,
+            self.entitySetting.encPrivateKeyPass
+        );
+
+        // 4. 解密断言
+        const decryptedAssertion = await new Promise<string>((resolve, reject) => {
+          xmlenc.decrypt(
+              encAssertionNode.toString(),
+              { key: privateKey },
+              (err, result) => {
+                if (err) {
+                  console.error('解密错误:', err);
+                  return reject(new Error('ERR_ASSERTION_DECRYPTION_FAILED'));
+                }
+                if (!result) {
+                  return reject(new Error('ERR_EMPTY_DECRYPTED_ASSERTION'));
+                }
+                resolve(result);
+              }
+          );
+        });
+
+        // 5. 创建解密断言的 DOM
+        const decryptedDoc = dom.parseFromString(decryptedAssertion);
+        const decryptedAssertionNode = decryptedDoc.documentElement;
+
+        // 6. 替换加密断言为解密后的断言
+        const parentNode = encAssertionNode.parentNode;
+        if (!parentNode) {
+          throw new Error('ERR_NO_PARENT_NODE_FOR_ENCRYPTED_ASSERTION');
+        }
+
+        parentNode.replaceChild(decryptedAssertionNode, encAssertionNode);
+
+        // 7. 序列化更新后的文档
+        const updatedSoapXml = doc.toString();
+
+        return [updatedSoapXml, decryptedAssertion];
+      } catch (error) {
+        console.error('SOAP断言解密失败:', error);
+        throw new Error('ERR_SOAP_ASSERTION_DECRYPTION');
+      }
+    },
     /**
      * @desc Check if the xml string is valid and bounded
      */
@@ -921,6 +1223,9 @@ return Promise.resolve({ compressed:false, xml, error: true })
       }
 
     },
+
+
+
   };
 };
 
