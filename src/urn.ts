@@ -203,9 +203,9 @@ const wording = {
 // https://wiki.shibboleth.net/confluence/display/CONCEPT/MetadataForSP
 // some idps restrict the order of elements in entity descriptors
 const elementsOrder = {
-  default: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
-  onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
-  shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService'],
+  default: ['KeyDescriptor', 'NameIDFormat','ArtifactResolutionService', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
+  onelogin: ['KeyDescriptor', 'NameIDFormat','ArtifactResolutionService', 'SingleLogoutService', 'AssertionConsumerService','AttributeConsumingService'],
+  shibboleth: ['KeyDescriptor', 'ArtifactResolutionService','SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService',],
 };
 
 export { namespace, tags, algorithms, wording, elementsOrder, messageConfigurations };

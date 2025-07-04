@@ -112,6 +112,18 @@ export class SpMetadata extends Metadata {
           descriptors.SingleLogoutService!.push([{ _attr: attr }]);
         });
       }
+      if (isNonEmptyArray(artifactResolutionService)) {
+        artifactResolutionService.forEach(a => {
+          const attr: any = {
+            Binding: a.Binding,
+            Location: a.Location,
+          };
+          if (a.isDefault) {
+            attr.isDefault = true;
+          }
+          descriptors.ArtifactResolutionService!.push([{ _attr: attr }]);
+        });
+      }
 
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
@@ -194,20 +206,7 @@ export class SpMetadata extends Metadata {
           descriptors.AttributeConsumingService!.push(attrConsumingService);
         });
       }
-      if (isNonEmptyArray(artifactResolutionService)) {
-        artifactResolutionService.forEach(a => {
-          const attr: any = {
-            Binding: a.Binding,
-            Location: a.Location,
-          };
-          if (a.isDefault) {
-            attr.isDefault = true;
-          }
-          descriptors.ArtifactResolutionService!.push([{ _attr: attr }]);
-        });
-      } else {
-        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
-      }
+
       // handle element order
       const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
       existedElements.forEach(name => {
@@ -237,6 +236,11 @@ export class SpMetadata extends Metadata {
       {
         key: 'assertionConsumerService',
         localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
+        attributes: ['Binding', 'Location', 'isDefault', 'index'],
+      },
+      {
+        key: 'artifactResolutionService',
+        localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ArtifactResolutionService'],
         attributes: ['Binding', 'Location', 'isDefault', 'index'],
       }
     ]);
