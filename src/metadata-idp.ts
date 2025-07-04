@@ -158,4 +158,19 @@ export class IdpMetadata extends Metadata {
     }
     return this.meta.singleSignOnService;
   }
+  /**
+   * @desc Get the entity endpoint for single ArtifactResolutionService
+   * @param  {string} binding      protocol binding (e.g. redirect, post)
+   * @return {string/object} location
+   */
+  getArtifactResolutionService (binding: string): string | object {
+    if (isString(binding)) {
+      const bindName = namespace.binding[binding];
+      const service = this.meta.artifactResolutionService[bindName];
+      if (service) {
+        return service;
+      }
+    }
+    return this.meta.artifactResolutionService;
+  }
 }
