@@ -43,6 +43,7 @@
   "license": "MIT",
   "dependencies": {
     "@xmldom/xmldom": "^0.8.10",
+    "axios": "^1.10.0",
     "camelcase": "^8.0.0",
     "pako": "^2.1.0",
     "uuid": "^11.1.0",

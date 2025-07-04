@@ -186,11 +186,18 @@ const libSaml = () => {
     context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
   };
   /**
-   * @desc Default logout request template
+   * @desc Default art  request template
    * @type {LogoutRequestTemplate}
    */
   const defaultLogoutRequestTemplate = {
     context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>',
+  };
+  /**
+   * @desc Default logout request template
+   * @type {LogoutRequestTemplate}
+   */
+  const defaultArtifactResolveTemplate = {
+    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><saml2p:ArtifactResolve xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml2:Issuer>{Issuer}</saml2:Issuer><saml2p:Artifact>{Art}</saml2p:Artifact></saml2p:ArtifactResolve></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
   };
 
   /**
@@ -333,6 +340,7 @@ return Promise.resolve({ compressed:false, xml, error: true })
     createXPath,
     getQueryParamByType,
     defaultLoginRequestTemplate,
+    defaultArtifactResolveTemplate,
     defaultLoginResponseTemplate,
     defaultAttributeStatementTemplate,
     defaultAttributeTemplate,

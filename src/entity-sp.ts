@@ -81,8 +81,7 @@ export class ServiceProvider extends Entity {
         context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
         break;
       case nsBinding.artifact:
-        // Object context = {id, context, signature, sigAlg}
-        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
+        context = artifactSignBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
         break;
       default:
         // Will support artifact in the next release
@@ -115,5 +114,23 @@ export class ServiceProvider extends Entity {
       request: request
     });
   }
-
+  /**
+   * @desc   request SamlResponse by Arc id
+   * @param  {IdentityProvider}   idp             object of identity provider
+   * @param  {string}   binding                   protocol binding
+   * @param  {request}   req                      request
+   */
+  public artifactResolveResponse(idp, binding, request: ESamlHttpRequest) {
+    const self = this;
+    return flow({
+      soap:true,
+      from: idp,
+      self: self,
+      checkSignature: true, // saml response must have signature
+      parserType: 'SAMLResponse',
+      type: 'login',
+      binding: binding,
+      request: request
+    });
+  }
 }

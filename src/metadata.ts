@@ -147,7 +147,25 @@ export default class Metadata implements MetadataInterface {
     }
     return this.meta.singleLogoutService;
   }
-
+  /**
+   * @desc Get the entity endpoint for single logout service
+   * @param  {string} binding e.g. redirect, post
+   * @return {string/object} location
+   */
+  public getArtifactResolutionService(binding: string | undefined): string | object {
+    if (binding && isString(binding)) {
+      const bindType = namespace.binding[binding];
+      let artifactResolutionService = this.meta.artifactResolutionService;
+      if (!(artifactResolutionService instanceof Array)) {
+        artifactResolutionService = [artifactResolutionService];
+      }
+      const service = artifactResolutionService.find(obj => obj.binding === bindType);
+      if (service) {
+        return service.location;
+      }
+    }
+    return this.meta.artifactResolutionService;
+  }
   /**
   * @desc Get the support bindings
   * @param  {[string]} services

@@ -1,6 +1,7 @@
-import { inflateString, base64Decode } from './utility.js';
+import {inflateString, base64Decode, get} from './utility.js';
 import { verifyTime } from './validator.js';
 import libsaml from './libsaml.js';
+import * as uuid from 'uuid'
 import {
   extract,
   loginRequestFields,
@@ -187,6 +188,7 @@ async function redirectFlow(options): Promise<FlowResult>  {
 async function postFlow(options): Promise<FlowResult> {
 
   const {
+    soap = false,
     request,
     from,
     self,
@@ -195,7 +197,23 @@ async function postFlow(options): Promise<FlowResult> {
   } = options;
 
   const { body } = request;
-
+/** 增加判断是不是Soap 工件绑定*/
+if(soap){
+  const metadata = {
+    idp: from.entityMeta,
+    sp: self.fentityMeta,
+  };
+  let ID = '_' + uuid.v4()
+  let samlSoap = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context,{
+    ID: ID,
+    Destination: metadata.idp.getArtifactResolutionService(bindDict.artifact),
+    Issuer: metadata.sp.getEntityID(),
+    IssueInstant: new Date().toISOString(),
+    Art:request.Art
+  })
+  console.log(samlSoap)
+  console.log("这就是soap----------------")
+}
   const direction = libsaml.getQueryParamByType(parserType);
   const encodedRequest = body[direction];
 
@@ -673,9 +691,7 @@ export function flow(options): Promise<FlowResult> {
   if (binding === bindDict.simpleSign) {
     return postSimpleSignFlow(options);
   }
-  if (binding === bindDict.artifact) {
-    return postArtifactFlow(options);
-  }
+
 
   return Promise.reject('ERR_UNEXPECTED_FLOW');
 
