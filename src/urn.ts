@@ -50,6 +50,7 @@ const namespace = {
     post: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
     simpleSign: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign',
     artifact: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
+    soap: 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
   },
   names: {
     protocol: 'urn:oasis:names:tc:SAML:2.0:protocol',
@@ -189,6 +190,7 @@ const wording = {
     post: 'post',
     simpleSign: 'simpleSign',
     artifact: 'artifact',
+    soap: 'soap',
   },
   certUse: {
     signing: 'signing',

@@ -206,7 +206,7 @@ if(soap){
   let ID = '_' + uuid.v4()
   let samlSoap = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context,{
     ID: ID,
-    Destination: metadata.idp.getArtifactResolutionService(bindDict.artifact),
+    Destination: metadata.idp.getArtifactResolutionService(bindDict.soap),
     Issuer: metadata.sp.getEntityID(),
     IssueInstant: new Date().toISOString(),
     Art:request.Art
