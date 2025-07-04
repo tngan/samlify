@@ -211,6 +211,8 @@ if(soap){
     IssueInstant: new Date().toISOString(),
     Art:request.Art
   })
+  console.log(bindDict.soap)
+  console.log(metadata.idp.getArtifactResolutionService(bindDict.soap))
   console.log(samlSoap)
   console.log("这就是soap----------------")
 }

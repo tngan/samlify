@@ -150,6 +150,7 @@ export class IdpMetadata extends Metadata {
   */
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
+      console.log("-------------------单点登录-----------")
       const bindName = namespace.binding[binding];
       const service = this.meta.singleSignOnService[bindName];
       if (service) {
@@ -166,6 +167,9 @@ export class IdpMetadata extends Metadata {
   getArtifactResolutionService (binding: string): string | object {
     if (isString(binding)) {
       const bindName = namespace.binding[binding];
+      console.log(this.meta.artifactResolutionService)
+      console.log(bindName)
+      console.log("请看一下--------------------")
       const service = this.meta.artifactResolutionService[bindName];
       if (service) {
         return service;
