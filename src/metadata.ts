@@ -72,7 +72,8 @@ export default class Metadata implements MetadataInterface {
         attributes: [],
       }
     ]));
-
+console.log( this.meta)
+    console.log('测试仪哎-------------------')
     // get shared certificate
     const sharedCertificate = this.meta.sharedCertificate;
     if (typeof sharedCertificate === 'string') {
