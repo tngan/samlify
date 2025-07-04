@@ -200,6 +200,7 @@ async function postFlow(options): Promise<FlowResult> {
 /** 增加判断是不是Soap 工件绑定*/
 if(soap){
   const metadata = {
+
     idp: from.entityMeta,
     sp: self.entityMeta,
   };

@@ -151,6 +151,10 @@ export class IdpMetadata extends Metadata {
   getSingleSignOnService(binding: string): string | object {
     if (isString(binding)) {
       console.log("-------------------单点登录-----------")
+      console.log(this.meta.singleSignOnService)
+      console.log(binding)
+      console.log("-------------------单点登录-----------")
+      console.log("-------------------单点登录-----------")
       const bindName = namespace.binding[binding];
       const service = this.meta.singleSignOnService[bindName];
       if (service) {
