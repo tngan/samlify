@@ -19,6 +19,7 @@ import { namespace } from './urn.js';
 import redirectBinding from './binding-redirect.js';
 import postBinding from './binding-post.js';
 import simpleSignBinding from './binding-simplesign.js';
+import artifactSignBinding from './binding-artifact.js';
 import { flow, type FlowResult } from  './flow.js';
 
 /*
@@ -79,7 +80,10 @@ export class ServiceProvider extends Entity {
         // Object context = {id, context, signature, sigAlg}
         context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
         break;
-
+      case nsBinding.artifact:
+        // Object context = {id, context, signature, sigAlg}
+        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
+        break;
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
