@@ -62,6 +62,11 @@ export default class Metadata implements MetadataInterface {
         attributes: ['Binding', 'Location']
       },
       {
+        key: 'artifactResolutionService',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'ArtifactResolutionService'],
+        attributes: ['Binding', 'Location','isDefault']
+      },
+      {
         key: 'nameIDFormat',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'NameIDFormat'],
         attributes: [],
@@ -155,6 +160,8 @@ export default class Metadata implements MetadataInterface {
   public getArtifactResolutionService(binding: string | undefined): string | object {
     if (binding && isString(binding)) {
       const bindType = namespace.binding[binding];
+      console.log(this.meta)
+      console.log("看一下---------------------")
       let artifactResolutionService = this.meta.artifactResolutionService;
       if (!(artifactResolutionService instanceof Array)) {
         artifactResolutionService = [artifactResolutionService];
