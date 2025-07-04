@@ -201,7 +201,7 @@ async function postFlow(options): Promise<FlowResult> {
 if(soap){
   const metadata = {
     idp: from.entityMeta,
-    sp: self.fentityMeta,
+    sp: self.entityMeta,
   };
   let ID = '_' + uuid.v4()
   let samlSoap = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context,{
