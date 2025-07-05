@@ -191,37 +191,34 @@ export class ServiceProvider extends Entity {
      *
      * @param entityIDString
      */
-    public createArt(entityIDString:string) {
+    public createArt(entityIDString:string,endpointIndex=0) {
 
-        let entityID  = entityIDString ? entityIDString:this.entityMeta.getEntityID();
-console.log(entityID)
+        let sourceEntityId  = entityIDString ? entityIDString:this.entityMeta.getEntityID();
+console.log(sourceEntityId)
         console.log("0000000000000000000000000000000000000000")
-        // 2. 生成 SHA-1 SourceID (20字节)
+        // 1. 固定类型代码 (0x0004 - 2字节)
+        const typeCode = Buffer.from([0x00, 0x04]);
+
+        // 2. 端点索引 (2字节，大端序)
+        if (endpointIndex < 0 || endpointIndex > 65535) {
+            throw new Error('Endpoint index must be between 0 and 65535');
+        }
+        const endpointBuf = Buffer.alloc(2);
+        endpointBuf.writeUInt16BE(endpointIndex);
+
+        // 3. Source ID - 实体ID的SHA-1哈希 (20字节)
         const sourceId = crypto.createHash('sha1')
-            .update(entityID)
-            .digest()
-            .subarray(0, 20); // 取前20字节
+            .update(sourceEntityId)
+            .digest();
 
-        // 3. 生成随机 MessageHandle (20字节)
-        const messageHandle = crypto.randomBytes(20);
+        // 4. Message Handler - 20字节随机值
+        const messageHandler = crypto.randomBytes(20);
 
-        // 4. 构建工件二进制数据 (44字节)
-        const artifactBuf = Buffer.alloc(44);
+        // 组合所有组件 (2+2+20+20 = 44字节)
+        const artifact = Buffer.concat([typeCode, endpointBuf, sourceId, messageHandler]);
 
-        // 类型码 (2字节, SAML 2.0 固定为 0x0004)
-        artifactBuf.writeUInt16BE(0x0004, 0);
-
-        // 端点索引 (2字节, 通常为0)
-        artifactBuf.writeUInt16BE(0x0000, 2);
-
-        // SourceID (20字节)
-        sourceId.copy(artifactBuf, 4);
-
-        // MessageHandle (20字节)
-        messageHandle.copy(artifactBuf, 24);
-
-        // 5. Base64 编码
-        return artifactBuf.toString('base64');
+        // 返回Base64编码的Artifact
+        return artifact.toString('base64');
     }
   /**
    * @desc   generate Art id

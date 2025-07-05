@@ -250,8 +250,6 @@ async function postFlow(options): Promise<FlowResult> {
                 }
             })
             samlContent = await sendArtifactResolve(url, signatureSoap)
-            console.log(samlContent)
-            console.log("返回给我的模板")
         }
     }
 
