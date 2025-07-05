@@ -113,8 +113,10 @@ export class SpMetadata extends Metadata {
         });
       }
       if (isNonEmptyArray(artifactResolutionService)) {
+        let indexCount = 0;
         artifactResolutionService.forEach(a => {
           const attr: any = {
+            index: String(indexCount++),
             Binding: a.Binding,
             Location: a.Location,
           };

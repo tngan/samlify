@@ -262,25 +262,23 @@ async function postFlow(options): Promise<FlowResult> {
     /** 断言是否加密应根据响应里面的字段判断*/
     let decryptRequired = from.entitySetting.isAssertionEncrypted;
     let extractorFields: ExtractorFields = [];
-
+console.log(samlContent)
+    console.log("----------------看一下----------------------")
     // validate the xml first
-    /*    let res = await libsaml.isValidXml(samlContent).catch((error)=>{
-            console.log(error);
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
-            console.log("验证和结果-----------------------")
+        let res = await libsaml.isValidXml(samlContent).catch((error)=>{
+
+
         });
         console.log(res);
-        console.log("验证和结果-----------------------")*/
+        console.log("验证和结果-----------------------")
+    if(res.valid === false){
+        return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
+    }
     if (parserType !== urlParams.samlResponse) {
         extractorFields = getDefaultExtractorFields(parserType, null);
     }
     // check status based on different scenarios
-    /*    await checkStatus(samlContent, parserType);*/
+   /*     await checkStatus(samlContent, parserType);*/
     /**检查签名顺序 */
 
     /*  if (

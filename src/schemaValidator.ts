@@ -6,16 +6,29 @@ import {fileURLToPath} from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const schemas = [
-    'saml-schema-protocol-2.0.xsd',
-    'datatypes.dtd',
-    'saml-schema-assertion-2.0.xsd',
+    'soap-envelope.xsd',
+    'xml.xsd',
+
+    // 2. SOAP核心模式（所有SOAP消息的基础）
+
+
+    // 3. XML签名模式（SAML签名的前置依赖）
     'xmldsig-core-schema.xsd',
-    'XMLSchema.dtd',
+
+    // 4. XML加密模式（SAML断言加密的前置依赖）
     'xenc-schema.xsd',
-    'saml-schema-metadata-2.0.xsd',
-    'saml-schema-ecp-2.0.xsd',
-    'saml-schema-dce-2.0.xsd',
-    'env.xsd'
+
+    // 5. SAML核心模式（最基础的SAML组件）
+    'saml-schema-assertion-2.0.xsd', // 断言定义
+
+    // 6. SAML协议模式（依赖断言模式）
+    'saml-schema-protocol-2.0.xsd',
+
+    // 7. SAML扩展模式（依赖核心模式）
+    'saml-schema-metadata-2.0.xsd', // 元数据
+    'saml-schema-ecp-2.0.xsd', // ECP扩展
+    'saml-schema-dce-2.0.xsd'  // DCE扩展
+
 ];
 
 function detectXXEIndicators(samlString: string) {
@@ -51,7 +64,7 @@ export const validate = async (xml: string) => {
     }
 
     const schemaPath = path.resolve(__dirname, 'schema');
-    const [schema, ...preload] = await Promise.all(schemas.map(async file => ({
+    const [xmlParse, ...preload] = await Promise.all(schemas.map(async file => ({
         fileName: file,
         contents: await fs.promises.readFile(`${schemaPath}/${file}`, 'utf-8')
     })))
@@ -64,19 +77,21 @@ export const validate = async (xml: string) => {
                 },
             ],
             extension: 'schema',
-            schema: [schema.contents],
-            preload: preload
+            schema: [xmlParse],
+            preload: [xmlParse, ...preload],
         });
 
         if (validationResult.valid) {
+            console.log("---------------------验证通过--------------------")
+            console.log("---------------------验证通过--------------------")
             return true;
         }
-
+        console.log('-----------------------没验证通过-----------------------')
         console.debug(validationResult);
         throw validationResult.errors;
 
     } catch (error) {
-
+        console.log('-----------------------没验证通过error-----------------------')
         console.error('[ERROR] validateXML', error);
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
 

@@ -194,7 +194,8 @@ export class ServiceProvider extends Entity {
     public createArt(entityIDString:string) {
 
         let entityID  = entityIDString ? entityIDString:this.entityMeta.getEntityID();
-
+console.log(entityID)
+        console.log("0000000000000000000000000000000000000000")
         // 2. 生成 SHA-1 SourceID (20字节)
         const sourceId = crypto.createHash('sha1')
             .update(entityID)
