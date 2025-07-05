@@ -3,11 +3,11 @@
 * @author tngan
 * @desc  Metadata of identity provider
 */
-import Metadata, { MetadataInterface } from './metadata';
-import { MetadataIdpOptions, MetadataIdpConstructor } from './types';
-import { namespace } from './urn';
-import libsaml from './libsaml';
-import { castArrayOpt, isNonEmptyArray, isString } from './utility';
+import Metadata, { type  MetadataInterface } from './metadata.js';
+import  type { MetadataIdpOptions, MetadataIdpConstructor } from './types.js';
+import { namespace } from './urn.js';
+import libsaml from './libsaml.js';
+import { castArrayOpt, isNonEmptyArray, isString } from './utility.js';
 import xml from 'xml';
 
 export interface IdpMetadataInterface extends MetadataInterface {
@@ -37,6 +37,8 @@ export class IdpMetadata extends Metadata {
         nameIDFormat = [],
         singleSignOnService = [],
         singleLogoutService = [],
+        artifactResolutionService=[]
+
       } = meta as MetadataIdpOptions;
 
       const IDPSSODescriptor: any[] = [{
@@ -86,6 +88,19 @@ export class IdpMetadata extends Metadata {
       } else {
         console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
       }
+      if (isNonEmptyArray(artifactResolutionService)) {
+        artifactResolutionService.forEach((a, indexCount) => {
+          const attr: any = {};
+          if (a.isDefault) {
+            attr.isDefault = true;
+          }
+          attr.Binding = a.Binding;
+          attr.Location = a.Location;
+          IDPSSODescriptor.push({ ArtifactResolutionService: [{ _attr: attr }] });
+        });
+      } else {
+        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
+      }
       // Create a new metadata by setting
       meta = xml([{
         EntityDescriptor: [{
@@ -108,6 +123,13 @@ export class IdpMetadata extends Metadata {
       {
         key: 'singleSignOnService',
         localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
+        index: ['Binding'],
+        attributePath: [],
+        attributes: ['Location']
+      },
+      {
+        key: 'artifactResolutionService',
+        localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'ArtifactResolutionService'],
         index: ['Binding'],
         attributePath: [],
         attributes: ['Location']
@@ -142,5 +164,20 @@ export class IdpMetadata extends Metadata {
       }
     }
     return this.meta.singleSignOnService;
+  }
+  /**
+   * @desc Get the entity endpoint for single ArtifactResolutionService
+   * @param  {string} binding      protocol binding (e.g. redirect, post)
+   * @return {string/object} location
+   */
+  getArtifactResolutionService (binding: string): string | object {
+    if (isString(binding)) {
+      const bindName = namespace.binding[binding];
+      const service = this.meta.artifactResolutionService[bindName];
+      if (service) {
+        return service;
+      }
+    }
+    return this.meta.artifactResolutionService;
   }
 }

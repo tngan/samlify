@@ -4,10 +4,10 @@
 * @desc Binding-level API, declare the functions using POST SimpleSign binding
 */
 
-import { wording, StatusCode } from './urn';
-import { BindingContext, SimpleSignComputedContext } from './entity';
-import libsaml from './libsaml';
-import utility, { get } from './utility';
+import { wording, StatusCode } from './urn.js';
+import  type { BindingContext, SimpleSignComputedContext } from './entity.js';
+import libsaml from './libsaml.js';
+import utility, { get } from './utility.js';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -127,14 +127,15 @@ function base64LoginRequest(entity: any, customTagReplacement?: (template: strin
   throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_REQUEST_MISSING_METADATA');
 }
 /**
-* @desc Generate a base64 encoded login response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {string}  relayState               the relay state
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): Promise<BindingSimpleSignContext> {
+ * @desc Generate a base64 encoded login response
+ * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {object} user                        current logged user (e.g. req.user)
+ * @param  {string}  relayState               the relay state
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ * @param AttributeStatement
+ */
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext, AttributeStatement:[] = []): Promise<BindingSimpleSignContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -150,6 +151,12 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     const nowTime = new Date();
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
     const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000 );
+    const now = nowTime.toISOString();
+    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
+    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
     const tvalue: any = {
       ID: id,
       AssertionID: idpSetting.generateID(),
@@ -166,17 +173,17 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
+      NameID: user.NameID || '',
       InResponseTo: get(requestInfo, 'extract.request.id', ''),
-      AuthnStatement: '',
-      AttributeStatement: '',
+      AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
       rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+        tvalue.InResponseTo = requestInfo?.extract?.request?.id;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }

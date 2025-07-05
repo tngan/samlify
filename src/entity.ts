@@ -3,15 +3,15 @@
 * @author tngan
 * @desc  An abstraction for identity provider and service provider.
 */
-import { isString, isNonEmptyArray } from './utility';
-import { namespace, wording, algorithms, messageConfigurations } from './urn';
+import { isString, isNonEmptyArray } from './utility.js';
+import { namespace, wording, algorithms, messageConfigurations } from './urn.js';
 import * as uuid from 'uuid';
-import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
-import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
-import redirectBinding from './binding-redirect';
-import postBinding from './binding-post';
-import { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types';
-import { flow, FlowResult } from './flow';
+import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp.js';
+import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp.js';
+import redirectBinding from './binding-redirect.js';
+import postBinding from './binding-post.js';
+import  type { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types.js';
+import { flow, type FlowResult } from  './flow.js';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;
@@ -24,8 +24,8 @@ const defaultEntitySetting = {
   wantLogoutRequestSigned: false,
   allowCreate: false,
   isAssertionEncrypted: false,
-  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA256,
-  dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
+  requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA512,
+  dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256_GCM,
   keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_OAEP_MGF1P,
   generateID: (): string => ('_' + uuid.v4()),
   relayState: '',
@@ -83,13 +83,13 @@ export default class Entity {
     switch (entityType) {
       case 'idp':
         this.entityMeta = IdpMetadata(metadata);
-        // setting with metadata has higher precedence 
+        // setting with metadata has higher precedence
         this.entitySetting.wantAuthnRequestsSigned = this.entityMeta.isWantAuthnRequestsSigned();
         this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;
         break;
       case 'sp':
         this.entityMeta = SpMetadata(metadata);
-        // setting with metadata has higher precedence 
+        // setting with metadata has higher precedence
         this.entitySetting.authnRequestsSigned = this.entityMeta.isAuthnRequestSigned();
         this.entitySetting.wantAssertionsSigned = this.entityMeta.isWantAssertionsSigned();
         this.entitySetting.nameIDFormat = this.entityMeta.getNameIDFormat() || this.entitySetting.nameIDFormat;

@@ -1,12 +1,12 @@
 /**
-* @file metadata.ts
-* @author tngan
-* @desc An abstraction for metadata of identity provider and service provider
-*/
+ * @file metadata.ts
+ * @author tngan
+ * @desc An abstraction for metadata of identity provider and service provider
+ */
 import * as fs from 'fs';
-import { namespace } from './urn';
-import { extract } from './extractor';
-import { isString } from './utility';
+import {namespace} from './urn.js';
+import {extract} from './extractor.js';
+import {isString} from './utility.js';
 
 export interface MetadataInterface {
   xmlString: string;
@@ -16,6 +16,7 @@ export interface MetadataInterface {
   getX509Certificate: (certType: string) => string | string[];
   getNameIDFormat: () => any[];
   getSingleLogoutService: (binding: string | undefined) => string | object;
+  getArtifactResolutionService: (binding: string | undefined) => string | object;
   getSupportBindings: (services: string[]) => string[];
 }
 
@@ -25,9 +26,9 @@ export default class Metadata implements MetadataInterface {
   meta: any;
 
   /**
-  * @param  {string | Buffer} xml
-  * @param  {object} extraParse for custom metadata extractor
-  */
+   * @param  {string | Buffer} xml
+   * @param  {object} extraParse for custom metadata extractor
+   */
   constructor(xml: string | Buffer, extraParse: any = []) {
     this.xmlString = xml.toString();
     this.meta = extract(this.xmlString, extraParse.concat([
@@ -61,6 +62,7 @@ export default class Metadata implements MetadataInterface {
         localPath: ['EntityDescriptor', '~SSODescriptor', 'SingleLogoutService'],
         attributes: ['Binding', 'Location']
       },
+
       {
         key: 'nameIDFormat',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'NameIDFormat'],
@@ -88,58 +90,58 @@ export default class Metadata implements MetadataInterface {
   }
 
   /**
-  * @desc Get the metadata in xml format
-  * @return {string} metadata in xml format
-  */
+   * @desc Get the metadata in xml format
+   * @return {string} metadata in xml format
+   */
   public getMetadata(): string {
     return this.xmlString;
   }
 
   /**
-  * @desc Export the metadata to specific file
-  * @param {string} exportFile is the output file path
-  */
+   * @desc Export the metadata to specific file
+   * @param {string} exportFile is the output file path
+   */
   public exportMetadata(exportFile: string): void {
     fs.writeFileSync(exportFile, this.xmlString);
   }
 
   /**
-  * @desc Get the entityID in metadata
-  * @return {string} entityID
-  */
+   * @desc Get the entityID in metadata
+   * @return {string} entityID
+   */
   public getEntityID(): string {
     return this.meta.entityID;
   }
 
   /**
-  * @desc Get the x509 certificate declared in entity metadata
-  * @param  {string} use declares the type of certificate
-  * @return {string} certificate in string format
-  */
+   * @desc Get the x509 certificate declared in entity metadata
+   * @param  {string} use declares the type of certificate
+   * @return {string} certificate in string format
+   */
   public getX509Certificate(use: string) {
     return this.meta.certificate[use] || null;
   }
 
   /**
-  * @desc Get the support NameID format declared in entity metadata
-  * @return {array} support NameID format
-  */
+   * @desc Get the support NameID format declared in entity metadata
+   * @return {array} support NameID format
+   */
   public getNameIDFormat(): any {
     return this.meta.nameIDFormat;
   }
 
   /**
-  * @desc Get the entity endpoint for single logout service
-  * @param  {string} binding e.g. redirect, post
-  * @return {string/object} location
-  */
+   * @desc Get the entity endpoint for single logout service
+   * @param  {string} binding e.g. redirect, post
+   * @return {string/object} location
+   */
   public getSingleLogoutService(binding: string | undefined): string | object {
     if (binding && isString(binding)) {
       const bindType = namespace.binding[binding];
       let singleLogoutService = this.meta.singleLogoutService;
       if (!(singleLogoutService instanceof Array)) {
         singleLogoutService = [singleLogoutService];
-       }
+      }
       const service = singleLogoutService.find(obj => obj.binding === bindType);
       if (service) {
         return service.location;
@@ -149,10 +151,30 @@ export default class Metadata implements MetadataInterface {
   }
 
   /**
-  * @desc Get the support bindings
-  * @param  {[string]} services
-  * @return {[string]} support bindings
-  */
+   * @desc Get the entity endpoint for single logout service
+   * @param  {string} binding e.g. redirect, post
+   * @return {string/object} location
+   */
+  public getArtifactResolutionService(binding: string | undefined): string | object {
+    if (binding && isString(binding)) {
+      const bindType = namespace.binding[binding];
+      let artifactResolutionService = this.meta.artifactResolutionService;
+      if (!(artifactResolutionService instanceof Array)) {
+        artifactResolutionService = [artifactResolutionService];
+      }
+      const service = artifactResolutionService.find(obj => obj.binding === bindType);
+      if (service) {
+        return service.location;
+      }
+    }
+    return this.meta.artifactResolutionService;
+  }
+
+  /**
+   * @desc Get the support bindings
+   * @param  {[string]} services
+   * @return {[string]} support bindings
+   */
   public getSupportBindings(services: string[]): string[] {
     let supportBindings = [];
     if (services) {

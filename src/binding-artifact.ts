@@ -1,8 +1,8 @@
 /**
-* @file binding-post.ts
-* @author tngan
-* @desc Binding-level API, declare the functions using POST binding
-*/
+ * @file binding-post.ts
+ * @author tngan
+ * @desc Binding-level API, declare the functions using POST binding
+ */
 
 import { wording, namespace, StatusCode } from './urn.js';
 import type { BindingContext } from './entity.js';
@@ -12,11 +12,11 @@ import utility, { get } from './utility.js';
 const binding = wording.binding;
 
 /**
-* @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Generate a base64 encoded login request
+ * @param  {string} referenceTagXPath           reference uri
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -213,13 +213,13 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
 /**
-* @desc Generate a base64 encoded logout request
-* @param  {object} user                         current logged user (e.g. req.user)
-* @param  {string} referenceTagXPath            reference uri
-* @param  {object} entity                       object includes both idp and sp
-* @param  {function} customTagReplacement      used when developers have their own login response template
-* @return {string} base64 encoded request
-*/
+ * @desc Generate a base64 encoded logout request
+ * @param  {object} user                         current logged user (e.g. req.user)
+ * @param  {string} referenceTagXPath            reference uri
+ * @param  {object} entity                       object includes both idp and sp
+ * @param  {function} customTagReplacement      used when developers have their own login response template
+ * @return {string} base64 encoded request
+ */
 function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:string, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
@@ -250,7 +250,7 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
       return {
         id,
         context: libsaml.constructSAMLSignature({
-           referenceTagXPath,
+          referenceTagXPath,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
@@ -272,12 +272,12 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
   throw new Error('ERR_GENERATE_POST_LOGOUT_REQUEST_MISSING_METADATA');
 }
 /**
-* @desc Generate a base64 encoded logout response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Generate a base64 encoded logout response
+ * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {string} referenceTagXPath           reference uri
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
@@ -334,11 +334,11 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
   throw new Error('ERR_GENERATE_POST_LOGOUT_RESPONSE_MISSING_METADATA');
 }
 
-const postBinding = {
+const artifactSignBinding = {
   base64LoginRequest,
   base64LoginResponse,
   base64LogoutRequest,
   base64LogoutResponse,
 };
 
-export default postBinding;
+export default artifactSignBinding;

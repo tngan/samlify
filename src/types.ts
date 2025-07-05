@@ -1,10 +1,10 @@
-import { LoginResponseTemplate } from './libsaml';
+import  type { LoginResponseTemplate } from './libsaml.js';
 
-export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
-export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp';
+export { IdentityProvider as IdentityProviderConstructor } from './entity-idp.js';
+export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp.js';
 
-export { ServiceProvider as ServiceProviderConstructor } from './entity-sp';
-export { SpMetadata as ServiceProviderMetadata } from './metadata-sp';
+export { ServiceProvider as ServiceProviderConstructor } from './entity-sp.js';
+export { SpMetadata as ServiceProviderMetadata } from './metadata-sp.js';
 
 export type MetadataFile = string | Buffer;
 
@@ -13,7 +13,32 @@ type SSOService = {
   Binding: string;
   Location: string;
 };
+// 1. 定义服务名称类型
+export type ServiceName = {
+  value: string;
+  /** @description 语言标识符（如 en/zh-CN） */
+  lang?: string;
+};
 
+// 2. 定义请求属性类型
+export type RequestedAttribute = {
+  name: string;
+  friendlyName?: string;
+  isRequired?: boolean;
+  nameFormat?: string;
+  attributeValue?: string[];
+};
+
+// 3. 定义属性消费服务类型
+export type AttributeConsumingService = {
+  isDefault: boolean;
+  serviceName: ServiceName[]; // 修复点：确保属性名为 serviceName（驼峰命名）
+  serviceDescription: ServiceName[]; // 修复点：确保属性名为 serviceName（驼峰命名）
+  requestedAttributes: RequestedAttribute[];
+};
+
+// 4. 定义顶层服务配置类型
+export type AttrService = AttributeConsumingService[];
 export interface MetadataIdpOptions {
   entityID?: string;
   signingCert?: string | Buffer | (string | Buffer)[];
@@ -22,6 +47,7 @@ export interface MetadataIdpOptions {
   nameIDFormat?: string[];
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
+  artifactResolutionService?:SSOService[];
   requestSignatureAlgorithm?: string;
 }
 
@@ -41,6 +67,8 @@ export interface MetadataSpOptions {
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
   assertionConsumerService?: SSOService[];
+  attributeConsumingService?: AttributeConsumingService[];
+  artifactResolutionService?:SSOService[];
   elementsOrder?: string[];
 }
 

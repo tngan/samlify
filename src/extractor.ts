@@ -1,6 +1,6 @@
-import { select, SelectedValue } from 'xpath';
-import { uniq, last, zipObject, notEmpty } from './utility';
-import { getContext } from './api';
+import { select, type SelectedValue } from 'xpath';
+import { uniq, last, zipObject, notEmpty } from './utility.js';
+import { getContext } from './api.js';
 import camelCase from 'camelcase';
 
 interface ExtractorField {
@@ -44,7 +44,7 @@ export const loginRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['AuthnRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
+    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL','ProtocolBinding','ForceAuthn','IsPassive','AssertionConsumerServiceIndex','AttributeConsumingServiceIndex']
   },
   {
     key: 'issuer',
@@ -82,6 +82,19 @@ export const loginResponseStatusFields = [
     attributes: ['Value'],
   }
 ];
+// support two-tiers status code
+export const loginArtifactResponseStatusFields = [
+  {
+    key: 'top',
+    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode'],
+    attributes: ['Value'],
+  },
+  {
+    key: 'second',
+    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
 
 // support two-tiers status code
 export const logoutResponseStatusFields = [
@@ -107,7 +120,7 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
   {
     key: 'response',
     localPath: ['Response'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo'],
+    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo','Version'],
   },
   {
     key: 'audience',
