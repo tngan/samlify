@@ -1,4 +1,4 @@
-import {inflateString, base64Decode, get} from './utility.js';
+import {base64Decode} from './utility.js';
 import {verifyTime} from './validator.js';
 import libsaml from './libsaml.js';
 import * as uuid from 'uuid'
@@ -7,22 +7,16 @@ import {DOMParser} from '@xmldom/xmldom';
 import {sendArtifactResolve} from "./soap.js";
 import {
     extract,
+    type  ExtractorFields,
     loginRequestFields,
     loginResponseFields,
+    loginResponseStatusFields,
     logoutRequestFields,
     logoutResponseFields,
-    type  ExtractorFields,
-    logoutResponseStatusFields,
-    loginResponseStatusFields
+    logoutResponseStatusFields
 } from './extractor.js';
 
-import {
-    BindingNamespace,
-    ParserType,
-    wording,
-    MessageSignatureOrder,
-    StatusCode
-} from './urn.js';
+import {BindingNamespace, ParserType, StatusCode, wording} from './urn.js';
 
 
 const bindDict = wording.binding;
@@ -220,12 +214,15 @@ async function postFlow(options): Promise<FlowResult> {
         let ID = '_' + uuid.v4();
         let url = metadata.idp.getArtifactResolutionService(bindDict.soap)
         let samlSoapRaw = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context, {
-            ID: request?.messageHandle,
+            ID: ID,
             Destination: url,
             Issuer: metadata.sp.getEntityID(),
             IssueInstant: new Date().toISOString(),
             Art: request.Art
         })
+        if (!metadata.idp.isWantAuthnRequestsSigned()) {
+            samlContent = await sendArtifactResolve(url, samlSoapRaw)
+        }
         if (metadata.idp.isWantAuthnRequestsSigned()) {
             const {
                 privateKey,
@@ -251,17 +248,10 @@ async function postFlow(options): Promise<FlowResult> {
                     }
                 }
             })
-            let data = await sendArtifactResolve(url, signatureSoap)
-            /*            console.log(signatureSoap)
-                        console.log("签过名的")*/
-            console.log(data);
-            console.log("keycloak数据----------------------")
-            samlContent = data
-
+            samlContent = await sendArtifactResolve(url, signatureSoap)
+            console.log(samlContent)
+            console.log("返回给我的模板")
         }
-        // No need to embeded XML signature
-
-
     }
 
 
@@ -317,14 +307,11 @@ async function postFlow(options): Promise<FlowResult> {
         }
 
         if (!decryptRequired) {
-            console.log("-------------------走到了这里----------------------")
             extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
         }
         if (parserType === 'SAMLResponse' && decryptRequired) {
             // 1. 解密断言
             const [decryptedSAML, decryptedAssertion] = await libsaml.decryptAssertionSoap(self, samlContent);
-            console.log(decryptedAssertion)
-            console.log("解密数据-----------------------------")
             // 2. 检查解密后的断言是否包含签名
             const assertionDoc = new DOMParser().parseFromString(decryptedAssertion, 'text/xml');
             const assertionSignatureNodes = select("./*[local-name()='Signature']", assertionDoc.documentElement);
@@ -338,21 +325,18 @@ async function postFlow(options): Promise<FlowResult> {
                 };
 
                 // 3.2 验证断言签名
-                const [assertionVerified,result] = libsaml.verifySignatureSoap(decryptedAssertion, assertionVerificationOptions);
-                console.log(assertionVerified)
-                console.log(result)
-                console.log("验证机结果--------------")
+                const [assertionVerified, result] = libsaml.verifySignatureSoap(decryptedAssertion, assertionVerificationOptions);
                 if (!assertionVerified) {
                     console.error("解密后的断言签名验证失败");
                     return Promise.reject('ERR_FAIL_TO_VERIFY_ASSERTION_SIGNATURE');
                 }
-                if(assertionVerified){
+                if (assertionVerified) {
                     // @ts-ignore
 
                     samlContent = result
                     extractorFields = getDefaultExtractorFields(parserType, result);
                 }
-            }else{
+            } else {
                 samlContent = decryptedAssertion
                 extractorFields = getDefaultExtractorFields(parserType, decryptedAssertion);
             }
@@ -400,10 +384,6 @@ async function postFlow(options): Promise<FlowResult> {
     const targetEntityMetadata = from.entityMeta;
     const issuer = targetEntityMetadata.getEntityID();
     const extractedProperties = parseResult.extract;
-    console.log(extractedProperties)
-    console.log(parseResult)
-    console.log("解析结果----------------------------------")
-    console.log("签发这-----------")
     // unmatched issuer
     if (
         (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
@@ -444,24 +424,24 @@ async function postFlow(options): Promise<FlowResult> {
     //There is no validation of the response here. The upper-layer application
     // should verify the result by itself to see if the destination is equal to the SP acs and
     // whether the response.id is used to prevent replay attacks.
-/*
-    let destination = extractedProperties?.response?.destination
-    let isExit = self.entitySetting?.assertionConsumerService?.filter((item) => {
-        return item?.Location === destination
-    })
-    if (isExit?.length === 0) {
-        return Promise.reject('ERR_Destination_URL');
-    }
-    if (parserType === 'SAMLResponse') {
+    /*
         let destination = extractedProperties?.response?.destination
-        let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; }) => {
+        let isExit = self.entitySetting?.assertionConsumerService?.filter((item) => {
             return item?.Location === destination
         })
         if (isExit?.length === 0) {
             return Promise.reject('ERR_Destination_URL');
         }
-    }
-*/
+        if (parserType === 'SAMLResponse') {
+            let destination = extractedProperties?.response?.destination
+            let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; }) => {
+                return item?.Location === destination
+            })
+            if (isExit?.length === 0) {
+                return Promise.reject('ERR_Destination_URL');
+            }
+        }
+    */
 
 
     return Promise.resolve(parseResult);
