@@ -82,6 +82,19 @@ export const loginResponseStatusFields = [
     attributes: ['Value'],
   }
 ];
+// support two-tiers status code
+export const loginArtifactResponseStatusFields = [
+  {
+    key: 'top',
+    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode'],
+    attributes: ['Value'],
+  },
+  {
+    key: 'second',
+    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode', 'StatusCode'],
+    attributes: ['Value'],
+  }
+];
 
 // support two-tiers status code
 export const logoutResponseStatusFields = [
