@@ -366,7 +366,7 @@ const libSaml = () => {
      *   - The first element is `true` if the signature is valid, `false` otherwise.
      *   - The second element is the cryptographically authenticated assertion node as a string, or `null` if not found.
      */
-    verifySignature(xml: string, opts: SignatureVerifierOptions) {
+    verifySignature(xml: string, opts: SignatureVerifierOptions) : [boolean, string | null] {
       const { dom } = getContext();
       const doc = dom.parseFromString(xml);
 
@@ -395,9 +395,8 @@ const libSaml = () => {
 
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
-        throw new Error('ERR_ZERO_SIGNATURE');
+        return [false, null]; // we return false now
       }
-
 
       // need to refactor later on
       for (const signatureNode of selection){
@@ -457,18 +456,15 @@ const libSaml = () => {
 
         sig.loadSignature(signatureNode);
 
-        doc.removeChild(signatureNode);
-
         verified = sig.checkSignature(doc.toString());
 
         // immediately throw error when any one of the signature is failed to get verified
         if (!verified) {
-          throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
+          continue;
+          // throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
         }
-        // attempt is made to get the signed Reference as a string();
-        // note, we don't have access to the actual signedReferences API unfortunately
-        // mainly a sanity check here for SAML. (Although ours would still be secure, if multiple references are used)
-        if (!(sig.getReferences().length >= 1)) {
+        // Require there to be at least one reference that was signed
+        if (!(sig.getSignedReferences().length >= 1)) {
           throw new Error('NO_SIGNATURE_REFERENCES')
         }
         const signedVerifiedXML = sig.getSignedReferences()[0];
@@ -476,15 +472,25 @@ const libSaml = () => {
         // process the verified signature:
         // case 1, rootSignedDoc is a response:
         if (rootNode.localName === 'Response') {
-
           // try getting the Xml from the first assertion
           const assertions = select(
             "./*[local-name()='Assertion']",
             rootNode
           );
+
+          const encryptedAssertions = select(
+            "./*[local-name()='EncryptedAssertion']",
+            rootNode
+          );
           // now we can process the assertion as an assertion
           if (assertions.length === 1) {
             return [true, assertions[0].toString()];
+          } else if (encryptedAssertions.length >= 1) {
+            return [true, rootNode.toString()]; // we need to return a Response node, which will be decrypted later
+          } else {
+            // something has gone seriously wrong here.
+            // we don't have any assertion to give back
+            return [true, null]
           }
         } else if (rootNode.localName === 'Assertion') {
           return [true, rootNode.toString()];
@@ -492,9 +498,8 @@ const libSaml = () => {
           return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       };
+      return [false, null]; // we didn't verify anything, none of the signatures are valid
 
-      // something has gone seriously wrong if we are still here
-      throw new Error('ERR_ZERO_SIGNATURE');
 
       /*
       // response must be signed, either entire document or assertion

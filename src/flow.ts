@@ -208,34 +208,35 @@ async function postFlow(options): Promise<FlowResult> {
 
   // verify the signatures (the response is encrypted then signed, then verify first then decrypt)
   if (
-    checkSignature &&
-    from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
+    checkSignature
   ) {
+    // VerifiedAssertionNode is signed. Depending on use case, it may actually be a Response Node
     const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
-    if (!verified) {
-      return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-    }
-    if (!decryptRequired) {
-      extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-    }
-  }
 
-  if (parserType === 'SAMLResponse' && decryptRequired) {
-    const result = await libsaml.decryptAssertion(self, samlContent);
-    samlContent = result[0];
-    extractorFields = getDefaultExtractorFields(parserType, result[1]);
-  }
-
-  // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
-  if (
-    checkSignature &&
-    from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
-  ) {
-    const [verified, verifiedAssertionNode] = libsaml.verifySignature(samlContent, verificationOptions);
-    if (verified) {
+    // First two cases are encrypted assertion cases
+    // This case the verifiedAssertionNode is actually a response
+    if (decryptRequired && verified && parserType === 'SAMLResponse' && verifiedAssertionNode) {
+      // now it is extracted from solely signed contents
+      const result = await libsaml.decryptAssertion(self, verifiedAssertionNode);
+      samlContent = result[0];
+      // extractor depends on signed content
+      extractorFields = getDefaultExtractorFields(parserType, result[1]);
+    } else if (decryptRequired && !verified) {
+      // Encrypted Assertion, the assertion is signed
+      const result = await libsaml.decryptAssertion(self, samlContent);
+      const decryptedDoc = result[0];
+      const [decryptedDocVerified, verifiedDecryptedAssertion] = libsaml.verifySignature(decryptedDoc, verificationOptions);
+      if (decryptedDocVerified) {
+        // extractor depends on signed content
+        extractorFields = getDefaultExtractorFields(parserType, verifiedDecryptedAssertion);
+      } else {
+        return Promise.reject('FAILED_TO_VERIFY_SIGNATURE');
+      }
+    } else if (verified) {
+      // extractor depends on signed content
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     } else {
-      return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
+      return Promise.reject('FAILED_TO_VERIFY_SIGNATURE');
     }
   }
 

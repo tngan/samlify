@@ -1199,7 +1199,7 @@ test('should reject signature wrapped response - case 1', async t => {
   }
 });
 
-test('should reject signature wrapped response - case 2', async t => {
+test('should use signed contents in signature wrapped response - case 2', async t => {
   //
   const user = { email: 'user@esaml2.com' };
   const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, binding.post, user));
@@ -1216,12 +1216,8 @@ test('should reject signature wrapped response - case 2', async t => {
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
   const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
-  try {
-    await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-    t.fail();
-  } catch (e) {
-    t.is(e.message, 'ERR_POTENTIAL_WRAPPING_ATTACK');
-  }
+  const {extract} = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
+  t.is(extract.nameID, 'user@esaml2.com');
 });
 
 test('should throw two-tiers code error when the response does not return success status', async t => {

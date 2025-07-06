@@ -208,31 +208,22 @@ test('getAssertionConsumerService with two bindings', t => {
     t.is(libsaml.verifySignature(_decodedResponse, { metadata: IdPMetadata })[0], true);
   });
   test('integrity check for request signed with RSA-SHA1', t => {
-    try {
-      libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
-    } catch (e) {
-      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
-    }
+    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
+    t.is(verified, false);
   });
   test('verify a XML signature signed by RSA-SHA256 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
   });
   test('integrity check for request signed with RSA-SHA256', t => {
-    try {
-      libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
-    } catch (e) {
-      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
-    }
+    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
+    t.is(verified, false);
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', t => {
     t.is(libsaml.verifySignature(_decodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0], true);
   });
   test('integrity check for request signed with RSA-SHA512', t => {
-    try {
-      libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
-    } catch (e) {
-      t.is(e.message, 'ERR_FAILED_TO_VERIFY_SIGNATURE');
-    }
+    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
+    t.is(verified, false);
   });
 
   test('verify a XML signature with metadata but with rolling certificate', t => {
