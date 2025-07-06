@@ -194,8 +194,7 @@ export class ServiceProvider extends Entity {
     public createArt(entityIDString:string,endpointIndex=0) {
 
         let sourceEntityId  = entityIDString ? entityIDString:this.entityMeta.getEntityID();
-console.log(sourceEntityId)
-        console.log("0000000000000000000000000000000000000000")
+
         // 1. 固定类型代码 (0x0004 - 2字节)
         const typeCode = Buffer.from([0x00, 0x04]);
 

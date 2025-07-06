@@ -261,7 +261,6 @@ async function postFlow(options): Promise<FlowResult> {
     /** 断言是否加密应根据响应里面的字段判断*/
     let decryptRequired = from.entitySetting.isAssertionEncrypted;
     let extractorFields: ExtractorFields = [];
-
     // validate the xml first
     let res = await libsaml.isValidXml(samlContent).catch((error) => {
         return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
@@ -277,22 +276,6 @@ async function postFlow(options): Promise<FlowResult> {
          await checkStatus(samlContent, parserType,soap);
     /**检查签名顺序 */
 
-    /*  if (
-        checkSignature &&
-        from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
-      ) {
-        console.log("===============我走的这里=========================")
-        const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
-        console.log(verified);
-        console.log("verified")
-        decryptRequired = isDecryptRequired
-        if (!verified) {
-          return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-        }
-        if (!decryptRequired) {
-          extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-        }
-      }*/
     if (soap === true) {
         const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
         decryptRequired = isDecryptRequired
@@ -321,7 +304,6 @@ async function postFlow(options): Promise<FlowResult> {
                 // 3.2 验证断言签名
                 const [assertionVerified, result] = libsaml.verifySignatureSoap(decryptedAssertion, assertionVerificationOptions);
                 if (!assertionVerified) {
-                    console.error("解密后的断言签名验证失败");
                     return Promise.reject('ERR_FAIL_TO_VERIFY_ASSERTION_SIGNATURE');
                 }
                 if (assertionVerified) {
@@ -352,20 +334,6 @@ async function postFlow(options): Promise<FlowResult> {
         }
     }
 
-    // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
-
-    /*  if (
-        checkSignature &&
-        from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
-      ) {
-        const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
-        decryptRequired = isDecryptRequired
-        if (verified) {
-          extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-        } else {
-          return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
-        }
-      }*/
 
     const parseResult = {
         samlContent: samlContent,
@@ -476,22 +444,7 @@ async function postArtifactFlow(options): Promise<FlowResult> {
     await checkStatus(samlContent, parserType);
     /**检查签名顺序 */
 
-    /*  if (
-        checkSignature &&
-        from.entitySetting.messageSigningOrder === MessageSignatureOrder.ETS
-      ) {
-        console.log("===============我走的这里=========================")
-        const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
-        console.log(verified);
-        console.log("verified")
-        decryptRequired = isDecryptRequired
-        if (!verified) {
-          return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-        }
-        if (!decryptRequired) {
-          extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-        }
-      }*/
+
 
     const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
     decryptRequired = isDecryptRequired
@@ -507,20 +460,8 @@ async function postArtifactFlow(options): Promise<FlowResult> {
         extractorFields = getDefaultExtractorFields(parserType, result[1]);
     }
 
-    // verify the signatures (the response is signed then encrypted, then decrypt first then verify)
 
-    /*  if (
-        checkSignature &&
-        from.entitySetting.messageSigningOrder === MessageSignatureOrder.STE
-      ) {
-        const [verified, verifiedAssertionNode,isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
-        decryptRequired = isDecryptRequired
-        if (verified) {
-          extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-        } else {
-          return Promise.reject('ERR_FAIL_TO_VERIFY_STE_SIGNATURE');
-        }
-      }*/
+
 
     const parseResult = {
         samlContent: samlContent,

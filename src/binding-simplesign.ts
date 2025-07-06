@@ -152,7 +152,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
     const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000 );
     const now = nowTime.toISOString();
-    console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
     const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
     const tenHoursLaterTime = new Date(nowTime.getTime());
     tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);

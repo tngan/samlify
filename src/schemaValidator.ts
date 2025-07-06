@@ -71,7 +71,6 @@ function detectXXEIndicators(samlString: string) {
 export const validate = async (xml: string) => {
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
-        console.error('XXE风险特征:', indicators);
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
     }
 

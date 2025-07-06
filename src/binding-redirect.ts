@@ -178,8 +178,7 @@ function loginRequestRedirectURLArt(entity: {
                     AllowCreate: spSetting.allowCreate,
                 } as any);
             }
-            console.log(rawSamlRequest)
-            console.log("-----------------这是原始请求模板-------------------")
+
             const {
                 privateKey,
                 privateKeyPass,
@@ -205,8 +204,6 @@ function loginRequestRedirectURLArt(entity: {
                         },
                     }
                 })
-                console.log(signAuthnRequest)
-                console.log("签名后的模板")
                 rawSamlRequest = signAuthnRequest
             }
             /*            console.log(metadata.idp)
@@ -218,9 +215,7 @@ function loginRequestRedirectURLArt(entity: {
                 Issuer: metadata.sp.getEntityID(),
                 AuthnRequest: rawSamlRequest
             } as any);
-            console.log(soapTemplate)
-            console.log("======================最后结果========================")
-            console.log("======================开始签名根节点========================")
+
             let rootSignSoap = libsaml.constructSAMLSignature({
 
                 isMessageSigned: true,
@@ -236,8 +231,6 @@ function loginRequestRedirectURLArt(entity: {
                     location: {reference: "//*[local-name()='Header']", action: 'after'},
                 }
             })
-            console.log(rootSignSoap)
-            console.log("======================已经签名========================")
             return {
                 authnRequest:rootSignSoap
             };
@@ -281,7 +274,6 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
         // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
         const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
         const now = nowTime.toISOString();
-        console.log(`现在是北京时间:${nowTime.toLocaleString()}`)
         const sessionIndex = 'session' + idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
         const tenHoursLaterTime = new Date(nowTime.getTime());
         tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);

@@ -516,14 +516,11 @@ const libSaml = () => {
                 throw new Error('ERR_ZERO_SIGNATURE');
             }
 
-
             // need to refactor later on
             for (const signatureNode of selection) {
                 const sig = new SignedXml();
                 let verified = false;
-
                 sig.signatureAlgorithm = opts.signatureAlgorithm!;
-
                 if (!opts.keyFile && !opts.metadata) {
                     throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
                 }
@@ -624,57 +621,13 @@ const libSaml = () => {
                     return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
                 }
             }
-
             // something has gone seriously wrong if we are still here
             throw new Error('ERR_ZERO_SIGNATURE');
-
-            // response must be signed, either entire document or assertion
-            // default we will take the assertion section under root
-            /*      if (messageSignatureNode.length === 1) {
-                    const node = select("/!*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/!*[local-name(.)='Assertion']", doc);
-                    if (node.length === 1) {
-                      assertionNode = node[0].toString();
-                    }
-                  }
-
-                  if (assertionSignatureNode.length === 1) {
-                    const verifiedAssertionInfo = extract(assertionSignatureNode[0].toString(), [{
-                      key: 'refURI',
-                      localPath: ['Signature', 'SignedInfo', 'Reference'],
-                      attributes: ['URI']
-                    }]);
-                    // get the assertion supposed to be the one should be verified
-                    const desiredAssertionInfo = extract(doc.toString(), [{
-                      key: 'id',
-                      localPath: ['~Response', 'Assertion'],
-                      attributes: ['ID']
-                    }]);
-                    // 5.4.2 References
-                    // SAML assertions and protocol messages MUST supply a value for the ID attribute on the root element of
-                    // the assertion or protocol message being signed. The assertion’s or protocol message's root element may
-                    // or may not be the root element of the actual XML document containing the signed assertion or protocol
-                    // message (e.g., it might be contained within a SOAP envelope).
-                    // Signatures MUST contain a single <ds:Reference> containing a same-document reference to the ID
-                    // attribute value of the root element of the assertion or protocol message being signed. For example, if the
-                    // ID attribute value is "foo", then the URI attribute in the <ds:Reference> element MUST be "#foo".
-                    if (verifiedAssertionInfo.refURI !== `#${desiredAssertionInfo.id}`) {
-                      throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
-                    }
-                    const verifiedDoc = extract(doc.toString(), [{
-                      key: 'assertion',
-                      localPath: ['~Response', 'Assertion'],
-                      attributes: [],
-                      context: true
-                    }]);
-                    assertionNode = verifiedDoc.assertion.toString();
-                  }
-
-                  return [verified, assertionNode];*/
         },
 
         verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
             const {dom} = getContext();
-            const doc = dom.parseFromString(xml);
+            const doc = dom.parseFromString(xml,'text/xml');
             const docParser = new DOMParser();
 
             let selection: any = [];
@@ -797,10 +750,7 @@ const libSaml = () => {
                 // 使用原始 XML 进行验证
                 verified = sig.checkSignature(xml);
 
-                console.log("签名验证结果:", verified);
-
                 if (!verified) {
-                    console.error("签名验证失败");
                     throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
                 }
 
@@ -1166,7 +1116,6 @@ const libSaml = () => {
                         {key: privateKey},
                         (err, result) => {
                             if (err) {
-                                console.error('解密错误:', err);
                                 return reject(new Error('ERR_ASSERTION_DECRYPTION_FAILED'));
                             }
                             if (!result) {
@@ -1194,7 +1143,6 @@ const libSaml = () => {
 
                 return [updatedSoapXml, decryptedAssertion];
             } catch (error) {
-                console.error('SOAP断言解密失败:', error);
                 throw new Error('ERR_SOAP_ASSERTION_DECRYPTION');
             }
         },
