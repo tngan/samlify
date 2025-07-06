@@ -11,7 +11,7 @@ import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp.j
 import redirectBinding from './binding-redirect.js';
 import postBinding from './binding-post.js';
 import  type { MetadataIdpConstructor, MetadataSpConstructor, EntitySetting } from './types.js';
-import { flow, type FlowResult } from  './flow.js';
+import { flow, type FlowResult } from './flow.js';
 
 const dataEncryptionAlgorithm = algorithms.encryption.data;
 const keyEncryptionAlgorithm = algorithms.encryption.key;

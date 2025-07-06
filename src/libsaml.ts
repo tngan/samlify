@@ -813,7 +813,7 @@ const libSaml = () => {
                 const verifiedDoc = docParser.parseFromString(signedVerifiedXML, 'text/xml');
                 const rootNode = verifiedDoc.documentElement;
 
-                console.log("签名引用根节点:", rootNode.localName);
+
 
                 // 断言模式专用返回逻辑
                 if (opts.isAssertion) {

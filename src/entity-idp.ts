@@ -22,7 +22,7 @@ import { namespace } from './urn.js';
 import postBinding from './binding-post.js';
 import redirectBinding from './binding-redirect.js';
 import simpleSignBinding from './binding-simplesign.js';
-import { flow, type FlowResult } from  './flow.js';
+import { flow, type FlowResult } from './flow.js';
 import { isString } from './utility.js';
 import type  { BindingContext } from './entity.js';
 

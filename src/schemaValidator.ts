@@ -94,17 +94,11 @@ export const validate = async (xml: string) => {
         });
 
         if (validationResult.valid) {
-            console.log("---------------------验证通过--------------------")
-            console.log("---------------------验证通过--------------------")
             return true;
         }
-        console.log('-----------------------没验证通过-----------------------')
-        console.debug(validationResult);
         throw validationResult.errors;
 
     } catch (error) {
-        console.log('-----------------------没验证通过error-----------------------')
-        console.error('[ERROR] validateXML', error);
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
 
     }
