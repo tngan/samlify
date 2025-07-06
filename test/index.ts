@@ -1,7 +1,7 @@
-import * as esaml2 from '../index';
+import * as esaml2 from '../index.js';
 import { readFileSync } from 'fs';
 import test from 'ava';
-import { verifyTime } from '../src/validator';
+import { verifyTime } from '../src/validator.js';
 
 const {
   IdentityProvider: identityProvider,

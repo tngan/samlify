@@ -17,10 +17,10 @@
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "pretest": "make pretest",
-    "test": "NODE_ENV=test nyc ava",
+    "pretest": "build.bat pretest",
+    "test": "jest",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
+    "hooks:postinstall": "mklink /J .git\\hooks\\pre-commit .pre-commit.sh || copy .pre-commit.sh .git\\hooks\\pre-commit"
   },
   "exports": {
     ".": {
@@ -45,6 +45,8 @@
     "@xmldom/xmldom": "^0.8.10",
     "axios": "^1.10.0",
     "camelcase": "^8.0.0",
+    "cross-env": "^7.0.3",
+    "jest": "^30.0.4",
     "pako": "^2.1.0",
     "uuid": "^11.1.0",
     "xml": "^1.0.1",

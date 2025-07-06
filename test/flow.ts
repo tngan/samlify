@@ -1,13 +1,13 @@
-import * as esaml2 from '../index';
+import * as esaml2 from '../index.js';
 import { readFileSync, writeFileSync } from 'fs';
 import test from 'ava';
-import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
+import { PostBindingContext, SimpleSignBindingContext } from '../src/entity.js';
 import * as uuid from 'uuid';
 import * as url from 'url';
-import util from '../src/utility';
+import util from '../src/utility.js';
 import * as tk from 'timekeeper';
 
-import * as validator from '@authenio/samlify-xsd-schema-validator';
+/*import * as validator from '@authenio/samlify-xsd-schema-validator';*/
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
 // import * as validator from '@authenio/samlify-node-xmllint';
 // import * as validator from '@authenio/samlify-libxml-xsd';
@@ -17,7 +17,7 @@ import * as validator from '@authenio/samlify-xsd-schema-validator';
 // const validator = require('@authenio/samlify-node-xmllint');
 // const validator = require('@authenio/samlify-libxml-xsd');
 
-esaml2.setSchemaValidator(validator);
+/*esaml2.setSchemaValidator(validator);*/
 
 const isString = util.isString;
 

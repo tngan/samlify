@@ -571,7 +571,7 @@ const libSaml = () => {
 
                 sig.loadSignature(signatureNode);
 
-                doc.removeChild(signatureNode);
+         /*       doc.removeChild(signatureNode);*/
 
                 verified = sig.checkSignature(doc.toString());
 
@@ -746,7 +746,8 @@ const libSaml = () => {
 
                 // 加载签名
                 sig.loadSignature(signatureNode);
-
+              /*       doc.removeChild(signatureNode);*/
+              console.log("最新版本未经测试")
                 // 使用原始 XML 进行验证
                 verified = sig.checkSignature(xml);
 
