@@ -68,7 +68,12 @@ async function redirectFlow(options): Promise<FlowResult> {
     }
 
     /*  const xmlString = inflateString(decodeURIComponent(content));*/
-
+console.log(content)
+  console.log("找到了把心------------------")
+  console.log("找到了把心------------------")
+  console.log("找到了把心------------------")
+  console.log("找到了把心------------------")
+  console.log("找到了把心------------------")
     // @ts-ignore
     let {xml: xmlString} = libsaml.validateAndInflateSamlResponse(content);
     // validate the xml
@@ -281,7 +286,7 @@ async function postFlow(options): Promise<FlowResult> {
          await checkStatus(samlContent, parserType,soap);
     /**检查签名顺序 */
 
-    if (soap === true) {
+    if (soap) {
         const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
         decryptRequired = isDecryptRequired
         if (!verified) {
@@ -324,7 +329,8 @@ async function postFlow(options): Promise<FlowResult> {
             }
         }
     }
-    if (soap === false) {
+    if (!soap) {
+
         const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignature(samlContent, verificationOptions);
         decryptRequired = isDecryptRequired
         if (!verified) {
@@ -337,6 +343,7 @@ async function postFlow(options): Promise<FlowResult> {
             const result = await libsaml.decryptAssertion(self, samlContent);
             samlContent = result[0];
             extractorFields = getDefaultExtractorFields(parserType, result[1]);
+
         }
     }
 
@@ -345,7 +352,6 @@ async function postFlow(options): Promise<FlowResult> {
         samlContent: samlContent,
         extract: extract(samlContent, extractorFields),
     };
-
     /**
      *  Validation part: validate the context of response after signature is verified and decrypted (optional)
      */
@@ -579,19 +585,24 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
 
     if (parserType === urlParams.samlResponse) {
         // Extract assertion shortcut
+      console.log("请告诉我为什么-----------------------")
+      console.log(xmlString)
+      console.log("请告诉我为什么-----------------------")
         const verifiedDoc = extract(xmlString, [{
             key: 'assertion',
             localPath: ['~Response', 'Assertion'],
             attributes: [],
             context: true
         }]);
+
         if (verifiedDoc && verifiedDoc.assertion) {
             assertion = verifiedDoc.assertion as string;
         }
     }
 
     const extractorFields = getDefaultExtractorFields(parserType, assertion.length > 0 ? assertion : null);
-
+    console.log(extractorFields)
+console.log("===================提取字段================")
     const parseResult: { samlContent: string, extract: any, sigAlg: (string | null) } = {
         samlContent: xmlString,
         sigAlg: null,

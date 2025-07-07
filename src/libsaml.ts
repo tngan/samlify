@@ -266,13 +266,14 @@ const libSaml = () => {
     try {        // 1. URL解码
       const base64Encoded = decodeURIComponent(urlEncodedResponse);
       // 2. Base64解码为Uint8Array
-      const binaryStr = atob(base64Encoded);
-      xml = inflateString(binaryStr);
+      xml = inflateString(base64Encoded);
     } catch (inflateError) {
       // 4. 解压失败，尝试直接解析为未压缩的XML
       console.log("解压失败---------------------")
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
+        console.log(urlEncodedResponse)
+        console.log("----------------------卧槽这是他妈的什么啊-------------------")
         xml  = atob(base64Encoded);
         console.log(xml)
         console.log("日狗了---------------")

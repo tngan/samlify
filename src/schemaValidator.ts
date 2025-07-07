@@ -69,8 +69,6 @@ function detectXXEIndicators(samlString: string) {
 }
 
 export const validate = async (xml: string) => {
-  console.log(xml)
-  console.log("======================这是xml===================")
   return true;
     const indicators = detectXXEIndicators(xml);
     if (indicators) {

@@ -179,7 +179,11 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
       const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
+      console.log(template)
+      console.log('这就是模板--------------------------')
       rawSamlResponse = get(template, 'context', null);
+      console.log(rawSamlResponse)
+      console.log("最后的-------------")
     } else {
       if (requestInfo !== null) {
         tvalue.InResponseTo = requestInfo?.extract?.request?.id;

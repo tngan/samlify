@@ -72,6 +72,8 @@ const bindType = params?.binding ?? 'post';
     let context: any = null;
     switch (protocol) {
       case namespace.binding.post:
+        console.log(user)
+        console.log("我真的穿了-------------------------------")
         context = await postBinding.base64LoginResponse(requestInfo, {
           idp: this,
           sp,

@@ -127,7 +127,7 @@ export function inflateString(compressedString: string): string {
 
   const base64Encoded = decodeURIComponent(compressedString);
   // 2. Base64解码为Uint8Array
-  const binaryStr = atob(base64Encoded);
+  const binaryStr = atob(base64Encoded) ?? base64Encoded;
 const data = Uint8Array.from(binaryStr,(c)=>c.charCodeAt(0));
   try{
     return inflateRaw(data, {to: 'string'})

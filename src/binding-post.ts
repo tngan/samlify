@@ -128,7 +128,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       AttributeStatement: libsaml.attributeStatementBuilder(AttributeStatement),
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
+      const template = customTagReplacement(idpSetting.loginResponseTemplate.context)
       rawSamlResponse = get(template, 'context', null);
     } else {
       if (requestInfo !== null) {
