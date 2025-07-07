@@ -108,6 +108,7 @@ test('base64 decoded + inflate', () => {
 describe('Certificate processing functions', () => {
   test('parse cer format resulting clean certificate', () => {
     const cerContent = readFileSync(testResourcePath('key/sp/cert.cer'));
+    // @ts-ignore
     expect(utility.normalizeCerString(cerContent)).toBe(spCertKnownGood);
   });
 
@@ -135,6 +136,7 @@ describe('SAML service provider configuration', () => {
         Location: 'https:sp.example.org/sp/slo',
       }],
     });
+    // @ts-ignore
     expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.post)).toBe(expectedPostLocation);
   });
 
@@ -162,13 +164,16 @@ describe('SAML service provider configuration', () => {
         Location: 'https:sp.example.org/sp/slo',
       }],
     });
+    // @ts-ignore
     expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.post)).toBe(expectedPostLocation);
+    // @ts-ignore
     expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.artifact)).toBe(expectedArtifactLocation);
   });
 });
 
 describe('SAML Cryptographic Operations', () => {
   test('sign a SAML message with RSA-SHA1', () => {
+    // @ts-ignore
     let result = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass, true)
     expect(result).toBe(signatureB64SHA1);
   });
@@ -196,7 +201,9 @@ describe('SAML Cryptographic Operations', () => {
   });
 
   test('verify binary SAML message signed with RSA-SHA1', () => {
+    // @ts-ignore
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass, false);
+    // @ts-ignore
     expect(libsaml.verifyMessageSignature(SPMetadata, octetString, signature)).toBe(true);
   });
 
@@ -211,12 +218,14 @@ describe('SAML Cryptographic Operations', () => {
     expect(libsaml.verifyMessageSignature(
       SPMetadata,
       octetStringSHA256,
+      // @ts-ignore
       signature,
       signatureAlgorithms.RSA_SHA256
     )).toBe(true);
   });
 
   test('verify binary SAML message signed with RSA-SHA512', () => {
+    // @ts-ignore
     const signature = libsaml.constructMessageSignature(
       octetStringSHA512,
       _spPrivPem,
@@ -227,13 +236,16 @@ describe('SAML Cryptographic Operations', () => {
     expect(libsaml.verifyMessageSignature(
       SPMetadata,
       octetStringSHA512,
+      // @ts-ignore
       signature,
       signatureAlgorithms.RSA_SHA512
     )).toBe(true);
   });
 
   test('verify stringified SAML message signed with RSA-SHA1', () => {
+    // @ts-ignore
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass);
+    // @ts-ignore
     expect(libsaml.verifyMessageSignature(
       SPMetadata,
       octetString,
@@ -242,7 +254,9 @@ describe('SAML Cryptographic Operations', () => {
   });
 
   test('verify stringified SAML message signed with RSA-SHA256', () => {
+    // @ts-ignore
     const signature = libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass);
+    // @ts-ignore
     expect(libsaml.verifyMessageSignature(
       SPMetadata,
       octetStringSHA256,
@@ -251,9 +265,11 @@ describe('SAML Cryptographic Operations', () => {
   });
 
   test('verify stringified SAML message signed with RSA-SHA512', () => {
+    // @ts-ignore
     const signature = libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass);
     console.log(signature)
     console.log("------------------签名值-0")
+    // @ts-ignore
     expect(libsaml.verifyMessageSignature(
       SPMetadata,
       octetStringSHA512,
@@ -264,6 +280,7 @@ describe('SAML Cryptographic Operations', () => {
   test('construct signature with RSA-SHA1', () => {
     const result = libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
+      // @ts-ignore
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
@@ -276,6 +293,7 @@ describe('SAML Cryptographic Operations', () => {
   test('construct signature with RSA-SHA256', () => {
     const result = libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
+      // @ts-ignore
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
@@ -288,6 +306,7 @@ describe('SAML Cryptographic Operations', () => {
   test('construct signature with RSA-SHA512', () => {
     const result = libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
+      // @ts-ignore
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
