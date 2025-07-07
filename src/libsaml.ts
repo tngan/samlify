@@ -964,7 +964,7 @@ const libSaml = () => {
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
     },
-    verifyMessageSignature(
+/*    verifyMessageSignature(
       metadata,
       octetString: string,
       signature: string | Buffer,
@@ -974,12 +974,34 @@ const libSaml = () => {
       const signingScheme = getSigningSchemeForNode(verifyAlgorithm);
       const verifier = createVerify(signingScheme);
       verifier.update(octetString);
+      console.log(utility.getPublicKeyPemFromCertificate(signCert))
+      console.log("-----------这就是证书------------")
+      console.log(Buffer.isBuffer(signature))
+      console.log("Buffer.isBuffer(signature)")
       const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert), Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
       return isValid
 
+    },*/
+
+    /**
+     * @desc Verifies message signature
+     * @param  {Metadata} metadata                 metadata object of identity provider or service provider
+     * @param  {string} octetString                see "Bindings for the OASIS Security Assertion Markup Language (SAML V2.0)" P.17/46
+     * @param  {string} signature                  context of XML signature
+     * @param  {string} verifyAlgorithm            algorithm used to verify
+     * @return {boolean} verification result
+     */
+    verifyMessageSignature(
+      metadata,
+      octetString: string,
+      signature: string | Buffer,
+      verifyAlgorithm?: string
+    ) {
+      const signCert = metadata.getX509Certificate(certUse.signing);
+      const signingScheme = getSigningScheme(verifyAlgorithm);
+      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
+      return key.verify(Buffer.from(octetString), Buffer.from(signature));
     },
-
-
     /**
      * @desc Get the public key in string format
      * @param  {string} x509Certificate certificate
