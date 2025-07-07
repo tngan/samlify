@@ -1,10 +1,10 @@
-import * as esaml2 from '../index';
+import * as esaml2 from '../index.js';
 import { readFileSync } from 'fs';
 import test from 'ava';
 import * as fs from 'fs';
 import * as url from 'url';
 import { DOMParser as dom } from '@xmldom/xmldom';
-import { extract } from '../src/extractor';
+import { extract } from '../src/extractor.js';
 
 const {
   IdentityProvider: identityProvider,
@@ -158,7 +158,7 @@ test('#31 query param for sso/slo returns error', t => {
     const originalURL = url.parse(context, true);
     const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
-    const xml = new dom().parseFromString(rawRequest);
+    const xml = new dom().parseFromString(rawRequest,'application/xml');
     const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
     t.is(acsUrl, 'https://example.org/response');
   });

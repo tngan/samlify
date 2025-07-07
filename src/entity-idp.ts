@@ -57,14 +57,13 @@ export class IdentityProvider extends Entity {
    */
   public async createLoginResponse(params:{
     sp: ServiceProvider;
-    requestInfo: Record<string, any>;
+    requestInfo?: Record<string, any>;
     binding?: string;  // 可选参数，带默认值
-    user: Record<string, any>;
+    user?: Record<string, any>;
     customTagReplacement?: (template: string) => BindingContext,
     encryptThenSign?: boolean,
     relayState?: string,
-    context: Record<string, any>,
-    AttributeStatement:[]
+    AttributeStatement?:[]
   }) {
 const bindType = params?.binding ?? 'post';
     const {  sp,requestInfo ={}, user = {},customTagReplacement,encryptThenSign = false ,relayState='',AttributeStatement= [] } = params

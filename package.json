@@ -11,14 +11,14 @@
     "metadata"
   ],
   "type": "module",
+
   "typings": "types/index.d.ts",
   "scripts": {
     "build": "tsc && copyfiles -u 1 src/schema/**/* build/src",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "pretest": "build.bat pretest",
-    "test": "jest",
+    "test": "ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "hooks:postinstall": "mklink /J .git\\hooks\\pre-commit .pre-commit.sh || copy .pre-commit.sh .git\\hooks\\pre-commit"
   },
@@ -70,14 +70,15 @@
     "typescript": "5.8.3"
   },
   "ava": {
-    "extensions": [
-      "ts"
-    ],
     "require": [
       "ts-node/register"
     ],
     "files": [
       "!**/*.d.ts"
-    ]
+    ],
+    "extensions": {
+      "cjs": true
+    },
+    "nodeArguments": ["--experimental-vm-modules"]
   }
 }
