@@ -28,11 +28,7 @@ const wording = ref.wording;
 const signatureAlgorithms = algorithms.signature;
 
 const _spKeyFolder = testResourcePath('./key/sp/');
-console.log(testResourcePath('./key/sp/privkey.pem'))
-console.log("----------------是什么------------------")
 const _spPrivPem = String(readFileSync(testResourcePath('key/sp/privkey.pem')));
-console.log(_spPrivPem)
-console.log("-------------证书-------------")
 const _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
 
 const defaultIdpConfig = {
