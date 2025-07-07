@@ -6,6 +6,7 @@ import * as uuid from 'uuid';
 import * as url from 'url';
 import xmlEscape from './xmlEscape.js'
 import util from '../src/utility.js';
+
 import * as tk from 'timekeeper';
 function escapeTag(text) {
   return function (match, quote) {
@@ -53,7 +54,7 @@ function replaceTagsByValue(rawXML, tagValues) {
 
 function createTemplateCallback({requestInfo = {}, entity, user = {
   NameID:"myemailassociatedwithsp@sp.com"
-}, relayState = "", context = {},binding="binding"}) {
+}, relayState = "", context = {},binding="binding",AttributeStatement=[]}) {
 
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
@@ -97,7 +98,8 @@ function createTemplateCallback({requestInfo = {}, entity, user = {
       NameID: user?.NameID ?? '',
       InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
       // AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
-      AttributeStatement: '', ...context
+      AttributeStatement: AttributeStatement ?? [],
+      ...context
     };
 
     SamlResponse = replaceTagsByValue(idpSetting.loginResponseTemplate.context, tvalue);
@@ -1019,12 +1021,32 @@ test('send response with [custom template] signed assertion by post simpleSign a
       user: user,
       binding: 'simpleSign',
       requestInfo: requestInfo,
-      context:{
-        hah:1,
-        hahah:2
-      }
+      AttributeStatement:libsaml.attributeStatementBuilder([
+        {
+          Name: 'mail',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:1
+          } ],
+          FriendlyName: 'mail'
+        },
+        {
+          Name: 'name',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:1
+          }],
+          FriendlyName: 'name'
+        }
+      ])
+
     }) as BindingContext,
-    relayState: 'relaystate'
+    relayState: 'relaystate',
+
   }) as SimpleSignBindingContext;
 
   const {
