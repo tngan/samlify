@@ -42,7 +42,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@xmldom/xmldom": "^0.8.10",
+    "@xmldom/xmldom": "^0.9.8",
     "axios": "^1.10.0",
     "camelcase": "^8.0.0",
     "cross-env": "^7.0.3",

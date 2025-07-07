@@ -291,6 +291,7 @@ async function postFlow(options): Promise<FlowResult> {
             const [decryptedSAML, decryptedAssertion] = await libsaml.decryptAssertionSoap(self, samlContent);
             // 2. 检查解密后的断言是否包含签名
             const assertionDoc = new DOMParser().parseFromString(decryptedAssertion, 'text/xml');
+          // @ts-ignore
             const assertionSignatureNodes = select("./*[local-name()='Signature']", assertionDoc.documentElement);
 
             // 3. 如果存在签名则验证

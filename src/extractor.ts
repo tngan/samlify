@@ -211,7 +211,7 @@ export const logoutResponseFields: ExtractorFields = [
 
 export function extract(context: string, fields) {
   const { dom } = getContext();
-  const rootDoc = dom.parseFromString(context);
+  const rootDoc = dom.parseFromString(context,'application/xml');
 
   return fields.reduce((result: any, field) => {
     // get essential fields
@@ -230,7 +230,7 @@ export function extract(context: string, fields) {
     // if shortcut is used, then replace the doc
     // it's a design for overriding the doc used during runtime
     if (shortcut) {
-      targetDoc = dom.parseFromString(shortcut);
+      targetDoc = dom.parseFromString(shortcut,'application/xml');
     }
 
     // special case: multiple path
@@ -254,6 +254,7 @@ export function extract(context: string, fields) {
 
       return {
         ...result,
+        // @ts-expect-error misssing Node properties are not needed
         [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue).filter(notEmpty))
       };
     }
@@ -276,8 +277,10 @@ export function extract(context: string, fields) {
       // find the index in localpath
       const indexPath = buildAttributeXPath(index);
       const fullLocalXPath = `${baseXPath}${indexPath}`;
+      // @ts-expect-error misssing Node properties are not needed
       const parentNodes = select(baseXPath, targetDoc);
       // [uid, mail, edupersonaffiliation], ready for aggregate
+      // @ts-expect-error misssing Node properties are not needed
       const parentAttributes = select(fullLocalXPath, targetDoc).map((n: Attr) => n.value);
       // [attribute, attributevalue]
       const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
@@ -285,8 +288,9 @@ export function extract(context: string, fields) {
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
       // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
       const childAttributes = parentNodes.map(node => {
-        const nodeDoc = dom.parseFromString(node.toString());
+        const nodeDoc = dom.parseFromString(node.toString(),'application/xml');
         if (attributes.length === 0) {
+          // @ts-ignore
           const childValues = select(fullChildXPath, nodeDoc).map((n: Node) => n.nodeValue);
           if (childValues.length === 1) {
             return childValues[0];
@@ -294,6 +298,7 @@ export function extract(context: string, fields) {
           return childValues;
         }
         if (attributes.length > 0) {
+          // @ts-ignore
           const childValues = select(fullChildXPath, nodeDoc).map((n: Attr) => n.value);
           if (childValues.length === 1) {
             return childValues[0];
@@ -320,6 +325,7 @@ export function extract(context: string, fields) {
       }
     */
     if (isEntire) {
+      // @ts-expect-error misssing Node properties are not needed
       const node = select(baseXPath, targetDoc);
       let value: string | string[] | null = null;
       if (node.length === 1) {
@@ -343,10 +349,13 @@ export function extract(context: string, fields) {
       }
     */
     if (attributes.length > 1) {
+      // @ts-ignore
       const baseNode = select(baseXPath, targetDoc).map(n => n.toString());
       const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
+        // @ts-ignore
         const nodeDoc = dom.parseFromString(node);
+        // @ts-ignore
         const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
           r[camelCase(n.name, {locale: 'en-us'})] = n.value;
           return r;
@@ -368,6 +377,7 @@ export function extract(context: string, fields) {
     */
     if (attributes.length === 1) {
       const fullPath = `${baseXPath}${attributeXPath}`;
+      // @ts-ignore
       const attributeValues = select(fullPath, targetDoc).map((n: Attr) => n.value);
       return {
         ...result,
@@ -384,9 +394,11 @@ export function extract(context: string, fields) {
     */
     if (attributes.length === 0) {
       let attributeValue: SelectedValue[] | (string | null)[] | null = null;
+      // @ts-expect-error misssing Node properties are not needed
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
+        // @ts-expect-error misssing Node properties are not needed
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {

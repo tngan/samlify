@@ -1,5 +1,5 @@
 import { DOMParser as dom } from '@xmldom/xmldom';
-import type { Options as DOMParserOptions } from '@xmldom/xmldom';
+
 import {validate as defaultValidator} from "./schemaValidator.js";
 
 // global module configuration
@@ -33,6 +33,6 @@ export function setSchemaValidator(params: ValidatorContext):void {
 
 }
 
-export function setDOMParserOptions(options: DOMParserOptions = {}):void {
+export function setDOMParserOptions(options = {}):void {
   context.dom = new dom(options);
 }
