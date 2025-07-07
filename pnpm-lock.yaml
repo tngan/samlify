@@ -47,6 +47,9 @@ importers:
       xpath:
         specifier: ^0.0.32
         version: 0.0.32
+      yargs:
+        specifier: ^17.7.2
+        version: 17.7.2
     devDependencies:
       '@microsoft/api-extractor':
         specifier: 7.52.8
@@ -61,7 +64,7 @@ importers:
         specifier: 10.0.0
         version: 10.0.0
       ava:
-        specifier: ^4.3.3
+        specifier: ^4.1.0
         version: 4.3.3(@ava/typescript@1.1.1)
       copyfiles:
         specifier: ^2.4.1

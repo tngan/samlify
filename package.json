@@ -11,14 +11,14 @@
     "metadata"
   ],
   "type": "module",
-
   "typings": "types/index.d.ts",
   "scripts": {
     "build": "tsc && copyfiles -u 1 src/schema/**/* build/src",
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "test": "ava",
+    "test": "cross-env NODE_ENV=test nyc ava ",
+    "test2": "cross-env NODE_ENV=test nyc ava",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "hooks:postinstall": "mklink /J .git\\hooks\\pre-commit .pre-commit.sh || copy .pre-commit.sh .git\\hooks\\pre-commit"
   },
@@ -48,20 +48,22 @@
     "cross-env": "^7.0.3",
     "jest": "^30.0.4",
     "pako": "^2.1.0",
+    "ts-node": "^10.9.2",
     "uuid": "^11.1.0",
     "xml": "^1.0.1",
     "xml-crypto": "^6.1.2",
     "xml-encryption": "^3.1.0",
     "xml-escape": "^1.1.0",
     "xmllint-wasm": "^5.0.0",
-    "xpath": "^0.0.32"
+    "xpath": "^0.0.32",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "7.52.8",
     "@types/node": "^24.0.10",
     "@types/pako": "2.0.3",
     "@types/uuid": "10.0.0",
-    "ava": "^4.3.3",
+    "ava": "6.4.0",
     "copyfiles": "^2.4.1",
     "coveralls": "^3.1.1",
     "esbuild": "^0.25.5",
@@ -70,15 +72,14 @@
     "typescript": "5.8.3"
   },
   "ava": {
+    "extensions": [
+      "ts"
+    ],
     "require": [
       "ts-node/register"
     ],
     "files": [
       "!**/*.d.ts"
-    ],
-    "extensions": {
-      "cjs": true
-    },
-    "nodeArguments": ["--experimental-vm-modules"]
+    ]
   }
 }
