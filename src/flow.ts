@@ -225,6 +225,7 @@ async function postFlow(options): Promise<FlowResult> {
       // Encrypted Assertion, the assertion is signed
       const result = await libsaml.decryptAssertion(self, samlContent);
       const decryptedDoc = result[0];
+      samlContent = decryptedDoc;
       const [decryptedDocVerified, verifiedDecryptedAssertion] = libsaml.verifySignature(decryptedDoc, verificationOptions);
       if (decryptedDocVerified) {
         // extractor depends on signed content
