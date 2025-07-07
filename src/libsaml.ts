@@ -4,21 +4,18 @@
  * @desc  A simple library including some common functions
  */
 import xml from 'xml'
-import {createSign, createPrivateKey, createVerify} from 'node:crypto';
-import utility, {flattenDeep, isString} from './utility.js';
-import {algorithms, wording, namespace} from './urn.js';
+import utility, {flattenDeep, inflateString, isString} from './utility.js';
+import {algorithms, namespace, wording} from './urn.js';
 import {select} from 'xpath';
-import nrsa, { SigningSchemeHash } from 'node-rsa';
+import nrsa, {SigningSchemeHash} from 'node-rsa';
 import type {MetadataInterface} from './metadata.js';
 import {SignedXml} from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
-import {extract} from './extractor.js';
 import camelCase from 'camelcase';
 import {getContext} from './api.js';
 import xmlEscape from 'xml-escape';
 import * as fs from 'fs';
 import {DOMParser} from '@xmldom/xmldom';
-import {inflate} from 'pako'
 
 const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
@@ -266,23 +263,19 @@ const libSaml = () => {
     let xml = "";
     let compressed = true;
 
-
     try {        // 1. URL解码
       const base64Encoded = decodeURIComponent(urlEncodedResponse);
-
       // 2. Base64解码为Uint8Array
       const binaryStr = atob(base64Encoded);
-      const compressedData = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        compressedData[i] = binaryStr.charCodeAt(i);
-      }
-
-      xml = inflate(compressedData, {to: 'string', raw: true});
+      xml = inflateString(binaryStr);
     } catch (inflateError) {
       // 4. 解压失败，尝试直接解析为未压缩的XML
+      console.log("解压失败---------------------")
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
-        xml = Buffer.from(base64Encoded, 'base64').toString('utf-8')
+        xml  = atob(base64Encoded);
+        console.log(xml)
+        console.log("日狗了---------------")
         return {compressed: false, xml, error: null};
       } catch (xmlError) {
         return Promise.resolve({compressed: false, xml, error: true})

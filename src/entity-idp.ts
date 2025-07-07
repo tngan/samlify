@@ -90,11 +90,8 @@ const bindType = params?.binding ?? 'post';
           sp,
         }, user, relayState, customTagReplacement,AttributeStatement);
       default:
-        context = await postBinding.base64LoginResponse(requestInfo, {
-          idp: this,
-          sp,
-        }, user, customTagReplacement, encryptThenSign,AttributeStatement);
- /*       throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');*/
+
+        throw new Error('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
     }
 
     return {

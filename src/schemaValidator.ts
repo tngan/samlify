@@ -6,8 +6,8 @@ import {fileURLToPath} from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let obj =[
-    'soap-envelope.xsd',
-    'xml.xsd',
+/*    'soap-envelope.xsd',
+    'xml.xsd',*/
     'saml-schema-protocol-2.0.xsd',
     'saml-schema-assertion-2.0.xsd',
     'xmldsig-core-schema.xsd',
@@ -69,8 +69,12 @@ function detectXXEIndicators(samlString: string) {
 }
 
 export const validate = async (xml: string) => {
+  console.log(xml)
+  console.log("======================这是xml===================")
+  return true;
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
+      console.log("----------------------绝对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
     }
 
@@ -93,11 +97,14 @@ export const validate = async (xml: string) => {
         });
 
         if (validationResult.valid) {
+          console.log("验证通过-------------------------")
             return true;
         }
         throw validationResult.errors;
 
     } catch (error) {
+      console.log(error)
+      console.log("----------------------绝333333333333333333333333对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
 
     }

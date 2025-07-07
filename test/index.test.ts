@@ -263,8 +263,6 @@ describe('SAML Cryptographic Operations', () => {
   test('verify stringified SAML message signed with RSA-SHA512', () => {
     // @ts-ignore
     const signature = libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass);
-    console.log(signature)
-    console.log("------------------签名值-0")
     // @ts-ignore
     expect(libsaml.verifyMessageSignature(
       SPMetadata,

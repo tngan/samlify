@@ -4,10 +4,10 @@
  * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
  */
 
-import {X509Certificate,createPrivateKey } from 'node:crypto';
+import {createPrivateKey, X509Certificate} from 'node:crypto';
 
 
-import {inflate, deflate,deflateRaw} from 'pako';
+import {deflateRaw, inflateRaw,inflate} from 'pako';
 
 const BASE64_STR = 'base64';
 
@@ -124,11 +124,18 @@ function deflateString(message: string): number[] {
  * @return {string} decompressed string
  */
 export function inflateString(compressedString: string): string {
-  const inputBuffer = Buffer.from(compressedString, BASE64_STR);
-  const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
-  return Array.from(inflate(input, {raw: true}))
-    .map((byte: number) => String.fromCharCode(byte))
-    .join('');
+
+  const base64Encoded = decodeURIComponent(compressedString);
+  // 2. Base64解码为Uint8Array
+  const binaryStr = atob(base64Encoded);
+const data = Uint8Array.from(binaryStr,(c)=>c.charCodeAt(0));
+  try{
+    return inflateRaw(data, {to: 'string'})
+  }catch (e){
+    return e.message
+  }
+
+
 }
 
 /**

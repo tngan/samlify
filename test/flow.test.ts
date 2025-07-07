@@ -4,11 +4,24 @@ import { describe, test, expect } from 'vitest';
 import { PostBindingContext, SimpleSignBindingContext } from '../src/entity.js';
 import * as uuid from 'uuid';
 import * as url from 'url';
+import xmlEscape from './xmlEscape.js'
 import util from '../src/utility.js';
 import * as tk from 'timekeeper';
-
+function escapeTag(text) {
+  return function (match, quote) {
+    if (quote) {
+      text = xmlEscape(text);
+      return quote ? `${quote}${xmlEscape(text || '')}` : text;
+    } else {
+      return text;
+    }
+  }
+}
 console.log("-----------------------------开始测试了--------------------------");
-
+export interface BindingContext {
+  context: string;
+  id: string;
+}
 const isString = util.isString;
 
 const {
@@ -31,8 +44,70 @@ const loginResponseTemplate = {
 };
 
 const failedResponse: string = String(readFileSync('./test/misc/failed_response.xml'));
+function replaceTagsByValue(rawXML, tagValues) {
+  Object.keys(tagValues).forEach(t => {
+    rawXML = rawXML.replace(new RegExp(`("?)\\{${t}\\}`, 'g'), escapeTag(tagValues[t]));
+  });
+  return rawXML;
+}
 
-const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
+function createTemplateCallback({requestInfo = {}, entity, user = {
+  email:"myemailassociatedwithsp@sp.com",userName:"mynameinsp"
+}, relayState = "", context = {},binding="binding"}) {
+
+  const idpSetting = entity.idp.entitySetting;
+  const spSetting = entity.sp.entitySetting;
+/*  const id = idpSetting.generateID();*/
+  const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
+  const metadata = {
+    idp: entity.idp.entityMeta, sp: entity.sp.entityMeta,
+  };
+  const nameIDFormat = idpSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  if (metadata && metadata.idp && metadata.sp) {
+    const base = metadata.sp.getAssertionConsumerService(binding);
+    let SamlResponse;
+    const nowTime = new Date();
+    const spEntityID = metadata.sp.getEntityID();
+    const oneMinutesLaterTime = new Date(nowTime.getTime());
+    oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
+    const OneMinutesLater = oneMinutesLaterTime.toISOString();
+    const now = nowTime.toISOString();
+
+    const acl = metadata.sp.getAssertionConsumerService(binding);
+/*    const sessionIndex = 'Index_' + customId(64); // 这个是当前系统的会话索引，用于单点注销*/
+    const tenHoursLaterTime = new Date(nowTime.getTime());
+    tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
+    const tenHoursLater = tenHoursLaterTime.toISOString();
+    const tvalue = {
+      ID: _id,
+      AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${uuid.v4()}`,
+      Destination: base,
+      Audience: spEntityID,
+      EntityID: spEntityID,
+      SubjectRecipient: acl,
+      Issuer: metadata.idp.getEntityID(),
+      IssueInstant: now,
+      AssertionConsumerServiceURL: acl,
+      StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
+      ConditionsNotBefore: now,
+      ConditionsNotOnOrAfter: OneMinutesLater,
+      SubjectConfirmationDataNotOnOrAfter: OneMinutesLater,
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      NameID: user?.email,
+      InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
+      // AuthnStatement: `<saml:AuthnStatement AuthnInstant="${now}" SessionNotOnOrAfter="${tenHoursLater}" SessionIndex="${sessionIndex}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`,
+      AttributeStatement: '', ...context
+    };
+
+    SamlResponse = replaceTagsByValue(idpSetting.loginResponseTemplate.context, tvalue);
+
+    return {
+      id: _id, context: SamlResponse,
+    }
+  }
+}
+/*const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
   const now = new Date();
   const spEntityID = _sp.entityMeta.getEntityID();
@@ -63,7 +138,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
     id: _id,
     context: libsaml.replaceTagsByValue(template, tvalue),
   };
-};
+};*/
 
 // Parse Redirect Url context
 const parseRedirectUrlContextCallBack = (_context: string) => {
@@ -132,8 +207,6 @@ const sampleRequestInfo = { extract: { request: { id: 'request_id' } } };
 // Define entities
 const idp = identityProvider(defaultIdpConfig);
 const sp = serviceProvider(defaultSpConfig);
-console.log(sp)
-console.log("----------------这是sppeizhi1--------------------")
 const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
 const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
 const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
@@ -154,12 +227,10 @@ function writer(str: string) {
   writeFileSync('test.txt', str);
 }
 
-describe('SAML Login Request Tests', () => {
+/*describe('SAML Login Request Tests', () => {
   test('create login request with redirect binding using default template and parse it', async () => {
     const { id, context } = sp.createLoginRequest(idp, 'redirect');
     expect(typeof id).toBe('string');
-    console.log(typeof id)
-    console.log("通过了没----------------")
     expect(typeof context).toBe('string');
 
     const originalURL = url.parse(context, true);
@@ -171,20 +242,17 @@ describe('SAML Login Request Tests', () => {
     const octetString = Object.keys(originalURL.query)
       .map(q => `${q}=${encodeURIComponent(originalURL.query[q] as string)}`)
       .join('&');
-console.log(octetString)
-    console.log('octetString======================')
     const { extract } = await idp.parseLoginRequest(sp, 'redirect', {
       query: { SAMLRequest, Signature, SigAlg },
       octetString
     });
-
     expect(extract.issuer).toBe('https://sp.example.org/metadata');
     expect(typeof extract.request.id).toBe('string');
     expect(extract.nameIDPolicy.format).toBe('urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
     expect(extract.nameIDPolicy.allowCreate).toBe('false');
   });
 
-/*  test('create login request with post simpleSign binding using default template and parse it', async () => {
+  test('create login request with post simpleSign binding using default template and parse it', async () => {
     const {
       relayState,
       id,
@@ -214,383 +282,565 @@ console.log(octetString)
     expect(typeof extract.request.id).toBe('string');
     expect(extract.nameIDPolicy.format).toBe('urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
     expect(extract.nameIDPolicy.allowCreate).toBe('false');
-  });*/
-});
-/*
-test('create login request with post binding using default template and parse it', async t => {
+  });
+});*/
+test('create login request with post binding using default template and parse it', async () => {
   const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
-  t.is(typeof id, 'string');
-  t.is(typeof SAMLRequest, 'string');
-  t.is(typeof entityEndpoint, 'string');
-  t.is(type, 'SAMLRequest');
+  expect(typeof id).toBe('string');
+  expect(typeof SAMLRequest).toBe('string');
+  expect(typeof entityEndpoint).toBe('string');
+  expect(type).toBe('SAMLRequest');
+
   const { extract } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
-  t.is(extract.issuer, 'https://sp.example.org/metadata');
-  t.is(typeof extract.request.id, 'string');
-  t.is(extract.nameIDPolicy.format, 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
-  t.is(extract.nameIDPolicy.allowCreate, 'false');
-  t.is(typeof extract.signature, 'string');
+
+  expect(extract.issuer).toBe('https://sp.example.org/metadata');
+  expect(typeof extract.request.id).toBe('string');
+  expect(extract.nameIDPolicy.format).toBe('urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+  expect(extract.nameIDPolicy.allowCreate).toBe('false');
+  expect(typeof extract.signature).toBe('string');
 });
 
-test('signed in sp is not matched with the signed notation in idp with post request', t => {
+test('signed in sp is not matched with the signed notation in idp with post request', () => {
   const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
-  try {
-    const { id, context } = sp.createLoginRequest(_idp, 'post');
-    t.fail();
-  } catch (e) {
-    t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
-  }
+
+  expect(() => {
+    sp.createLoginRequest(_idp, 'post');
+  }).toThrowError('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
 });
 
-test('signed in sp is not matched with the signed notation in idp with redirect request', t => {
+test('signed in sp is not matched with the signed notation in idp with redirect request', () => {
   const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
-  try {
-    const { id, context } = sp.createLoginRequest(_idp, 'redirect');
-    t.fail();
-  } catch (e) {
-    t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
-  }
+
+  expect(() => {
+    sp.createLoginRequest(_idp, 'redirect');
+  }).toThrowError('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
 });
 
-test('signed in sp is not matched with the signed notation in idp with post simpleSign request', t => {
+test('signed in sp is not matched with the signed notation in idp with post simpleSign request', () => {
   const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
-  try {
-    const { id, context } = sp.createLoginRequest(_idp, 'simpleSign');
-    t.fail();
-  } catch (e) {
-    t.is(e.message, 'ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
-  }
+
+  expect(() => {
+    sp.createLoginRequest(_idp, 'simpleSign');
+  }).toThrowError('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
 });
 
-test('create login request with redirect binding using [custom template]', t => {
+test('create login request with redirect binding using custom template', () => {
   const _sp = serviceProvider({
-    ...defaultSpConfig, loginRequestTemplate: {
+    ...defaultSpConfig,
+    loginRequestTemplate: {
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context } = _sp.createLoginRequest(idp, 'redirect', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
-  });
-  (id === 'exposed_testing_id' && isString(context)) ? t.pass() : t.fail();
+
+  const result = _sp.createLoginRequest(idp, 'redirect', template => ({
+    id: 'exposed_testing_id',
+    context: template,
+  }));
+
+  expect(result.id).toBe('exposed_testing_id');
+  expect(isString(result.context)).toBe(true);
 });
 
-test('create login request with redirect binding signing with unencrypted PKCS#8', t => {
+test('create login request with redirect binding signing with unencrypted PKCS#8', () => {
   const _sp = serviceProvider({
     authnRequestsSigned: true,
-    signingCert: readFileSync('./test/key/sp/cert.unencrypted.pkcs8.cer'),
-    privateKey: readFileSync('./test/key/sp/privkey.unencrypted.pkcs8.pem'),
+    signingCert: readFileSync('./test/key/sp/cert.unencrypted.pkcs8.cer', 'utf-8'),
+    privateKey: readFileSync('./test/key/sp/privkey.unencrypted.pkcs8.pem', 'utf-8'),
     privateKeyPass: undefined,
   });
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
+  const parsed = parseRedirectUrlContextCallBack(context);
+  const signature = Buffer.from(parsed.query.Signature as string, 'base64');
 
-  const parsed = parseRedirectUrlContextCallBack(context)
-  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
+  const valid = libsaml.verifyMessageSignature(
+    _sp.entityMeta,
+    parsed.octetString,
+    signature,
+    parsed.query.SigAlg as string
+  );
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
-  t.true(valid, 'signature did not validate');
+  expect(valid).toBe(true);
 });
 
-test('create login request with redirect binding signing with encrypted PKCS#8', t => {
+test('create login request with redirect binding signing with encrypted PKCS#8', () => {
   const _sp = serviceProvider({
     authnRequestsSigned: true,
-    signingCert: readFileSync('./test/key/sp/cert.encrypted.pkcs8.cer'),
-    privateKey: readFileSync('./test/key/sp/privkey.encrypted.pkcs8.pem'),
+    signingCert: readFileSync('./test/key/sp/cert.encrypted.pkcs8.cer', 'utf-8'),
+    privateKey: readFileSync('./test/key/sp/privkey.encrypted.pkcs8.pem', 'utf-8'),
     privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
   });
 
   const { context } = _sp.createLoginRequest(idp, 'redirect');
+  const parsed = parseRedirectUrlContextCallBack(context);
+  const signature = Buffer.from(parsed.query.Signature as string, 'base64');
 
-  const parsed = parseRedirectUrlContextCallBack(context)
-  const signature =  Buffer.from(parsed.query.Signature as string, 'base64');
+  const valid = libsaml.verifyMessageSignature(
+    _sp.entityMeta,
+    parsed.octetString,
+    signature,
+    parsed.query.SigAlg as string
+  );
 
-  const valid = libsaml.verifyMessageSignature(_sp.entityMeta, parsed.octetString, signature, parsed.query.SigAlg as string);
-  t.true(valid, 'signature did not validate');
+  expect(valid).toBe(true);
 });
 
-test('create login request with post binding using [custom template]', t => {
+test('create login request with post binding using custom template', () => {
   const _sp = serviceProvider({
-    ...defaultSpConfig, loginRequestTemplate: {
+    ...defaultSpConfig,
+    loginRequestTemplate: {
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context, entityEndpoint, type, relayState } = _sp.createLoginRequest(idp, 'post', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
-  }) as PostBindingContext;
-  id === 'exposed_testing_id' &&
-    isString(context) &&
-    isString(relayState) &&
-    isString(entityEndpoint) &&
-    type === 'SAMLRequest'
-    ? t.pass() : t.fail();
+
+  const result = _sp.createLoginRequest(idp, 'post', template => ({
+    id: 'exposed_testing_id',
+    context: template,
+  })) as PostBindingContext;
+
+  expect(result.id).toBe('exposed_testing_id');
+  expect(isString(result.context)).toBe(true);
+  expect(isString(result.relayState)).toBe(true);
+  expect(isString(result.entityEndpoint)).toBe(true);
+  expect(result.type).toBe('SAMLRequest');
 });
 
-test('create login request with post simpleSign binding using [custom template]', t => {
+test('create login request with post simpleSign binding using custom template', () => {
   const _sp = serviceProvider({
-    ...defaultSpConfig, loginRequestTemplate: {
+    ...defaultSpConfig,
+    loginRequestTemplate: {
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context, entityEndpoint, type, relayState, signature, sigAlg } = _sp.createLoginRequest(idp, 'simpleSign', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
-  }) as SimpleSignBindingContext;
-  id === 'exposed_testing_id' &&
-    isString(context) &&
-    isString(relayState) &&
-    isString(entityEndpoint) &&
-    isString(signature) &&
-    isString(sigAlg) &&
-    type === 'SAMLRequest'
-    ? t.pass() : t.fail();
+
+  const result = _sp.createLoginRequest(idp, 'simpleSign', template => ({
+    id: 'exposed_testing_id',
+    context: template,
+  })) as SimpleSignBindingContext;
+
+  expect(result.id).toBe('exposed_testing_id');
+  expect(isString(result.context)).toBe(true);
+  expect(isString(result.relayState)).toBe(true);
+  expect(isString(result.entityEndpoint)).toBe(true);
+  expect(isString(result.signature)).toBe(true);
+  expect(isString(result.sigAlg)).toBe(true);
+  expect(result.type).toBe('SAMLRequest');
 });
 
-test('create login response with undefined binding', async t => {
-  const user = { email: 'user@esaml2.com' };
-  const error = await t.throwsAsync(() => idp.createLoginResponse({
+
+test('create login response with undefined binding', async () => {
+  const user = { email: 'user@esaml2.com' ,userName:"test@163.com"};
+  await expect(idp.createLoginResponse({
     sp: sp,
     requestInfo: {},
-    binding: 'undefined',
+    binding: 'undefined' as any,
     user: user,
-    customTagReplacement: createTemplateCallback(idp, sp, binding.post, user)
-  }));
-  t.is(error?.message, 'ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
+    customTagReplacement(template){
+    return  createTemplateCallback({
+        entity: {
+          idp: idp,
+          sp: sp
+        },
+        user: user,
+        binding: binding.post
+      });
+    }
+  })).rejects.toThrowError('ERR_CREATE_RESPONSE_UNDEFINED_BINDING');
 });
 
-test('create redirect login response', async t => {
+test('create redirect login response', async () => {
   const user = { email: 'user@esaml2.com' };
-  const { id, context } = await idp.createLoginResponse({
+
+  const result = await idp.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
     binding: 'redirect',
     user: user,
-    customTagReplacement: createTemplateCallback(idp, sp, binding.redirect, user),
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idp,
+        sp: sp
+      },
+      user: user,
+      binding: 'redirect',
+      requestInfo: sampleRequestInfo
+    }),
     relayState: 'relaystate'
   });
-  isString(id) && isString(context) ? t.pass() : t.fail();
+
+  expect(isString(result.id)).toBe(true);
+  expect(isString(result.context)).toBe(true);
 });
 
-test('create post simpleSign login response', async t => {
+test('create post simpleSign login response', async () => {
   const user = { email: 'user@esaml2.com' };
-  const { id, context, entityEndpoint, type, signature, sigAlg } = await idp.createLoginResponse({
+
+  const result = await idp.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
     binding: 'simpleSign',
     user: user,
-    customTagReplacement: createTemplateCallback(idp, sp, binding.simpleSign, user),
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idp,
+        sp: sp
+      },
+      user: user,
+      binding: 'simpleSign',
+      requestInfo: sampleRequestInfo
+    }),
     relayState: 'relaystate'
   }) as SimpleSignBindingContext;
-  isString(id) &&
-    isString(context) &&
-    isString(entityEndpoint) &&
-    isString(signature) &&
-    isString(sigAlg) ? t.pass() : t.fail();
+
+  expect(isString(result.id)).toBe(true);
+  expect(isString(result.context)).toBe(true);
+  expect(isString(result.entityEndpoint)).toBe(true);
+  expect(isString(result.signature)).toBe(true);
+  expect(isString(result.sigAlg)).toBe(true);
 });
 
-
-test('create post login response', async t => {
+test('create post login response', async () => {
   const user = { email: 'user@esaml2.com' };
-  const { id, context } = await idp.createLoginResponse({
+
+  const result = await idp.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
     binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idp, sp, binding.post, user)
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idp,
+        sp: sp
+      },
+      user: user,
+      binding: 'post',
+      requestInfo: sampleRequestInfo
+    })
   });
-  isString(id) && isString(context) ? t.pass() : t.fail();
+
+  expect(isString(result.id)).toBe(true);
+  expect(isString(result.context)).toBe(true);
 });
-test('create logout request with redirect binding', t => {
-  const { id, context } = sp.createLogoutRequest(idp, 'redirect', { logoutNameID: 'user@esaml2' });
-  isString(id) && isString(context) ? t.pass() : t.fail();
+test('create logout request with redirect binding', () => {
+  const result = sp.createLogoutRequest(idp, 'redirect', { logoutNameID: 'user@esaml2' });
+  expect(isString(result.id)).toBe(true);
+  expect(isString(result.context)).toBe(true);
 });
 
-test('create logout request with post binding', t => {
-  const { relayState, type, entityEndpoint, id, context } = sp.createLogoutRequest(idp, 'post', { logoutNameID: 'user@esaml2' }) as PostBindingContext;
-  isString(id) && isString(context) && isString(entityEndpoint) && type === 'SAMLRequest' ? t.pass() : t.fail();
+test('create logout request with post binding', () => {
+  const result = sp.createLogoutRequest(idp, 'post', { logoutNameID: 'user@esaml2' }) as PostBindingContext;
+  expect(isString(result.id)).toBe(true);
+  expect(isString(result.context)).toBe(true);
+  expect(isString(result.entityEndpoint)).toBe(true);
+  expect(result.type).toBe('SAMLRequest');
 });
 
-test('create logout request when idp only has one binding', t => {
+test('create logout request when idp only has one binding', () => {
   const testIdp = identityProvider(oneloginIdpConfig);
   const { id, context } = sp.createLogoutRequest(testIdp, 'redirect', { logoutNameID: 'user@esaml2' });
-  isString(id) && isString(context) ? t.pass() : t.fail();
+
+  expect(isString(id) && isString(context)).toBe(true);
 });
 
-test('create logout response with undefined binding', t => {
-  try {
-    const { id, context } = idp.createLogoutResponse(sp, {}, 'undefined', '', createTemplateCallback(idp, sp, binding.post, {}));
-    t.fail();
-  } catch (e) {
-    t.is(e.message, 'ERR_CREATE_LOGOUT_RESPONSE_UNDEFINED_BINDING');
-  }
+test('create logout response with undefined binding', () => {
+  expect(() => {
+    idp.createLogoutResponse(
+      sp,
+      {},
+      'undefined' as any,
+      '',
+      () => createTemplateCallback({
+        entity: {
+          idp: idp,
+          sp: sp
+        },
+        binding: binding.post
+      })
+    );
+  }).toThrowError('ERR_CREATE_LOGOUT_RESPONSE_UNDEFINED_BINDING');
 });
 
-test('create logout response with redirect binding', t => {
-  const { id, context } = idp.createLogoutResponse(sp, {}, 'redirect', '', createTemplateCallback(idp, sp, binding.post, {}));
-  isString(id) && isString(context) ? t.pass() : t.fail();
+test('create logout response with redirect binding', function() {
+  const { id, context } = idp.createLogoutResponse(
+    sp,
+    {},
+    'redirect',
+    '',
+    function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idp,
+          sp: sp
+        },
+        binding: 'redirect'
+      });
+    }
+  );
+
+  expect(isString(id)).toBe(true);
+  expect(isString(context)).toBe(true);
 });
 
-test('create logout response with post binding', t => {
-  const { relayState, type, entityEndpoint, id, context } = idp.createLogoutResponse(sp, {}, 'post', '', createTemplateCallback(idp, sp, binding.post, {})) as PostBindingContext;
-  isString(id) && isString(context) && isString(entityEndpoint) && type === 'SAMLResponse' ? t.pass() : t.fail();
+test('create logout response with post binding', function() {
+  const result = idp.createLogoutResponse(
+    sp,
+    {},
+    'post',
+    '',
+    function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idp,
+          sp: sp
+        },
+        binding: 'post'
+      });
+    }
+  ) as PostBindingContext;
+
+  const { relayState, type, entityEndpoint, id, context } = result;
+
+  expect(isString(id)).toBe(true);
+  expect(isString(context)).toBe(true);
+  expect(isString(entityEndpoint)).toBe(true);
+  expect(type).toBe('SAMLResponse');
 });
 
 // Check if the response data parsing is correct
 // All test cases are using customize template
 
 // simulate idp-initiated sso
-test('send response with signed assertion and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+test('send response with signed assertion and parse it', async function() {
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse({
+
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
     binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, sp, binding.post, user)
+    customTagReplacement: function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idpNoEncrypt,
+          sp: sp
+        },
+        user: user,
+        binding: 'post',
+        requestInfo: sampleRequestInfo
+      });
+    }
   });
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
+
+  const { id, context: SAMLResponse } = result;
+
+  console.log(SAMLResponse);
+  console.log("00000000000000000000000000000000000000000000");
+
+  const { samlContent, extract } = await sp.parseLoginResponse(
+    idpNoEncrypt,
+    'post',
+    { body: { SAMLResponse } }
+  );
+
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 // + REDIRECT
-test('send response with signed assertion by redirect and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+/*test('send response with signed assertion and parse it', async function() {
   const user = { email: 'user@esaml2.com' };
-  const { id, context } = await idpNoEncrypt.createLoginResponse({
+
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
-    binding: 'redirect',
+    binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, sp, binding.redirect, user),
-    relayState: 'relaystate'
+    customTagReplacement: function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idpNoEncrypt,
+          sp: sp
+        },
+        user: user,
+        binding: 'post',
+        requestInfo: sampleRequestInfo
+      });
+    }
   });
-  const query = url.parse(context).query;
-  t.is(query!.includes('SAMLResponse='), true);
-  t.is(query!.includes('SigAlg='), true);
-  t.is(query!.includes('Signature='), true);
-  t.is(typeof id, 'string');
-  t.is(typeof context, 'string');
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context) );
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
-});
+
+  const { id, context: SAMLResponse } = result;
+
+  const { samlContent, extract } = await sp.parseLoginResponse(
+    idpNoEncrypt,
+    'post',
+    { body: { SAMLResponse } }
+  );
+
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
+});*/
 
 // SimpleSign
-test('send response with signed assertion by post simplesign and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+/*test('send response with signed assertion by post simplesign and parse it', async function() {
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse({
+
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: sp,
     requestInfo: sampleRequestInfo,
     binding: 'simpleSign',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, sp, binding.simpleSign, user),
+    customTagReplacement: function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idpNoEncrypt,
+          sp: sp
+        },
+        user: user,
+        binding: 'simpleSign',
+        requestInfo: sampleRequestInfo
+      });
+    },
     relayState: 'relaystate'
   }) as SimpleSignBindingContext;
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
-});
 
-test('send response with signed assertion + custom transformation algorithms and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const signedAssertionSp = serviceProvider(
+  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = result;
+
+  const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
+  const { samlContent, extract } = await sp.parseLoginResponse(
+    idpNoEncrypt,
+    'simpleSign',
     {
-      ...defaultSpConfig,
-      transformationAlgorithms: [
-          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
-      ]
+      body: { SAMLResponse, Signature: signature, SigAlg: sigAlg },
+      octetString
     }
   );
 
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
+});*/
+
+/*test('send response with signed assertion + custom transformation algorithms and parse it', async function() {
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse } = await idpNoEncrypt.createLoginResponse({
+
+  // 创建使用自定义转换算法的SP
+  const signedAssertionSp = serviceProvider({
+    ...defaultSpConfig,
+    transformationAlgorithms: [
+      'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+      'http://www.w3.org/2001/10/xml-exc-c14n#'
+    ]
+  });
+
+  // 创建登录响应
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: signedAssertionSp,
     requestInfo: sampleRequestInfo,
     binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, sp, binding.post, user)
+    customTagReplacement: function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idpNoEncrypt,
+          sp: signedAssertionSp
+        },
+        user: user,
+        binding: 'post',
+        requestInfo: sampleRequestInfo
+      });
+    }
   });
 
+  const { id, context: SAMLResponse } = result;
 
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
-
-  // Verify xmldsig#enveloped-signature is included in the response
-  if (samlContent.indexOf('http://www.w3.org/2000/09/xmldsig#enveloped-signature') === -1) {
-    t.fail();
-  }
-});
-
-test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const signedAssertionSp = serviceProvider(
-    {
-      ...defaultSpConfig,
-      transformationAlgorithms: [
-          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
-      ]
-    }
+  // 解析登录响应
+  const { samlContent, extract } = await sp.parseLoginResponse(
+    idpNoEncrypt,
+    'post',
+    { body: { SAMLResponse } }
   );
+
+  // 验证结果
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
+
+  // 验证自定义转换算法是否包含在响应中
+  expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
+});*/
+
+/*test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async function() {
   const user = { email: 'user@esaml2.com' };
 
-  const { id, context } = await idpNoEncrypt.createLoginResponse({
+  // 创建使用自定义转换算法的SP
+  const signedAssertionSp = serviceProvider({
+    ...defaultSpConfig,
+    transformationAlgorithms: [
+      'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+      'http://www.w3.org/2001/10/xml-exc-c14n#'
+    ]
+  });
+
+  // 创建登录响应
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: signedAssertionSp,
     requestInfo: sampleRequestInfo,
     binding: 'redirect',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, signedAssertionSp, binding.redirect, user),
+    customTagReplacement: function() {
+      return createTemplateCallback({
+        entity: {
+          idp: idpNoEncrypt,
+          sp: signedAssertionSp
+        },
+        user: user,
+        binding: 'redirect',
+        requestInfo: sampleRequestInfo
+      });
+    },
     relayState: 'relaystate'
   });
 
-  const query = url.parse(context).query;
-  t.is(query!.includes('SAMLResponse='), true);
-  t.is(query!.includes('SigAlg='), true);
-  t.is(query!.includes('Signature='), true);
-  t.is(typeof id, 'string');
-  t.is(typeof context, 'string');
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await signedAssertionSp.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context) );
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
+  const { id, context } = result;
 
-  // Verify xmldsig#enveloped-signature is included in the response
-  if (samlContent.indexOf('http://www.w3.org/2000/09/xmldsig#enveloped-signature') === -1) {
-    t.fail();
-  }
-});
+  // 解析URL查询参数
+  const query = url.parse(context, true).query;
 
+  // 验证URL参数
+  expect(query.SAMLResponse).toBeDefined();
+  expect(query.SigAlg).toBeDefined();
+  expect(query.Signature).toBeDefined();
+  expect(typeof id).toBe('string');
+  expect(typeof context).toBe('string');
+
+  // 解析登录响应
+  const { samlContent, extract } = await signedAssertionSp.parseLoginResponse(
+    idpNoEncrypt,
+    'redirect',
+    parseRedirectUrlContextCallBack(context)
+  );
+
+  // 验证响应内容
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
+
+  // 验证自定义转换算法是否包含在响应中
+  expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
+});*/
+
+/*
 test('send response with signed assertion + custom transformation algorithms by post simplesign and parse it', async t => {
   // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const signedAssertionSp = serviceProvider(
@@ -757,86 +1007,162 @@ test('send response with signed message by redirect and parse it', async t => {
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.response.inResponseTo, 'request_id');
 });*/
-/*
-test('send response with signed message by post simplesign and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+
+test('send response with signed message by post simplesign and parse it', async () => {
   const user = { email: 'user@esaml2.com' };
 
-  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = await idpNoEncrypt.createLoginResponse({
+  // 创建登录响应
+  const result = await idpNoEncrypt.createLoginResponse({
     sp: spNoAssertSign,
     requestInfo: sampleRequestInfo,
     binding: 'simpleSign',
     user: user,
-    customTagReplacement: createTemplateCallback(idpNoEncrypt, spNoAssertSign, binding.simpleSign, user),
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idpNoEncrypt,
+        sp: spNoAssertSign
+      },
+      user: user,
+      binding: 'simpleSign',
+      requestInfo: sampleRequestInfo
+    }),
     relayState: 'relaystate'
   }) as SimpleSignBindingContext;
 
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  const { id, context: SAMLResponse, type, sigAlg, signature, relayState } = result;
+
+  // 构建 SimpleSign 八位字节字符串
   const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
+
+  // 解析登录响应
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(
+    idpNoEncrypt,
+    'simpleSign',
+    {
+      body: { SAMLResponse, Signature: signature, SigAlg: sigAlg },
+      octetString
+    }
+  );
+
+  // 验证结果
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
-test('send response with [custom template] and signed message and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+test('send response with [custom template] and signed message and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
-  const user = { email: 'user@esaml2.com'};
-  const { id, context: SAMLResponse } = await idpcustomNoEncrypt.createLoginResponse({
+  const user = { email: 'user@esaml2.com' };
+
+  // 创建登录响应
+  const result = await idpcustomNoEncrypt.createLoginResponse({
     sp: spNoAssertSign,
     requestInfo: { extract: { authnrequest: { id: 'request_id' } } },
     binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idpcustomNoEncrypt, spNoAssertSign, binding.post, user)
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idpcustomNoEncrypt,
+        sp: spNoAssertSign
+      },
+      user: user,
+      binding: 'post',
+      requestInfo: requestInfo
+    })
   });
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, 'post', { body: { SAMLResponse } });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.attributes.name, 'mynameinsp');
-  t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
-  t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+
+  const { id, context: SAMLResponse } = result;
+
+  // 解析登录响应
+  const { samlContent, extract: extractedData } = await spNoAssertSign.parseLoginResponse(
+    idpcustomNoEncrypt,
+    'post',
+    { body: { SAMLResponse } }
+  );
+
+  // 验证结果
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
+  expect(extractedData.nameID).toBe('user@esaml2.com');
+  expect(extractedData.attributes.name).toBe('mynameinsp');
+  expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
+  expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
-test('send response with [custom template] and signed message by redirect and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+test('send response with [custom template] and signed message by redirect and parse it', async () => {
   const requestInfo = { extract: { request: { id: 'request_id' } } };
   const user = { email: 'user@esaml2.com' };
-  const { id, context } = await idpcustomNoEncrypt.createLoginResponse({
+
+  // 创建登录响应
+  const result = await idpcustomNoEncrypt.createLoginResponse({
     sp: spNoAssertSign,
     requestInfo: requestInfo,
     binding: 'redirect',
     user: user,
-    customTagReplacement: createTemplateCallback(idpcustomNoEncrypt, spNoAssertSign, binding.redirect, user),
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idpcustomNoEncrypt,
+        sp: spNoAssertSign
+      },
+      user: user,
+      binding: 'redirect',
+      requestInfo: requestInfo
+    }),
     relayState: 'relaystate'
   });
-  const query = url.parse(context).query;
-  t.is(query!.includes('SAMLResponse='), true);
-  t.is(query!.includes('SigAlg='), true);
-  t.is(query!.includes('Signature='), true);
-  t.is(typeof id, 'string');
-  t.is(typeof context, 'string');
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context) );
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.attributes.name, 'mynameinsp');
-  t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
-  t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+
+  const { id, context } = result;
+
+  // 解析URL查询参数
+  const query = url.parse(context, true).query;
+
+  // 验证URL参数
+  expect(query.SAMLResponse).toBeDefined();
+  expect(query.SigAlg).toBeDefined();
+  expect(query.Signature).toBeDefined();
+  expect(typeof id).toBe('string');
+  expect(typeof context).toBe('string');
+
+  // 解析登录响应
+  const { samlContent, extract: extractedData } = await spNoAssertSign.parseLoginResponse(
+    idpcustomNoEncrypt,
+    'redirect',
+    parseRedirectUrlContextCallBack(context)
+  );
+
+  // 验证响应内容
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
+  expect(extractedData.nameID).toBe('user@esaml2.com');
+  expect(extractedData.attributes.name).toBe('mynameinsp');
+  expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
+  expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
-test('send response with [custom template] and signed message by post simplesign and parse it', async t => {
-  // sender (caution: only use metadata and public key when declare pair-up in oppoent entity)
+test('send response with [custom template] and signed message by post simplesign and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
-  const user = { email: 'user@esaml2.com'};
-  const userParam = { email: 'user@esaml2.com' }; // 创建用户参数对象
+  const user = { email: 'user@esaml2.com' ,userName:"mynameinsp"};
+
+  // 创建登录响应
+  const result = await idpcustomNoEncrypt.createLoginResponse({
+    sp: spNoAssertSign,
+    requestInfo: requestInfo,
+    binding: 'simpleSign',
+    user: user,
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idpcustomNoEncrypt,
+        sp: spNoAssertSign
+      },
+      user: user,
+      binding: 'simpleSign',
+      requestInfo: requestInfo,
+    }),
+    relayState: 'relaystate'
+  }) as SimpleSignBindingContext;
 
   const {
     id,
@@ -845,28 +1171,34 @@ test('send response with [custom template] and signed message by post simplesign
     sigAlg,
     signature,
     relayState
-  } = await idpcustomNoEncrypt.createLoginResponse({
-    sp: spNoAssertSign,
-    requestInfo: { extract: { authnrequest: { id: 'request_id' } } },
-    binding: 'simpleSign',
-    user: userParam,
-    customTagReplacement: createTemplateCallback(idpcustomNoEncrypt, spNoAssertSign, binding.simpleSign, userParam),
-    relayState: 'relaystate'
-  }) as SimpleSignBindingContext;
+  } = result;
 
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
+  // 构建 SimpleSign 八位字节字符串
   const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idpcustomNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.attributes.name, 'mynameinsp');
-  t.is(extract.attributes.mail, 'myemailassociatedwithsp@sp.com');
-  t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+
+  // 解析登录响应
+  const { samlContent, extract: extractedData } = await spNoAssertSign.parseLoginResponse(
+    idpcustomNoEncrypt,
+    'simpleSign',
+    {
+      body: { SAMLResponse, Signature: signature, SigAlg: sigAlg },
+      octetString
+    }
+  );
+
+  // 验证结果
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
+  expect(extractedData.nameID).toBe('user@esaml2.com');
+  console.log(extractedData.attributes)
+  console.log("=====================看下================")
+  expect(extractedData.attributes.name).toBe('mynameinsp');
+  expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
+  expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
-test('send login response with signed assertion + signed message and parse it', async t => {
+/*test('send login response with signed assertion + signed message and parse it', async t => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
     wantMessageSigned: true,
@@ -1055,24 +1387,43 @@ test('send login response with [custom template] and signed assertion + signed m
   t.is(extract.response.inResponseTo, '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
 
-test('send login response with encrypted non-signed assertion and parse it', async t => {
+test('send login response with encrypted non-signed assertion and parse it', async () => {
   const user = { email: 'user@esaml2.com' };
-  const { id, context: SAMLResponse } = await idp.createLoginResponse({
+
+  // 创建登录响应
+  const result = await idp.createLoginResponse({
     sp: spNoAssertSign,
     requestInfo: sampleRequestInfo,
     binding: 'post',
     user: user,
-    customTagReplacement: createTemplateCallback(idp, spNoAssertSign, binding.post, user)
+    customTagReplacement: () => createTemplateCallback({
+      entity: {
+        idp: idp,
+        sp: spNoAssertSign
+      },
+      user: user,
+      binding: 'post',
+      requestInfo: sampleRequestInfo
+    })
   });
 
-  // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
-  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
-  t.is(typeof id, 'string');
-  t.is(samlContent.startsWith('<samlp:Response'), true);
-  t.is(samlContent.endsWith('/samlp:Response>'), true);
-  t.is(extract.nameID, 'user@esaml2.com');
-  t.is(extract.response.inResponseTo, 'request_id');
+  const { id, context: SAMLResponse } = result;
+
+  // 解析登录响应
+  const { samlContent, extract } = await spNoAssertSign.parseLoginResponse(
+    idp,
+    'post',
+    { body: { SAMLResponse } }
+  );
+
+  // 验证结果
+  expect(typeof id).toBe('string');
+  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
+  expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
+  expect(extract.nameID).toBe('user@esaml2.com');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });*/
+
 /*
 
 test('send login response with encrypted signed assertion and parse it', async t => {

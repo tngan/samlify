@@ -75,6 +75,7 @@ async function redirectFlow(options): Promise<FlowResult> {
     try {
         let result = await libsaml.isValidXml(xmlString);
     } catch (e) {
+    console.log("校验失败了==========================")
         return Promise.reject('ERR_INVALID_XML');
     }
 
@@ -199,13 +200,15 @@ async function postFlow(options): Promise<FlowResult> {
     let encodedRequest = '';
 
     let samlContent = '';
-    if (soap === false) {
+
+    if (!soap) {
         encodedRequest = body[direction];
         // @ts-ignore
         samlContent = String(base64Decode(encodedRequest))
     }
     /** 增加判断是不是Soap 工件绑定*/
-    if (soap) {
+    if (soap)   {
+      console.log("走到这里来额了--------------------------")
         const metadata = {
 
             idp: from.entityMeta,
@@ -263,7 +266,9 @@ async function postFlow(options): Promise<FlowResult> {
     let extractorFields: ExtractorFields = [];
     // validate the xml first
     let res = await libsaml.isValidXml(samlContent).catch((error) => {
-        return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
+      console.log(error);
+      console.log("看下错误-----------------------------------------")
+      return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
     });
 
     if (res !== true) {
