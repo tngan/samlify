@@ -17,9 +17,9 @@
     "docs": "docsify serve -o docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "test": "cross-env NODE_ENV=test nyc ava ",
-    "test2": "cross-env NODE_ENV=test nyc ava",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "test": "vitest",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "hooks:postinstall": "mklink /J .git\\hooks\\pre-commit .pre-commit.sh || copy .pre-commit.sh .git\\hooks\\pre-commit"
   },
   "exports": {
@@ -47,9 +47,11 @@
     "camelcase": "^8.0.0",
     "cross-env": "^7.0.3",
     "jest": "^30.0.4",
+    "node-rsa": "^1.1.1",
     "pako": "^2.1.0",
     "ts-node": "^10.9.2",
     "uuid": "^11.1.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "xml": "^1.0.1",
     "xml-crypto": "^6.1.2",
     "xml-encryption": "^3.1.0",
@@ -63,17 +65,24 @@
     "@types/node": "^24.0.10",
     "@types/pako": "2.0.3",
     "@types/uuid": "10.0.0",
+    "@vitest/coverage-istanbul": "^3.2.4",
     "ava": "6.4.0",
     "copyfiles": "^2.4.1",
     "coveralls": "^3.1.1",
     "esbuild": "^0.25.5",
+    "jsdom": "^26.1.0",
     "nyc": "^17.1.0",
     "timekeeper": "^2.3.1",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "^3.2.4"
   },
   "ava": {
     "extensions": [
       "ts"
+    ],
+    "nodeArguments": [
+      "--experimental-vm-modules",
+      "--loader=ts-node/esm"
     ],
     "require": [
       "ts-node/register"

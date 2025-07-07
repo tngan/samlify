@@ -354,7 +354,7 @@ export function extract(context: string, fields) {
       const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
         // @ts-ignore
-        const nodeDoc = dom.parseFromString(node);
+        const nodeDoc = dom.parseFromString(node,'application/xml');
         // @ts-ignore
         const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
           r[camelCase(n.name, {locale: 'en-us'})] = n.value;

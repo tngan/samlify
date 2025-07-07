@@ -30,7 +30,8 @@
     "allowSyntheticDefaultImports": true, // 允许默认导入无默认导出的模块
     "paths": {},
     "types": [
-      "node"
+      "node",
+      "vitest/globals"
   ],
 
     "lib": [

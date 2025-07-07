@@ -8,6 +8,7 @@ import {createSign, createPrivateKey, createVerify} from 'node:crypto';
 import utility, {flattenDeep, isString} from './utility.js';
 import {algorithms, wording, namespace} from './urn.js';
 import {select} from 'xpath';
+import nrsa, { SigningSchemeHash } from 'node-rsa';
 import type {MetadataInterface} from './metadata.js';
 import {SignedXml} from 'xml-crypto';
 import * as xmlenc from 'xml-encryption';
@@ -245,7 +246,21 @@ const libSaml = () => {
   const defaultLogoutResponseTemplate = {
     context: '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>',
   };
-
+  /**
+   * @private
+   * @desc Get the signing scheme alias by signature algorithms, used by the node-rsa module
+   * @param {string} sigAlg    signature algorithm
+   * @return {string/null} signing algorithm short-hand for the module node-rsa
+   */
+  function getSigningScheme(sigAlg?: string): SigningSchemeHash {
+    if (sigAlg) {
+      const algAlias = nrsaAliasMapping[sigAlg];
+      if (!(algAlias === undefined)) {
+        return algAlias;
+      }
+    }
+    return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
+  }
   function validateAndInflateSamlResponse(urlEncodedResponse) {
     // 3. 尝试DEFLATE解压（SAML规范要求使用原始DEFLATE）
     let xml = "";
@@ -486,7 +501,7 @@ const libSaml = () => {
     // tslint:disable-next-line:no-shadowed-variable
     verifySignature(xml: string, opts: SignatureVerifierOptions) {
       const {dom} = getContext();
-      const doc = dom.parseFromString(xml, 'application/xm');
+      const doc = dom.parseFromString(xml, 'application/xml');
 
       const docParser = new DOMParser();
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
@@ -587,7 +602,7 @@ const libSaml = () => {
           throw new Error('NO_SIGNATURE_REFERENCES')
         }
         const signedVerifiedXML = sig.getSignedReferences()[0];
-        const rootNode = docParser.parseFromString(signedVerifiedXML, 'text/xml').documentElement;
+        const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
         // process the verified signature:
         // case 1, rootSignedDoc is a response:
         if (rootNode?.localName === 'Response') {
@@ -629,7 +644,7 @@ const libSaml = () => {
 
     verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
       const {dom} = getContext();
-      const doc = dom.parseFromString(xml, 'text/xml');
+      const doc = dom.parseFromString(xml, 'application/xml');
       const docParser = new DOMParser();
 
       let selection: any = [];
@@ -765,7 +780,7 @@ const libSaml = () => {
         }
 
         const signedVerifiedXML = sig.getSignedReferences()[0];
-        const verifiedDoc = docParser.parseFromString(signedVerifiedXML, 'text/xml');
+        const verifiedDoc = docParser.parseFromString(signedVerifiedXML, 'application/xml');
         const rootNode = verifiedDoc.documentElement;
 
 
@@ -895,7 +910,7 @@ const libSaml = () => {
      * @returns 消息签名
      */
 
-    constructMessageSignature(
+/*    constructMessageSignature(
       octetString: string | Buffer,
       key: string | Buffer,
       passphrase?: string,
@@ -926,29 +941,29 @@ const libSaml = () => {
       } catch (error) {
         throw new Error(`SAML 签名失败: ${error.message}`);
       }
+    },*/
+
+
+    constructMessageSignature(
+      octetString: string,
+      key: string,
+      passphrase?: string,
+      isBase64?: boolean,
+      signingAlgorithm?: string
+    ) {
+      // Default returning base64 encoded signature
+      // Embed with node-rsa module
+      const decryptedKey = new nrsa(
+        utility.readPrivateKey(key, passphrase),
+        undefined,
+        {
+          signingScheme: getSigningScheme(signingAlgorithm),
+        }
+      );
+      const signature = decryptedKey.sign(octetString);
+      // Use private key to sign data
+      return isBase64 !== false ? signature.toString('base64') : signature;
     },
-
-
-    /*    constructMessageSignature(
-          octetString: string,
-          key: string,
-          passphrase?: string,
-          isBase64?: boolean,
-          signingAlgorithm?: string
-        ) {
-          // Default returning base64 encoded signature
-          // Embed with node-rsa module
-          const decryptedKey = new nrsa(
-            utility.readPrivateKey(key, passphrase),
-            undefined,
-            {
-              signingScheme: getSigningScheme(signingAlgorithm),
-            }
-          );
-          const signature = decryptedKey.sign(octetString);
-          // Use private key to sign data
-          return isBase64 !== false ? signature.toString('base64') : signature;
-        },*/
     verifyMessageSignature(
       metadata,
       octetString: string,
@@ -1147,7 +1162,7 @@ const libSaml = () => {
 
         // 5. 创建解密断言的 DOM
         // @ts-ignore
-        const decryptedDoc = dom.parseFromString(decryptedAssertion);
+        const decryptedDoc = dom.parseFromString(decryptedAssertion,'application/xml');
         const decryptedAssertionNode = decryptedDoc.documentElement;
 
         // 6. 替换加密断言为解密后的断言
