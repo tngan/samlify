@@ -68,12 +68,6 @@ async function redirectFlow(options): Promise<FlowResult> {
     }
 
     /*  const xmlString = inflateString(decodeURIComponent(content));*/
-console.log(content)
-  console.log("找到了把心------------------")
-  console.log("找到了把心------------------")
-  console.log("找到了把心------------------")
-  console.log("找到了把心------------------")
-  console.log("找到了把心------------------")
     // @ts-ignore
     let {xml: xmlString} = libsaml.validateAndInflateSamlResponse(content);
     // validate the xml
@@ -585,9 +579,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
 
     if (parserType === urlParams.samlResponse) {
         // Extract assertion shortcut
-      console.log("请告诉我为什么-----------------------")
-      console.log(xmlString)
-      console.log("请告诉我为什么-----------------------")
+
         const verifiedDoc = extract(xmlString, [{
             key: 'assertion',
             localPath: ['~Response', 'Assertion'],
@@ -601,8 +593,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
     }
 
     const extractorFields = getDefaultExtractorFields(parserType, assertion.length > 0 ? assertion : null);
-    console.log(extractorFields)
-console.log("===================提取字段================")
+
     const parseResult: { samlContent: string, extract: any, sigAlg: (string | null) } = {
         samlContent: xmlString,
         sigAlg: null,

@@ -1106,7 +1106,9 @@ const libSaml = () => {
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
-            console.error(err);
+            console.log("6666666666666666666666666666666666")
+            console.log(err.message);
+            console.log("6666666666666666666666666666666666")
             return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
           }
           if (!res) {
