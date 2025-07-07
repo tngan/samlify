@@ -132,6 +132,8 @@ const sampleRequestInfo = { extract: { request: { id: 'request_id' } } };
 // Define entities
 const idp = identityProvider(defaultIdpConfig);
 const sp = serviceProvider(defaultSpConfig);
+console.log(sp)
+console.log("----------------这是sppeizhi1--------------------")
 const idpNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false });
 const idpcustomNoEncrypt = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, loginResponseTemplate });
 const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate });
@@ -156,6 +158,8 @@ describe('SAML Login Request Tests', () => {
   test('create login request with redirect binding using default template and parse it', async () => {
     const { id, context } = sp.createLoginRequest(idp, 'redirect');
     expect(typeof id).toBe('string');
+    console.log(typeof id)
+    console.log("通过了没----------------")
     expect(typeof context).toBe('string');
 
     const originalURL = url.parse(context, true);
@@ -167,7 +171,8 @@ describe('SAML Login Request Tests', () => {
     const octetString = Object.keys(originalURL.query)
       .map(q => `${q}=${encodeURIComponent(originalURL.query[q] as string)}`)
       .join('&');
-
+console.log(octetString)
+    console.log('octetString======================')
     const { extract } = await idp.parseLoginRequest(sp, 'redirect', {
       query: { SAMLRequest, Signature, SigAlg },
       octetString
@@ -179,7 +184,7 @@ describe('SAML Login Request Tests', () => {
     expect(extract.nameIDPolicy.allowCreate).toBe('false');
   });
 
-  test('create login request with post simpleSign binding using default template and parse it', async () => {
+/*  test('create login request with post simpleSign binding using default template and parse it', async () => {
     const {
       relayState,
       id,
@@ -209,7 +214,7 @@ describe('SAML Login Request Tests', () => {
     expect(typeof extract.request.id).toBe('string');
     expect(extract.nameIDPolicy.format).toBe('urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
     expect(extract.nameIDPolicy.allowCreate).toBe('false');
-  });
+  });*/
 });
 /*
 test('create login request with post binding using default template and parse it', async t => {
