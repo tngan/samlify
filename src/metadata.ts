@@ -45,7 +45,9 @@ export default class Metadata implements MetadataInterface {
       {
         // shared certificate for both encryption and signing
         key: 'sharedCertificate',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor', 'KeyInfo', 'X509Data', 'X509Certificate'],
+        excludeAttribute: 'use',
+        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
+        attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
         attributes: []
       },
       {
@@ -72,8 +74,14 @@ export default class Metadata implements MetadataInterface {
     const sharedCertificate = this.meta.sharedCertificate;
     if (typeof sharedCertificate === 'string') {
       this.meta.certificate = {
-        signing: sharedCertificate,
-        encryption: sharedCertificate
+        signing: this.meta.certificate.signing || sharedCertificate,
+        encryption: this.meta.certificate.encryption || sharedCertificate
+      };
+      delete this.meta.sharedCertificate;
+    } else if (Array.isArray(sharedCertificate)) {
+      this.meta.certificate = {
+        signing: this.meta.certificate.signing || sharedCertificate[0],
+        encryption: this.meta.certificate.encryption || sharedCertificate[0]
       };
       delete this.meta.sharedCertificate;
     }
