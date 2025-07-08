@@ -145,15 +145,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       isBase64Output: false,
     };
     // step: sign assertion ? -> encrypted ? -> sign message ?
-    console.log(metadata.sp.isWantAssertionsSigned())
-    console.log("---------------------是不是想要被签名------------------------")
-    console.log("---------------------是不是想要被签名------------------------")
-    console.log("---------------------是不是想要被签名------------------------")
-    console.log("---------------------是不是想要被签名------------------------")
-    console.log("---------------------是不是想要被签名------------------------")
-    if (metadata.sp.isWantAssertionsSigned()) {
 
-      // console.debug('sp wants assertion signed');
+    if (metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -169,15 +162,9 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     // console.debug('after assertion signed', rawSamlResponse);
 
     // SAML response must be signed sign message first, then encrypt
-    console.log(spSetting.wantMessageSigned )
-    console.log( !metadata.sp.isWantAssertionsSigned());
-    console.log("------------------------判断逻辑----------------------")
+
     if (spSetting.wantMessageSigned) {
       // console.debug('sign then encrypt and sign entire message');
-      console.log("不归走这里来额------------------------------")
-      console.log("不归走这里来额------------------------------")
-      console.log("不归走这里来额------------------------------")
-      console.log("不归走这里来额------------------------------")
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -185,18 +172,21 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after' },
+          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
         },
       });
+      console.log(rawSamlResponse)
+      console.log("------------------------wantMessageSigned----------------------")
+      console.log("------------------------wantMessageSigned----------------------")
+      console.log("------------------------wantMessageSigned----------------------")
+      console.log("------------------------wantMessageSigned----------------------")
     }
 
-    // console.debug('after message signed', rawSamlResponse);
-    console.log("-------------------设置111111111加密了----------------------")
     if (idpSetting.isAssertionEncrypted) {
       // console.debug('idp is configured to do encryption');
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
-/*      console.log(context)
-      console.log("加密内容-----------------")*/
+      console.log(context)
+      console.log("加密内容-----------------")
       if (encryptThenSign) {
         //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
@@ -214,7 +204,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
+          location: { reference: "/*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after' },
         },
       });
     }

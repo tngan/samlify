@@ -272,11 +272,9 @@ const libSaml = () => {
       console.log("解压失败---------------------")
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
-        console.log(urlEncodedResponse)
-        console.log("----------------------卧槽这是他妈的什么啊-------------------")
+
         xml  = atob(base64Encoded);
-        console.log(xml)
-        console.log("日狗了---------------")
+
         return {compressed: false, xml, error: null};
       } catch (xmlError) {
         return Promise.resolve({compressed: false, xml, error: true})
@@ -475,14 +473,12 @@ const libSaml = () => {
       sig.getKeyInfoContent = this.getKeyInfo(signingCert, signatureConfig).getKeyInfo;
       sig.privateKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
       sig.canonicalizationAlgorithm = 'http://www.w3.org/2001/10/xml-exc-c14n#';
-      console.log(rawSamlMessage)
-console.log(signatureConfig);
-console.log('------------------看下配置----------------')
       if (signatureConfig) {
         sig.computeSignature(rawSamlMessage, signatureConfig);
       } else {
         sig.computeSignature(rawSamlMessage);
       }
+
       return isBase64Output ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
 
@@ -546,7 +542,24 @@ console.log('------------------看下配置----------------')
         return [false, null,true,true]; // return encryptedAssert
 
       }
+      if (selection.length !== 0) {
+        console.log("-----------------没有签名节点-------------")
+        console.log(xml)
+        console.log(encryptedAssertions)
+        console.log("看下---------------------")
+        /** 判断有没有加密如果没有加密返回 [false, null]*/
+        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
+          return [false, null,false,false]; // we return false now
+        }
+        if (encryptedAssertions.length > 1) {
+          throw new Error('ERR_MULTIPLE_ASSERTION');
+        }
+        console.log("加密了=====================================")
+        return [false, null,true,true]; // return encryptedAssert
 
+      }
+console.log(selection.length)
+      console.log("看下长度-------------------")
       // need to refactor later on
       for (const signatureNode of selection) {
         const sig = new SignedXml();
@@ -1072,7 +1085,7 @@ console.log('------------------看下配置----------------')
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
-         /*   keyEncryptionDigest: 'SHA-512',*/
+     /*       keyEncryptionDigest: 'SHA-512',*/
             disallowEncryptionWithInsecureAlgorithm: true,
             warnInsecureAlgorithm: true
           }, (err, res) => {
@@ -1126,9 +1139,6 @@ console.log('------------------看下配置----------------')
           key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
         }, (err, res) => {
           if (err) {
-            console.log("6666666666666666666666666666666666")
-            console.log(err.message);
-            console.log("6666666666666666666666666666666666")
             return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
           }
           if (!res) {

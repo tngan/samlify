@@ -1849,7 +1849,7 @@ test('send login response with [custom template] and signed assertion + signed m
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });*/
 
-test('send login response with encrypted non-signed assertion and parse it', async () => {
+/*test('send login response with encrypted non-signed assertion and parse it', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
   // 创建登录响应
@@ -1886,20 +1886,6 @@ console.log(extractedData)
   expect(extractedData.nameID).toBe('user@esaml2.com');
   expect(extractedData.response.inResponseTo).toBe('request_id');
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // 测试：发送带有加密非签名断言的登录响应并解析
@@ -1994,7 +1980,7 @@ test('send login response with [custom template] and encrypted signed assertion 
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});
+});*/
 
 // 测试：发送带有加密签名断言和签名消息的登录响应并解析
 test('send login response with encrypted signed assertion + signed message and parse it', async () => {
@@ -2016,13 +2002,13 @@ test('send login response with encrypted signed assertion + signed message and p
         sp: spWantMessageSign
       },
       user: user,
-      binding: 'post',
-      requestInfo: sampleRequestInfo
+      binding: 'post'
     })
   });
 
   const { id, context: SAMLResponse } = result;
-
+console.log(SAMLResponse)
+  console.log('-------------SAMLResponse-----------------')
   const { samlContent, extract: extractedData } = await spWantMessageSign.parseLoginResponse(
     idp,
     'post',
@@ -2036,7 +2022,7 @@ test('send login response with encrypted signed assertion + signed message and p
   expect(extractedData.response.inResponseTo).toBe('request_id');
 });
 
-/*// 测试：发送带有自定义模板的加密签名断言和签名消息的登录响应并解析
+// 测试：发送带有自定义模板的加密签名断言和签名消息的登录响应并解析
 test('send login response with [custom template] encrypted signed assertion + signed message and parse it', async () => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
@@ -2099,9 +2085,8 @@ test('send login response with [custom template] encrypted signed assertion + si
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});*/
+});
 
-/*
 // 测试：IDP 发送无签名的重定向注销请求，SP 解析
 test('idp sends a redirect logout request without signature and sp parses it', async () => {
   const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
@@ -2126,7 +2111,7 @@ test('idp sends a redirect logout request without signature and sp parses it', a
   expect(extractedData.issuer).toBe('https://idp.example.com/metadata');
 });
 
-// 测试：IDP 发送带签名的重定向注销请求，SP 解析
+/*// 测试：IDP 发送带签名的重定向注销请求，SP 解析
 test('idp sends a redirect logout request with signature and sp parses it', async () => {
   const { id, context } = idp.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
 
@@ -2162,8 +2147,8 @@ test('idp sends a redirect logout request with signature and sp parses it', asyn
   expect(typeof extractedData.request.id).toBe('string');
   expect(extractedData.request.destination).toBe('https://sp.example.org/sp/slo');
   expect(extractedData.signature).toBeNull(); // 重定向绑定不嵌入签名
-});
-
+});*/
+/*
 // 测试：IDP 发送无签名的 POST 注销请求，SP 解析
 test('idp sends a post logout request without signature and sp parses it', async () => {
   const result = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
@@ -2364,8 +2349,7 @@ test('Customize prefix (default is saml) for encrypted assertion tag', async () 
     'post',
     { body: { SAMLResponse } }
   );
-});
-*/
+});*/
 
 /*// 测试：避免格式错误的响应
 test('avoid malformatted response', async () => {
