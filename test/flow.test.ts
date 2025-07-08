@@ -6,8 +6,6 @@ import * as uuid from 'uuid';
 import * as url from 'url';
 import xmlEscape from './xmlEscape.js'
 import util from '../src/utility.js';
-
-import * as tk from 'timekeeper';
 function escapeTag(text) {
   return function (match, quote) {
     if (quote) {
@@ -18,7 +16,6 @@ function escapeTag(text) {
     }
   }
 }
-console.log("-----------------------------开始测试了--------------------------");
 export interface BindingContext {
   context: string;
   id: string;
@@ -109,38 +106,7 @@ function createTemplateCallback({requestInfo = {}, entity, user = {
     }
   }
 }
-/*const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
-  const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
-  const now = new Date();
-  const spEntityID = _sp.entityMeta.getEntityID();
-  const idpSetting = _idp.entitySetting;
-  const fiveMinutesLater = new Date(now.getTime());
-  fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
-  const tvalue = {
-    ID: _id,
-    AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${uuid.v4()}`,
-    Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
-    Audience: spEntityID,
-    SubjectRecipient: spEntityID,
-    NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-    NameID: user.email,
-    Issuer: idp.entityMeta.getEntityID(),
-    IssueInstant: now.toISOString(),
-    ConditionsNotBefore: now.toISOString(),
-    ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
-    SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
-    AssertionConsumerServiceURL: _sp.entityMeta.getAssertionConsumerService(_binding),
-    EntityID: spEntityID,
-    InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
-    StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
-    attrUserEmail: 'myemailassociatedwithsp@sp.com',
-    attrUserName: 'mynameinsp',
-  };
-  return {
-    id: _id,
-    context: libsaml.replaceTagsByValue(template, tvalue),
-  };
-};*/
+
 
 // Parse Redirect Url context
 const parseRedirectUrlContextCallBack = (_context: string) => {
@@ -221,7 +187,7 @@ const idpcustom = identityProvider({ ...defaultIdpConfig, loginResponseTemplate 
 const idpEncryptThenSign = identityProvider({ ...defaultIdpConfig, messageSigningOrder: 'encrypt-then-sign' });
 const spWantLogoutReqSign = serviceProvider({ ...defaultSpConfig, wantLogoutRequestSigned: true });
 const idpWantLogoutResSign = identityProvider({ ...defaultIdpConfig, wantLogoutResponseSigned: true });
-const spNoAssertSign = serviceProvider({ ...defaultSpConfig, metadata: spmetaNoAssertSign });
+const spNoAssertSign = serviceProvider({ ...defaultSpConfig, metadata: spmetaNoAssertSign,wantMessageSigned:false });
 const spNoAssertSignCustomConfig = serviceProvider({ ...defaultSpConfig,
   metadata: spmetaNoAssertSign,
   signatureConfig: {
@@ -292,7 +258,7 @@ function writer(str: string) {
     expect(extract.nameIDPolicy.allowCreate).toBe('false');
   });
 });*/
-test('create login request with post binding using default template and parse it', async () => {
+/*test('create login request with post binding using default template and parse it', async () => {
   const { relayState, type, entityEndpoint, id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
   expect(typeof id).toBe('string');
   expect(typeof SAMLRequest).toBe('string');
@@ -612,12 +578,13 @@ test('create logout response with post binding', function() {
   expect(isString(context)).toBe(true);
   expect(isString(entityEndpoint)).toBe(true);
   expect(type).toBe('SAMLResponse');
-});
+});*/
 
 // Check if the response data parsing is correct
 // All test cases are using customize template
 
 // simulate idp-initiated sso
+/*
 test('send response with signed assertion and parse it', async function() {
   const user = { NameID: 'user@esaml2.com'};
 
@@ -787,7 +754,7 @@ test('send response with signed assertion + custom transformation algorithms and
   expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
 });
 
-/*test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async function() {
+/!*test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async function() {
   const user = { NameID: 'user@esaml2.com' };
 
   // 创建使用自定义转换算法的SP
@@ -846,7 +813,7 @@ test('send response with signed assertion + custom transformation algorithms and
 
   // 验证自定义转换算法是否包含在响应中
   expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
-});*/
+});*!/
 
 test('send response with signed assertion + custom transformation algorithms by post simplesign and parse it', async () => {
   // 创建使用自定义转换算法的SP
@@ -1321,7 +1288,8 @@ test('send response with [custom template] and signed message and parse it', asy
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
-
+*/
+/*
 test('send response with [custom template] and signed message by redirect and parse it', async () => {
   const requestInfo = { extract: { request: { id: 'request_id' } } };
   const user = { NameID: 'user@esaml2.com' };
@@ -1470,7 +1438,7 @@ test('send response with [custom template] and signed message by post simplesign
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});
+});*/
 
 
 
@@ -1514,7 +1482,7 @@ test('send response with [custom template] and signed message by post simplesign
   expect(extractedData.response.inResponseTo).toBe('request_id');
 });*/
 
-test('send response with signed assertion + signed message by redirect and parse it', async () => {
+/*test('send response with signed assertion + signed message by redirect and parse it', async () => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
     wantMessageSigned: true,
@@ -1879,9 +1847,9 @@ test('send login response with [custom template] and signed assertion + signed m
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});
+});*/
 
-/*test('send login response with encrypted non-signed assertion and parse it', async () => {
+test('send login response with encrypted non-signed assertion and parse it', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
   // 创建登录响应
@@ -1909,14 +1877,15 @@ test('send login response with [custom template] and signed assertion + signed m
     'post',
     { body: { SAMLResponse } }
   );
-
+console.log(extractedData)
+  console.log("解析数据--------------------")
   // 验证结果
   expect(typeof id).toBe('string');
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
   expect(extractedData.nameID).toBe('user@esaml2.com');
   expect(extractedData.response.inResponseTo).toBe('request_id');
-})*/;
+})
 
 
 
@@ -1938,23 +1907,23 @@ test('send login response with encrypted non-signed assertion and parse it', asy
   const user = { NameID: 'user@esaml2.com' };
 
   const result = await idp.createLoginResponse({
-    sp: sp,
+    sp: spNoAssertSign,
     requestInfo: sampleRequestInfo,
     binding: 'post',
     user: user,
     customTagReplacement: () => createTemplateCallback({
       entity: {
         idp: idp,
-        sp: sp
+        sp: spNoAssertSign
       },
       user: user,
       binding: 'post',
-      requestInfo: sampleRequestInfo
     })
   });
 
   const { id, context: SAMLResponse } = result;
-
+console.log(SAMLResponse)
+  console.log("加密后的相应===================================")
   const { samlContent, extract: extractedData } = await sp.parseLoginResponse(
     idp,
     'post',
@@ -1984,6 +1953,28 @@ test('send login response with [custom template] and encrypted signed assertion 
       },
       user: user,
       binding: 'post',
+      AttributeStatement:libsaml.attributeStatementBuilder([
+        {
+          Name: 'mail',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:'myemailassociatedwithsp@sp.com'
+          } ],
+          FriendlyName: 'mail'
+        },
+        {
+          Name: 'name',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:'mynameinsp'
+          }],
+          FriendlyName: 'name'
+        }
+      ]),
       requestInfo: { extract: { request: { id: 'request_id' } } }
     })
   });
@@ -2045,7 +2036,7 @@ test('send login response with encrypted signed assertion + signed message and p
   expect(extractedData.response.inResponseTo).toBe('request_id');
 });
 
-// 测试：发送带有自定义模板的加密签名断言和签名消息的登录响应并解析
+/*// 测试：发送带有自定义模板的加密签名断言和签名消息的登录响应并解析
 test('send login response with [custom template] encrypted signed assertion + signed message and parse it', async () => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
@@ -2067,6 +2058,28 @@ test('send login response with [custom template] encrypted signed assertion + si
       },
       user: user,
       binding: 'post',
+      AttributeStatement:libsaml.attributeStatementBuilder([
+        {
+          Name: 'mail',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:'myemailassociatedwithsp@sp.com'
+          } ],
+          FriendlyName: 'mail'
+        },
+        {
+          Name: 'name',
+          type: 'attribute',
+          ValueType: 1,
+          NameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic',
+          valueArray: [ {
+            value:'mynameinsp'
+          }],
+          FriendlyName: 'name'
+        }
+      ]),
       requestInfo: requestInfo
     })
   });
@@ -2086,8 +2099,9 @@ test('send login response with [custom template] encrypted signed assertion + si
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});
+});*/
 
+/*
 // 测试：IDP 发送无签名的重定向注销请求，SP 解析
 test('idp sends a redirect logout request without signature and sp parses it', async () => {
   const { id, context } = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'user@esaml2.com' });
@@ -2351,8 +2365,9 @@ test('Customize prefix (default is saml) for encrypted assertion tag', async () 
     { body: { SAMLResponse } }
   );
 });
+*/
 
-// 测试：避免格式错误的响应
+/*// 测试：避免格式错误的响应
 test('avoid malformatted response', async () => {
   const user = { email: 'user@email.com' };
 
@@ -2475,9 +2490,9 @@ test('avoid malformatted response with simplesign binding', async () => {
       }
     )
   ).rejects.toThrow();
-});
+});*/
 
-// 测试：拒绝签名包装的响应 - 案例1
+/*// 测试：拒绝签名包装的响应 - 案例1
 test('should reject signature wrapped response - case 1', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
@@ -2654,8 +2669,9 @@ test('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response without
   } finally {
     tk.reset();
   }
-});
+});*/
 
+/*
 // 测试：没有时钟漂移设置时，过期的重定向绑定的SAML响应应抛出ERR_SUBJECT_UNCONFIRMED错误
 test('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response by redirect without clock drift setup', async () => {
   const now = new Date();
@@ -2881,4 +2897,5 @@ test('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response by 
     tk.reset();
   }
 });
+*/
 

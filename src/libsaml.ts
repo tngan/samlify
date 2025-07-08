@@ -475,13 +475,15 @@ const libSaml = () => {
       sig.getKeyInfoContent = this.getKeyInfo(signingCert, signatureConfig).getKeyInfo;
       sig.privateKey = utility.readPrivateKey(privateKey, privateKeyPass, true);
       sig.canonicalizationAlgorithm = 'http://www.w3.org/2001/10/xml-exc-c14n#';
-
+      console.log(rawSamlMessage)
+console.log(signatureConfig);
+console.log('------------------看下配置----------------')
       if (signatureConfig) {
         sig.computeSignature(rawSamlMessage, signatureConfig);
       } else {
         sig.computeSignature(rawSamlMessage);
       }
-      return isBase64Output !== false ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
+      return isBase64Output ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
 
     /**
@@ -505,7 +507,10 @@ const libSaml = () => {
       const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
       // check if there is a potential malicious wrapping signature
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
+      // @ts-expect-error misssing Node properties are not needed
+      const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
 
+      const encAssertionNode = encryptedAssertions[0];
       // select the signature node
       let selection: any = [];
       // @ts-expect-error misssing Node properties are not needed
@@ -516,6 +521,7 @@ const libSaml = () => {
       const wrappingElementNode = select(wrappingElementsXPath, doc);
 
       selection = selection.concat(messageSignatureNode);
+
       selection = selection.concat(assertionSignatureNode);
 
       // try to catch potential wrapping attack
@@ -525,7 +531,20 @@ const libSaml = () => {
 
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
-        throw new Error('ERR_ZERO_SIGNATURE');
+        console.log("-----------------没有签名节点-------------")
+        console.log(xml)
+        console.log(encryptedAssertions)
+        console.log("看下---------------------")
+        /** 判断有没有加密如果没有加密返回 [false, null]*/
+        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
+          return [false, null,false,false]; // we return false now
+        }
+        if (encryptedAssertions.length > 1) {
+          throw new Error('ERR_MULTIPLE_ASSERTION');
+        }
+        console.log("加密了=====================================")
+        return [false, null,true,true]; // return encryptedAssert
+
       }
 
       // need to refactor later on
@@ -616,23 +635,24 @@ const libSaml = () => {
           // now we can process the assertion as an assertion
           if (EncryptedAssertions.length === 1) {
             /** 已加密*/
-            return [true, EncryptedAssertions[0].toString(), true];
+            return [true, EncryptedAssertions[0].toString(), true,false];
           }
 
           if (assertions.length === 1) {
 
-            return [true, assertions[0].toString(), false];
+            return [true, assertions[0].toString(), false,false];
           }
 
         } else if (rootNode?.localName === 'Assertion') {
-          return [true, rootNode.toString(), false];
+          return [true, rootNode.toString(), false,false];
         } else if (rootNode?.localName === 'EncryptedAssertion') {
-          return [true, rootNode.toString(), true];
+          return [true, rootNode.toString(), true,false];
         } else {
-          return [true, null]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
+          return [true, null,false,false]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       }
       // something has gone seriously wrong if we are still here
+      console.log("-----------------没有任何签名----------------------")
       throw new Error('ERR_ZERO_SIGNATURE');
     },
 
@@ -1041,7 +1061,6 @@ const libSaml = () => {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
         const rawAssertionNode = assertions[0];
-
         // Perform encryption depends on the setting, default is false
         if (sourceEntitySetting.isAssertionEncrypted) {
 
@@ -1053,7 +1072,7 @@ const libSaml = () => {
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
-            keyEncryptionDigest: 'SHA-512',
+         /*   keyEncryptionDigest: 'SHA-512',*/
             disallowEncryptionWithInsecureAlgorithm: true,
             warnInsecureAlgorithm: true
           }, (err, res) => {
@@ -1094,6 +1113,7 @@ const libSaml = () => {
         const {dom} = getContext();
         const doc = dom.parseFromString(entireXML, 'application/xml');
         // @ts-expect-error misssing Node properties are not needed
+
         const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
         if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
           throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');

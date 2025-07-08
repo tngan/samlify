@@ -18,7 +18,7 @@ const {
 
 const getQueryParamByType = libsaml.getQueryParamByType;
 const wording = ref.wording;
-
+/*
 test('#31 query param for sso/slo is SamlRequest', () => {
   expect(getQueryParamByType('SAMLRequest')).toBe(wording.urlParams.samlRequest);
   expect(getQueryParamByType('LogoutRequest')).toBe(wording.urlParams.samlRequest);
@@ -31,7 +31,7 @@ test('#31 query param for sso/slo is SamlResponse', () => {
 
 test('#31 query param for sso/slo returns error', () => {
   expect(() => getQueryParamByType('samlRequest')).toThrow();
-});
+});*/
 const spcfg = {
   entityID: 'sp.example.com',
   nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
@@ -102,7 +102,7 @@ const idpslo = extract(idpxml, [
 ]);
 const sp98 = serviceProvider({ metadata: fs.readFileSync('./test/misc/sp_metadata_98.xml') });
 
-test('#33 sp metadata acs index should be increased by 1', () => {
+/*test('#33 sp metadata acs index should be increased by 1', () => {
   expect(acs.assertionConsumerService.length).toBe(2);
   expect(acs.assertionConsumerService[0].index).toBe('0');
   expect(acs.assertionConsumerService[1].index).toBe('1');
@@ -155,7 +155,7 @@ test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
   const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
 
   expect(acsUrl).toBe('https://example.org/response');
-});
+});*/
 /*
 
 

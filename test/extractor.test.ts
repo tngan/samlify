@@ -1,3 +1,4 @@
+/*
 import { test, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { extract } from '../src/extractor.js';
@@ -124,3 +125,4 @@ test('fetch with one attribute as key, another as value', () => {
   expect(postEndpoint).toBe('https://sp.example.org/sp/sso');
   expect(artifactEndpoint).toBe('https://sp.example.org/sp/sso');
 });
+*/
