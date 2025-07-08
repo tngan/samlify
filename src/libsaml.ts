@@ -243,6 +243,7 @@ const libSaml = () => {
   const defaultLogoutResponseTemplate = {
     context: '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" InResponseTo="{InResponseTo}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status></samlp:LogoutResponse>',
   };
+
   /**
    * @private
    * @desc Get the signing scheme alias by signature algorithms, used by the node-rsa module
@@ -258,6 +259,7 @@ const libSaml = () => {
     }
     return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
   }
+
   function validateAndInflateSamlResponse(urlEncodedResponse) {
     // 3. 尝试DEFLATE解压（SAML规范要求使用原始DEFLATE）
     let xml = "";
@@ -273,7 +275,7 @@ const libSaml = () => {
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
 
-        xml  = atob(base64Encoded);
+        xml = atob(base64Encoded);
 
         return {compressed: false, xml, error: null};
       } catch (xmlError) {
@@ -478,7 +480,8 @@ const libSaml = () => {
       } else {
         sig.computeSignature(rawSamlMessage);
       }
-
+      console.log(sig.getSignedXml())
+      console.log('我就要看看==============')
       return isBase64Output ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
 
@@ -497,12 +500,17 @@ const libSaml = () => {
 
       const docParser = new DOMParser();
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
+
+      const LogoutResponseSignatureXpath = "/*[local-name()='LogoutResponse']/*[local-name()='Signature']";
+      const logoutRequestSignatureXpath = "/*[local-name()='LogoutRequest']/*[local-name()='Signature']";
       // message signature (logout response / saml response)
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
       // assertion signature (logout response / saml response)
       const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
       // check if there is a potential malicious wrapping signature
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
+
+      // const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
       // @ts-expect-error misssing Node properties are not needed
       const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
 
@@ -515,15 +523,27 @@ const libSaml = () => {
       const assertionSignatureNode = select(assertionSignatureXpath, doc);
       // @ts-expect-error misssing Node properties are not needed
       const wrappingElementNode = select(wrappingElementsXPath, doc);
+      // @ts-expect-error misssing Node properties are not needed
+      const LogoutResponseSignatureElementNode = select(LogoutResponseSignatureXpath, doc);
+      // try to catch potential wrapping attack
+      console.log(wrappingElementNode)
+      console.log("检查一下-----------------------------")
+      if (wrappingElementNode.length !== 0) {
+        console.log("检查一下-----------------------------")
+        throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+      }
+      // 优先检测 LogoutRequest 签名
+// @ts-expect-error missing Node properties
+      const logoutRequestSignature = select(logoutRequestSignatureXpath, doc);
+      if (logoutRequestSignature.length > 0) {
+        selection = selection.concat(logoutRequestSignature);
+      }
 
       selection = selection.concat(messageSignatureNode);
 
       selection = selection.concat(assertionSignatureNode);
+      selection = selection.concat(LogoutResponseSignatureElementNode);
 
-      // try to catch potential wrapping attack
-      if (wrappingElementNode.length !== 0) {
-        throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
-      }
 
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
@@ -533,32 +553,36 @@ const libSaml = () => {
         console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
         if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
-          return [false, null,false,false]; // we return false now
+          return [false, null, false, true]; // we return false now
         }
         if (encryptedAssertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
         }
         console.log("加密了=====================================")
-        return [false, null,true,true]; // return encryptedAssert
+        return [false, null, true, true]; // return encryptedAssert
 
       }
       if (selection.length !== 0) {
-        console.log("-----------------没有签名节点-------------")
+        console.log("-----------------有签名节点-------------")
+        console.log("-----------------有签名节点-------------")
         console.log(xml)
         console.log(encryptedAssertions)
         console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
-        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
-          return [false, null,false,false]; // we return false now
+        if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0){
+          if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
+            return [false, null, false, false]; // we return false now
+          }
+          if (encryptedAssertions.length > 1) {
+            throw new Error('ERR_MULTIPLE_ASSERTION');
+          }
+          console.log("加密了=====================================")
+          return [false, null, true, true]; // return encryptedAssert
         }
-        if (encryptedAssertions.length > 1) {
-          throw new Error('ERR_MULTIPLE_ASSERTION');
-        }
-        console.log("加密了=====================================")
-        return [false, null,true,true]; // return encryptedAssert
+
 
       }
-console.log(selection.length)
+      console.log(selection.length)
       console.log("看下长度-------------------")
       // need to refactor later on
       for (const signatureNode of selection) {
@@ -648,20 +672,24 @@ console.log(selection.length)
           // now we can process the assertion as an assertion
           if (EncryptedAssertions.length === 1) {
             /** 已加密*/
-            return [true, EncryptedAssertions[0].toString(), true,false];
+            return [true, EncryptedAssertions[0].toString(), true, false];
           }
 
           if (assertions.length === 1) {
 
-            return [true, assertions[0].toString(), false,false];
+            return [true, assertions[0].toString(), false, false];
           }
 
         } else if (rootNode?.localName === 'Assertion') {
-          return [true, rootNode.toString(), false,false];
+          return [true, rootNode.toString(), false, false];
         } else if (rootNode?.localName === 'EncryptedAssertion') {
-          return [true, rootNode.toString(), true,false];
+          return [true, rootNode.toString(), true, false];
+        } else if (rootNode?.localName === 'LogoutRequest'){
+          return [true, rootNode.toString(), false, false];
+        }  else if (rootNode?.localName === 'LogoutResponse'){
+          return [true, rootNode.toString(), false, false];
         } else {
-          return [true, null,false,false]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
+          return [true, null, false, false]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       }
       // something has gone seriously wrong if we are still here
@@ -937,38 +965,38 @@ console.log(selection.length)
      * @returns 消息签名
      */
 
-/*    constructMessageSignature(
-      octetString: string | Buffer,
-      key: string | Buffer,
-      passphrase?: string,
-      isBase64: boolean = true,
-      signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256]
-    ): string | Buffer {
-      try {
-        // 1. 标准化输入数据
-        const inputData = Buffer.isBuffer(octetString)
-          ? octetString
-          : Buffer.from(octetString, 'utf8');
-        // 2. 创建签名器并设置算
-        const signingAlgorithmValue = getSigningSchemeForNode(signingAlgorithm)
-        const signer = createSign(signingAlgorithmValue)
+    /*    constructMessageSignature(
+          octetString: string | Buffer,
+          key: string | Buffer,
+          passphrase?: string,
+          isBase64: boolean = true,
+          signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256]
+        ): string | Buffer {
+          try {
+            // 1. 标准化输入数据
+            const inputData = Buffer.isBuffer(octetString)
+              ? octetString
+              : Buffer.from(octetString, 'utf8');
+            // 2. 创建签名器并设置算
+            const signingAlgorithmValue = getSigningSchemeForNode(signingAlgorithm)
+            const signer = createSign(signingAlgorithmValue)
 
-        // 3. 加载私钥
-        const privateKey = createPrivateKey({
-          key: key,
-          format: 'pem',
-          passphrase: passphrase,
-          encoding: 'utf8'
-        });
-        signer.write(octetString);
-        signer.end();
-        const signature = signer.sign(privateKey, 'base64');
-        // 5. 处理编码输出
-        return isBase64 ? signature.toString() : signature;
-      } catch (error) {
-        throw new Error(`SAML 签名失败: ${error.message}`);
-      }
-    },*/
+            // 3. 加载私钥
+            const privateKey = createPrivateKey({
+              key: key,
+              format: 'pem',
+              passphrase: passphrase,
+              encoding: 'utf8'
+            });
+            signer.write(octetString);
+            signer.end();
+            const signature = signer.sign(privateKey, 'base64');
+            // 5. 处理编码输出
+            return isBase64 ? signature.toString() : signature;
+          } catch (error) {
+            throw new Error(`SAML 签名失败: ${error.message}`);
+          }
+        },*/
 
 
     constructMessageSignature(
@@ -991,24 +1019,24 @@ console.log(selection.length)
       // Use private key to sign data
       return isBase64 !== false ? signature.toString('base64') : signature;
     },
-/*    verifyMessageSignature(
-      metadata,
-      octetString: string,
-      signature: string | Buffer,
-      verifyAlgorithm?: string
-    ) {
-      const signCert = metadata.getX509Certificate(certUse.signing);
-      const signingScheme = getSigningSchemeForNode(verifyAlgorithm);
-      const verifier = createVerify(signingScheme);
-      verifier.update(octetString);
-      console.log(utility.getPublicKeyPemFromCertificate(signCert))
-      console.log("-----------这就是证书------------")
-      console.log(Buffer.isBuffer(signature))
-      console.log("Buffer.isBuffer(signature)")
-      const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert), Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
-      return isValid
+    /*    verifyMessageSignature(
+          metadata,
+          octetString: string,
+          signature: string | Buffer,
+          verifyAlgorithm?: string
+        ) {
+          const signCert = metadata.getX509Certificate(certUse.signing);
+          const signingScheme = getSigningSchemeForNode(verifyAlgorithm);
+          const verifier = createVerify(signingScheme);
+          verifier.update(octetString);
+          console.log(utility.getPublicKeyPemFromCertificate(signCert))
+          console.log("-----------这就是证书------------")
+          console.log(Buffer.isBuffer(signature))
+          console.log("Buffer.isBuffer(signature)")
+          const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert), Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
+          return isValid
 
-    },*/
+        },*/
 
     /**
      * @desc Verifies message signature
@@ -1026,7 +1054,7 @@ console.log(selection.length)
     ) {
       const signCert = metadata.getX509Certificate(certUse.signing);
       const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
+      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', {signingScheme});
       return key.verify(Buffer.from(octetString), Buffer.from(signature));
     },
     /**
@@ -1085,7 +1113,7 @@ console.log(selection.length)
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
-     /*       keyEncryptionDigest: 'SHA-512',*/
+            /*       keyEncryptionDigest: 'SHA-512',*/
             disallowEncryptionWithInsecureAlgorithm: true,
             warnInsecureAlgorithm: true
           }, (err, res) => {
@@ -1210,7 +1238,7 @@ console.log(selection.length)
 
         // 5. 创建解密断言的 DOM
         // @ts-ignore
-        const decryptedDoc = dom.parseFromString(decryptedAssertion,'application/xml');
+        const decryptedDoc = dom.parseFromString(decryptedAssertion, 'application/xml');
         const decryptedAssertionNode = decryptedDoc.documentElement;
 
         // 6. 替换加密断言为解密后的断言

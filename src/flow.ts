@@ -342,6 +342,7 @@ console.log(samlContent)
       extractorFields = getDefaultExtractorFields(parserType, result[1]);
     }
     if (!verified && !noSignature && !isDecryptRequired) {
+      console.log("哈哈哈哈哈就是这里来了==========================")
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
     if (!decryptRequired) {

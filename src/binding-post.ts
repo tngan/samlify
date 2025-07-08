@@ -251,6 +251,7 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
+      console.log("--------------------带有签名的注销请求---------------------------")
       // Need to embeded XML signature
       const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms  } = initSetting;
       return {
