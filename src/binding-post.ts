@@ -43,11 +43,8 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
         AllowCreate: spSetting.allowCreate,
         NameIDFormat: selectedNameIDFormat
       } as any);
-      console.log(rawSamlRequest)
-      console.log('-------------------默认------------------')
     }
-    console.log(metadata.idp.isWantAuthnRequestsSigned())
-    console.log('-------------------来不来------------------')
+
     if (metadata.idp.isWantAuthnRequestsSigned()) {
       const {
         privateKey,
@@ -73,8 +70,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
       };
     }
     // No need to embeded XML signature
-    console.log(rawSamlRequest)
-    console.log('-------------------签了名的------------------')
+
     return {
       id,
       context: utility.base64Encode(rawSamlRequest),
@@ -157,13 +153,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       isBase64Output: false,
     };
     // step: sign assertion ? -> encrypted ? -> sign message ?
-    console.log(metadata.sp.isWantAssertionsSigned());
-    console.log("潇潇兮签名了--------------------------")
-    console.log("潇潇兮签名了--------------------------")
-    console.log("潇潇兮签名了--------------------------")
-    console.log("潇潇兮签名了--------------------------")
+
     if (metadata.sp.isWantAssertionsSigned()) {
-      console.log("潇潇兮签名了--------------------------")
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -182,11 +173,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     // console.debug('after assertion signed', rawSamlResponse);
 
     // SAML response must be signed sign message first, then encrypt
-    console.log(spSetting.wantMessageSigned)
-    console.log("------------------------wantMessageSigned----------------------")
-    console.log("------------------------wantMessageSigned----------------------")
-    console.log("------------------------wantMessageSigned----------------------")
-    console.log("------------------------wantMessageSigned----------------------")
     if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       // console.debug('sign then encrypt and sign entire message');
       rawSamlResponse = libsaml.constructSAMLSignature({
@@ -213,19 +199,11 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
           location: {reference: "/!*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after'},
         },
       });
-      console.log(rawSamlResponse)
-      console.log("------------------------wantMessageSigned----------------------")
-      console.log("------------------------wantMessageSigned----------------------")
-      console.log("------------------------wantMessageSigned----------------------")
-      console.log("------------------------wantMessageSigned----------------------")
     }*/
 
     if (idpSetting.isAssertionEncrypted) {
       // console.debug('idp is configured to do encryption');
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
-      console.log(context)
-      console.log("加密内容-----------------")
-
       if (encryptThenSign) {
         //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
@@ -292,7 +270,6 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath: s
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
-      console.log("--------------------带有签名的注销请求---------------------------")
       // Need to embeded XML signature
       const {
         privateKey,

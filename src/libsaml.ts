@@ -423,6 +423,9 @@ const libSaml = () => {
 
       // 生成 XML（关闭自动声明头）
       const xmlString = xml([attributeStatement], {declaration: false});
+      if(xmlString.trim() === '<saml:AttributeStatement></saml:AttributeStatement>'){
+            return ''
+      }
       return xmlString.trim();
     },
     /**
@@ -526,7 +529,6 @@ const libSaml = () => {
       const LogoutResponseSignatureElementNode = select(LogoutResponseSignatureXpath, doc);
       // try to catch potential wrapping attack
       if (wrappingElementNode.length !== 0) {
-        console.log("检查一下-----------------------------")
         throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
       }
       // 优先检测 LogoutRequest 签名
@@ -544,10 +546,6 @@ const libSaml = () => {
 
       // guarantee to have a signature in saml response
       if (selection.length === 0) {
-        console.log("-----------------没有签名节点-------------")
-        console.log(xml)
-        console.log(encryptedAssertions.length )
-        console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
         if(encryptedAssertions.length > 0){
           if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
@@ -556,45 +554,24 @@ const libSaml = () => {
           if (encryptedAssertions.length > 1) {
             throw new Error('ERR_MULTIPLE_ASSERTION');
           }
-          console.log("加密了=====================================")
           return [false, null, true, true]; // return encryptedAssert
         }
 
       }
       if (selection.length !== 0) {
-        console.log("-----------------有签名节点-------------")
-        console.log("-----------------有签名节点-------------")
-        console.log(encryptedAssertions.length)
-      console.log('------------encryptedAssertions----------------')
-        console.log(logoutRequestSignature.length)
-        console.log('--------------------logoutRequestSignature--------------------')
-        console.log(LogoutResponseSignatureElementNode.length)
-        console.log('-----------------LogoutResponseSignatureElementNode-------------------')
-        console.log(messageSignatureNode.length)
-        console.log('-----------------messageSignatureNode-------------------')
-        console.log(assertionSignatureNode.length)
-        console.log('-----------------assertionSignatureNode-------------------')
-        console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
         if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0  && encryptedAssertions.length > 0){
-          console.log(logoutRequestSignature.length)
-          console.log( LogoutResponseSignatureElementNode.length)
-          console.log(messageSignatureNode.length === 0)
-          console.log("===================不会进来这里======================")
           if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
             return [false, null, true, false]; // we return false now
           }
           if (encryptedAssertions.length > 1) {
             throw new Error('ERR_MULTIPLE_ASSERTION');
           }
-          console.log("加密了=====================================")
           return [false, null, true, false]; // return encryptedAssert
         }
 
 
       }
-      console.log(selection.length)
-      console.log("看下长度-------------------")
       // need to refactor later on
       for (const signatureNode of selection) {
         const sig = new SignedXml();
@@ -704,19 +681,6 @@ const libSaml = () => {
         }
       }
       // something has gone seriously wrong if we are still here
-      console.log("-----------------没有任何签名----------------------")
-      console.log(encryptedAssertions.length)
-      console.log('------------encryptedAssertions----------------')
-      console.log(logoutRequestSignature.length)
-      console.log('--------------------logoutRequestSignature--------------------')
-      console.log(LogoutResponseSignatureElementNode.length)
-      console.log('-----------------LogoutResponseSignatureElementNode-------------------')
-      console.log(messageSignatureNode.length)
-      console.log('-----------------messageSignatureNode-------------------')
-      console.log(assertionSignatureNode.length)
-      console.log('-----------------assertionSignatureNode-------------------')
-      console.log("看下---------------------")
-      console.log(xml)
       return [false, null, false, true]; // return encryptedAssert
    /*   throw new Error('ERR_ZERO_SIGNATURE');*/
     },
@@ -884,7 +848,6 @@ const libSaml = () => {
           ) as Element[];
 
           if (responseNodes.length === 0) {
-            console.warn("ArtifactResponse 中没有找到 Response 元素");
             continue;
           }
 
@@ -1053,10 +1016,6 @@ const libSaml = () => {
           const signingScheme = getSigningSchemeForNode(verifyAlgorithm);
           const verifier = createVerify(signingScheme);
           verifier.update(octetString);
-          console.log(utility.getPublicKeyPemFromCertificate(signCert))
-          console.log("-----------这就是证书------------")
-          console.log(Buffer.isBuffer(signature))
-          console.log("Buffer.isBuffer(signature)")
           const isValid = verifier.verify(utility.getPublicKeyPemFromCertificate(signCert), Buffer.isBuffer(signature) ? signature : Buffer.from(signature, 'base64'));
           return isValid
 
@@ -1284,7 +1243,7 @@ const libSaml = () => {
     /**
      * @desc Check if the xml string is valid and bounded
      */
-    async isValidXml(input: string) {
+    async isValidXml(input: string,soap: boolean = false) {
 
       // check if global api contains the validate function
       const {validate} = getContext();
@@ -1303,7 +1262,7 @@ const libSaml = () => {
       }
 
       try {
-        return await validate(input);
+        return await validate(input,soap);
       } catch (e) {
         throw e;
       }

@@ -5,8 +5,12 @@ import {validate as defaultValidator} from "./schemaValidator.js";
 // global module configuration
 interface Context extends ValidatorContext, DOMParserContext {}
 
+// 定义函数类型
+type ValidateFunction = (xml: string, isSoap?: boolean) => Promise<any>;
+
+// 使用类型别名定义接口
 interface ValidatorContext {
-  validate?: (xml: string) => Promise<any>;
+  validate: ValidateFunction;
 }
 
 interface DOMParserContext {

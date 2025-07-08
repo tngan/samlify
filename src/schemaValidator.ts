@@ -66,8 +66,7 @@ function detectXXEIndicators(samlString: string) {
     return Object.keys(matches).length > 0 ? matches : null;
 }
 
-export const validate = async (xml: string,soap?:boolean=false) => {
-
+export const validate = async (xml: string,isSoap: boolean = false) => {
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
       console.log("----------------------绝对不会是这里---------------------")

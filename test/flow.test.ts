@@ -131,15 +131,6 @@ const parseRedirectUrlContextCallBack = (_context: string) => {
   const _SigAlg = originalURL.query.SigAlg;
   delete originalURL.query.Signature;
   const _octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
-  console.log({
-    query: {
-      SAMLResponse: _SAMLResponse,
-      Signature: _Signature,
-      SigAlg: _SigAlg,
-    },
-    octetString: _octetString,
-  })
-  console.log("看下对象----------------------")
   return {
     query: {
       SAMLResponse: _SAMLResponse,
@@ -613,8 +604,6 @@ test('send response with signed assertion and parse it', async function() {
     binding: 'post',
     user: user,
     customTagReplacement: function(template) {
-      console.log(template)
-      console.log("这就是元婴-------------------------------")
       return createTemplateCallback({
         entity: {
           idp: idpNoEncrypt,
@@ -643,42 +632,7 @@ test('send response with signed assertion and parse it', async function() {
   expect(extract.response.inResponseTo).toBe('request_id');
 });
 
-// + REDIRECT
-test('send response with signed assertion and parse it', async function() {
-  const user = { NameID: 'user@esaml2.com' };
 
-  const result = await idpNoEncrypt.createLoginResponse({
-    sp: sp,
-    requestInfo: sampleRequestInfo,
-    binding: 'post',
-    user: user,
-    customTagReplacement: function() {
-      return createTemplateCallback({
-        entity: {
-          idp: idpNoEncrypt,
-          sp: sp
-        },
-        user: user,
-        binding: 'post',
-        requestInfo: sampleRequestInfo
-      }) as BindingContext;
-    }
-  });
-
-  const { id, context: SAMLResponse } = result;
-
-  const { samlContent, extract } = await sp.parseLoginResponse(
-    idpNoEncrypt,
-    'post',
-    { body: { SAMLResponse } }
-  );
-
-  expect(typeof id).toBe('string');
-  expect(samlContent.startsWith('<samlp:Response')).toBe(true);
-  expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
-  expect(extract.nameID).toBe('user@esaml2.com');
-  expect(extract.response.inResponseTo).toBe('request_id');
-});
 
 // SimpleSign
 test('send response with signed assertion by post simplesign and parse it', async function() {
@@ -1108,8 +1062,7 @@ test('send response with [custom template] signed assertion by post simpleSign a
   expect(entityEndpoint).toBe('https://sp.example.org/sp/sso');
   expect(extractedData.nameID).toBe('user@esaml2.com');
 
-  console.log(extractedData.attributes)
-  console.log("--------------给我看一下----------------")
+
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
@@ -1185,16 +1138,13 @@ test('send response with signed message by redirect and parse it', async () => {
   expect(query.Signature).toBeDefined();
   expect(typeof id).toBe('string');
   expect(typeof context).toBe('string');
-console.log('===================开始解码上下文===================')
-  console.log('===================开始解码上下文===================')
+
   // 解析登录响应
   const { samlContent, extract: extractedData } = await spNoAssertSign.parseLoginResponse(
     idpNoEncrypt,
     'redirect',
     parseRedirectUrlContextCallBack(context)
   );
-console.log(extractedData)
-  console.log('===================222222222222222222开始解码上下文===================')
   // 验证响应内容
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
@@ -1450,8 +1400,6 @@ test('send response with [custom template] and signed message by post simplesign
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
   expect(extractedData.nameID).toBe('user@esaml2.com');
-  console.log(extractedData.attributes)
-  console.log("=====================看下================")
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
@@ -1893,8 +1841,6 @@ test('send login response with encrypted non-signed assertion and parse it', asy
     'post',
     { body: { SAMLResponse } }
   );
-console.log(extractedData)
-  console.log("解析数据--------------------")
   // 验证结果
   expect(typeof id).toBe('string');
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
@@ -1924,8 +1870,6 @@ test('send login response with encrypted non-signed assertion and parse it', asy
   });
 
   const { id, context: SAMLResponse } = result;
-console.log(SAMLResponse)
-  console.log("加密后的相应===================================")
   const { samlContent, extract: extractedData } = await sp.parseLoginResponse(
     idp,
     'post',
@@ -2023,8 +1967,6 @@ test('send login response with encrypted signed assertion + signed message and p
   });
 
   const {id, context: SAMLResponse} = result;
-  console.log(SAMLResponse)
-  console.log('-------------SAMLResponse-----------------')
   const {samlContent, extract: extractedData} = await spWantMessageSign.parseLoginResponse(
     idp,
     'post',
@@ -2172,8 +2114,6 @@ test('idp sends a post logout request without signature and sp parses it', async
 
   expect(typeof id).toBe('string');
   expect(typeof context).toBe('string');
-  console.log(context)
-  console.log('这是上下文-------------------')
   const {extract: extractedData} = await sp.parseLogoutRequest(
     idp,
     'post',

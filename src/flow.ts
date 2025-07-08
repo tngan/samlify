@@ -74,7 +74,6 @@ async function redirectFlow(options): Promise<FlowResult> {
   try {
     let result = await libsaml.isValidXml(xmlString);
   } catch (e) {
-    console.log("校验失败了==========================")
     return Promise.reject('ERR_INVALID_XML');
   }
 
@@ -207,7 +206,6 @@ async function postFlow(options): Promise<FlowResult> {
   }
   /** 增加判断是不是Soap 工件绑定*/
   if (soap) {
-    console.log("走到这里来额了--------------------------")
     const metadata = {
 
       idp: from.entityMeta,
@@ -264,9 +262,7 @@ async function postFlow(options): Promise<FlowResult> {
   let decryptRequired = from.entitySetting.isAssertionEncrypted;
   let extractorFields: ExtractorFields = [];
   // validate the xml first
-  let res = await libsaml.isValidXml(samlContent).catch((error) => {
-    console.log(error);
-    console.log("看下错误-----------------------------------------")
+  let res = await libsaml.isValidXml(samlContent,soap).catch((error) => {
     return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
   });
 
@@ -324,35 +320,26 @@ async function postFlow(options): Promise<FlowResult> {
     }
   }
   if (!soap) {
-console.log(samlContent)
-    console.log("开始前的内容0---------------")
+
     const [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignature(samlContent, verificationOptions);
     decryptRequired = isDecryptRequired
-    console.log('------------------四个--结果---------------')
-    console.log(verified)
-    console.log(verifiedAssertionNode)
-    console.log(isDecryptRequired)
-    console.log(noSignature)
 
-    console.log('------------------四个88结果---------------')
+
     if (isDecryptRequired && noSignature) {
-      console.log("开始揭秘了------------------------")
+
       const result = await libsaml.decryptAssertion(self, samlContent);
       samlContent = result[0];
       extractorFields = getDefaultExtractorFields(parserType, result[1]);
     }
     if (!verified && !noSignature && !isDecryptRequired) {
-      console.log("哈哈哈哈哈就是这里来了==========================")
+
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
     if (!decryptRequired) {
-      console.log("真的走到了这里----------------------")
-      console.log(verifiedAssertionNode)
+
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
     if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
-      console.log(samlContent)
-      console.log("=====================看下需要解密的==================")
       const result = await libsaml.decryptAssertion(self, samlContent);
       samlContent = result[0];
       extractorFields = getDefaultExtractorFields(parserType, result[1]);
@@ -365,8 +352,6 @@ console.log(samlContent)
     samlContent: samlContent,
     extract: extract(samlContent, extractorFields),
   };
-  console.log(parseResult)
-  console.log("看下内容--------------------")
   /**
    *  Validation part: validate the context of response after signature is verified and decrypted (optional)
    */
@@ -463,7 +448,7 @@ async function postArtifactFlow(options): Promise<FlowResult> {
   let extractorFields: ExtractorFields = [];
 
   // validate the xml first
-  let res = await libsaml.isValidXml(samlContent);
+  let res = await libsaml.isValidXml(samlContent,true);
   if (parserType !== urlParams.samlResponse) {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
@@ -586,7 +571,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
 
   // validate the xml
   try {
-    await libsaml.isValidXml(xmlString);
+    await libsaml.isValidXml(xmlString,false);
   } catch (e) {
     return Promise.reject('ERR_INVALID_XML');
   }
