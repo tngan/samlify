@@ -5,6 +5,7 @@
  */
 import xml from 'xml'
 import utility, {flattenDeep, inflateString, isString} from './utility.js';
+import {createSign, createPrivateKey, createVerify} from 'node:crypto';
 import {algorithms, namespace, wording} from './urn.js';
 import {select} from 'xpath';
 import nrsa, {SigningSchemeHash} from 'node-rsa';
@@ -22,22 +23,7 @@ const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
 const urlParams = wording.urlParams;
 
-/**
- * 算法名称映射表 (兼容 X.509 和 SAML 规范)
- */
-function mapSignAlgorithm(algorithm: string): string {
-  const algorithmMap = {
-    'rsa-sha1': 'RSA-SHA1',
-    'rsa-sha256': 'RSA-SHA256',
-    'rsa-sha384': 'RSA-SHA384',
-    'rsa-sha512': 'RSA-SHA512',
-    'ecdsa-sha256': 'ECDSA-SHA256',
-    'ecdsa-sha384': 'ECDSA-SHA384',
-    'ecdsa-sha512': 'ECDSA-SHA512'
-  };
 
-  return algorithmMap[algorithm.toLowerCase()] || algorithm;
-}
 
 
 /**
@@ -166,6 +152,7 @@ const libSaml = () => {
   /**
    *
    */
+    // 签名算法映射表
   const nrsaAliasMapping = {
     'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'pkcs1-sha1',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'pkcs1-sha256',
@@ -941,7 +928,6 @@ const libSaml = () => {
           }],
       };
     },
-
     /**
      * SAML 消息签名 (符合 SAML V2.0 绑定规范)
      * @param octetString - 要签名的原始数据 (OCTET STRING)
@@ -952,38 +938,6 @@ const libSaml = () => {
      * @returns 消息签名
      */
 
-    /*    constructMessageSignature(
-          octetString: string | Buffer,
-          key: string | Buffer,
-          passphrase?: string,
-          isBase64: boolean = true,
-          signingAlgorithm: string = nrsaAliasMappingForNode[signatureAlgorithms.RSA_SHA256]
-        ): string | Buffer {
-          try {
-            // 1. 标准化输入数据
-            const inputData = Buffer.isBuffer(octetString)
-              ? octetString
-              : Buffer.from(octetString, 'utf8');
-            // 2. 创建签名器并设置算
-            const signingAlgorithmValue = getSigningSchemeForNode(signingAlgorithm)
-            const signer = createSign(signingAlgorithmValue)
-
-            // 3. 加载私钥
-            const privateKey = createPrivateKey({
-              key: key,
-              format: 'pem',
-              passphrase: passphrase,
-              encoding: 'utf8'
-            });
-            signer.write(octetString);
-            signer.end();
-            const signature = signer.sign(privateKey, 'base64');
-            // 5. 处理编码输出
-            return isBase64 ? signature.toString() : signature;
-          } catch (error) {
-            throw new Error(`SAML 签名失败: ${error.message}`);
-          }
-        },*/
 
 
     constructMessageSignature(
