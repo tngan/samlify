@@ -225,16 +225,17 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       console.log(context)
       console.log("加密内容-----------------")
-      if (encryptThenSign) {
+      return Promise.resolve({id, context});
+/*      if (encryptThenSign) {
         //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
       } else {
         return Promise.resolve({id, context});
-      }
+      }*/
     }
 
     //sign after encrypting
-    if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
+/*    if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -242,10 +243,10 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: {reference: "/*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after'},
+          location: {reference: "/!*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after'},
         },
       });
-    }
+    }*/
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),

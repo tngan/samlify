@@ -222,7 +222,7 @@ function writer(str: string) {
   writeFileSync('test.txt', str);
 }
 
-/*describe('SAML Login Request Tests', () => {
+describe('SAML Login Request Tests', () => {
   test('create login request with redirect binding using default template and parse it', async () => {
     const { id, context } = sp.createLoginRequest(idp, 'redirect');
     expect(typeof id).toBe('string');
@@ -1245,7 +1245,7 @@ test('send response with signed message by post simplesign and parse it', async 
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.response.inResponseTo).toBe('request_id');
-});*/
+});
 
 test('send response with [custom template] and signed message and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
@@ -1906,7 +1906,7 @@ console.log(extractedData)
 
 
 // 测试：发送带有加密非签名断言的登录响应并解析
-/*test('send login response with encrypted non-signed assertion and parse it', async () => {
+test('send login response with encrypted non-signed assertion and parse it', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
   const result = await idp.createLoginResponse({
@@ -2399,8 +2399,7 @@ test('avoid malformatted response', async () => {
       { body: { SAMLResponse: utility.base64Encode(attackResponse) } }
     )
   ).rejects.toThrow();
-});*/
-/*
+});
 // 测试：避免重定向绑定的格式错误响应
 test('avoid malformatted response with redirect binding', async () => {
   const user = { NameID: 'user@email.com' };
@@ -2577,13 +2576,13 @@ test('should reject signature wrapped response - case 2', async () => {
   const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
   const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
 
-/!*  await expect(
+/*  await expect(
     sp.parseLoginResponse(
       idpNoEncrypt,
       'post',
       { body: { SAMLResponse: wrappedResponse } }
     )
-  ).rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');*!/
+  ).rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');*/
   await expect(
     sp.parseLoginResponse(
       idpNoEncrypt,
@@ -2899,5 +2898,5 @@ test('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response by 
   } finally {
     tk.reset();
   }
-});*/
+});
 
