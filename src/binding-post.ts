@@ -1,24 +1,24 @@
 /**
-* @file binding-post.ts
-* @author tngan
-* @desc Binding-level API, declare the functions using POST binding
-*/
+ * @file binding-post.ts
+ * @author tngan
+ * @desc Binding-level API, declare the functions using POST binding
+ */
 
-import { wording, namespace, StatusCode } from './urn.js';
-import type { BindingContext } from './entity.js';
+import {wording, namespace, StatusCode} from './urn.js';
+import type {BindingContext} from './entity.js';
 import libsaml from './libsaml.js';
-import utility, { get } from './utility.js';
+import utility, {get} from './utility.js';
 
 const binding = wording.binding;
 
 /**
-* @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Generate a base64 encoded login request
+ * @param  {string} referenceTagXPath           reference uri
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): BindingContext {
-  const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
+  const metadata = {idp: entity.idp.entityMeta, sp: entity.sp.entityMeta};
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
 
@@ -43,9 +43,18 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
         AllowCreate: spSetting.allowCreate,
         NameIDFormat: selectedNameIDFormat
       } as any);
+      console.log(rawSamlRequest)
+      console.log('-------------------默认------------------')
     }
+    console.log(metadata.idp.isWantAuthnRequestsSigned())
+    console.log('-------------------来不来------------------')
     if (metadata.idp.isWantAuthnRequestsSigned()) {
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = spSetting;
+      const {
+        privateKey,
+        privateKeyPass,
+        requestSignatureAlgorithm: signatureAlgorithm,
+        transformationAlgorithms
+      } = spSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
@@ -58,12 +67,14 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
           signingCert: metadata.sp.getX509Certificate('signing'),
           signatureConfig: spSetting.signatureConfig || {
             prefix: 'ds',
-            location: { reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']", action: 'after' },
+            location: {reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']", action: 'after'},
           }
         }),
       };
     }
     // No need to embeded XML signature
+    console.log(rawSamlRequest)
+    console.log('-------------------签了名的------------------')
     return {
       id,
       context: utility.base64Encode(rawSamlRequest),
@@ -71,6 +82,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   }
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
+
 /**
  * @desc Generate a base64 encoded login response
  * @param  {object} requestInfo                 corresponding request, used to obtain the id
@@ -80,7 +92,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
  * @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
  * @param AttributeStatement
  */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false , AttributeStatement=[]): Promise<BindingContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false, AttributeStatement = []): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
@@ -95,14 +107,14 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.sp.getAssertionConsumerService(binding.post);
     let rawSamlResponse;
-    const  nowTime = new Date();
-    const  spEntityID = metadata.sp.getEntityID();
-    const  oneMinutesLaterTime = new Date(nowTime.getTime());
+    const nowTime = new Date();
+    const spEntityID = metadata.sp.getEntityID();
+    const oneMinutesLaterTime = new Date(nowTime.getTime());
     oneMinutesLaterTime.setMinutes(oneMinutesLaterTime.getMinutes() + 5);
     const OneMinutesLater = oneMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
-    const sessionIndex = 'session'+idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
+    const sessionIndex = 'session' + idpSetting.generateID(); // 这个是当前系统的会话索引，用于单点注销
     const tenHoursLaterTime = new Date(nowTime.getTime());
     tenHoursLaterTime.setHours(tenHoursLaterTime.getHours() + 10);
     const tenHoursLater = tenHoursLaterTime.toISOString();
@@ -136,7 +148,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
-    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+    const {privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = idpSetting;
     const config = {
       privateKey,
       privateKeyPass,
@@ -145,8 +157,13 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       isBase64Output: false,
     };
     // step: sign assertion ? -> encrypted ? -> sign message ?
-
+    console.log(metadata.sp.isWantAssertionsSigned());
+    console.log("潇潇兮签名了--------------------------")
+    console.log("潇潇兮签名了--------------------------")
+    console.log("潇潇兮签名了--------------------------")
+    console.log("潇潇兮签名了--------------------------")
     if (metadata.sp.isWantAssertionsSigned()) {
+      console.log("潇潇兮签名了--------------------------")
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -154,7 +171,10 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
         signatureConfig: {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+          location: {
+            reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']",
+            action: 'after'
+          },
         },
       });
     }
@@ -162,8 +182,12 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     // console.debug('after assertion signed', rawSamlResponse);
 
     // SAML response must be signed sign message first, then encrypt
-
-    if (spSetting.wantMessageSigned) {
+    console.log(spSetting.wantMessageSigned)
+    console.log("------------------------wantMessageSigned----------------------")
+    console.log("------------------------wantMessageSigned----------------------")
+    console.log("------------------------wantMessageSigned----------------------")
+    console.log("------------------------wantMessageSigned----------------------")
+    if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       // console.debug('sign then encrypt and sign entire message');
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
@@ -172,7 +196,21 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after' },
+          location: {reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after'},
+        },
+      });
+    }
+
+/*    if (spSetting.wantMessageSigned) {
+      // console.debug('sign then encrypt and sign entire message');
+      rawSamlResponse = libsaml.constructSAMLSignature({
+        ...config,
+        rawSamlMessage: rawSamlResponse,
+        isMessageSigned: true,
+        transformationAlgorithms: spSetting.transformationAlgorithms,
+        signatureConfig: spSetting.signatureConfig || {
+          prefix: 'ds',
+          location: {reference: "/!*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after'},
         },
       });
       console.log(rawSamlResponse)
@@ -180,7 +218,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       console.log("------------------------wantMessageSigned----------------------")
       console.log("------------------------wantMessageSigned----------------------")
       console.log("------------------------wantMessageSigned----------------------")
-    }
+    }*/
 
     if (idpSetting.isAssertionEncrypted) {
       // console.debug('idp is configured to do encryption');
@@ -191,7 +229,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
       } else {
-        return Promise.resolve({ id, context });
+        return Promise.resolve({id, context});
       }
     }
 
@@ -204,7 +242,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         transformationAlgorithms: spSetting.transformationAlgorithms,
         signatureConfig: spSetting.signatureConfig || {
           prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after' },
+          location: {reference: "/*[local-name(.)='Response']/!*[local-name(.)='Issuer']", action: 'after'},
         },
       });
     }
@@ -218,19 +256,21 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 
   throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded logout request
-* @param  {object} user                         current logged user (e.g. req.user)
-* @param  {string} referenceTagXPath            reference uri
-* @param  {object} entity                       object includes both idp and sp
-* @param  {function} customTagReplacement      used when developers have their own login response template
-* @return {string} base64 encoded request
-*/
-function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:string, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
-  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+ * @desc Generate a base64 encoded logout request
+ * @param  {object} user                         current logged user (e.g. req.user)
+ * @param  {string} referenceTagXPath            reference uri
+ * @param  {object} entity                       object includes both idp and sp
+ * @param  {function} customTagReplacement      used when developers have their own login response template
+ * @return {string} base64 encoded request
+ */
+function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath: string, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+  const metadata = {init: entity.init.entityMeta, target: entity.target.entityMeta};
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
-  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;  let id: string = '';
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  let id: string = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
@@ -253,11 +293,16 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
       console.log("--------------------带有签名的注销请求---------------------------")
       // Need to embeded XML signature
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms  } = initSetting;
+      const {
+        privateKey,
+        privateKeyPass,
+        requestSignatureAlgorithm: signatureAlgorithm,
+        transformationAlgorithms
+      } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
-           referenceTagXPath,
+          referenceTagXPath,
           privateKey,
           privateKeyPass,
           signatureAlgorithm,
@@ -266,7 +311,7 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
           signingCert: metadata.init.getX509Certificate('signing'),
           signatureConfig: initSetting.signatureConfig || {
             prefix: 'ds',
-            location: { reference: "/*[local-name(.)='LogoutRequest']/*[local-name(.)='Issuer']", action: 'after' },
+            location: {reference: "/*[local-name(.)='LogoutRequest']/*[local-name(.)='Issuer']", action: 'after'},
           }
         }),
       };
@@ -278,13 +323,14 @@ function base64LogoutRequest(user: Record<string, unknown>, referenceTagXPath:st
   }
   throw new Error('ERR_GENERATE_POST_LOGOUT_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded logout response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
+ * @desc Generate a base64 encoded logout response
+ * @param  {object} requestInfo                 corresponding request, used to obtain the id
+ * @param  {string} referenceTagXPath           reference uri
+ * @param  {object} entity                      object includes both idp and sp
+ * @param  {function} customTagReplacement     used when developers have their own login response template
+ */
 function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
@@ -312,7 +358,12 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutResponseSigned) {
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;
+      const {
+        privateKey,
+        privateKeyPass,
+        requestSignatureAlgorithm: signatureAlgorithm,
+        transformationAlgorithms
+      } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({

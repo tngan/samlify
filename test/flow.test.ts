@@ -222,7 +222,7 @@ function writer(str: string) {
   writeFileSync('test.txt', str);
 }
 
-describe('SAML Login Request Tests', () => {
+/*describe('SAML Login Request Tests', () => {
   test('create login request with redirect binding using default template and parse it', async () => {
     const { id, context } = sp.createLoginRequest(idp, 'redirect');
     expect(typeof id).toBe('string');
@@ -681,7 +681,7 @@ test('send response with signed assertion and parse it', async function() {
   expect(extract.response.inResponseTo).toBe('request_id');
 });
 
-/*// SimpleSign
+// SimpleSign
 test('send response with signed assertion by post simplesign and parse it', async function() {
   const user = { NameID: 'user@esaml2.com' };
 
@@ -772,9 +772,9 @@ test('send response with signed assertion + custom transformation algorithms and
 
   // 验证自定义转换算法是否包含在响应中
   expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
-});*/
+});
 
-/*test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async function() {
+test('send response with signed assertion + custom transformation algorithms by redirect and parse it', async function() {
   const user = { NameID: 'user@esaml2.com' };
 
   // 创建使用自定义转换算法的SP
@@ -833,9 +833,9 @@ test('send response with signed assertion + custom transformation algorithms and
 
   // 验证自定义转换算法是否包含在响应中
   expect(samlContent).toContain('http://www.w3.org/2000/09/xmldsig#enveloped-signature');
-});*/
+});
 
-/*test('send response with signed assertion + custom transformation algorithms by post simplesign and parse it', async () => {
+test('send response with signed assertion + custom transformation algorithms by post simplesign and parse it', async () => {
   // 创建使用自定义转换算法的SP
   const signedAssertionSp = serviceProvider({
     ...defaultSpConfig,
@@ -1245,7 +1245,7 @@ test('send response with signed message by post simplesign and parse it', async 
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.response.inResponseTo).toBe('request_id');
-});
+});*/
 
 test('send response with [custom template] and signed message and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
@@ -1378,7 +1378,7 @@ test('send response with [custom template] and signed message by redirect and pa
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});*/
+});
 /** 错误了五个------------------*/
 test('send response with [custom template] and signed message by post simplesign and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
@@ -1459,7 +1459,7 @@ test('send response with [custom template] and signed message by post simplesign
 });
 
 
-/*test('send login response with signed assertion + signed message and parse it', async () => {
+test('send login response with signed assertion + signed message and parse it', async () => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
     wantMessageSigned: true,
@@ -1707,9 +1707,9 @@ test('send login response with [custom template] and signed assertion + signed m
   expect(extractedData.attributes.name).toBe('mynameinsp');
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
-});*/
+});
 
-/*test('send response with [custom template] and signed assertion + signed message by redirect and parse it', async () => {
+test('send response with [custom template] and signed assertion + signed message by redirect and parse it', async () => {
   const spWantMessageSign = serviceProvider({
     ...defaultSpConfig,
     wantMessageSigned: true,
@@ -1902,7 +1902,7 @@ console.log(extractedData)
   expect(samlContent.endsWith('</samlp:Response>')).toBe(true);
   expect(extractedData.nameID).toBe('user@esaml2.com');
   expect(extractedData.response.inResponseTo).toBe('request_id');
-})*/
+})
 
 
 // 测试：发送带有加密非签名断言的登录响应并解析

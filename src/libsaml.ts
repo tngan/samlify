@@ -546,33 +546,43 @@ const libSaml = () => {
       if (selection.length === 0) {
         console.log("-----------------没有签名节点-------------")
         console.log(xml)
-        console.log(encryptedAssertions)
+        console.log(encryptedAssertions.length )
         console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
-        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
-          return [false, null, false, true]; // we return false now
+        if(encryptedAssertions.length > 0){
+          if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
+            return [false, null, false, true]; // we return false now
+          }
+          if (encryptedAssertions.length > 1) {
+            throw new Error('ERR_MULTIPLE_ASSERTION');
+          }
+          console.log("加密了=====================================")
+          return [false, null, true, true]; // return encryptedAssert
         }
-        if (encryptedAssertions.length > 1) {
-          throw new Error('ERR_MULTIPLE_ASSERTION');
-        }
-        console.log("加密了=====================================")
-        return [false, null, true, true]; // return encryptedAssert
 
       }
       if (selection.length !== 0) {
         console.log("-----------------有签名节点-------------")
         console.log("-----------------有签名节点-------------")
-        console.log(xml)
-        console.log(encryptedAssertions)
+        console.log(encryptedAssertions.length)
+      console.log('------------encryptedAssertions----------------')
+        console.log(logoutRequestSignature.length)
+        console.log('--------------------logoutRequestSignature--------------------')
+        console.log(LogoutResponseSignatureElementNode.length)
+        console.log('-----------------LogoutResponseSignatureElementNode-------------------')
+        console.log(messageSignatureNode.length)
+        console.log('-----------------messageSignatureNode-------------------')
+        console.log(assertionSignatureNode.length)
+        console.log('-----------------assertionSignatureNode-------------------')
         console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
-        if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0 ){
+        if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0  && encryptedAssertions.length > 0){
           console.log(logoutRequestSignature.length)
           console.log( LogoutResponseSignatureElementNode.length)
           console.log(messageSignatureNode.length === 0)
           console.log("===================不会进来这里======================")
           if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
-            return [false, null, false, false]; // we return false now
+            return [false, null, true, false]; // we return false now
           }
           if (encryptedAssertions.length > 1) {
             throw new Error('ERR_MULTIPLE_ASSERTION');

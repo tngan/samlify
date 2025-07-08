@@ -346,9 +346,13 @@ console.log(samlContent)
       return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
     if (!decryptRequired) {
+      console.log("真的走到了这里----------------------")
+      console.log(verifiedAssertionNode)
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
     if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
+      console.log(samlContent)
+      console.log("=====================看下需要解密的==================")
       const result = await libsaml.decryptAssertion(self, samlContent);
       samlContent = result[0];
       extractorFields = getDefaultExtractorFields(parserType, result[1]);
