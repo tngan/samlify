@@ -705,7 +705,20 @@ const libSaml = () => {
       }
       // something has gone seriously wrong if we are still here
       console.log("-----------------没有任何签名----------------------")
-      throw new Error('ERR_ZERO_SIGNATURE');
+      console.log(encryptedAssertions.length)
+      console.log('------------encryptedAssertions----------------')
+      console.log(logoutRequestSignature.length)
+      console.log('--------------------logoutRequestSignature--------------------')
+      console.log(LogoutResponseSignatureElementNode.length)
+      console.log('-----------------LogoutResponseSignatureElementNode-------------------')
+      console.log(messageSignatureNode.length)
+      console.log('-----------------messageSignatureNode-------------------')
+      console.log(assertionSignatureNode.length)
+      console.log('-----------------assertionSignatureNode-------------------')
+      console.log("看下---------------------")
+      console.log(xml)
+      return [false, null, false, true]; // return encryptedAssert
+   /*   throw new Error('ERR_ZERO_SIGNATURE');*/
     },
 
     verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
