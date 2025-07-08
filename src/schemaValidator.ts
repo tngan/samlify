@@ -72,7 +72,7 @@ export const validate = async (xml: string,isSoap: boolean = false) => {
       console.log("----------------------绝对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
     }
-  schemas =normal;
+  schemas = isSoap ?soapSchema: normal;
 
     const schemaPath = path.resolve(__dirname, 'schema');
     const [xmlParse, ...preload] = await Promise.all(schemas.map(async file => ({
