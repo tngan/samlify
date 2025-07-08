@@ -480,8 +480,7 @@ const libSaml = () => {
       } else {
         sig.computeSignature(rawSamlMessage);
       }
-      console.log(sig.getSignedXml())
-      console.log('我就要看看==============')
+
       return isBase64Output ? utility.base64Encode(sig.getSignedXml()) : sig.getSignedXml();
     },
 
@@ -526,8 +525,6 @@ const libSaml = () => {
       // @ts-expect-error misssing Node properties are not needed
       const LogoutResponseSignatureElementNode = select(LogoutResponseSignatureXpath, doc);
       // try to catch potential wrapping attack
-      console.log(wrappingElementNode)
-      console.log("检查一下-----------------------------")
       if (wrappingElementNode.length !== 0) {
         console.log("检查一下-----------------------------")
         throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
@@ -569,7 +566,11 @@ const libSaml = () => {
         console.log(encryptedAssertions)
         console.log("看下---------------------")
         /** 判断有没有加密如果没有加密返回 [false, null]*/
-        if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0){
+        if(logoutRequestSignature.length === 0 && LogoutResponseSignatureElementNode.length === 0 ){
+          console.log(logoutRequestSignature.length)
+          console.log( LogoutResponseSignatureElementNode.length)
+          console.log(messageSignatureNode.length === 0)
+          console.log("===================不会进来这里======================")
           if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
             return [false, null, false, false]; // we return false now
           }
@@ -577,7 +578,7 @@ const libSaml = () => {
             throw new Error('ERR_MULTIPLE_ASSERTION');
           }
           console.log("加密了=====================================")
-          return [false, null, true, true]; // return encryptedAssert
+          return [false, null, true, false]; // return encryptedAssert
         }
 
 
