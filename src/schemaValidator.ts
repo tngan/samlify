@@ -5,9 +5,7 @@ import {fileURLToPath} from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-let obj =[
-/*    'soap-envelope.xsd',
-    'xml.xsd',*/
+let normal =[
     'saml-schema-protocol-2.0.xsd',
     'saml-schema-assertion-2.0.xsd',
     'xmldsig-core-schema.xsd',
@@ -16,7 +14,7 @@ let obj =[
     'saml-schema-ecp-2.0.xsd',
     'saml-schema-dce-2.0.xsd'
 ]
-let normal = [
+let soapSchema = [
     'soap-envelope.xsd',
     'xml.xsd',
 
@@ -41,7 +39,7 @@ let normal = [
     'saml-schema-dce-2.0.xsd'  // DCE扩展
 
 ]
-const schemas = obj;
+let  schemas = normal;
 
 function detectXXEIndicators(samlString: string) {
     const xxePatterns = [
@@ -68,13 +66,14 @@ function detectXXEIndicators(samlString: string) {
     return Object.keys(matches).length > 0 ? matches : null;
 }
 
-export const validate = async (xml: string) => {
-  return true;
+export const validate = async (xml: string,soap?:boolean=false) => {
+
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
       console.log("----------------------绝对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
     }
+  schemas =normal;
 
     const schemaPath = path.resolve(__dirname, 'schema');
     const [xmlParse, ...preload] = await Promise.all(schemas.map(async file => ({

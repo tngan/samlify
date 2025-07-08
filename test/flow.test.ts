@@ -66,8 +66,7 @@ function replaceTagsByValue(rawXML, tagValues) {
 function createTemplateCallback({
                                   requestInfo = {}, entity, user = {
     NameID: "myemailassociatedwithsp@sp.com"
-  }, relayState = "", context = {}, binding = "binding", AttributeStatement = []
-                                }) {
+  }, relayState = "", context = {}, binding = "binding", AttributeStatement = []}) {
 
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
@@ -2237,7 +2236,7 @@ test('sp sends a post logout response without signature and parse', async () => 
   expect(extractedData.response.destination).toBe('https://idp.example.org/sso/SingleLogoutService');
 });
 
-/*// 测试：SP 发送带签名的 POST 注销响应，IDP 解析
+// 测试：SP 发送带签名的 POST 注销响应，IDP 解析
 test('sp sends a post logout response with signature and parse', async () => {
   const result = sp.createLogoutResponse(idpWantLogoutResSign, sampleRequestInfo, 'post', '', () =>
     createTemplateCallback({
@@ -2539,10 +2538,10 @@ test('should reject signature wrapped response - case 1', async () => {
       { body: { SAMLResponse: wrappedResponse } }
     )
   ).rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
-});*/
+});
 
-// 测试：拒绝签名包装的响应 - 案例2
-/*test('should reject signature wrapped response - case 2', async () => {
+/*// 测试：拒绝签名包装的响应 - 案例2
+test('should reject signature wrapped response - case 2', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
   const result = await idpNoEncrypt.createLoginResponse({
