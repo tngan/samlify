@@ -146,9 +146,13 @@ export class ServiceProvider extends Entity {
         };
     }
 
-  public createArtifactResponse(
+  public async  createArtifactResponse(
     idp: IdentityProvider,
-    relayState: string
+    soapXml: string,
+   opts:{
+     relayState: string,
+     customTagReplacement?: (template: string) => BindingContext,
+   }
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -157,27 +161,18 @@ export class ServiceProvider extends Entity {
     }
 
     let context: any = null;
-    switch (protocol) {
-      case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURLArt({idp, sp: this}, customTagReplacement);
-      case nsBinding.post:
-        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", {
-          idp,
-          sp: this,
-          soap: true
-        }, customTagReplacement);
-        break;
-
-      default:
-        // Will support artifact in the next release
-        throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    }
+    context = await postBinding.artifactResponse({
+      idp,
+      sp: this,
+      soapXml:soapXml,
+      opts
+    })
 
     return {
-      ...context,
-      relayState: relayState,
+      context,
+      relayState: opts?.relayState,
       entityEndpoint: idp.entityMeta.getSingleSignOnService(binding) as string,
-      type: 'SAMLRequest',
+      type: 'SOAP',
     };
   }
 

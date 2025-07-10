@@ -8,6 +8,10 @@ import {wording, namespace, StatusCode} from './urn.js';
 import type {BindingContext} from './entity.js';
 import libsaml from './libsaml.js';
 import utility, {get} from './utility.js';
+import {
+  IdentityProviderConstructor as IdentityProvider,
+  ServiceProviderConstructor as ServiceProvider
+} from "./types.js";
 
 const binding = wording.binding;
 
@@ -78,6 +82,21 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   }
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
+function artifactResponse(params:{
+  idp:IdentityProvider,
+  sp: ServiceProvider;
+  opts?:{
+   relayState?:string,
+
+    customTagReplacement?: (template: string) => BindingContext,
+  }
+}):string{
+
+
+
+
+}
+
 
 /**
  * @desc Generate a base64 encoded login response
@@ -373,6 +392,7 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
 const postBinding = {
   base64LoginRequest,
   base64LoginResponse,
+  artifactResponse,
   base64LogoutRequest,
   base64LogoutResponse,
 };
