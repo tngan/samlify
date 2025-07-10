@@ -672,7 +672,7 @@ const libSaml = () => {
    /*   throw new Error('ERR_ZERO_SIGNATURE');*/
     },
 
-    verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
+  /*  verifySignatureSoap(xml: string, opts: SignatureVerifierOptions & { isAssertion?: boolean }) {
       const {dom} = getContext();
       const doc = dom.parseFromString(xml, 'application/xml');
       const docParser = new DOMParser();
@@ -681,7 +681,7 @@ const libSaml = () => {
 
       if (opts.isAssertion) {
         // 断言模式下的专用逻辑
-        const assertionSignatureXpath = "./*[local-name()='Signature']";
+        const assertionSignatureXpath = "./!*[local-name()='Signature']";
         // @ts-expect-error misssing Node properties are not needed
         const signatureNode = select(assertionSignatureXpath, doc.documentElement);
 
@@ -693,26 +693,26 @@ const libSaml = () => {
       } else {
         // 原始的SOAP响应验证逻辑
         const messageSignatureXpath =
-          "/*[local-name()='Envelope']/*[local-name()='Body']" +
-          "/*[local-name()='ArtifactResponse']/*[local-name()='Signature'] | " +
-          "/*[local-name()='Envelope']/*[local-name()='Body']" +
-          "/*[local-name()='ArtifactResponse']/*[local-name()='Response']/*[local-name()='Signature']";
+          "/!*[local-name()='Envelope']/!*[local-name()='Body']" +
+          "/!*[local-name()='ArtifactResponse']/!*[local-name()='Signature'] | " +
+          "/!*[local-name()='Envelope']/!*[local-name()='Body']" +
+          "/!*[local-name()='ArtifactResponse']/!*[local-name()='Response']/!*[local-name()='Signature']";
 
         const assertionSignatureXpath =
-          "/*[local-name()='Envelope']/*[local-name()='Body']" +
-          "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
-          "/*[local-name()='Assertion']/*[local-name()='Signature'] | " +
-          "/*[local-name()='Envelope']/*[local-name()='Body']" +
-          "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
-          "/*[local-name()='EncryptedAssertion']";
+          "/!*[local-name()='Envelope']/!*[local-name()='Body']" +
+          "/!*[local-name()='ArtifactResponse']/!*[local-name()='Response']" +
+          "/!*[local-name()='Assertion']/!*[local-name()='Signature'] | " +
+          "/!*[local-name()='Envelope']/!*[local-name()='Body']" +
+          "/!*[local-name()='ArtifactResponse']/!*[local-name()='Response']" +
+          "/!*[local-name()='EncryptedAssertion']";
 
         const wrappingElementsXPath =
-          "/*[local-name()='Envelope']/*[local-name()='Body']" +
-          "/*[local-name()='ArtifactResponse']/*[local-name()='Response']" +
-          "/*[local-name()='Assertion']/*[local-name()='Subject']" +
-          "/*[local-name()='SubjectConfirmation']" +
-          "/*[local-name()='SubjectConfirmationData']" +
-          "//*[local-name()='Assertion' or local-name()='Signature']";
+          "/!*[local-name()='Envelope']/!*[local-name()='Body']" +
+          "/!*[local-name()='ArtifactResponse']/!*[local-name()='Response']" +
+          "/!*[local-name()='Assertion']/!*[local-name()='Subject']" +
+          "/!*[local-name()='SubjectConfirmation']" +
+          "/!*[local-name()='SubjectConfirmationData']" +
+          "//!*[local-name()='Assertion' or local-name()='Signature']";
 
 // @ts-expect-error misssing Node properties are not needed
         const messageSignatureNode = select(messageSignatureXpath, doc);
@@ -749,7 +749,7 @@ const libSaml = () => {
         }
 
         if (opts.metadata) {
-          const certificateNodes = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any[];
+          const certificateNodes = select(".//!*[local-name(.)='X509Certificate']", signatureNode) as any[];
 
           // 获取元数据中的证书
           let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
@@ -829,7 +829,7 @@ const libSaml = () => {
           // 在 ArtifactResponse 中查找 Response
           // @ts-expect-error misssing Node properties are not needed
           const responseNodes = select(
-            "./*[local-name()='Response']",
+            "./!*[local-name()='Response']",
             // @ts-expect-error misssing Node properties are not needed
             rootNode
           ) as Element[];
@@ -842,12 +842,12 @@ const libSaml = () => {
 
           // 在 Response 中查找断言
           const encryptedAssertions = select(
-            "./*[local-name()='EncryptedAssertion']",
+            "./!*[local-name()='EncryptedAssertion']",
             responseNode
           ) as Element[];
 
           const assertions = select(
-            "./*[local-name()='Assertion']",
+            "./!*[local-name()='Assertion']",
             responseNode
           ) as Element[];
 
@@ -864,13 +864,13 @@ const libSaml = () => {
         else if (rootNode?.localName === 'Response') {
           // @ts-expect-error misssing Node properties are not needed
           const encryptedAssertions = select(
-            "./*[local-name()='EncryptedAssertion']",
+            "./!*[local-name()='EncryptedAssertion']",
             // @ts-expect-error misssing Node properties are not needed
             rootNode
           ) as Element[];
           // @ts-expect-error misssing Node properties are not needed
           const assertions = select(
-            "./*[local-name()='Assertion']",
+            "./!*[local-name()='Assertion']",
             // @ts-expect-error misssing Node properties are not needed
             rootNode
           ) as Element[];
@@ -897,8 +897,173 @@ const libSaml = () => {
       }
 
       throw new Error('ERR_ZERO_SIGNATURE');
-    },
+    },*/
+  verifySignatureSoap(xml: string, opts: SignatureVerifierOptions) {
+    const {dom} = getContext();
+    const doc = dom.parseFromString(xml, 'application/xml');
+    const docParser = new DOMParser();
 
+    // 为 SOAP 消息定义 XPath
+    const artifactResolveXpath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResolve']";
+    const artifactResponseXpath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResponse']";
+
+    // 检测 ArtifactResolve 或 ArtifactResponse 的存在
+    // @ts-expect-error
+    const artifactResolveNodes = select(artifactResolveXpath, doc);
+    // @ts-expect-error
+    const artifactResponseNodes = select(artifactResponseXpath, doc);
+
+    // 根据消息类型选择合适的 XPath
+    let basePath = "";
+    if (artifactResolveNodes.length > 0) {
+      basePath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResolve']";
+    } else if (artifactResponseNodes.length > 0) {
+      basePath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResponse']";
+    } else {
+      throw new Error('ERR_UNSUPPORTED_SOAP_MESSAGE_TYPE');
+    }
+
+    // 基于 SOAP 结构重新定义 XPath
+    const messageSignatureXpath = `${basePath}/*[local-name(.)='Signature']`;
+    const assertionSignatureXpath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']`;
+    const wrappingElementsXPath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']`;
+    const encryptedAssertionsXpath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='EncryptedAssertion']`;
+
+    // 包装攻击检测
+    // @ts-expect-error
+    const wrappingElementNode = select(wrappingElementsXPath, doc);
+    if (wrappingElementNode.length !== 0) {
+      throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+    }
+
+    // @ts-expect-error
+    const encryptedAssertions = select(encryptedAssertionsXpath, doc);
+    // @ts-expect-error
+    const messageSignatureNode = select(messageSignatureXpath, doc);
+    // @ts-expect-error
+    const assertionSignatureNode = select(assertionSignatureXpath, doc);
+
+    let selection: any[] = [];
+    if (messageSignatureNode.length > 0) {
+      selection = selection.concat(messageSignatureNode);
+    }
+    if (assertionSignatureNode.length > 0) {
+      selection = selection.concat(assertionSignatureNode);
+    }
+
+    // 处理加密断言的情况
+    if (selection.length === 0) {
+      if (encryptedAssertions.length > 0) {
+        if (encryptedAssertions.length > 1) {
+          throw new Error('ERR_MULTIPLE_ASSERTION');
+        }
+        return [false, null, true, true];
+      }
+    }
+
+    if (selection.length === 0) {
+      throw new Error('ERR_ZERO_SIGNATURE');
+    }
+
+    // 尝试所有签名节点
+    for (const signatureNode of selection) {
+      const sig = new SignedXml();
+      let verified = false;
+
+      sig.signatureAlgorithm = opts.signatureAlgorithm!;
+      if (!opts.keyFile && !opts.metadata) {
+        throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');
+      }
+
+      if (opts.keyFile) {
+        sig.publicCert = fs.readFileSync(opts.keyFile);
+      }
+
+      if (opts.metadata) {
+        const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
+
+        // 证书处理逻辑
+        let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
+        if (Array.isArray(metadataCert)) {
+          metadataCert = flattenDeep(metadataCert);
+        } else if (typeof metadataCert === 'string') {
+          metadataCert = [metadataCert];
+        }
+        metadataCert = metadataCert.map(utility.normalizeCerString);
+
+        // 没有证书的情况
+        if (certificateNode.length === 0 && metadataCert.length === 0) {
+          throw new Error('NO_SELECTED_CERTIFICATE');
+        }
+
+        if (certificateNode.length !== 0) {
+          const x509CertificateData = certificateNode[0].firstChild.data;
+          const x509Certificate = utility.normalizeCerString(x509CertificateData);
+
+          if (metadataCert.length >= 1 && !metadataCert.includes(x509Certificate)) {
+            throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+          }
+
+          sig.publicCert = this.getKeyInfo(x509Certificate).getKey();
+        } else {
+          sig.publicCert = this.getKeyInfo(metadataCert[0]).getKey();
+        }
+      }
+
+      sig.loadSignature(signatureNode);
+      verified = sig.checkSignature(xml); // 使用原始XML验证
+
+      if (!verified) {
+        throw new Error('ERR_FAILED_TO_VERIFY_SIGNATURE');
+      }
+
+      if (sig.getSignedReferences().length < 1) {
+        throw new Error('NO_SIGNATURE_REFERENCES');
+      }
+
+      const signedVerifiedXML = sig.getSignedReferences()[0];
+      const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
+
+      // 处理签名的内容
+      switch(rootNode?.localName) {
+        case 'Response':
+          // @ts-expect-error
+          const encryptedAssert = select("./*[local-name()='EncryptedAssertion']", rootNode);
+          // @ts-expect-error
+          const assertions = select("./*[local-name()='Assertion']", rootNode);
+
+          if (encryptedAssert.length === 1) {
+            return [true, encryptedAssert[0].toString(), true, false];
+          }
+
+          if (assertions.length === 1) {
+            return [true, assertions[0].toString(), false, false];
+          }
+          return [true, null, false, true]; // 签名验证成功但未找到断言
+
+        case 'Assertion':
+          return [true, rootNode.toString(), false, false];
+
+        case 'EncryptedAssertion':
+          return [true, rootNode.toString(), true, false];
+
+        case 'ArtifactResolve':
+        case 'ArtifactResponse':
+          // 提取SOAP消息内部的实际内容
+          // @ts-expect-error
+          const innerResponse = select("./*[local-name()='Response']", rootNode);
+          if (innerResponse.length > 0) {
+            return [true, innerResponse[0].toString(), false, false];
+          }
+          return [true, rootNode.toString(), false, true];
+
+        default:
+          return [true, null, false, true]; // 签名验证成功但未找到可识别的内容
+      }
+    }
+
+    return [false, null, encryptedAssertions.length > 0, false];
+  },
 
     /**
      * @desc Helper function to create the key section in metadata (abstraction for signing and encrypt use)
