@@ -148,8 +148,7 @@ export class ServiceProvider extends Entity {
 
   public createArtifactResponse(
     idp: IdentityProvider,
-    binding = 'post',
-    customTagReplacement?: (template: string) => BindingContext,
+    relayState: string
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -176,7 +175,7 @@ export class ServiceProvider extends Entity {
 
     return {
       ...context,
-      relayState: this.entitySetting.relayState,
+      relayState: relayState,
       entityEndpoint: idp.entityMeta.getSingleSignOnService(binding) as string,
       type: 'SAMLRequest',
     };
