@@ -186,7 +186,18 @@ const libSaml = () => {
   };
 
   const defaultArtAuthnRequestTemplate = {
-    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header></SOAP-ENV:Header><samlp:ArtifactResponse xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}" InResponseTo="{InResponseTo}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>{AuthnRequest}</samlp:ArtifactResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
+    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header></SOAP-ENV:Header><samlp:ArtifactResponse xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}" InResponseTo="{InResponseTo}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><samlp:Response>{AuthnRequest}</samlp:Response></samlp:ArtifactResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
+  };
+  const defaultSoapResponseFailTemplate = {
+    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header></SOAP-ENV:Header>
+<samlp:ArtifactResponse xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" 
+xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
+ InResponseTo="{InResponseTo}" Version="2.0" 
+ IssueInstant="{IssueInstant}">
+ <saml:Issuer>{Issuer}</saml:Issuer>
+ <samlp:Status>
+ <samlp:StatusCode Value="{StatusCode}"/>
+ </samlp:Status>{Response}</samlp:ArtifactResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
   };
   /**
    * @desc Default AttributeStatement template
@@ -344,6 +355,7 @@ const libSaml = () => {
     defaultArtAuthnRequestTemplate,
     defaultArtifactResolveTemplate,
     defaultLoginResponseTemplate,
+    defaultSoapResponseFailTemplate,
     defaultAttributeStatementTemplate,
     defaultAttributeTemplate,
     defaultLogoutRequestTemplate,
@@ -630,6 +642,8 @@ const libSaml = () => {
         const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
         // process the verified signature:
         // case 1, rootSignedDoc is a response:
+        console.log(rootNode?.localName)
+        console.log("9999999999999999999999999999999")
         if (rootNode?.localName === 'Response') {
 
           // try getting the Xml from the first assertion
@@ -667,6 +681,7 @@ const libSaml = () => {
           return [true, null, false, false]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       }
+      console.log("走的是这里")
       // something has gone seriously wrong if we are still here
       return [false, null, false, true]; // return encryptedAssert
    /*   throw new Error('ERR_ZERO_SIGNATURE');*/
@@ -944,6 +959,7 @@ const libSaml = () => {
     const assertionSignatureNode = select(assertionSignatureXpath, doc);
 
     let selection: any[] = [];
+
     if (messageSignatureNode.length > 0) {
       selection = selection.concat(messageSignatureNode);
     }
@@ -953,6 +969,7 @@ const libSaml = () => {
 
     // 处理加密断言的情况
     if (selection.length === 0) {
+      console.log("走的是这里-------------------------------------------")
       if (encryptedAssertions.length > 0) {
         if (encryptedAssertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
@@ -1020,11 +1037,15 @@ const libSaml = () => {
       if (sig.getSignedReferences().length < 1) {
         throw new Error('NO_SIGNATURE_REFERENCES');
       }
-
+console.log("来了=================")
       const signedVerifiedXML = sig.getSignedReferences()[0];
+      console.log(signedVerifiedXML)
+      console.log("走的是这里2-------------------------------------------")
       const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
 
       // 处理签名的内容
+      console.log(rootNode?.localName)
+      console.log("好好看下================")
       switch(rootNode?.localName) {
         case 'Response':
           // @ts-expect-error
@@ -1050,12 +1071,7 @@ const libSaml = () => {
         case 'ArtifactResolve':
         case 'ArtifactResponse':
           // 提取SOAP消息内部的实际内容
-          // @ts-expect-error
-          const innerResponse = select("./*[local-name()='Response']", rootNode);
-          if (innerResponse.length > 0) {
-            return [true, innerResponse[0].toString(), false, false];
-          }
-          return [true, rootNode.toString(), false, true];
+          return [true, rootNode.toString(), false, false];
 
         default:
           return [true, null, false, true]; // 签名验证成功但未找到可识别的内容

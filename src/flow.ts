@@ -351,10 +351,13 @@ async function postFlow(options): Promise<FlowResult> {
             decryptRequired = isDecryptRequired
 
 
-
             if (isDecryptRequired && noSignature) {
-
-                const result = await libsaml.decryptAssertion(self, samlContent);
+                console.log("解密了============================")
+                console.log("解密了============================")
+                console.log("解密了============================")
+                console.log("解密了============================")
+                // @ts-ignore
+                const result = await libsaml.decryptAssertion(self, verifiedAssertionNode1);
                 samlContent = result[0];
                 extractorFields = getDefaultExtractorFields(parserType, result[1]);
             }

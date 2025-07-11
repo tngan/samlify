@@ -12,6 +12,7 @@ import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderConstructor as ServiceProvider
 } from "./types.js";
+import {extract, ExtractorFields} from "./extractor.js";
 
 
 const binding = wording.binding;
@@ -83,33 +84,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   }
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
-function artifactResponse(params:{
-  idp:IdentityProvider,
-  sp: ServiceProvider;
-  xml:string,
-  opts?:{
-   relayState?:string,
 
-    customTagReplacement?: (template: string) => BindingContext,
-  }
-}):string{
-let {idp,sp,xml,opts={}} = params
-  console.log(xml)
-  console.log("传递了xmlle================================")
-  console.log(idp.entitySetting.requestSignatureAlgorithm)
-  console.log("算法大================")
-  console.log(idp.entityMeta)
-  console.log("算法大2================")
-  /** 首先先验证签名*/
-let signature = libsaml.verifySignatureSoap(xml,{
-    metadata: idp.entityMeta,
-    signatureAlgorithm: idp.entitySetting.requestSignatureAlgorithm,
-})
-console.log(signature)
-  console.log("验证结果-------------------------")
-return ''
-
-}
 
 
 /**
@@ -406,7 +381,6 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
 const postBinding = {
   base64LoginRequest,
   base64LoginResponse,
-  artifactResponse,
   base64LogoutRequest,
   base64LogoutResponse,
 };
