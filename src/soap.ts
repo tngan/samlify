@@ -1,6 +1,8 @@
 import axios from 'axios';
 import https from 'node:https';
 import crypto from "node:crypto";
+import {Builder} from 'xml2js'
+import iconv from 'iconv-lite'
 import {IdentityProviderConstructor as IdentityProvider, ServiceProviderConstructor as ServiceProvider} from "./types.js";
 // 2. 配置 Axios 实例（处理自签名证书）
 const axiosInstance = axios.create({
@@ -30,6 +32,27 @@ export async function sendArtifactResolve(url:string,soapRequest:any) {
     }
 }
 
+export async function sendArtifactResponse(url:string,soapRequest:any) {
+    try {
+        const response = await axiosInstance.post(
+            url,
+            soapRequest,
+            {
+                headers: {
+                    'Content-Type': 'application/soap+xml; charset=utf-8',
+                    'SOAPAction': '"ArtifactResponse"'
+                },
+                timeout: 5000 // 5秒超时
+            }
+        );
+
+        console.log('✅ Resolve请求成功')
+        return response.data;
+    } catch (error) {
+        console.error('❌ Resolve请求失败');
+        throw error.response.data;
+    }
+}
 /**
  * @desc   generate Art id
  *
@@ -123,4 +146,32 @@ export function parseArt(artifact: string) {
     ).toString('hex');
 
     return {typeCode, endpointIndex, sourceId, messageHandle};
+}
+
+/**
+* 将对象转换为 ISO-8859-1 编码的 XML 字符串
+* @param {Object} data - 要转换的数据对象
+* @returns {Buffer} - ISO-8859-1 编码的 XML 数据 (Buffer)
+*/
+export  function encodeXmlToIso88591(data) {
+    try {
+        // 1. 创建 XML 构建器
+        const builder = new Builder({
+            headless: false,  // 包含 XML 声明
+            renderOpts: { 'pretty': false }, // 紧凑格式
+            xmldec: {
+                version: '1.0',
+                encoding: 'ISO-8859-1',
+                standalone: true
+            }
+        });
+
+        // 2. 构建 XML 字符串 (UTF-8 格式)
+        const utf8Xml = builder.buildObject(data);
+
+        // 3. 转换为 ISO-8859-1 编码的 Buffer
+        return iconv.encode(utf8Xml, 'iso-8859-1');
+    } catch (error) {
+        throw new Error(`XML 编码失败: ${error.message}`);
+    }
 }

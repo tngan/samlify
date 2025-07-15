@@ -160,12 +160,12 @@ export class ServiceProvider extends Entity {
       xml:xml
     });
   }
-  public parseLoginResponseResolve(idp, xml, request: ESamlHttpRequest) {
+  public parseLoginResponseResolve(idp:IdentityProvider, art:string, request: ESamlHttpRequest) {
     const self = this;
     return Artifact.parseLoginResponseResolve({
       idp: idp,
       sp: self,
-      xml:xml
+      art:art
     });
   }
 

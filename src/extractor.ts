@@ -71,18 +71,18 @@ export const loginRequestFields: ExtractorFields = [
 export const artifactResolveFields = [
   {
     key: 'request',
-    localPath: ['Envelope','Body','ArtifactResolve'],
+    localPath: ['ArtifactResolve'],
     attributes: ['ID', 'IssueInstant','Version' ]
   },
   {
-    key: 'issuer', localPath: ['Envelope','Body','ArtifactResolve', 'Issuer'], attributes: []
+    key: 'issuer', localPath: ['ArtifactResolve', 'Issuer'], attributes: []
   },
 
   {
-    key: 'Artifact', localPath: ['Envelope','Body','ArtifactResolve','Artifact'], attributes: []
+    key: 'Artifact', localPath: ['ArtifactResolve','Artifact'], attributes: []
   },
   {
-    key: 'signature', localPath: ['Envelope','Body','ArtifactResolve', 'Signature'], attributes: [], context: true
+    key: 'signature', localPath: ['ArtifactResolve', 'Signature'], attributes: [], context: true
   },
 
 ];

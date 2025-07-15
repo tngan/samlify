@@ -186,7 +186,9 @@ const libSaml = () => {
   };
 
   const defaultArtAuthnRequestTemplate = {
-    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header></SOAP-ENV:Header><samlp:ArtifactResponse xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}" InResponseTo="{InResponseTo}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><samlp:Response>{AuthnRequest}</samlp:Response></samlp:ArtifactResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
+    context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header>
+
+</SOAP-ENV:Header><samlp:ArtifactResponse xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}" InResponseTo="{InResponseTo}" Version="2.0" IssueInstant="{IssueInstant}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>{AuthnRequest}</samlp:ArtifactResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>`,
   };
   const defaultSoapResponseFailTemplate = {
     context: `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header></SOAP-ENV:Header>
@@ -1037,10 +1039,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
       if (sig.getSignedReferences().length < 1) {
         throw new Error('NO_SIGNATURE_REFERENCES');
       }
-console.log("来了=================")
       const signedVerifiedXML = sig.getSignedReferences()[0];
-      console.log(signedVerifiedXML)
-      console.log("走的是这里2-------------------------------------------")
       const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
 
       // 处理签名的内容
@@ -1071,6 +1070,7 @@ console.log("来了=================")
         case 'ArtifactResolve':
         case 'ArtifactResponse':
           // 提取SOAP消息内部的实际内容
+            console.log()
           return [true, rootNode.toString(), false, false];
 
         default:

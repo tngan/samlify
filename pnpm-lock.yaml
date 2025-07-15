@@ -51,8 +51,8 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@24.0.13)
       xpath:
-        specifier: ^0.0.34
-        version: 0.0.34
+        specifier: ^0.0.32
+        version: 0.0.32
     devDependencies:
       '@types/node':
         specifier: ^24.0.13
@@ -1608,10 +1608,6 @@ packages:
     resolution: {integrity: sha512-NNXnzrkDrAzalLhIUc01jO2mOzXGXh1JwPgkihcLLzw98c0WgYDmmjSh1Kl3wzaxSVWMuA+fe0WTWOBDWCBmNA==}
     engines: {node: '>=0.6.0'}
 
-  xpath@0.0.34:
-    resolution: {integrity: sha512-FxF6+rkr1rNSQrhUNYrAFJpRXNzlDoMxeXN5qI84939ylEv3qqPFKa85Oxr6tDaJKqwW6KKyo2v26TSv3k6LeA==}
-    engines: {node: '>=0.6.0'}
-
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -3097,8 +3093,6 @@ snapshots:
   xpath@0.0.32: {}
 
   xpath@0.0.33: {}
-
-  xpath@0.0.34: {}
 
   xtend@4.0.2: {}
 

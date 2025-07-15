@@ -7,15 +7,15 @@
 import {wording, namespace, StatusCode} from './urn.js';
 import type {BindingContext} from './entity.js';
 import libsaml from './libsaml.js';
+import libsamlSoap from './libsamlSoap.js';
 import utility, {get} from './utility.js';
-
+import {BindingNamespace, ParserType,} from './urn.js';
 import * as uuid from 'uuid'
 import {
     IdentityProviderConstructor as IdentityProvider,
     ServiceProviderConstructor as ServiceProvider
 } from "./types.js";
 import {extract, ExtractorFields, artifactResponseFields, artifactResolveFields} from "./extractor.js";
-import {ExtractorResult} from "@microsoft/api-extractor";
 import {
     loginRequestFields,
     loginResponseFields,
@@ -26,6 +26,27 @@ import {
     logoutResponseStatusFields
 } from './extractor.js'
 import {verifyTime} from "./validator.js";
+import {sendArtifactResolve} from "./soap.js";
+
+// get the default extractor fields based on the parserType
+function getDefaultExtractorFields(parserType: ParserType, assertion?: any): ExtractorFields {
+    switch (parserType) {
+        case ParserType.SAMLRequest:
+            return loginRequestFields;
+        case ParserType.SAMLResponse:
+            if (!assertion) {
+                // unexpected hit
+                throw new Error('ERR_EMPTY_ASSERTION');
+            }
+            return loginResponseFields(assertion);
+        case ParserType.LogoutRequest:
+            return logoutRequestFields;
+        case ParserType.LogoutResponse:
+            return logoutResponseFields;
+        default:
+            throw new Error('ERR_UNDEFINED_PARSERTYPE');
+    }
+}
 
 const binding = wording.binding;
 
@@ -36,7 +57,12 @@ const binding = wording.binding;
  * @param customTagReplacement
  */
 function soapLoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): any {
-    const metadata = {idp: entity.idp.entityMeta, sp: entity.sp.entityMeta, inResponse: entity?.inResponse,relayState:entity?.relayState};
+    const metadata = {
+        idp: entity.idp.entityMeta,
+        sp: entity.sp.entityMeta,
+        inResponse: entity?.inResponse,
+        relayState: entity?.relayState
+    };
     const spSetting = entity.sp.entitySetting;
     let id: string = '';
     let soapTemplate = ''
@@ -68,34 +94,34 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
             requestSignatureAlgorithm: signatureAlgorithm,
             transformationAlgorithms
         } = spSetting;
-        if (metadata.idp.isWantAuthnRequestsSigned()) {
+             if (metadata.idp.isWantAuthnRequestsSigned()) {
 
-            let Response = libsaml.constructSAMLSignature({
-                referenceTagXPath,
-                privateKey,
-                privateKeyPass,
-                signatureAlgorithm,
-                transformationAlgorithms,
-                rawSamlMessage: rawSamlRequest,
-                isBase64Output: false,
-                isMessageSigned: true,
-                signingCert: metadata.sp.getX509Certificate('signing'),
-                signatureConfig: spSetting.signatureConfig || {
-                    prefix: 'ds',
-                    location: {
-                        reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']",
-                        action: 'after'
-                    },
-                }
-            })
-              soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
-                ID: id,
-                IssueInstant: new Date().toISOString(),
-                InResponseTo: metadata.inResponse ?? "",
-                Issuer: metadata.sp.getEntityID(),
-                AuthnRequest: Response
-            } as any);
-        }
+                 let Response = libsaml.constructSAMLSignature({
+                     referenceTagXPath,
+                     privateKey,
+                     privateKeyPass,
+                     signatureAlgorithm,
+                     transformationAlgorithms,
+                     rawSamlMessage: rawSamlRequest,
+                     isBase64Output: false,
+                     isMessageSigned: true,
+                     signingCert: metadata.sp.getX509Certificate('signing'),
+                     signatureConfig: spSetting.signatureConfig || {
+                         prefix: 'ds',
+                         location: {
+                             reference: "/*[local-name(.)='AuthnRequest']/!*[local-name(.)='Issuer']",
+                             action: 'after'
+                         },
+                     }
+                 })
+                   soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
+                     ID: id,
+                     IssueInstant: new Date().toISOString(),
+                     InResponseTo: metadata.inResponse ?? "",
+                     Issuer: metadata.sp.getEntityID(),
+                     AuthnRequest: Response
+                 } as any);
+             }
         let Response2 = libsaml.constructSAMLSignature({
             referenceTagXPath: "//*[local-name()='ArtifactResponse']",
             privateKey,
@@ -278,8 +304,7 @@ async function parseLoginRequestResolve(params: {
         metadata: idp.entityMeta,
         signatureAlgorithm: idp.entitySetting.requestSignatureAlgorithm,
     };
-    console.log(xml)
-    console.log("=============哈哈哈哈哈==================")
+
     let res = await libsaml.isValidXml(xml, true).catch((error) => {
         console.log(error)
         console.log("不符合Soap 规范")
@@ -293,57 +318,237 @@ async function parseLoginRequestResolve(params: {
     console.log("==================接下来开始验证签名======================")
     console.log(xml)
     /** 首先先验证签名*/
-    let [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignatureSoap(xml, verificationOptions)
+    let [verify, verifyAndDecryptSoapMessage] = await libsamlSoap.verifyAndDecryptSoapMessage(xml, verificationOptions)
+    console.log("看下=-===============================")
+        if (!verify) {
+            return Promise.reject('ERR_FAIL_TO_VERIFY_SIGNATURE');
+        }
+        const parseResult = {
+            samlContent: verifyAndDecryptSoapMessage,
+            extract: extract(verifyAndDecryptSoapMessage, artifactResolveFields),
+        };
+        /**
+         *  Validation part: validate the context of response after signature is verified and decrypted (optional)
+         */
+        const targetEntityMetadata = sp.entityMeta;
+    const issuer = targetEntityMetadata.getEntityID();
+     const extractedProperties = parseResult.extract;
+        console.log(extractedProperties)
+        console.log(issuer)
+        console.log("================看一下==================")
+        // unmatched issuer
+        if (extractedProperties.issuer !== issuer
+        ) {
+            return Promise.reject('ERR_UNMATCH_ISSUER');
+        }
+        console.log(extractedProperties.request.issueInstant,
+        )
+        console.log(sp.entitySetting.clockDrifts)
+        console.log("99999999999999999999")
+        // invalid session time
+        // only run the verifyTime when `SessionNotOnOrAfter` exists
+            if ( !verifyTime(
+                    undefined,
+                new Date(new Date(extractedProperties.request.issueInstant).getTime() + 5 * 60 * 1000).toISOString(),
+                    sp.entitySetting.clockDrifts
+                )
+            ) {
+                return Promise.reject('ERR_EXPIRED_SESSION');
+            }
 
-    if (noSignature || !verified) {
-        return Promise.reject('ERR_FAIL_TO_VERIFY_SIGNATURE');
-    }
-    const parseResult = {
-        samlContent: xml,
-        extract: extract(xml, artifactResolveFields),
+
+        return Promise.resolve(parseResult);
+}
+
+async function parseLoginResponseResolve(params: { idp: IdentityProvider, sp: ServiceProvider, art: string }) {
+    let {idp, sp, art} = params;
+
+    const metadata = {
+        idp: idp.entityMeta,
+        sp: sp.entityMeta,
     };
+    const verificationOptions = {
+        metadata: idp.entityMeta,
+        signatureAlgorithm: idp.entitySetting.requestSignatureAlgorithm,
+    };
+    let parserType = 'SAMLResponse' as ParserType
+    /** 断言是否加密应根据响应里面的字段判断*/
+    let decryptRequired = idp.entitySetting.isAssertionEncrypted;
+    let extractorFields: ExtractorFields = [];
+    let samlContent = ''
+    const spSetting = sp.entitySetting;
+    console.log(spSetting)
+    let ID = '_' + uuid.v4();
+    let url = metadata.idp.getArtifactResolutionService('soap') as string
+    let samlSoapRaw = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context, {
+        ID: ID,
+        Destination: url,
+        Issuer: metadata.sp.getEntityID(),
+        IssueInstant: new Date().toISOString(),
+        Art: art
+    })
+    if (!metadata.idp.isWantAuthnRequestsSigned()) {
+
+        samlContent = await sendArtifactResolve(url, samlSoapRaw)
+    }
+    if (metadata.idp.isWantAuthnRequestsSigned()) {
+        const {
+            privateKey,
+            privateKeyPass,
+            requestSignatureAlgorithm: signatureAlgorithm,
+            transformationAlgorithms
+        } = spSetting;
+        //@ts-ignore
+        let signatureSoap = libsaml.constructSAMLSignature({
+            referenceTagXPath: "//*[local-name(.)='ArtifactResolve']",
+            isMessageSigned: false,
+            isBase64Output: false,
+            transformationAlgorithms: transformationAlgorithms,
+            //@ts-ignore
+            privateKey,
+            privateKeyPass,
+            //@ts-ignore
+            signatureAlgorithm,
+            rawSamlMessage: samlSoapRaw,
+            signingCert: metadata.sp.getX509Certificate('signing'),
+            signatureConfig: {
+                prefix: 'ds',
+                location: {
+                    reference: "//*[local-name(.)='Issuer']",
+                    action: 'after'
+                }
+            }
+        })
+        samlContent = await sendArtifactResolve(url, signatureSoap)
+        const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
+        console.log(samlContent)
+        console.log("区别soap------------------------")
+        /*            decryptRequired = isDecryptRequired*/
+        if (!verified) {
+            return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+        }
+
+        if (!decryptRequired) {
+            extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+        }
+        if (parserType === 'SAMLResponse' && decryptRequired) {
+            // 1. 解密断言
+            const [decryptedSAML, decryptedAssertion] = await libsaml.decryptAssertionSoap(self, samlContent);
+            // 2. 检查解密后的断言是否包含签名
+            const assertionDoc = new DOMParser().parseFromString(decryptedAssertion, 'application/xml');
+            // @ts-ignore
+            const assertionSignatureNodes = select("./*[local-name()='Signature']", assertionDoc.documentElement);
+
+            // 3. 如果存在签名则验证
+            if (assertionSignatureNodes.length > 0) {
+                // 3.1 创建新的验证选项（保持原配置）
+                const assertionVerificationOptions = {
+                    ...verificationOptions,
+                    isAssertion: true // 添加标识表示正在验证断言
+                };
+
+                // 3.2 验证断言签名
+                const [assertionVerified, result] = libsaml.verifySignatureSoap(decryptedAssertion, assertionVerificationOptions);
+                if (!assertionVerified) {
+                    return Promise.reject('ERR_FAIL_TO_VERIFY_ASSERTION_SIGNATURE');
+                }
+                if (assertionVerified) {
+                    // @ts-ignore
+
+                    samlContent = result
+                    extractorFields = getDefaultExtractorFields(parserType, result);
+                }
+            } else {
+                samlContent = decryptedAssertion
+                extractorFields = getDefaultExtractorFields(parserType, decryptedAssertion);
+            }
+        }
+    }
+
+
+    const parseResult = {
+        samlContent: samlContent,
+        extract: extract(samlContent, extractorFields),
+    };
+    console.log(parseResult)
+    console.log("这就是结果了-------------------------")
     /**
      *  Validation part: validate the context of response after signature is verified and decrypted (optional)
      */
-    const targetEntityMetadata = sp.entityMeta;
+    const targetEntityMetadata = idp.entityMeta;
     const issuer = targetEntityMetadata.getEntityID();
     const extractedProperties = parseResult.extract;
-    console.log(extractedProperties)
-    console.log(issuer)
-    console.log("================看一下==================")
     // unmatched issuer
-    if (extractedProperties.issuer !== issuer
+    if (
+        (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+        && extractedProperties
+        && extractedProperties.issuer !== issuer
     ) {
         return Promise.reject('ERR_UNMATCH_ISSUER');
     }
-    console.log(extractedProperties.request.issueInstant,
-    )
-    console.log(sp.entitySetting.clockDrifts)
-    console.log("99999999999999999999")
+
     // invalid session time
     // only run the verifyTime when `SessionNotOnOrAfter` exists
-    /*    if ( !verifyTime(
-                undefined,
-                extractedProperties.request.issueInstant,
-                sp.entitySetting.clockDrifts
-            )
-        ) {
-            return Promise.reject('ERR_EXPIRED_SESSION');
-        }*/
+    if (
+        parserType === 'SAMLResponse'
+        && extractedProperties.sessionIndex.sessionNotOnOrAfter
+        && !verifyTime(
+            undefined,
+            extractedProperties.sessionIndex.sessionNotOnOrAfter,
+            sp.entitySetting.clockDrifts
+        )
+    ) {
+        return Promise.reject('ERR_EXPIRED_SESSION');
+    }
+
+    // invalid time
+    // 2.4.1.2 https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+    if (
+        parserType === 'SAMLResponse'
+        && extractedProperties.conditions
+        && !verifyTime(
+            extractedProperties.conditions.notBefore,
+            extractedProperties.conditions.notOnOrAfter,
+            sp.entitySetting.clockDrifts
+        )
+    ) {
+        return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+    }
+    //valid destination
+    //There is no validation of the response here. The upper-layer application
+    // should verify the result by itself to see if the destination is equal to the SP acs and
+    // whether the response.id is used to prevent replay attacks.
+    /*
+        let destination = extractedProperties?.response?.destination
+        let isExit = self.entitySetting?.assertionConsumerService?.filter((item) => {
+            return item?.Location === destination
+        })
+        if (isExit?.length === 0) {
+            return Promise.reject('ERR_Destination_URL');
+        }
+        if (parserType === 'SAMLResponse') {
+            let destination = extractedProperties?.response?.destination
+            let isExit = self.entitySetting?.assertionConsumerService?.filter((item: { Location: any; }) => {
+                return item?.Location === destination
+            })
+            if (isExit?.length === 0) {
+                return Promise.reject('ERR_Destination_URL');
+            }
+        }
+    */
 
 
     return Promise.resolve(parseResult);
-}
 
-async function parseLoginResponseResolve(params: { idp: IdentityProvider, sp: ServiceProvider, xml: string }) {
-    let {idp, sp} = params;
 }
 
 const artifactSignBinding = {
-    soapLoginRequest,
-    soapLoginResponse,
     parseLoginRequestResolve,
-    parseLoginResponseResolve
+    soapLoginRequest,
+    parseLoginResponseResolve,
+    soapLoginResponse,
+
+
 };
 
 export default artifactSignBinding;

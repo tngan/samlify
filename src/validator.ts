@@ -2,38 +2,30 @@
 type DriftTolerance = [number, number];
 
 function verifyTime(
-  utcNotBefore: string | undefined,
-  utcNotOnOrAfter: string | undefined,
-  drift: DriftTolerance = [0, 0]
+    utcNotBefore: string | undefined,
+    utcNotOnOrAfter: string | undefined,
+    drift: DriftTolerance = [0, 0]
 ): boolean {
-  const now = new Date();
+  const now = Date.now();
+
+  // 处理两个时间都缺失的情况
   if (!utcNotBefore && !utcNotOnOrAfter) {
-    // show warning because user intends to have time check but the document doesn't include corresponding information
-    console.warn('You intend to have time validation however the document doesn\'t include the valid range.');
+    console.warn('Time validation requested but no time constraints provided');
     return true;
   }
-  let notBeforeLocal: Date | null = null;
-  let notOnOrAfterLocal: Date | null = null;
-  const [notBeforeDrift, notOnOrAfterDrift] = drift;
-  if (utcNotBefore && !utcNotOnOrAfter) {
-    notBeforeLocal = new Date(utcNotBefore);
-    return +notBeforeLocal + notBeforeDrift <= +now;
-  }
-  if (!utcNotBefore && utcNotOnOrAfter) {
-    notOnOrAfterLocal = new Date(utcNotOnOrAfter);
-    return +now < +notOnOrAfterLocal + notOnOrAfterDrift;
-  }
 
-  notBeforeLocal = new Date(utcNotBefore!);
-  notOnOrAfterLocal = new Date(utcNotOnOrAfter!);
+  const [startDrift, endDrift] = drift;
 
-  return (
-    +notBeforeLocal + notBeforeDrift <= +now &&
-    +now < +notOnOrAfterLocal + notOnOrAfterDrift
-  );
+  // 解析时间并转换为时间戳
+  const notBefore = utcNotBefore ? new Date(utcNotBefore).getTime() : -Infinity;
+  const notOnOrAfter = utcNotOnOrAfter ? new Date(utcNotOnOrAfter).getTime() : Infinity;
 
+  // 应用漂移容忍度
+  const adjustedNotBefore = notBefore - startDrift;
+  const adjustedNotOnOrAfter = notOnOrAfter + endDrift;
+
+  // 验证时间范围
+  return now >= adjustedNotBefore && now < adjustedNotOnOrAfter;
 }
 
-export {
-  verifyTime
-};
+export { verifyTime };
