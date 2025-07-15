@@ -10,6 +10,10 @@ import libsaml from './libsaml.js';
 import libsamlSoap from './libsamlSoap.js';
 import utility, {get} from './utility.js';
 import {BindingNamespace, ParserType,} from './urn.js';
+import {fileURLToPath} from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import * as uuid from 'uuid'
 import {
     IdentityProviderConstructor as IdentityProvider,
@@ -27,6 +31,8 @@ import {
 } from './extractor.js'
 import {verifyTime} from "./validator.js";
 import {sendArtifactResolve} from "./soap.js";
+import path from "node:path";
+import fs from "node:fs";
 
 // get the default extractor fields based on the parserType
 function getDefaultExtractorFields(parserType: ParserType, assertion?: any): ExtractorFields {
@@ -65,7 +71,9 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
     };
     const spSetting = entity.sp.entitySetting;
     let id: string = '';
-    let soapTemplate = ''
+    let id2: string  = spSetting.generateID()
+    let soapTemplate = '';
+    let Response = ''
     if (metadata && metadata.idp && metadata.sp) {
         const base = metadata.idp.getSingleSignOnService(binding.post);
         let rawSamlRequest: string;
@@ -94,36 +102,54 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
             requestSignatureAlgorithm: signatureAlgorithm,
             transformationAlgorithms
         } = spSetting;
-             if (metadata.idp.isWantAuthnRequestsSigned()) {
+        if (metadata.idp.isWantAuthnRequestsSigned()) {
+          Response = libsaml.constructSAMLSignature({
+                referenceTagXPath,
+                privateKey,
+                privateKeyPass,
+                signatureAlgorithm,
+                transformationAlgorithms,
+                rawSamlMessage: rawSamlRequest,
+                isBase64Output: false,
+                signingCert: metadata.sp.getX509Certificate('signing'),
+              signatureConfig: spSetting.signatureConfig || {
+                  prefix: 'ds',
+                  location: {reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']", action: 'after'},
+              }
+            })
+            console.log(Response)
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const fileName = `origin-response-${timestamp}.xml`;
+            const filePath = path.join(__dirname, 'soap-responses', fileName);
 
-                 let Response = libsaml.constructSAMLSignature({
-                     referenceTagXPath,
-                     privateKey,
-                     privateKeyPass,
-                     signatureAlgorithm,
-                     transformationAlgorithms,
-                     rawSamlMessage: rawSamlRequest,
-                     isBase64Output: false,
-                     isMessageSigned: true,
-                     signingCert: metadata.sp.getX509Certificate('signing'),
-                     signatureConfig: spSetting.signatureConfig || {
-                         prefix: 'ds',
-                         location: {
-                             reference: "/*[local-name(.)='AuthnRequest']/!*[local-name(.)='Issuer']",
-                             action: 'after'
-                         },
-                     }
-                 })
-                   soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
-                     ID: id,
-                     IssueInstant: new Date().toISOString(),
-                     InResponseTo: metadata.inResponse ?? "",
-                     Issuer: metadata.sp.getEntityID(),
-                     AuthnRequest: Response
-                 } as any);
-             }
+            // 确保目录存在
+            if (!fs.existsSync(path.dirname(filePath))) {
+                fs.mkdirSync(path.dirname(filePath), { recursive: true });
+            }
+
+            // 写入文件
+            fs.writeFileSync(filePath, Response, 'utf8');
+            console.log(`✅ SOAP 响应已保存至: ${filePath}`);
+            soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
+                ID: id2,
+                IssueInstant: new Date().toISOString(),
+                InResponseTo: metadata.inResponse ?? "",
+                Issuer: metadata.sp.getEntityID(),
+                AuthnRequest: Response
+            } as any);
+        }else{
+            soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
+                ID: id2,
+                IssueInstant: new Date().toISOString(),
+                InResponseTo: metadata.inResponse ?? "",
+                Issuer: metadata.sp.getEntityID(),
+                AuthnRequest: rawSamlRequest
+            } as any);
+        }
+
+
         let Response2 = libsaml.constructSAMLSignature({
-            referenceTagXPath: "//*[local-name()='ArtifactResponse']",
+            referenceTagXPath: "/*[local-name(.)='Envelope']/*[local-name(.)='Body']/*[local-name(.)='ArtifactResponse']",
             privateKey,
             privateKeyPass,
             signatureAlgorithm,
@@ -135,7 +161,7 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
             signatureConfig: {
                 prefix: 'ds',
                 location: {
-                    reference: "//*[local-name()='ArtifactResponse']/*[local-name()='Issuer']",
+                    reference: "/*[local-name(.)='Envelope']/*[local-name(.)='Body']/*[local-name(.)='ArtifactResponse']/*[local-name(.)='Issuer']",
                     action: 'after'
                 }
             },
@@ -318,46 +344,48 @@ async function parseLoginRequestResolve(params: {
     console.log("==================接下来开始验证签名======================")
     console.log(xml)
     /** 首先先验证签名*/
-    let [verify, verifyAndDecryptSoapMessage] = await libsamlSoap.verifyAndDecryptSoapMessage(xml, verificationOptions)
+// @ts-ignore
+    let [verify, xmlString, isEncrypted, noSignature] = libsamlSoap.verifyAndDecryptSoapMessage(xml, verificationOptions)
+    console.log(verify)
     console.log("看下=-===============================")
-        if (!verify) {
-            return Promise.reject('ERR_FAIL_TO_VERIFY_SIGNATURE');
-        }
-        const parseResult = {
-            samlContent: verifyAndDecryptSoapMessage,
-            extract: extract(verifyAndDecryptSoapMessage, artifactResolveFields),
-        };
-        /**
-         *  Validation part: validate the context of response after signature is verified and decrypted (optional)
-         */
-        const targetEntityMetadata = sp.entityMeta;
+    if (!verify) {
+        return Promise.reject('ERR_FAIL_TO_VERIFY_SIGNATURE');
+    }
+    const parseResult = {
+        samlContent: xmlString,
+        extract: extract(xmlString, artifactResolveFields),
+    };
+    /**
+     *  Validation part: validate the context of response after signature is verified and decrypted (optional)
+     */
+    const targetEntityMetadata = sp.entityMeta;
     const issuer = targetEntityMetadata.getEntityID();
-     const extractedProperties = parseResult.extract;
-        console.log(extractedProperties)
-        console.log(issuer)
-        console.log("================看一下==================")
-        // unmatched issuer
-        if (extractedProperties.issuer !== issuer
-        ) {
-            return Promise.reject('ERR_UNMATCH_ISSUER');
-        }
-        console.log(extractedProperties.request.issueInstant,
-        )
-        console.log(sp.entitySetting.clockDrifts)
-        console.log("99999999999999999999")
-        // invalid session time
-        // only run the verifyTime when `SessionNotOnOrAfter` exists
-            if ( !verifyTime(
-                    undefined,
-                new Date(new Date(extractedProperties.request.issueInstant).getTime() + 5 * 60 * 1000).toISOString(),
-                    sp.entitySetting.clockDrifts
-                )
-            ) {
-                return Promise.reject('ERR_EXPIRED_SESSION');
-            }
+    const extractedProperties = parseResult.extract;
+    console.log(extractedProperties)
+    console.log(issuer)
+    console.log("================看一下==================")
+    // unmatched issuer
+    if (extractedProperties.issuer !== issuer
+    ) {
+        return Promise.reject('ERR_UNMATCH_ISSUER');
+    }
+    console.log(extractedProperties.request.issueInstant,
+    )
+    console.log(sp.entitySetting.clockDrifts)
+    console.log("99999999999999999999")
+    // invalid session time
+    // only run the verifyTime when `SessionNotOnOrAfter` exists
+    if (!verifyTime(
+        undefined,
+        new Date(new Date(extractedProperties.request.issueInstant).getTime() + 5 * 60 * 1000).toISOString(),
+        sp.entitySetting.clockDrifts
+    )
+    ) {
+        return Promise.reject('ERR_EXPIRED_SESSION');
+    }
 
 
-        return Promise.resolve(parseResult);
+    return Promise.resolve(parseResult);
 }
 
 async function parseLoginResponseResolve(params: { idp: IdentityProvider, sp: ServiceProvider, art: string }) {
@@ -423,6 +451,18 @@ async function parseLoginResponseResolve(params: { idp: IdentityProvider, sp: Se
         const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
         console.log(samlContent)
         console.log("区别soap------------------------")
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `origin-response-${timestamp}.xml`;
+        const filePath = path.join(__dirname, 'soap-responses-qu', fileName);
+
+        // 确保目录存在
+        if (!fs.existsSync(path.dirname(filePath))) {
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+
+        // 写入文件
+        fs.writeFileSync(filePath, samlContent, 'utf8');
+        console.log(`✅ SOAP 响应已保存至: ${filePath}`);
         /*            decryptRequired = isDecryptRequired*/
         if (!verified) {
             return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
