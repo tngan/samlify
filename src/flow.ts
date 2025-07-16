@@ -185,7 +185,6 @@ async function redirectFlow(options): Promise<FlowResult> {
 async function postFlow(options): Promise<FlowResult> {
 
     const {
-        soap = false,
         request,
         from,
         self,
@@ -199,65 +198,13 @@ async function postFlow(options): Promise<FlowResult> {
 
     let samlContent = '';
 
-    if (!soap) {
-        encodedRequest = body[direction];
-        // @ts-ignore
-        samlContent = String(base64Decode(encodedRequest))
-        console.log(samlContent)
-        console.log("堪舆i下----------------------")
-    }
+    encodedRequest = body[direction];
+    // @ts-ignore
+    samlContent = String(base64Decode(encodedRequest))
+    console.log(samlContent)
+    console.log("堪舆i下----------------------")
     /** 增加判断是不是Soap 工件绑定*/
-    if (soap) {
-        console.log("我来了来了来了===============================")
-        console.log("我来了来了来了===============================")
-        console.log("我来了来了来了===============================")
-        console.log("我来了来了来了===============================")
-        const metadata = {
 
-            idp: from.entityMeta,
-            sp: self.entityMeta,
-        };
-        const spSetting = self.entitySetting;
-        let ID = '_' + uuid.v4();
-        let url = metadata.idp.getArtifactResolutionService(bindDict.soap)
-        let samlSoapRaw = libsaml.replaceTagsByValue(libsaml.defaultArtifactResolveTemplate.context, {
-            ID: ID,
-            Destination: url,
-            Issuer: metadata.sp.getEntityID(),
-            IssueInstant: new Date().toISOString(),
-            Art: request.Art
-        })
-        if (!metadata.idp.isWantAuthnRequestsSigned()) {
-            samlContent = await sendArtifactResolve(url, samlSoapRaw)
-        }
-        if (metadata.idp.isWantAuthnRequestsSigned()) {
-            const {
-                privateKey,
-                privateKeyPass,
-                requestSignatureAlgorithm: signatureAlgorithm,
-                transformationAlgorithms
-            } = spSetting;
-            let signatureSoap = libsaml.constructSAMLSignature({
-                referenceTagXPath: "//*[local-name(.)='ArtifactResolve']",
-                isMessageSigned: false,
-                isBase64Output: false,
-                transformationAlgorithms: transformationAlgorithms,
-                privateKey,
-                privateKeyPass,
-                signatureAlgorithm,
-                rawSamlMessage: samlSoapRaw,
-                signingCert: metadata.sp.getX509Certificate('signing'),
-                signatureConfig: {
-                    prefix: 'ds',
-                    location: {
-                        reference: "//*[local-name(.)='Issuer']",
-                        action: 'after'
-                    }
-                }
-            })
-            samlContent = await sendArtifactResolve(url, signatureSoap)
-        }
-    }
 
 
     console.log("区别======================================")
@@ -269,9 +216,8 @@ async function postFlow(options): Promise<FlowResult> {
     let decryptRequired = from.entitySetting.isAssertionEncrypted;
     let extractorFields: ExtractorFields = [];
     // validate the xml first
-    console.log(soap)
-    console.log("看下是不是soap============================")
-    let res = await libsaml.isValidXml(samlContent, soap).catch((error) => {
+
+    let res = await libsaml.isValidXml(samlContent).catch((error) => {
         console.log(error)
         console.log("这是合适呢么错===============")
         return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
@@ -284,128 +230,35 @@ async function postFlow(options): Promise<FlowResult> {
         extractorFields = getDefaultExtractorFields(parserType, null);
     }
     // check status based on different scenarios
-    await checkStatus(samlContent, parserType, soap);
+    await checkStatus(samlContent, parserType);
     /**检查签名顺序 */
 
-    if (soap) {
-        /*    const [verified, verifiedAssertionNode, isDecryptRequired] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
-            console.log(from.entityMeta)
-            console.log(from.entitySetting.requestSignatureAlgorithm)
-            console.log(samlContent)
-            console.log("区别soap------------------------")
-            decryptRequired = isDecryptRequired
-            if (!verified) {
-              return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-            }
+    const [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignature(samlContent, verificationOptions);
+    decryptRequired = isDecryptRequired
+    console.log(from.entityMeta)
+    console.log(from.entitySetting.requestSignatureAlgorithm)
+    console.log(samlContent)
+    console.log("区别------------------------")
 
-            if (!decryptRequired) {
-              extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-            }
-            if (parserType === 'SAMLResponse' && decryptRequired) {
-              // 1. 解密断言
-              const [decryptedSAML, decryptedAssertion] = await libsaml.decryptAssertionSoap(self, samlContent);
-              // 2. 检查解密后的断言是否包含签名
-              const assertionDoc = new DOMParser().parseFromString(decryptedAssertion, 'application/xml');
-              // @ts-ignore
-              const assertionSignatureNodes = select("./!*[local-name()='Signature']", assertionDoc.documentElement);
+    if (isDecryptRequired && noSignature) {
 
-              // 3. 如果存在签名则验证
-              if (assertionSignatureNodes.length > 0) {
-                // 3.1 创建新的验证选项（保持原配置）
-                const assertionVerificationOptions = {
-                  ...verificationOptions,
-                  isAssertion: true // 添加标识表示正在验证断言
-                };
-
-                // 3.2 验证断言签名
-                const [assertionVerified, result] = libsaml.verifySignatureSoap(decryptedAssertion, assertionVerificationOptions);
-                if (!assertionVerified) {
-                  return Promise.reject('ERR_FAIL_TO_VERIFY_ASSERTION_SIGNATURE');
-                }
-                if (assertionVerified) {
-                  // @ts-ignore
-
-                  samlContent = result
-                  extractorFields = getDefaultExtractorFields(parserType, result);
-                }
-              } else {
-                samlContent = decryptedAssertion
-                extractorFields = getDefaultExtractorFields(parserType, decryptedAssertion);
-              }
-            }*/
-        const [verified1, verifiedAssertionNode1, isDecryptRequired1, noSignature1] = libsaml.verifySignatureSoap(samlContent, verificationOptions);
-        if (verified1) {
-            // @ts-ignore
-            const [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignature(verifiedAssertionNode1, verificationOptions);
-            console.log(verified)
-            console.log(verifiedAssertionNode)
-            console.log(isDecryptRequired)
-            console.log(noSignature)
-            console.log('=================================第二次验证========================')
-            console.log(verifiedAssertionNode)
-            console.log('=================================第一次验证========================')
-            console.log(verifiedAssertionNode1)
-            console.log('=================================原来的========================')
-            console.log(samlContent)
-            console.log("区别------------------------")
-            decryptRequired = isDecryptRequired
-
-
-            if (isDecryptRequired && noSignature) {
-                console.log("解密了============================")
-                console.log("解密了============================")
-                console.log("解密了============================")
-                console.log("解密了============================")
-                // @ts-ignore
-                const result = await libsaml.decryptAssertion(self, verifiedAssertionNode1);
-                samlContent = result[0];
-                extractorFields = getDefaultExtractorFields(parserType, result[1]);
-            }
-            if (!verified && !noSignature && !isDecryptRequired) {
-
-                return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-            }
-            if (!decryptRequired) {
-
-                extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-            }
-            if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
-                const result = await libsaml.decryptAssertion(self, samlContent);
-                samlContent = result[0];
-                extractorFields = getDefaultExtractorFields(parserType, result[1]);
-
-            }
-        }
+        const result = await libsaml.decryptAssertion(self, samlContent);
+        samlContent = result[0];
+        extractorFields = getDefaultExtractorFields(parserType, result[1]);
     }
-    if (!soap) {
+    if (!verified && !noSignature && !isDecryptRequired) {
 
-        const [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignature(samlContent, verificationOptions);
-        decryptRequired = isDecryptRequired
-        console.log(from.entityMeta)
-        console.log(from.entitySetting.requestSignatureAlgorithm)
-        console.log(samlContent)
-        console.log("区别------------------------")
+        return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
+    }
+    if (!decryptRequired) {
 
-        if (isDecryptRequired && noSignature) {
+        extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
+    }
+    if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
+        const result = await libsaml.decryptAssertion(self, samlContent);
+        samlContent = result[0];
+        extractorFields = getDefaultExtractorFields(parserType, result[1]);
 
-            const result = await libsaml.decryptAssertion(self, samlContent);
-            samlContent = result[0];
-            extractorFields = getDefaultExtractorFields(parserType, result[1]);
-        }
-        if (!verified && !noSignature && !isDecryptRequired) {
-
-            return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
-        }
-        if (!decryptRequired) {
-
-            extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
-        }
-        if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
-            const result = await libsaml.decryptAssertion(self, samlContent);
-            samlContent = result[0];
-            extractorFields = getDefaultExtractorFields(parserType, result[1]);
-
-        }
     }
 
 
@@ -745,7 +598,7 @@ async function postSimpleSignFlow(options): Promise<FlowResult> {
 }
 
 
-function checkStatus(content: string, parserType: string, soap?: boolean): Promise<string> {
+export function checkStatus(content: string, parserType: string, soap?: boolean): Promise<string> {
 
     // only check response parser
     if (parserType !== urlParams.samlResponse && parserType !== urlParams.logoutResponse) {

@@ -3,16 +3,15 @@ import {select} from "xpath";
 import {SignedXml} from "xml-crypto";
 import fs from "fs";
 import utility, {flattenDeep} from "./utility.js";
-import {SignatureVerifierOptions} from "./libsaml.js";
-import libsaml from "./libsaml.js";
+import libsaml, {SignatureVerifierOptions} from "./libsaml.js";
 import {wording} from "./urn.js";
+import {DOMParser} from '@xmldom/xmldom';
 
 const certUse = wording.certUse;
-import {DOMParser} from '@xmldom/xmldom';
 
 const docParser = new DOMParser();
 
-function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
+async function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
     const {dom} = getContext();
     const doc = dom.parseFromString(xml, 'application/xml');
     const docParser = new DOMParser();
@@ -41,23 +40,10 @@ function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
 
     // 基于 SOAP 结构重新定义 XPath
     const messageSignatureXpath = `${basePath}/*[local-name(.)='Signature']`;
-    const assertionSignatureXpath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']`;
-    const wrappingElementsXPath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']`;
-    const encryptedAssertionsXpath = `${basePath}/*[local-name(.)='Response']/*[local-name(.)='EncryptedAssertion']`;
 
-    // 包装攻击检测
-    // @ts-expect-error
-    const wrappingElementNode = select(wrappingElementsXPath, doc);
-    if (wrappingElementNode.length !== 0) {
-        throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
-    }
-
-    // @ts-expect-error
-    const encryptedAssertions = select(encryptedAssertionsXpath, doc);
     // @ts-expect-error
     const messageSignatureNode = select(messageSignatureXpath, doc);
-    // @ts-expect-error
-    const assertionSignatureNode = select(assertionSignatureXpath, doc);
+
 
     let selection: any[] = [];
 
@@ -67,9 +53,8 @@ function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
     if (selection.length === 0) {
         throw new Error('ERR_ZERO_SIGNATURE');
     }
-    /** --------------- 检验签名----------------*/
-    let result  = verifySignature(xml, selection, opts)
-return result
+    return verifySignature(xml, selection, opts)
+
 }
 
 function verifySignature(xml, selection, opts) {
@@ -135,37 +120,22 @@ function verifySignature(xml, selection, opts) {
         console.log(rootNode?.localName)
         console.log("好好看下================")
         switch (rootNode?.localName) {
-            case 'Response':
-                // @ts-expect-error
-                const encryptedAssert = select("./*[local-name()='EncryptedAssertion']", rootNode);
-                // @ts-expect-error
-                const assertions = select("./*[local-name()='Assertion']", rootNode);
-
-                if (encryptedAssert.length === 1) {
-                    return [true, encryptedAssert[0].toString(), true, false];
-                }
-
-                if (assertions.length === 1) {
-                    return [true, assertions[0].toString(), false, false];
-                }
-                return [true, null, false, true]; // 签名验证成功但未找到断言
-
-            case 'Assertion':
-                return [true, rootNode.toString(), false, false];
-
-            case 'EncryptedAssertion':
-                return [true, rootNode.toString(), true, false];
 
             case 'ArtifactResolve':
-            case 'ArtifactResponse':
-                // 提取SOAP消息内部的实际内容
-                console.log()
                 return [true, rootNode.toString(), false, false];
+            case 'ArtifactResponse':
+
+                // @ts-expect-error
+                const Response = select("/*[local-name()='ArtifactResponse']/*[local-name()='Response']", rootNode);
+                console.log(Response[0].toString())
+                console.log("这是什么====================")
+                return [true, Response[0].toString(), false, false]; // 签名验证成功但未找到断言
 
             default:
                 return [true, null, false, true]; // 签名验证成功但未找到可识别的内容
         }
     }
+    return [false, null, false, true]
 }
 
 export default {

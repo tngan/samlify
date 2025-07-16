@@ -1068,7 +1068,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
         case 'ArtifactResolve':
         case 'ArtifactResponse':
           // 提取SOAP消息内部的实际内容
-            console.log()
           return [true, rootNode.toString(), false, false];
 
         default:
