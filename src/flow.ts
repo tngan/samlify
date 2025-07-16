@@ -201,13 +201,9 @@ async function postFlow(options): Promise<FlowResult> {
     encodedRequest = body[direction];
     // @ts-ignore
     samlContent = String(base64Decode(encodedRequest))
-    console.log(samlContent)
-    console.log("堪舆i下----------------------")
+
     /** 增加判断是不是Soap 工件绑定*/
 
-
-
-    console.log("区别======================================")
     const verificationOptions = {
         metadata: from.entityMeta,
         signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
@@ -218,8 +214,6 @@ async function postFlow(options): Promise<FlowResult> {
     // validate the xml first
 
     let res = await libsaml.isValidXml(samlContent).catch((error) => {
-        console.log(error)
-        console.log("这是合适呢么错===============")
         return Promise.reject('ERR_EXCEPTION_VALIDATE_XML');
     });
 
@@ -235,11 +229,6 @@ async function postFlow(options): Promise<FlowResult> {
 
     const [verified, verifiedAssertionNode, isDecryptRequired, noSignature] = libsaml.verifySignature(samlContent, verificationOptions);
     decryptRequired = isDecryptRequired
-    console.log(from.entityMeta)
-    console.log(from.entitySetting.requestSignatureAlgorithm)
-    console.log(samlContent)
-    console.log("区别------------------------")
-
     if (isDecryptRequired && noSignature) {
 
         const result = await libsaml.decryptAssertion(self, samlContent);
@@ -250,11 +239,11 @@ async function postFlow(options): Promise<FlowResult> {
 
         return Promise.reject('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');
     }
-    if (!decryptRequired) {
+    if (!isDecryptRequired) {
 
         extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     }
-    if (parserType === 'SAMLResponse' && decryptRequired && !noSignature) {
+    if (parserType === 'SAMLResponse' && isDecryptRequired && !noSignature) {
         const result = await libsaml.decryptAssertion(self, samlContent);
         samlContent = result[0];
         extractorFields = getDefaultExtractorFields(parserType, result[1]);
@@ -266,8 +255,6 @@ async function postFlow(options): Promise<FlowResult> {
         samlContent: samlContent,
         extract: extract(samlContent, extractorFields),
     };
-    console.log(parseResult)
-    console.log("这就是结果了-------------------------")
     /**
      *  Validation part: validate the context of response after signature is verified and decrypted (optional)
      */

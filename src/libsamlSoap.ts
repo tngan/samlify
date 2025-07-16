@@ -28,10 +28,10 @@ async function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
 
     // 根据消息类型选择合适的 XPath
     let basePath = "";
-    if (artifactResolveNodes.length > 0) {
+    if (artifactResolveNodes?.length > 0) {
         type = 'artifactResolve'
         basePath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResolve']";
-    } else if (artifactResponseNodes.length > 0) {
+    } else if (artifactResponseNodes?.length > 0) {
         type = 'artifactResponse'
         basePath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='ArtifactResponse']";
     } else {
@@ -47,7 +47,7 @@ async function verifyAndDecryptSoapMessage(xml, opts: SignatureVerifierOptions){
 
     let selection: any[] = [];
 
-    if (messageSignatureNode.length > 0) {
+    if (messageSignatureNode?.length > 0) {
         selection = selection.concat(messageSignatureNode);
     }
     if (selection.length === 0) {
@@ -117,19 +117,14 @@ function verifySignature(xml, selection, opts) {
         const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
 
         // 处理签名的内容
-        console.log(rootNode?.localName)
-        console.log("好好看下================")
         switch (rootNode?.localName) {
 
             case 'ArtifactResolve':
                 return [true, rootNode.toString(), false, false];
             case 'ArtifactResponse':
-
                 // @ts-expect-error
                 const Response = select("/*[local-name()='ArtifactResponse']/*[local-name()='Response']", rootNode);
-                console.log(Response[0].toString())
-                console.log("这是什么====================")
-                return [true, Response[0].toString(), false, false]; // 签名验证成功但未找到断言
+                return [true, Response?.[0].toString(), false, false]; // 签名验证成功但未找到断言
 
             default:
                 return [true, null, false, true]; // 签名验证成功但未找到可识别的内容
