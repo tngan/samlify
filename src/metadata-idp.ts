@@ -66,9 +66,9 @@ export class IdpMetadata extends Metadata {
             Binding: a.Binding,
             Location: a.Location,
           };
-          if (a.isDefault) {
+/*          if (a.isDefault) {
             attr.isDefault = true;
-          }
+          }*/
           IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
         });
       } else {
@@ -78,9 +78,9 @@ export class IdpMetadata extends Metadata {
       if (isNonEmptyArray(singleLogoutService)) {
         singleLogoutService.forEach((a, indexCount) => {
           const attr: any = {};
-          if (a.isDefault) {
+/*          if (a.isDefault) {
             attr.isDefault = true;
-          }
+          }*/
           attr.Binding = a.Binding;
           attr.Location = a.Location;
           IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
@@ -91,9 +91,9 @@ export class IdpMetadata extends Metadata {
       if (isNonEmptyArray(artifactResolutionService)) {
         artifactResolutionService.forEach((a, indexCount) => {
           const attr: any = {};
-          if (a.isDefault) {
+     /*     if (a.isDefault) {
             attr.isDefault = true;
-          }
+          }*/
           attr.Binding = a.Binding;
           attr.Location = a.Location;
           IDPSSODescriptor.push({ ArtifactResolutionService: [{ _attr: attr }] });

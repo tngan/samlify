@@ -11,7 +11,7 @@ export { default as SamlLib } from './src/libsaml.js';
 import * as Constants from './src/urn.js';
 import * as Extractor from './src/extractor.js';
 import * as Soap from './src/soap.js';
-import {validate} from './src/schemaValidator.js'
+import {validate,validateMetadata} from './src/schemaValidator.js'
 // exposed methods for customizing samlify
 import { setSchemaValidator, setDOMParserOptions } from './src/api.js';
 
@@ -27,6 +27,7 @@ export {
   setSchemaValidator,
   setDOMParserOptions,
   validate,
+  validateMetadata,
   Soap
 
 };

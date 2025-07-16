@@ -106,9 +106,9 @@ export class SpMetadata extends Metadata {
             Binding: a.Binding,
             Location: a.Location,
           };
-          if (a.isDefault) {
+      /*    if (a.isDefault) {
             attr.isDefault = true;
-          }
+          }*/
           descriptors.SingleLogoutService!.push([{ _attr: attr }]);
         });
       }
@@ -120,9 +120,9 @@ export class SpMetadata extends Metadata {
             Binding: a.Binding,
             Location: a.Location,
           };
-          if (a.isDefault) {
+   /*       if (a.isDefault) {
             attr.isDefault = true;
-          }
+          }*/
           descriptors.ArtifactResolutionService!.push([{ _attr: attr }]);
         });
       }

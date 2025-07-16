@@ -151,6 +151,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         tvalue.InResponseTo = requestInfo?.extract?.request?.id ?? '';
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+      console.log(rawSamlResponse)
+      console.log("没有加密签名过的------------------------------------")
     }
     const {privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm} = idpSetting;
     const config = {
