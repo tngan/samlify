@@ -4,35 +4,32 @@
  * @desc Binding-level API, declare the functions using POST binding
  */
 import {checkStatus} from "./flow.js";
-import {wording, namespace, StatusCode} from './urn.js';
+import {ParserType, StatusCode, wording} from './urn.js';
 import type {BindingContext} from './entity.js';
 import libsaml from './libsaml.js';
 import libsamlSoap from './libsamlSoap.js';
 import utility, {get} from './utility.js';
-import {BindingNamespace, ParserType,} from './urn.js';
 import {fileURLToPath} from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 import * as uuid from 'uuid'
 import {
     IdentityProviderConstructor as IdentityProvider,
     ServiceProviderConstructor as ServiceProvider
 } from "./types.js";
-import {extract, ExtractorFields, artifactResponseFields, artifactResolveFields} from "./extractor.js";
 import {
+    artifactResolveFields,
+    extract,
+    ExtractorFields,
     loginRequestFields,
     loginResponseFields,
-    loginResponseStatusFields,
-    loginArtifactResponseStatusFields,
     logoutRequestFields,
-    logoutResponseFields,
-    logoutResponseStatusFields
-} from './extractor.js'
+    logoutResponseFields
+} from "./extractor.js";
 import {verifyTime} from "./validator.js";
 import {sendArtifactResolve} from "./soap.js";
 import path from "node:path";
-import fs from "node:fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 // get the default extractor fields based on the parserType
@@ -136,7 +133,9 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
                 }
 
 
-        let Response2 = libsaml.constructSAMLSignature({
+        /** 构建响应签名*/
+        // No need to embeded XML signature
+        return libsaml.constructSAMLSignature({
             referenceTagXPath: "/*[local-name(.)='Envelope']/*[local-name(.)='Body']/*[local-name(.)='ArtifactResponse']",
             privateKey,
             privateKeyPass,
@@ -153,10 +152,7 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
                     action: 'after'
                 }
             },
-        })
-        /** 构建响应签名*/
-        // No need to embeded XML signature
-        return Response2;
+        });
     }
     throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
@@ -325,14 +321,16 @@ async function parseLoginRequestResolve(params: {
     }
 
     /** 首先先验证签名*/
+
 // @ts-ignore
-    let [verify, xmlString, isEncrypted, noSignature] = libsamlSoap.verifyAndDecryptSoapMessage(xml, verificationOptions)
+
+    let [verify, xmlString, isEncrypted, noSignature] = await libsamlSoap.verifyAndDecryptSoapMessage(xml, verificationOptions)
     if (!verify) {
         return Promise.reject('ERR_FAIL_TO_VERIFY_SIGNATURE');
     }
     const parseResult = {
         samlContent: xmlString,
-        extract: extract(xmlString, artifactResolveFields),
+        extract: extract(xmlString as string, artifactResolveFields),
     };
     /**
      *  Validation part: validate the context of response after signature is verified and decrypted (optional)

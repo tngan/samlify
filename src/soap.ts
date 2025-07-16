@@ -17,17 +17,15 @@ export async function sendArtifactResolve(url:string,soapRequest:any) {
             soapRequest,
             {
                 headers: {
-                    'Content-Type': 'application/soap+xml; charset=utf-8',
+                    'Content-Type': 'text/xml',
                     'SOAPAction': '"ArtifactResolve"'
                 },
                 timeout: 5000 // 5秒超时
             }
         );
 
-        console.log('✅ Resolve请求成功')
         return response.data;
     } catch (error) {
-        console.error('❌ Resolve请求失败');
         throw error.response.data;
     }
 }
@@ -39,17 +37,15 @@ export async function sendArtifactResponse(url:string,soapRequest:any) {
             soapRequest,
             {
                 headers: {
-                    'Content-Type': 'application/soap+xml; charset=utf-8',
+                    'Content-Type': 'text/xml',
                     'SOAPAction': '"ArtifactResponse"'
                 },
                 timeout: 5000 // 5秒超时
             }
         );
 
-        console.log('✅ Resolve请求成功')
         return response.data;
     } catch (error) {
-        console.error('❌ Resolve请求失败');
         throw error.response.data;
     }
 }

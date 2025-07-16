@@ -269,7 +269,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
       xml = inflateString(base64Encoded);
     } catch (inflateError) {
       // 4. 解压失败，尝试直接解析为未压缩的XML
-      console.log("解压失败---------------------")
       try {
         const base64Encoded = decodeURIComponent(urlEncodedResponse);
 
@@ -642,8 +641,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
         const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
         // process the verified signature:
         // case 1, rootSignedDoc is a response:
-        console.log(rootNode?.localName)
-        console.log("9999999999999999999999999999999")
         if (rootNode?.localName === 'Response') {
 
           // try getting the Xml from the first assertion
@@ -681,7 +678,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
           return [true, null, false, false]; // signature is valid. But there is no assertion node here. It could be metadata node, hence return null
         }
       }
-      console.log("走的是这里")
       // something has gone seriously wrong if we are still here
       return [false, null, false, true]; // return encryptedAssert
    /*   throw new Error('ERR_ZERO_SIGNATURE');*/
@@ -969,7 +965,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
 
     // 处理加密断言的情况
     if (selection.length === 0) {
-      console.log("走的是这里-------------------------------------------")
       if (encryptedAssertions.length > 0) {
         if (encryptedAssertions.length > 1) {
           throw new Error('ERR_MULTIPLE_ASSERTION');
@@ -1041,8 +1036,6 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
       const rootNode = docParser.parseFromString(signedVerifiedXML, 'application/xml').documentElement;
 
       // 处理签名的内容
-      console.log(rootNode?.localName)
-      console.log("好好看下================")
       switch(rootNode?.localName) {
         case 'Response':
           // @ts-expect-error

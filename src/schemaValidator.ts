@@ -69,7 +69,6 @@ function detectXXEIndicators(samlString: string) {
 export const validate = async (xml: string,isSoap: boolean = false) => {
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
-      console.log("----------------------绝对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
     }
   schemas = isSoap ?soapSchema: normal;
@@ -93,14 +92,11 @@ export const validate = async (xml: string,isSoap: boolean = false) => {
         });
 
         if (validationResult.valid) {
-          console.log("验证通过-------------------------")
             return true;
         }
         throw validationResult.errors;
 
     } catch (error) {
-      console.log(error)
-      console.log("----------------------绝333333333333333333333333对不会是这里---------------------")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
 
     }
