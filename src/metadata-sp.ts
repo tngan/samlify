@@ -92,26 +92,6 @@ export class SpMetadata extends Metadata {
       for(const cert of castArrayOpt(encryptCert)) {
         descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', cert).KeyDescriptor);
       }
-
-      if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
-      } else {
-        // default value
-        descriptors.NameIDFormat!.push(namespace.format.emailAddress);
-      }
-
-      if (isNonEmptyArray(singleLogoutService)) {
-        singleLogoutService.forEach(a => {
-          const attr: any = {
-            Binding: a.Binding,
-            Location: a.Location,
-          };
-      /*    if (a.isDefault) {
-            attr.isDefault = true;
-          }*/
-          descriptors.SingleLogoutService!.push([{ _attr: attr }]);
-        });
-      }
       if (isNonEmptyArray(artifactResolutionService)) {
         let indexCount = 0;
         artifactResolutionService.forEach(a => {
@@ -120,12 +100,33 @@ export class SpMetadata extends Metadata {
             Binding: a.Binding,
             Location: a.Location,
           };
-   /*       if (a.isDefault) {
+          if (a.isDefault) {
             attr.isDefault = true;
-          }*/
+          }
           descriptors.ArtifactResolutionService!.push([{ _attr: attr }]);
         });
       }
+      if (isNonEmptyArray(singleLogoutService)) {
+        singleLogoutService.forEach(a => {
+          const attr: any = {
+            Binding: a.Binding,
+            Location: a.Location,
+          };
+          /*    if (a.isDefault) {
+                attr.isDefault = true;
+              }*/
+          descriptors.SingleLogoutService!.push([{ _attr: attr }]);
+        });
+      }
+      if (isNonEmptyArray(nameIDFormat)) {
+        nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
+      } else {
+        // default value
+        descriptors.NameIDFormat!.push(namespace.format.emailAddress);
+      }
+
+
+
 
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;

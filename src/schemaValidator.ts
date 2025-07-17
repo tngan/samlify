@@ -2,7 +2,7 @@ import {validateXML} from 'xmllint-wasm';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-
+import {DOMParser} from '@xmldom/xmldom'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let normal =[
@@ -106,14 +106,12 @@ export const validate = async (xml: string,isSoap: boolean = false) => {
         throw validationResult.errors;
 
     } catch (error) {
-        console.log(error)
-        console.log("真的错误了=================")
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
 
     }
 
 };
-export const validateMetadata = async (xml: string,isSoap: boolean = false) => {
+export const validateMetadata = async (xml: string,isParse: boolean = false) => {
     const indicators = detectXXEIndicators(xml);
     if (indicators) {
         throw new Error('ERR_EXCEPTION_VALIDATE_XML');
@@ -139,15 +137,39 @@ export const validateMetadata = async (xml: string,isSoap: boolean = false) => {
         });
 
         if (validationResult.valid) {
+            if(isParse){
+// 解析 XML 为 DOM 对象
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xml, 'text/xml');
+
+                // 检查 IdP 和 SP 描述符元素
+                const idpDescriptor = xmlDoc.getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:metadata', 'IDPSSODescriptor');
+                const spDescriptor = xmlDoc.getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:metadata', 'SPSSODescriptor');
+
+                // 判断元数据类型
+                let metadataType: string;
+                if (idpDescriptor.length > 0 && spDescriptor.length > 0) {
+                    metadataType = 'both'; // 同时包含 IdP 和 SP
+                } else if (idpDescriptor.length > 0) {
+                    metadataType = 'IdP'; // 身份提供者
+                } else if (spDescriptor.length > 0) {
+                    metadataType = 'SP'; // 服务提供者
+                } else {
+                    metadataType = 'unknown'; // 无法确定
+                }
+
+                // 返回验证结果和元数据类型
+                return {
+                    isValid: true,
+                    metadataType: metadataType
+                };
+            }
             return true;
         }
         throw validationResult.errors;
 
     } catch (error) {
-        console.log(error)
-        console.log("真的错误了=================")
-        throw new Error('ERR_EXCEPTION_VALIDATE_XML');
-
+      return error
     }
 
 };

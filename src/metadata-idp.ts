@@ -55,6 +55,34 @@ export class IdpMetadata extends Metadata {
       for(const cert of castArrayOpt(encryptCert)) {
         IDPSSODescriptor.push(libsaml.createKeySection('encryption', cert));
       }
+      if (isNonEmptyArray(artifactResolutionService)) {
+        let indexCounts = 0;
+        artifactResolutionService.forEach((a, indexCount) => {
+          const attr: any = {};
+          /*     if (a.isDefault) {
+                 attr.isDefault = true;
+               }*/
+          attr.index =  String(indexCounts++),
+          attr.Binding = a.Binding;
+          attr.Location = a.Location;
+          IDPSSODescriptor.push({ ArtifactResolutionService: [{ _attr: attr }] });
+        });
+      } else {
+        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
+      }
+      if (isNonEmptyArray(singleLogoutService)) {
+        singleLogoutService.forEach((a, indexCount) => {
+          const attr: any = {};
+          /*          if (a.isDefault) {
+                      attr.isDefault = true;
+                    }*/
+          attr.Binding = a.Binding;
+          attr.Location = a.Location;
+          IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
+        });
+      } else {
+        console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
+      }
 
       if (isNonEmptyArray(nameIDFormat)) {
         nameIDFormat.forEach(f => IDPSSODescriptor.push({ NameIDFormat: f }));
@@ -75,32 +103,7 @@ export class IdpMetadata extends Metadata {
         throw new Error('ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE');
       }
 
-      if (isNonEmptyArray(singleLogoutService)) {
-        singleLogoutService.forEach((a, indexCount) => {
-          const attr: any = {};
-/*          if (a.isDefault) {
-            attr.isDefault = true;
-          }*/
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
-        });
-      } else {
-        console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
-      }
-      if (isNonEmptyArray(artifactResolutionService)) {
-        artifactResolutionService.forEach((a, indexCount) => {
-          const attr: any = {};
-     /*     if (a.isDefault) {
-            attr.isDefault = true;
-          }*/
-          attr.Binding = a.Binding;
-          attr.Location = a.Location;
-          IDPSSODescriptor.push({ ArtifactResolutionService: [{ _attr: attr }] });
-        });
-      } else {
-        console.warn('Construct identity  provider - missing endpoint of ArtifactResolutionService');
-      }
+
       // Create a new metadata by setting
       meta = xml([{
         EntityDescriptor: [{
