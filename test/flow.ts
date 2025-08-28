@@ -404,6 +404,7 @@ test('send response with signed assertion and parse it', async t => {
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(samlContent.includes('>user@esaml2.com</saml:NameID>'), true);
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.response.inResponseTo, 'request_id');
 });
@@ -929,6 +930,7 @@ test('send login response with encrypted non-signed assertion and parse it', asy
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(samlContent.includes('>user@esaml2.com</saml:NameID>'), true);
   t.is(extract.nameID, 'user@esaml2.com');
   t.is(extract.response.inResponseTo, 'request_id');
 });
@@ -1101,6 +1103,7 @@ test('send login response with encrypted non-signed assertion with EncryptThenSi
   t.is(typeof id, 'string');
   t.is(samlContent.startsWith('<samlp:Response'), true);
   t.is(samlContent.endsWith('/samlp:Response>'), true);
+  t.is(samlContent.includes('>user@esaml2.com</saml:NameID>'), true);
   t.is(extract.nameID, 'user@esaml2.com');
 });
 
