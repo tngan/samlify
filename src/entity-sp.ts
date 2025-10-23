@@ -52,21 +52,53 @@ export class ServiceProvider extends Entity {
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
+  * @param  {function} customTagReplacement     used when developers have their own login response template
+  */
+  public createLoginRequest(
+    idp: IdentityProvider,
+    binding?: string,
+    customTagReplacement?: (template: string) => BindingContext
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext;
+
+  /**
+  * @desc  Generates the login request for developers to design their own method
+  * @param  {IdentityProvider} idp               object of identity provider
+  * @param  {string}   binding                   protocol binding
   * @param  {object}   options                   optional parameters
   * @param  {function} options.customTagReplacement     used when developers have their own login response template
   * @param  {string}   options.relayState                optional relay state
   */
   public createLoginRequest(
     idp: IdentityProvider,
-    binding = 'redirect',
+    binding?: string,
     options?: {
       customTagReplacement?: (template: string) => BindingContext;
       relayState?: string;
     }
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext;
+
+  public createLoginRequest(
+    idp: IdentityProvider,
+    binding = 'redirect',
+    optionsOrCustomTagReplacement?:
+      | { customTagReplacement?: (template: string) => BindingContext; relayState?: string; }
+      | ((template: string) => BindingContext)
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
-    const { customTagReplacement, relayState } = options || {};
+
+    // Handle both old signature (function) and new signature (options object)
+    let customTagReplacement: ((template: string) => BindingContext) | undefined;
+    let relayState: string | undefined;
+
+    if (typeof optionsOrCustomTagReplacement === 'function') {
+      // Old signature: third parameter is customTagReplacement function
+      customTagReplacement = optionsOrCustomTagReplacement;
+    } else if (optionsOrCustomTagReplacement && typeof optionsOrCustomTagReplacement === 'object') {
+      // New signature: third parameter is options object
+      customTagReplacement = optionsOrCustomTagReplacement.customTagReplacement;
+      relayState = optionsOrCustomTagReplacement.relayState;
+    }
 
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');

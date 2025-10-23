@@ -375,6 +375,25 @@ test('create login request with redirect binding overriding SP default relay sta
   t.not(RelayState, defaultRelayState);
 });
 
+test('create login request with redirect binding using old API signature (backward compatibility)', async t => {
+  const _sp = serviceProvider({
+    ...defaultSpConfig, loginRequestTemplate: {
+      context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
+    },
+  });
+
+  // Test old API signature: createLoginRequest(idp, binding, customTagReplacement)
+  const { id, context } = _sp.createLoginRequest(idp, 'redirect', template => {
+    return {
+      id: 'old_api_test_id',
+      context: template,
+    };
+  });
+
+  t.is(id, 'old_api_test_id');
+  t.is(typeof context, 'string');
+});
+
 test('create login request with post binding using [custom template]', t => {
   const _sp = serviceProvider({
     ...defaultSpConfig, loginRequestTemplate: {
