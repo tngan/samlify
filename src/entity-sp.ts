@@ -52,17 +52,22 @@ export class ServiceProvider extends Entity {
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
-  * @param  {function} customTagReplacement     used when developers have their own login response template
-  * @param  {string}   relayState                optional relay state
+  * @param  {object}   options                   optional parameters
+  * @param  {function} options.customTagReplacement     used when developers have their own login response template
+  * @param  {string}   options.relayState                optional relay state
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
-    relayState?: string,
+    options?: {
+      customTagReplacement?: (template: string) => BindingContext;
+      relayState?: string;
+    }
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
+    const { customTagReplacement, relayState } = options || {};
+
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }

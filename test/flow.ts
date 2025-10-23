@@ -246,11 +246,13 @@ test('create login request with redirect binding using [custom template]', t => 
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context } = _sp.createLoginRequest(idp, 'redirect', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
+  const { id, context } = _sp.createLoginRequest(idp, 'redirect', {
+    customTagReplacement: template => {
+      return {
+        id: 'exposed_testing_id',
+        context: template, // all the tags are supposed to be replaced
+      };
+    }
   });
   (id === 'exposed_testing_id' && isString(context)) ? t.pass() : t.fail();
 });
@@ -291,7 +293,7 @@ test('create login request with redirect binding signing with encrypted PKCS#8',
 
 test('create login request with redirect binding using custom relay state', async t => {
   const customRelayState = 'https://example.com/return';
-  const { id, context } = sp.createLoginRequest(idp, 'redirect', undefined, customRelayState);
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', { relayState: customRelayState });
 
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
@@ -359,7 +361,7 @@ test('create login request with redirect binding overriding SP default relay sta
     relayState: defaultRelayState,
   });
 
-  const { id, context } = spWithDefaultRelay.createLoginRequest(idp, 'redirect', undefined, customRelayState);
+  const { id, context } = spWithDefaultRelay.createLoginRequest(idp, 'redirect', { relayState: customRelayState });
 
   t.is(typeof id, 'string');
   t.is(typeof context, 'string');
@@ -379,11 +381,13 @@ test('create login request with post binding using [custom template]', t => {
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context, entityEndpoint, type, relayState } = _sp.createLoginRequest(idp, 'post', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
+  const { id, context, entityEndpoint, type, relayState } = _sp.createLoginRequest(idp, 'post', {
+    customTagReplacement: template => {
+      return {
+        id: 'exposed_testing_id',
+        context: template, // all the tags are supposed to be replaced
+      };
+    }
   }) as PostBindingContext;
   id === 'exposed_testing_id' &&
     isString(context) &&
@@ -399,11 +403,13 @@ test('create login request with post simpleSign binding using [custom template]'
       context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
     },
   });
-  const { id, context, entityEndpoint, type, relayState, signature, sigAlg } = _sp.createLoginRequest(idp, 'simpleSign', template => {
-    return {
-      id: 'exposed_testing_id',
-      context: template, // all the tags are supposed to be replaced
-    };
+  const { id, context, entityEndpoint, type, relayState, signature, sigAlg } = _sp.createLoginRequest(idp, 'simpleSign', {
+    customTagReplacement: template => {
+      return {
+        id: 'exposed_testing_id',
+        context: template, // all the tags are supposed to be replaced
+      };
+    }
   }) as SimpleSignBindingContext;
   id === 'exposed_testing_id' &&
     isString(context) &&
