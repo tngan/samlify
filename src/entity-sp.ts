@@ -23,7 +23,7 @@ import { flow, FlowResult } from './flow';
 /*
  * @desc interface function
  */
-export default function(props: ServiceProviderSettings) {
+export default function (props: ServiceProviderSettings) {
   return new ServiceProvider(props);
 }
 
@@ -53,12 +53,14 @@ export class ServiceProvider extends Entity {
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {string}   relayState                optional relay state
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
     customTagReplacement?: (template: string) => BindingContext,
-  ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
+    relayState?: string,
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
@@ -68,7 +70,7 @@ export class ServiceProvider extends Entity {
     let context: any = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL({ idp, sp: this, relayState }, customTagReplacement);
 
       case nsBinding.post:
         context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
@@ -76,13 +78,13 @@ export class ServiceProvider extends Entity {
 
       case nsBinding.simpleSign:
         // Object context = {id, context, signature, sigAlg}
-        context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
+        context = simpleSignBinding.base64LoginRequest({ idp, sp: this }, customTagReplacement);
         break;
 
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,
