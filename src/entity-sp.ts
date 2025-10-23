@@ -23,7 +23,7 @@ import { flow, FlowResult } from './flow';
 /*
  * @desc interface function
  */
-export default function(props: ServiceProviderSettings) {
+export default function (props: ServiceProviderSettings) {
   return new ServiceProvider(props);
 }
 
@@ -56,11 +56,50 @@ export class ServiceProvider extends Entity {
   */
   public createLoginRequest(
     idp: IdentityProvider,
+    binding?: string,
+    customTagReplacement?: (template: string) => BindingContext
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext;
+
+  /**
+  * @desc  Generates the login request for developers to design their own method
+  * @param  {IdentityProvider} idp               object of identity provider
+  * @param  {string}   binding                   protocol binding
+  * @param  {object}   options                   optional parameters
+  * @param  {function} options.customTagReplacement     used when developers have their own login response template
+  * @param  {string}   options.relayState                optional relay state
+  */
+  public createLoginRequest(
+    idp: IdentityProvider,
+    binding?: string,
+    options?: {
+      customTagReplacement?: (template: string) => BindingContext;
+      relayState?: string;
+    }
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext;
+
+  public createLoginRequest(
+    idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
-  ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
+    optionsOrCustomTagReplacement?:
+      | { customTagReplacement?: (template: string) => BindingContext; relayState?: string; }
+      | ((template: string) => BindingContext)
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
+
+    // Handle both old signature (function) and new signature (options object)
+    let customTagReplacement: ((template: string) => BindingContext) | undefined;
+    let relayState: string | undefined;
+
+    if (typeof optionsOrCustomTagReplacement === 'function') {
+      // Old signature: third parameter is customTagReplacement function
+      customTagReplacement = optionsOrCustomTagReplacement;
+    } else if (optionsOrCustomTagReplacement && typeof optionsOrCustomTagReplacement === 'object') {
+      // New signature: third parameter is options object
+      customTagReplacement = optionsOrCustomTagReplacement.customTagReplacement;
+      relayState = optionsOrCustomTagReplacement.relayState;
+    }
+
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }
@@ -68,7 +107,7 @@ export class ServiceProvider extends Entity {
     let context: any = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL({ idp, sp: this, relayState }, customTagReplacement);
 
       case nsBinding.post:
         context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
@@ -76,13 +115,13 @@ export class ServiceProvider extends Entity {
 
       case nsBinding.simpleSign:
         // Object context = {id, context, signature, sigAlg}
-        context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
+        context = simpleSignBinding.base64LoginRequest({ idp, sp: this }, customTagReplacement);
         break;
 
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,
