@@ -34,3 +34,5 @@ types/
 *.tgz
 
 package-lock.json
+
+*.vitepress
