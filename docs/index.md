@@ -6,7 +6,7 @@ hero:
   text: Node.js SAML2 API
   tagline: Nodejs library for Single Sign On with SAML 2.0
   image:
-    src: /_media/padlock.png
+    src: /padlock.png
     alt: samlify
   actions:
     - theme: brand

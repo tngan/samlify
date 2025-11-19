@@ -7,11 +7,11 @@ export default defineConfig({
   ignoreDeadLinks: 'localhostLinks',
   
   head: [
-    ['link', { rel: 'icon', href: '/_media/favicon.ico' }]
+    ['link', { rel: 'icon', href: '/favicon.ico' }]
   ],
 
   themeConfig: {
-    logo: '/_media/padlock.png',
+    logo: '/padlock.png',
     
     nav: [
       { text: 'Home', link: '/' },
