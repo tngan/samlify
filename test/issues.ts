@@ -1,6 +1,6 @@
 import * as esaml2 from '../index';
 import { readFileSync } from 'fs';
-import test from 'ava';
+import { test, expect } from 'vitest';
 import * as fs from 'fs';
 import * as url from 'url';
 import { DOMParser as dom } from '@xmldom/xmldom';
@@ -19,21 +19,18 @@ const {
 const getQueryParamByType = libsaml.getQueryParamByType;
 const wording = ref.wording;
 
-test('#31 query param for sso/slo is SamlRequest', t => {
-  t.is(getQueryParamByType('SAMLRequest'), wording.urlParams.samlRequest);
-  t.is(getQueryParamByType('LogoutRequest'), wording.urlParams.samlRequest);
+test('#31 query param for sso/slo is SamlRequest', () => {
+  expect(getQueryParamByType('SAMLRequest')).toBe(wording.urlParams.samlRequest);
+  expect(getQueryParamByType('LogoutRequest')).toBe(wording.urlParams.samlRequest);
 });
-test('#31 query param for sso/slo is SamlResponse', t => {
-  t.is(getQueryParamByType('SAMLResponse'), wording.urlParams.samlResponse);
-  t.is(getQueryParamByType('LogoutResponse'), wording.urlParams.samlResponse);
+test('#31 query param for sso/slo is SamlResponse', () => {
+  expect(getQueryParamByType('SAMLResponse')).toBe(wording.urlParams.samlResponse);
+  expect(getQueryParamByType('LogoutResponse')).toBe(wording.urlParams.samlResponse);
 });
-test('#31 query param for sso/slo returns error', t => {
-  try {
+test('#31 query param for sso/slo returns error', () => {
+  expect(() => {
     getQueryParamByType('samlRequest');
-    t.fail();
-  } catch (e) {
-    t.pass();
-  }
+  }).toThrow();
 });
 
 (() => {
@@ -106,27 +103,27 @@ test('#31 query param for sso/slo returns error', t => {
     }
   ]);
   const sp98 = serviceProvider({ metadata: fs.readFileSync('./test/misc/sp_metadata_98.xml') });
-  test('#33 sp metadata acs index should be increased by 1', t => {
-    t.is(acs.assertionConsumerService.length, 2);
-    t.is(acs.assertionConsumerService[0].index, '0');
-    t.is(acs.assertionConsumerService[1].index, '1');
+  test('#33 sp metadata acs index should be increased by 1', () => {
+    expect(acs.assertionConsumerService.length).toBe(2);
+    expect(acs.assertionConsumerService[0].index).toBe('0');
+    expect(acs.assertionConsumerService[1].index).toBe('1');
   });
-  test('#352 no index attribute for sp SingleLogoutService nodes', t => {
-    t.is(spslo.singleLogoutService.length, 2);
-    t.is(spslo.singleLogoutService[0].index, undefined);
-    t.is(spslo.singleLogoutService[1].index, undefined);
+  test('#352 no index attribute for sp SingleLogoutService nodes', () => {
+    expect(spslo.singleLogoutService.length).toBe(2);
+    expect(spslo.singleLogoutService[0].index).toBe(undefined);
+    expect(spslo.singleLogoutService[1].index).toBe(undefined);
   });
-  test('#352 no index attribute for idp SingleSignOnService nodes', t => {
-    t.is(sso.singleSignOnService.length, 2);
-    t.is(sso.singleSignOnService[0].index, undefined);
-    t.is(sso.singleSignOnService[1].index, undefined);
+  test('#352 no index attribute for idp SingleSignOnService nodes', () => {
+    expect(sso.singleSignOnService.length).toBe(2);
+    expect(sso.singleSignOnService[0].index).toBe(undefined);
+    expect(sso.singleSignOnService[1].index).toBe(undefined);
   });
-  test('#352 no index attribute for idp SingleLogoutService nodes', t => {
-    t.is(idpslo.singleLogoutService.length, 2);
-    t.is(idpslo.singleLogoutService[0].index, undefined);
-    t.is(idpslo.singleLogoutService[1].index, undefined);
+  test('#352 no index attribute for idp SingleLogoutService nodes', () => {
+    expect(idpslo.singleLogoutService.length).toBe(2);
+    expect(idpslo.singleLogoutService[0].index).toBe(undefined);
+    expect(idpslo.singleLogoutService[1].index).toBe(undefined);
   });
-  test('#86 duplicate issuer throws error', t => {
+  test('#86 duplicate issuer throws error', () => {
     const xml = readFileSync('./test/misc/dumpes_issuer_response.xml');
     const { issuer } = extract(xml.toString(), [{
       key: 'issuer',
@@ -136,26 +133,26 @@ test('#31 query param for sso/slo returns error', t => {
       ],
       attributes: []
     }]);
-    t.is(issuer.length, 1);
-    t.is(issuer.every(i => i === 'http://www.okta.com/dummyIssuer'), true);
+    expect(issuer.length).toBe(1);
+    expect(issuer.every(i => i === 'http://www.okta.com/dummyIssuer')).toBe(true);
   });
 
-  test('#87 add existence check for signature verification', t => {
+  test('#87 add existence check for signature verification', () => {
     const res = libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
-    t.is(res[0], false) // signature is invalid because one doesn't exist
+    expect(res[0]).toBe(false) // signature is invalid because one doesn't exist
   });
 
-  test('#91 idp gets single sign on service from the metadata', t => {
-    t.is(idp.entityMeta.getSingleSignOnService('post'), 'idp.example.com/sso');
+  test('#91 idp gets single sign on service from the metadata', () => {
+    expect(idp.entityMeta.getSingleSignOnService('post')).toBe('idp.example.com/sso');
   });
 
-  test('#98 undefined AssertionConsumerServiceURL with redirect request', t => {
+  test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
     const { context } = sp98.createLoginRequest(idp, 'redirect');
     const originalURL = url.parse(context, true);
     const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
     const xml = new dom().parseFromString(rawRequest);
     const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
-    t.is(acsUrl, 'https://example.org/response');
+    expect(acsUrl).toBe('https://example.org/response');
   });
 })();

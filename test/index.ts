@@ -1,6 +1,6 @@
 import * as esaml2 from '../index';
 import { readFileSync } from 'fs';
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { verifyTime } from '../src/validator';
 
 const {
@@ -54,26 +54,26 @@ const wrongResponse = readFileSync('./test/misc/invalid_response.xml').toString(
 const spCertKnownGood = readFileSync('./test/key/sp/knownGoodCert.cer').toString().trim();
 const spPemKnownGood = readFileSync('./test/key/sp/knownGoodEncryptKey.pem').toString().trim();
 
-test('base64 encoding returns encoded string', t => {
-  t.is(utility.base64Encode('Hello World'), 'SGVsbG8gV29ybGQ=');
+test('base64 encoding returns encoded string', () => {
+  expect(utility.base64Encode('Hello World')).toBe('SGVsbG8gV29ybGQ=');
 });
-test('base64 decoding returns decoded string', t => {
-  t.is(utility.base64Decode('SGVsbG8gV29ybGQ='), 'Hello World');
+test('base64 decoding returns decoded string', () => {
+  expect(utility.base64Decode('SGVsbG8gV29ybGQ=')).toBe('Hello World');
 });
-test('deflate + base64 encoded', t => {
-  t.is(utility.base64Encode(utility.deflateString('Hello World')), '80jNyclXCM8vykkBAA==');
+test('deflate + base64 encoded', () => {
+  expect(utility.base64Encode(utility.deflateString('Hello World'))).toBe('80jNyclXCM8vykkBAA==');
 });
-test('base64 decoded + inflate', t => {
-  t.is(utility.inflateString('80jNyclXCM8vykkBAA=='), 'Hello World');
+test('base64 decoded + inflate', () => {
+  expect(utility.inflateString('80jNyclXCM8vykkBAA==')).toBe('Hello World');
 });
-test('parse cer format resulting clean certificate', t => {
-  t.is(utility.normalizeCerString(readFileSync('./test/key/sp/cert.cer')), spCertKnownGood);
+test('parse cer format resulting clean certificate', () => {
+  expect(utility.normalizeCerString(readFileSync('./test/key/sp/cert.cer'))).toBe(spCertKnownGood);
 });
-test('normalize pem key returns clean string', t => {
+test('normalize pem key returns clean string', () => {
   const ekey = readFileSync('./test/key/sp/encryptKey.pem').toString();
-  t.is(utility.normalizePemString(ekey), spPemKnownGood);
+  expect(utility.normalizePemString(ekey)).toBe(spPemKnownGood);
 });
-test('getAssertionConsumerService with one binding', t => {
+test('getAssertionConsumerService with one binding', () => {
   const expectedPostLocation = 'https:sp.example.org/sp/sso/post';
   const _sp = serviceProvider({
     privateKey: './test/key/sp/privkey.pem',
@@ -90,9 +90,9 @@ test('getAssertionConsumerService with one binding', t => {
       Location: 'https:sp.example.org/sp/slo',
     }],
   });
-  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
+  expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.post)).toBe(expectedPostLocation);
 });
-test('getAssertionConsumerService with two bindings', t => {
+test('getAssertionConsumerService with two bindings', () => {
   const expectedPostLocation = 'https:sp.example.org/sp/sso/post';
   const expectedArtifactLocation = 'https:sp.example.org/sp/sso/artifact';
   const _sp = serviceProvider({
@@ -116,8 +116,8 @@ test('getAssertionConsumerService with two bindings', t => {
       Location: 'https:sp.example.org/sp/slo',
     }],
   });
-  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.post), expectedPostLocation);
-  t.is(_sp.entityMeta.getAssertionConsumerService(wording.binding.artifact), expectedArtifactLocation);
+  expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.post)).toBe(expectedPostLocation);
+  expect(_sp.entityMeta.getAssertionConsumerService(wording.binding.artifact)).toBe(expectedArtifactLocation);
 });
 
 (() => {
@@ -141,132 +141,136 @@ test('getAssertionConsumerService with two bindings', t => {
   const dummySignRequestSHA256: string = 'PHNhbWxwOkF1dGhuUmVxdWVzdCB4bWxuczpzYW1scD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnByb3RvY29sIiB4bWxuczpzYW1sPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIiBJRD0iXzgwOTcwN2YwMDMwYTVkMDA2MjBjOWQ5ZGY5N2Y2MjdhZmU5ZGNjMjQiIFZlcnNpb249IjIuMCIgUHJvdmlkZXJOYW1lPSJTUCB0ZXN0IiBJc3N1ZUluc3RhbnQ9IjIwMTQtMDctMTZUMjM6NTI6NDVaIiBEZXN0aW5hdGlvbj0iaHR0cDovL2lkcC5leGFtcGxlLmNvbS9TU09TZXJ2aWNlLnBocCIgUHJvdG9jb2xCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1QT1NUIiBBc3NlcnRpb25Db25zdW1lclNlcnZpY2VVUkw9Imh0dHBzOi8vc3AuZXhhbXBsZS5vcmcvc3Avc3NvIj48c2FtbDpJc3N1ZXIgSWQ9Il8wIj5odHRwczovL3NwLmV4YW1wbGUub3JnL21ldGFkYXRhPC9zYW1sOklzc3Vlcj48c2FtbHA6TmFtZUlEUG9saWN5IEZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4xOm5hbWVpZC1mb3JtYXQ6ZW1haWxBZGRyZXNzIiBBbGxvd0NyZWF0ZT0idHJ1ZSIvPjxzYW1scDpSZXF1ZXN0ZWRBdXRobkNvbnRleHQgQ29tcGFyaXNvbj0iZXhhY3QiPjxzYW1sOkF1dGhuQ29udGV4dENsYXNzUmVmPnVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphYzpjbGFzc2VzOlBhc3N3b3JkPC9zYW1sOkF1dGhuQ29udGV4dENsYXNzUmVmPjwvc2FtbHA6UmVxdWVzdGVkQXV0aG5Db250ZXh0PjxTaWduYXR1cmUgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvMDkveG1sZHNpZyMiPjxTaWduZWRJbmZvPjxDYW5vbmljYWxpemF0aW9uTWV0aG9kIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8xMC94bWwtZXhjLWMxNG4jIi8+PFNpZ25hdHVyZU1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMDQveG1sZHNpZy1tb3JlI3JzYS1zaGEyNTYiLz48UmVmZXJlbmNlIFVSST0iI18wIj48VHJhbnNmb3Jtcz48VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnI2VudmVsb3BlZC1zaWduYXR1cmUiLz48VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8xMC94bWwtZXhjLWMxNG4jIi8+PC9UcmFuc2Zvcm1zPjxEaWdlc3RNZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGVuYyNzaGEyNTYiLz48RGlnZXN0VmFsdWU+d3VKWlJSdWlGb0FQZVZXVllReXhOWXpjbUpJdXB0dTZmaE10MVZuQVZQbz08L0RpZ2VzdFZhbHVlPjwvUmVmZXJlbmNlPjwvU2lnbmVkSW5mbz48U2lnbmF0dXJlVmFsdWU+SGpndVQvbFZ5aEVWczBkb1JUTEdMUmhmRHBsbGUzVGVZRmRCdDlSTDg1bjh5dUdEc0JSRS9YY05RK3lVV1FvalgvaHE5dksyc1ZQejRrcDl6YW5OVE1aRE9yakhUbG9IbEhMbFNhSnFLWE4xK0Y3V1NPSmZidjlROFdNSGFsN0lrR2wwSnFibkpCUFpPYnFHVXdCRmlyN2E3bFp2QTdHcU5UM1M2TXdXVEJudEhzbmJreDkyZXFVTlVuV0VOUzlJYzE5NW10ZzQwZHNtaFErc2ZxODZhay83Q2c4Skg4cnZsb1JRNzVkNUp0WEUrdmVWN0RPeTVrUGNad04zZ09HL2hyK0RDTGYrUHpKYzJkWFI4UkhQY2crQUx0b1F4aUFXbVBBb3lnamJTaFF6bU0wQ0FnUFhyS0VxOTV0RTYyWFFJRGQ2VmpFaVZnS000ZDBTTnZXMEtRPT08L1NpZ25hdHVyZVZhbHVlPjxLZXlJbmZvPjxYNTA5RGF0YT48WDUwOUNlcnRpZmljYXRlPk1JSURvekNDQW91Z0F3SUJBZ0lKQUtOc21MOFFiZnB3TUEwR0NTcUdTSWIzRFFFQkN3VUFNR2d4Q3pBSkJnTlZCQVlUQWtoTE1SSXdFQVlEVlFRSURBbEliMjVuSUV0dmJtY3hDekFKQmdOVkJBY01Ba2hMTVJNd0VRWURWUVFLREFwdWIyUmxMWE5oYld3eU1TTXdJUVlKS29aSWh2Y05BUWtCRmhSdWIyUmxMbk5oYld3eVFHZHRZV2xzTG1OdmJUQWVGdzB4TlRBM01EVXhOelUyTkRkYUZ3MHhPREEzTURReE56VTJORGRhTUdneEN6QUpCZ05WQkFZVEFraExNUkl3RUFZRFZRUUlEQWxJYjI1bklFdHZibWN4Q3pBSkJnTlZCQWNNQWtoTE1STXdFUVlEVlFRS0RBcHViMlJsTFhOaGJXd3lNU013SVFZSktvWklodmNOQVFrQkZoUnViMlJsTG5OaGJXd3lRR2R0WVdsc0xtTnZiVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFNUUpBQjhKcnNMUWJVdUphOGFrekxxTzFFWnFDbFMwdFFwK3crNXdndWZwMDdXd0duL3NobWE4ZGNRTmoxZGJqc3pJNUhCZVZGak9LSXhsZmptTkI5b3ZoUVBzdEJqUC9VUFFZcDFJcDJJb0hDWVg5SERnTXozeHlYS2JIdGhVelphRUN6K3ArN1d0Z3doY3pSa0JMRE9tMmsxNXFoUFlHUHcwdkgyemJWUkdXVUJTOWR5Mk1wM3RxbFZiUDB4WjlDRE5raENKa1Y5U01OZm9DVlcvVllQcUsyUUJvN2tpNG9ibTV4NWl4RlFTU0hzS2JWQVJWenlRSDVpTmpGZTFUZEFwM3JEd3JFNUxjMU5RbFFheFI1R25iMk5aQXBET1JSWklWbE52MldVZGk5UXZNMHlDempROTBqUDBPQW9nSGhSWWF4ZzAvdmdORXllNDZoK1BpWTBDQXdFQUFhTlFNRTR3SFFZRFZSME9CQllFRkVWa2pjTEFJVG5ka3kwOTBBeTc0UXFDbVFLSU1COEdBMVVkSXdRWU1CYUFGRVZramNMQUlUbmRreTA5MEF5NzRRcUNtUUtJTUF3R0ExVWRFd1FGTUFNQkFmOHdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRzRsWVgzS1FYZW5lejRMcERuWmhjRkJFWmk5WXN0VUtQRjVFS2QrV3BscFZiY1RRYzFBMy9aK3VIUm15VjhoK3BRemVGNkxpb2IzN0c4N1lwYWNQcGxKSTY2Y2YyUmo3ajhoU0JOYmRyKzY2RTJxcGNFaEFGMWlKbXpCTnloYi95ZGxFdVZwbjgvRXNvUCtIdkJlaURsNWdvbjM1NjJNelpJZ1YvcExkVGZ4SHlXNmh6QVFoakdxMlVoY3ZSK2dYTlZKdkhQMmVTNGpsSG5Ka0I5YmZvMGt2Zjg3UStENlhLWDNxNWMzbU84dHFXNlVwcUhTQyt1TEVwelppTkxldUZhNFRVSWhnQmdqRGpsUnJOREt1OG5kYW5jU24zeUJIWW5xSjJ0OWNSK2NvRm5uallBQlFwTnJ2azRtdG1YWThTWG9CellHOVkrbHFlQXVuNiswWXlFPTwvWDUwOUNlcnRpZmljYXRlPjwvWDUwOURhdGE+PC9LZXlJbmZvPjwvU2lnbmF0dXJlPjwvc2FtbHA6QXV0aG5SZXF1ZXN0Pg==';
   const dummySignRequestSHA512: string = 'PHNhbWxwOkF1dGhuUmVxdWVzdCB4bWxuczpzYW1scD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnByb3RvY29sIiB4bWxuczpzYW1sPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIiBJRD0iXzgwOTcwN2YwMDMwYTVkMDA2MjBjOWQ5ZGY5N2Y2MjdhZmU5ZGNjMjQiIFZlcnNpb249IjIuMCIgUHJvdmlkZXJOYW1lPSJTUCB0ZXN0IiBJc3N1ZUluc3RhbnQ9IjIwMTQtMDctMTZUMjM6NTI6NDVaIiBEZXN0aW5hdGlvbj0iaHR0cDovL2lkcC5leGFtcGxlLmNvbS9TU09TZXJ2aWNlLnBocCIgUHJvdG9jb2xCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1QT1NUIiBBc3NlcnRpb25Db25zdW1lclNlcnZpY2VVUkw9Imh0dHBzOi8vc3AuZXhhbXBsZS5vcmcvc3Avc3NvIj48c2FtbDpJc3N1ZXIgSWQ9Il8wIj5odHRwczovL3NwLmV4YW1wbGUub3JnL21ldGFkYXRhPC9zYW1sOklzc3Vlcj48c2FtbHA6TmFtZUlEUG9saWN5IEZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4xOm5hbWVpZC1mb3JtYXQ6ZW1haWxBZGRyZXNzIiBBbGxvd0NyZWF0ZT0idHJ1ZSIvPjxzYW1scDpSZXF1ZXN0ZWRBdXRobkNvbnRleHQgQ29tcGFyaXNvbj0iZXhhY3QiPjxzYW1sOkF1dGhuQ29udGV4dENsYXNzUmVmPnVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphYzpjbGFzc2VzOlBhc3N3b3JkPC9zYW1sOkF1dGhuQ29udGV4dENsYXNzUmVmPjwvc2FtbHA6UmVxdWVzdGVkQXV0aG5Db250ZXh0PjxTaWduYXR1cmUgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvMDkveG1sZHNpZyMiPjxTaWduZWRJbmZvPjxDYW5vbmljYWxpemF0aW9uTWV0aG9kIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8xMC94bWwtZXhjLWMxNG4jIi8+PFNpZ25hdHVyZU1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMDQveG1sZHNpZy1tb3JlI3JzYS1zaGE1MTIiLz48UmVmZXJlbmNlIFVSST0iI18wIj48VHJhbnNmb3Jtcz48VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnI2VudmVsb3BlZC1zaWduYXR1cmUiLz48VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8xMC94bWwtZXhjLWMxNG4jIi8+PC9UcmFuc2Zvcm1zPjxEaWdlc3RNZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGVuYyNzaGE1MTIiLz48RGlnZXN0VmFsdWU+RWN3emlpSzZmazFNK2RETkpHNVlFeWpGY3Fjc0dzRmZNNGFDUkJKcENWTlltVWs4NWJxQk8rblRFN3RmRnd5Uk1yOUZBODBpSnN3MlFwM3R4QTE1Q2c9PTwvRGlnZXN0VmFsdWU+PC9SZWZlcmVuY2U+PC9TaWduZWRJbmZvPjxTaWduYXR1cmVWYWx1ZT5BTk1GRTNaaWlCVkdsVkNPb2xxNE1FR1JsQWNmbFQyUjFVclp6UWlnWmptcUYwQzlGSUZlRC9zeTlvL2RCdWxtSmdvMjdQY0JybmdxeFRXTms1UFdDbnQvdjJORUFvbVdnRHkwM0wzRi9OTmpObnZkY1IyNWh5MzhCT1VwQ0R1SFdkV0NKQVNIRlNUdFZ3L2pESlM4bnNEQUt6Z1RQM2xFOUVKaFN3YkgzUlR5RGlKYThudlVkYkRsclZSTjFqbHZiUmg5S1Y2SWljNm4yUmRiYzZZaUtRVGswZzlKbFp4ZVBvSElKVXRVNXdlNEYzSzBwOGRnbHBHQ2RrckpDOUFaSkpjdDYwQTNHOW5XRjE0cHFTNjltV1liSlpHeUlqdjBqRjBlSEVhaFd1NmRGcFRoYVJhWGErV0ZsVjlNcnFoNityTkJIWis0N3E3NzI3ejVlc202Vnc9PTwvU2lnbmF0dXJlVmFsdWU+PEtleUluZm8+PFg1MDlEYXRhPjxYNTA5Q2VydGlmaWNhdGU+TUlJRG96Q0NBb3VnQXdJQkFnSUpBS05zbUw4UWJmcHdNQTBHQ1NxR1NJYjNEUUVCQ3dVQU1HZ3hDekFKQmdOVkJBWVRBa2hMTVJJd0VBWURWUVFJREFsSWIyNW5JRXR2Ym1jeEN6QUpCZ05WQkFjTUFraExNUk13RVFZRFZRUUtEQXB1YjJSbExYTmhiV3d5TVNNd0lRWUpLb1pJaHZjTkFRa0JGaFJ1YjJSbExuTmhiV3d5UUdkdFlXbHNMbU52YlRBZUZ3MHhOVEEzTURVeE56VTJORGRhRncweE9EQTNNRFF4TnpVMk5EZGFNR2d4Q3pBSkJnTlZCQVlUQWtoTE1SSXdFQVlEVlFRSURBbEliMjVuSUV0dmJtY3hDekFKQmdOVkJBY01Ba2hMTVJNd0VRWURWUVFLREFwdWIyUmxMWE5oYld3eU1TTXdJUVlKS29aSWh2Y05BUWtCRmhSdWIyUmxMbk5oYld3eVFHZHRZV2xzTG1OdmJUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU1RSkFCOEpyc0xRYlV1SmE4YWt6THFPMUVacUNsUzB0UXArdys1d2d1ZnAwN1d3R24vc2htYThkY1FOajFkYmpzekk1SEJlVkZqT0tJeGxmam1OQjlvdmhRUHN0QmpQL1VQUVlwMUlwMklvSENZWDlIRGdNejN4eVhLYkh0aFV6WmFFQ3orcCs3V3Rnd2hjelJrQkxET20yazE1cWhQWUdQdzB2SDJ6YlZSR1dVQlM5ZHkyTXAzdHFsVmJQMHhaOUNETmtoQ0prVjlTTU5mb0NWVy9WWVBxSzJRQm83a2k0b2JtNXg1aXhGUVNTSHNLYlZBUlZ6eVFINWlOakZlMVRkQXAzckR3ckU1TGMxTlFsUWF4UjVHbmIyTlpBcERPUlJaSVZsTnYyV1VkaTlRdk0weUN6alE5MGpQME9Bb2dIaFJZYXhnMC92Z05FeWU0NmgrUGlZMENBd0VBQWFOUU1FNHdIUVlEVlIwT0JCWUVGRVZramNMQUlUbmRreTA5MEF5NzRRcUNtUUtJTUI4R0ExVWRJd1FZTUJhQUZFVmtqY0xBSVRuZGt5MDkwQXk3NFFxQ21RS0lNQXdHQTFVZEV3UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFHNGxZWDNLUVhlbmV6NExwRG5aaGNGQkVaaTlZc3RVS1BGNUVLZCtXcGxwVmJjVFFjMUEzL1ordUhSbXlWOGgrcFF6ZUY2TGlvYjM3Rzg3WXBhY1BwbEpJNjZjZjJSajdqOGhTQk5iZHIrNjZFMnFwY0VoQUYxaUptekJOeWhiL3lkbEV1VnBuOC9Fc29QK0h2QmVpRGw1Z29uMzU2Mk16WklnVi9wTGRUZnhIeVc2aHpBUWhqR3EyVWhjdlIrZ1hOVkp2SFAyZVM0amxIbkprQjliZm8wa3ZmODdRK0Q2WEtYM3E1YzNtTzh0cVc2VXBxSFNDK3VMRXB6WmlOTGV1RmE0VFVJaGdCZ2pEamxSck5ES3U4bmRhbmNTbjN5QkhZbnFKMnQ5Y1IrY29Gbm5qWUFCUXBOcnZrNG10bVhZOFNYb0J6WUc5WStscWVBdW42KzBZeUU9PC9YNTA5Q2VydGlmaWNhdGU+PC9YNTA5RGF0YT48L0tleUluZm8+PC9TaWduYXR1cmU+PC9zYW1scDpBdXRoblJlcXVlc3Q+';
 
-  test('sign a SAML message with RSA-SHA1', t => {
-    t.is(libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass).toString('base64'), signatureB64SHA1);
+  test('sign a SAML message with RSA-SHA1', () => {
+    expect(libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass).toString('base64')).toBe(signatureB64SHA1);
   });
-  test('sign a SAML message with RSA-SHA256', t => {
-    t.is(libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA256).toString('base64'), signatureB64SHA256);
+  test('sign a SAML message with RSA-SHA256', () => {
+    expect(libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA256).toString('base64')).toBe(signatureB64SHA256);
   });
-  test('sign a SAML message with RSA-SHA512', t => {
-    t.is(libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA512).toString('base64'), signatureB64SHA512);
+  test('sign a SAML message with RSA-SHA512', () => {
+    expect(libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass, undefined, signatureAlgorithms.RSA_SHA512).toString('base64')).toBe(signatureB64SHA512);
   });
-  test('verify binary SAML message signed with RSA-SHA1', t => {
+  test('verify binary SAML message signed with RSA-SHA1', () => {
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass, false);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetString, signature), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetString, signature)).toBe(true);
   });
-  test('verify binary SAML message signed with RSA-SHA256', t => {
+  test('verify binary SAML message signed with RSA-SHA256', () => {
     const signature = libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass, false, signatureAlgorithms.RSA_SHA256);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, signature, signatureAlgorithms.RSA_SHA256), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, signature, signatureAlgorithms.RSA_SHA256)).toBe(true);
   });
-  test('verify binary SAML message signed with RSA-SHA512', t => {
+  test('verify binary SAML message signed with RSA-SHA512', () => {
     const signature = libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass, false, signatureAlgorithms.RSA_SHA512);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, signature, signatureAlgorithms.RSA_SHA512), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, signature, signatureAlgorithms.RSA_SHA512)).toBe(true);
   });
-  test('verify stringified SAML message signed with RSA-SHA1', t => {
+  test('verify stringified SAML message signed with RSA-SHA1', () => {
     const signature = libsaml.constructMessageSignature(octetString, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetString, Buffer.from(signature.toString(), 'base64')), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetString, Buffer.from(signature.toString(), 'base64'))).toBe(true);
   });
-  test('verify stringified SAML message signed with RSA-SHA256', t => {
+  test('verify stringified SAML message signed with RSA-SHA256', () => {
     const signature = libsaml.constructMessageSignature(octetStringSHA256, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, Buffer.from(signature.toString(), 'base64')), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA256, Buffer.from(signature.toString(), 'base64'))).toBe(true);
   });
-  test('verify stringified SAML message signed with RSA-SHA512', t => {
+  test('verify stringified SAML message signed with RSA-SHA512', () => {
     const signature = libsaml.constructMessageSignature(octetStringSHA512, _spPrivPem, _spPrivKeyPass);
-    t.is(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, Buffer.from(signature.toString(), 'base64')), true);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octetStringSHA512, Buffer.from(signature.toString(), 'base64'))).toBe(true);
   });
-  test('construct signature with RSA-SHA1', t => {
-    t.is(libsaml.constructSAMLSignature({
+  test('construct signature with RSA-SHA1', () => {
+    expect(libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
       privateKeyPass: _spPrivKeyPass,
       signatureAlgorithm: signatureAlgorithms.RSA_SHA1,
-    }), dummySignRequest);
+    })).toBe(dummySignRequest);
   });
-  test('construct signature with RSA-SHA256', t => {
-    t.is(libsaml.constructSAMLSignature({
+  test('construct signature with RSA-SHA256', () => {
+    expect(libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
       privateKeyPass: _spPrivKeyPass,
       signatureAlgorithm: signatureAlgorithms.RSA_SHA256,
-    }), dummySignRequestSHA256);
+    })).toBe(dummySignRequestSHA256);
   });
-  test('construct signature with RSA-SHA512', t => {
-    t.is(libsaml.constructSAMLSignature({
+  test('construct signature with RSA-SHA512', () => {
+    expect(libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
       referenceTagXPath: libsaml.createXPath('Issuer'),
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
       privateKeyPass: _spPrivKeyPass,
       signatureAlgorithm: signatureAlgorithms.RSA_SHA512,
-    }), dummySignRequestSHA512);
+    })).toBe(dummySignRequestSHA512);
   });
-  test('verify a XML signature signed by RSA-SHA1 with metadata', t => {
-    t.is(libsaml.verifySignature(_decodedResponse, { metadata: IdPMetadata })[0], true);
+  test('verify a XML signature signed by RSA-SHA1 with metadata', () => {
+    expect(libsaml.verifySignature(_decodedResponse, { metadata: IdPMetadata })[0]).toBe(true);
   });
-  test('integrity check for request signed with RSA-SHA1', t => {
+  test('integrity check for request signed with RSA-SHA1', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
-    t.is(verified, false);
+    expect(verified).toBe(false);
   });
-  test('verify a XML signature signed by RSA-SHA256 with metadata', t => {
-    t.is(libsaml.verifySignature(_decodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
+  test('verify a XML signature signed by RSA-SHA256 with metadata', () => {
+    expect(libsaml.verifySignature(_decodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
   });
-  test('integrity check for request signed with RSA-SHA256', t => {
+  test('integrity check for request signed with RSA-SHA256', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
-    t.is(verified, false);
+    expect(verified).toBe(false);
   });
-  test('verify a XML signature signed by RSA-SHA512 with metadata', t => {
-    t.is(libsaml.verifySignature(_decodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0], true);
+  test('verify a XML signature signed by RSA-SHA512 with metadata', () => {
+    expect(libsaml.verifySignature(_decodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0]).toBe(true);
   });
-  test('integrity check for request signed with RSA-SHA512', t => {
+  test('integrity check for request signed with RSA-SHA512', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
-    t.is(verified, false);
+    expect(verified).toBe(false);
   });
 
-  test('verify a XML signature with metadata but with rolling certificate', t => {
+  test('verify a XML signature with metadata but with rolling certificate', () => {
 
     const responseSignedByCert1 = String(readFileSync('./test/misc/response_signed_cert1.xml'));
     const responseSignedByCert2 = String(readFileSync('./test/misc/response_signed_cert2.xml'));
-    t.is(libsaml.verifySignature(responseSignedByCert1, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
-    t.is(libsaml.verifySignature(responseSignedByCert2, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0], true);
+    expect(libsaml.verifySignature(responseSignedByCert1, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
+    expect(libsaml.verifySignature(responseSignedByCert2, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
 
   });
 
-  test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', t => {
+  test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', () => {
     const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));
-    t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0], true);
+    expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
   });
-  test('verify a XML signature signed by RSA-SHA256 with .cer keyFile', t => {
+  test('verify a XML signature signed by RSA-SHA256 with .cer keyFile', () => {
     const xml = String(readFileSync('./test/misc/signed_request_sha256.xml'));
-    t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0], true);
+    expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
   });
-  test('verify a XML signature signed by RSA-SHA512 with .cer keyFile', t => {
+  test('verify a XML signature signed by RSA-SHA512 with .cer keyFile', () => {
     const xml = String(readFileSync('./test/misc/signed_request_sha512.xml'));
-    t.is(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0], true);
+    expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
   });
-  test('encrypt assertion test passes', async t => {
-    await t.notThrowsAsync(() => libsaml.encryptAssertion(idp, sp, sampleSignedResponse));
+  test('encrypt assertion test passes', async () => {
+    await expect(libsaml.encryptAssertion(idp, sp, sampleSignedResponse)).resolves.not.toThrow();
   });
-  test('encrypt assertion response without assertion returns error', async t => {
-    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, wrongResponse));
-    t.is(error?.message, 'ERR_NO_ASSERTION');
+  test('encrypt assertion response without assertion returns error', async () => {
+    await expect(() => libsaml.encryptAssertion(idp, sp, wrongResponse)).rejects.toThrow();
+    const error = await libsaml.encryptAssertion(idp, sp, wrongResponse).catch(e => e);
+    expect(error?.message).toBe('ERR_NO_ASSERTION');
   });
-  test('encrypt assertion with invalid xml syntax returns error', async t => {
-    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string'));
-    t.is(error?.message, 'ERR_NO_ASSERTION');
+  test('encrypt assertion with invalid xml syntax returns error', async () => {
+    await expect(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string')).rejects.toThrow();
+    const error = await libsaml.encryptAssertion(idp, sp, 'This is not a xml format string').catch(e => e);
+    expect(error?.message).toBe('ERR_NO_ASSERTION');
   });
-  test('encrypt assertion with empty string returns error', async t => {
-    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, ''));
-    t.is(error?.message, 'ERR_UNDEFINED_ASSERTION');
+  test('encrypt assertion with empty string returns error', async () => {
+    await expect(() => libsaml.encryptAssertion(idp, sp, '')).rejects.toThrow();
+    const error = await libsaml.encryptAssertion(idp, sp, '').catch(e => e);
+    expect(error?.message).toBe('ERR_UNDEFINED_ASSERTION');
   });
-  test('encrypt assertion with undefined string returns error', async t => {
-    const error = await t.throwsAsync(() => libsaml.encryptAssertion(idp, sp, undefined));
-    t.is(error?.message, 'ERR_UNDEFINED_ASSERTION');
+  test('encrypt assertion with undefined string returns error', async () => {
+    await expect(() => libsaml.encryptAssertion(idp, sp, undefined)).rejects.toThrow();
+    const error = await libsaml.encryptAssertion(idp, sp, undefined).catch(e => e);
+    expect(error?.message).toBe('ERR_UNDEFINED_ASSERTION');
   });
-  test('building attribute statement with one attribute', t => {
+  test('building attribute statement with one attribute', () => {
     const attributes = [{
       name: 'email',
       valueTag: 'user.email',
@@ -275,9 +279,9 @@ test('getAssertionConsumerService with two bindings', t => {
     }];
     const expectedStatement = '<saml:AttributeStatement><saml:Attribute Name="email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement>';
 
-    t.is(libsaml.attributeStatementBuilder(attributes), expectedStatement);
+    expect(libsaml.attributeStatementBuilder(attributes)).toBe(expectedStatement);
   });
-  test('building attribute statement with multiple attributes', t => {
+  test('building attribute statement with multiple attributes', () => {
     const attributes = [{
       name: 'email',
       valueTag: 'user.email',
@@ -290,7 +294,7 @@ test('getAssertionConsumerService with two bindings', t => {
       valueXsiType: 'xs:string',
     }];
     const expectedStatement = '<saml:AttributeStatement><saml:Attribute Name="email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">{attrUserEmail}</saml:AttributeValue></saml:Attribute><saml:Attribute Name="firstname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">{attrUserFirstname}</saml:AttributeValue></saml:Attribute></saml:AttributeStatement>';
-    t.is(libsaml.attributeStatementBuilder(attributes), expectedStatement);
+    expect(libsaml.attributeStatementBuilder(attributes)).toBe(expectedStatement);
   });
 })();
 
@@ -312,17 +316,17 @@ test('getAssertionConsumerService with two bindings', t => {
       Index: 1,
     }],
   };
-  test('sp metadata with default elements order', t => {
-    t.is(serviceProvider(baseConfig).getMetadata(), '<EntityDescriptor entityID="http://sp" xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDozCCAougAwIBAgIJAKNsmL8QbfpwMA0GCSqGSIb3DQEBCwUAMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTAeFw0xNTA3MDUxNzU2NDdaFw0xODA3MDQxNzU2NDdaMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMQJAB8JrsLQbUuJa8akzLqO1EZqClS0tQp+w+5wgufp07WwGn/shma8dcQNj1dbjszI5HBeVFjOKIxlfjmNB9ovhQPstBjP/UPQYp1Ip2IoHCYX9HDgMz3xyXKbHthUzZaECz+p+7WtgwhczRkBLDOm2k15qhPYGPw0vH2zbVRGWUBS9dy2Mp3tqlVbP0xZ9CDNkhCJkV9SMNfoCVW/VYPqK2QBo7ki4obm5x5ixFQSSHsKbVARVzyQH5iNjFe1TdAp3rDwrE5Lc1NQlQaxR5Gnb2NZApDORRZIVlNv2WUdi9QvM0yCzjQ90jP0OAogHhRYaxg0/vgNEye46h+PiY0CAwEAAaNQME4wHQYDVR0OBBYEFEVkjcLAITndky090Ay74QqCmQKIMB8GA1UdIwQYMBaAFEVkjcLAITndky090Ay74QqCmQKIMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAG4lYX3KQXenez4LpDnZhcFBEZi9YstUKPF5EKd+WplpVbcTQc1A3/Z+uHRmyV8h+pQzeF6Liob37G87YpacPplJI66cf2Rj7j8hSBNbdr+66E2qpcEhAF1iJmzBNyhb/ydlEuVpn8/EsoP+HvBeiDl5gon3562MzZIgV/pLdTfxHyW6hzAQhjGq2UhcvR+gXNVJvHP2eS4jlHnJkB9bfo0kvf87Q+D6XKX3q5c3mO8tqW6UpqHSC+uLEpzZiNLeuFa4TUIhgBgjDjlRrNDKu8ndancSn3yBHYnqJ2t9cR+coFnnjYABQpNrvk4mtmXY8SXoBzYG9Y+lqeAun6+0YyE=</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor><NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat><SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://sp/slo"></SingleLogoutService><AssertionConsumerService index="0" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://sp/acs"></AssertionConsumerService></SPSSODescriptor></EntityDescriptor>');
+  test('sp metadata with default elements order', () => {
+    expect(serviceProvider(baseConfig).getMetadata()).toBe('<EntityDescriptor entityID="http://sp" xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDozCCAougAwIBAgIJAKNsmL8QbfpwMA0GCSqGSIb3DQEBCwUAMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTAeFw0xNTA3MDUxNzU2NDdaFw0xODA3MDQxNzU2NDdaMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMQJAB8JrsLQbUuJa8akzLqO1EZqClS0tQp+w+5wgufp07WwGn/shma8dcQNj1dbjszI5HBeVFjOKIxlfjmNB9ovhQPstBjP/UPQYp1Ip2IoHCYX9HDgMz3xyXKbHthUzZaECz+p+7WtgwhczRkBLDOm2k15qhPYGPw0vH2zbVRGWUBS9dy2Mp3tqlVbP0xZ9CDNkhCJkV9SMNfoCVW/VYPqK2QBo7ki4obm5x5ixFQSSHsKbVARVzyQH5iNjFe1TdAp3rDwrE5Lc1NQlQaxR5Gnb2NZApDORRZIVlNv2WUdi9QvM0yCzjQ90jP0OAogHhRYaxg0/vgNEye46h+PiY0CAwEAAaNQME4wHQYDVR0OBBYEFEVkjcLAITndky090Ay74QqCmQKIMB8GA1UdIwQYMBaAFEVkjcLAITndky090Ay74QqCmQKIMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAG4lYX3KQXenez4LpDnZhcFBEZi9YstUKPF5EKd+WplpVbcTQc1A3/Z+uHRmyV8h+pQzeF6Liob37G87YpacPplJI66cf2Rj7j8hSBNbdr+66E2qpcEhAF1iJmzBNyhb/ydlEuVpn8/EsoP+HvBeiDl5gon3562MzZIgV/pLdTfxHyW6hzAQhjGq2UhcvR+gXNVJvHP2eS4jlHnJkB9bfo0kvf87Q+D6XKX3q5c3mO8tqW6UpqHSC+uLEpzZiNLeuFa4TUIhgBgjDjlRrNDKu8ndancSn3yBHYnqJ2t9cR+coFnnjYABQpNrvk4mtmXY8SXoBzYG9Y+lqeAun6+0YyE=</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor><NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat><SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://sp/slo"></SingleLogoutService><AssertionConsumerService index="0" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://sp/acs"></AssertionConsumerService></SPSSODescriptor></EntityDescriptor>');
   });
-  test('sp metadata with shibboleth elements order', t => {
+  test('sp metadata with shibboleth elements order', () => {
     const spToShib = serviceProvider(Object.assign({}, baseConfig, { elementsOrder: ref.elementsOrder.shibboleth }));
-    t.is(spToShib.getMetadata(), '<EntityDescriptor entityID="http://sp" xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDozCCAougAwIBAgIJAKNsmL8QbfpwMA0GCSqGSIb3DQEBCwUAMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTAeFw0xNTA3MDUxNzU2NDdaFw0xODA3MDQxNzU2NDdaMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMQJAB8JrsLQbUuJa8akzLqO1EZqClS0tQp+w+5wgufp07WwGn/shma8dcQNj1dbjszI5HBeVFjOKIxlfjmNB9ovhQPstBjP/UPQYp1Ip2IoHCYX9HDgMz3xyXKbHthUzZaECz+p+7WtgwhczRkBLDOm2k15qhPYGPw0vH2zbVRGWUBS9dy2Mp3tqlVbP0xZ9CDNkhCJkV9SMNfoCVW/VYPqK2QBo7ki4obm5x5ixFQSSHsKbVARVzyQH5iNjFe1TdAp3rDwrE5Lc1NQlQaxR5Gnb2NZApDORRZIVlNv2WUdi9QvM0yCzjQ90jP0OAogHhRYaxg0/vgNEye46h+PiY0CAwEAAaNQME4wHQYDVR0OBBYEFEVkjcLAITndky090Ay74QqCmQKIMB8GA1UdIwQYMBaAFEVkjcLAITndky090Ay74QqCmQKIMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAG4lYX3KQXenez4LpDnZhcFBEZi9YstUKPF5EKd+WplpVbcTQc1A3/Z+uHRmyV8h+pQzeF6Liob37G87YpacPplJI66cf2Rj7j8hSBNbdr+66E2qpcEhAF1iJmzBNyhb/ydlEuVpn8/EsoP+HvBeiDl5gon3562MzZIgV/pLdTfxHyW6hzAQhjGq2UhcvR+gXNVJvHP2eS4jlHnJkB9bfo0kvf87Q+D6XKX3q5c3mO8tqW6UpqHSC+uLEpzZiNLeuFa4TUIhgBgjDjlRrNDKu8ndancSn3yBHYnqJ2t9cR+coFnnjYABQpNrvk4mtmXY8SXoBzYG9Y+lqeAun6+0YyE=</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor><SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://sp/slo"></SingleLogoutService><NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat><AssertionConsumerService index="0" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://sp/acs"></AssertionConsumerService></SPSSODescriptor></EntityDescriptor>');
+    expect(spToShib.getMetadata()).toBe('<EntityDescriptor entityID="http://sp" xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDozCCAougAwIBAgIJAKNsmL8QbfpwMA0GCSqGSIb3DQEBCwUAMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTAeFw0xNTA3MDUxNzU2NDdaFw0xODA3MDQxNzU2NDdaMGgxCzAJBgNVBAYTAkhLMRIwEAYDVQQIDAlIb25nIEtvbmcxCzAJBgNVBAcMAkhLMRMwEQYDVQQKDApub2RlLXNhbWwyMSMwIQYJKoZIhvcNAQkBFhRub2RlLnNhbWwyQGdtYWlsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMQJAB8JrsLQbUuJa8akzLqO1EZqClS0tQp+w+5wgufp07WwGn/shma8dcQNj1dbjszI5HBeVFjOKIxlfjmNB9ovhQPstBjP/UPQYp1Ip2IoHCYX9HDgMz3xyXKbHthUzZaECz+p+7WtgwhczRkBLDOm2k15qhPYGPw0vH2zbVRGWUBS9dy2Mp3tqlVbP0xZ9CDNkhCJkV9SMNfoCVW/VYPqK2QBo7ki4obm5x5ixFQSSHsKbVARVzyQH5iNjFe1TdAp3rDwrE5Lc1NQlQaxR5Gnb2NZApDORRZIVlNv2WUdi9QvM0yCzjQ90jP0OAogHhRYaxg0/vgNEye46h+PiY0CAwEAAaNQME4wHQYDVR0OBBYEFEVkjcLAITndky090Ay74QqCmQKIMB8GA1UdIwQYMBaAFEVkjcLAITndky090Ay74QqCmQKIMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAG4lYX3KQXenez4LpDnZhcFBEZi9YstUKPF5EKd+WplpVbcTQc1A3/Z+uHRmyV8h+pQzeF6Liob37G87YpacPplJI66cf2Rj7j8hSBNbdr+66E2qpcEhAF1iJmzBNyhb/ydlEuVpn8/EsoP+HvBeiDl5gon3562MzZIgV/pLdTfxHyW6hzAQhjGq2UhcvR+gXNVJvHP2eS4jlHnJkB9bfo0kvf87Q+D6XKX3q5c3mO8tqW6UpqHSC+uLEpzZiNLeuFa4TUIhgBgjDjlRrNDKu8ndancSn3yBHYnqJ2t9cR+coFnnjYABQpNrvk4mtmXY8SXoBzYG9Y+lqeAun6+0YyE=</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor><SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://sp/slo"></SingleLogoutService><NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat><AssertionConsumerService index="0" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://sp/acs"></AssertionConsumerService></SPSSODescriptor></EntityDescriptor>');
   });
 
 })();
 
-test('idp with multiple signing and encryption certificates', t => {
+test('idp with multiple signing and encryption certificates', () => {
   const localIdp = identityProvider({
     signingCert: [
       readFileSync('./test/key/idp/cert.cer'),
@@ -341,14 +345,14 @@ test('idp with multiple signing and encryption certificates', t => {
   const signingCertificate = localIdp.entityMeta.getX509Certificate('signing');
   const encryptionCertificate = localIdp.entityMeta.getX509Certificate('encryption');
 
-  t.is(Array.isArray(signingCertificate), true);
-  t.is(signingCertificate.length, 2);
+  expect(Array.isArray(signingCertificate)).toBe(true);
+  expect(signingCertificate.length).toBe(2);
 
-  t.is(Array.isArray(encryptionCertificate), true);
-  t.is(encryptionCertificate.length, 2);
+  expect(Array.isArray(encryptionCertificate)).toBe(true);
+  expect(encryptionCertificate.length).toBe(2);
 })
 
-test('verify time with and without drift tolerance', t => {
+test('verify time with and without drift tolerance', () => {
 
   const now = new Date();
   const timeBefore10Mins = new Date(new Date().setMinutes(now.getMinutes() - 10)).toISOString();
@@ -357,78 +361,80 @@ test('verify time with and without drift tolerance', t => {
   const timeAfter10Mins = new Date(new Date().setMinutes(now.getMinutes() + 5)).toISOString();
 
   // without drift tolerance
-  t.true(verifyTime(timeBefore5Mins, timeAfter5Mins));
-  t.true(verifyTime(timeBefore5Mins, undefined));
-  t.true(verifyTime(undefined, timeAfter5Mins));
+  expect(verifyTime(timeBefore5Mins, timeAfter5Mins)).toBe(true);
+  expect(verifyTime(timeBefore5Mins, undefined)).toBe(true);
+  expect(verifyTime(undefined, timeAfter5Mins)).toBe(true);
 
-  t.false(verifyTime(undefined, timeBefore5Mins));
-  t.false(verifyTime(timeAfter5Mins, undefined));
-  t.false(verifyTime(timeBefore10Mins, timeBefore5Mins));
-  t.false(verifyTime(timeAfter5Mins, timeAfter10Mins));
+  expect(verifyTime(undefined, timeBefore5Mins)).toBe(false);
+  expect(verifyTime(timeAfter5Mins, undefined)).toBe(false);
+  expect(verifyTime(timeBefore10Mins, timeBefore5Mins)).toBe(false);
+  expect(verifyTime(timeAfter5Mins, timeAfter10Mins)).toBe(false);
 
-  t.true(verifyTime(undefined, undefined));
+  expect(verifyTime(undefined, undefined)).toBe(true);
 
   // with drift tolerance 5 mins + 1 sec = 301,000 ms
   const drifts: [number, number] = [-301000, 301000];
-  t.true(verifyTime(timeBefore5Mins, timeAfter5Mins, drifts));
-  t.true(verifyTime(timeBefore5Mins, undefined, drifts));
-  t.true(verifyTime(undefined, timeAfter5Mins, drifts));
+  expect(verifyTime(timeBefore5Mins, timeAfter5Mins, drifts)).toBe(true);
+  expect(verifyTime(timeBefore5Mins, undefined, drifts)).toBe(true);
+  expect(verifyTime(undefined, timeAfter5Mins, drifts)).toBe(true);
 
-  t.true(verifyTime(undefined, timeBefore5Mins, drifts));
-  t.true(verifyTime(timeAfter5Mins, undefined, drifts));
-  t.true(verifyTime(timeBefore10Mins, timeBefore5Mins, drifts));
-  t.true(verifyTime(timeAfter5Mins, timeAfter10Mins, drifts));
+  expect(verifyTime(undefined, timeBefore5Mins, drifts)).toBe(true);
+  expect(verifyTime(timeAfter5Mins, undefined, drifts)).toBe(true);
+  expect(verifyTime(timeBefore10Mins, timeBefore5Mins, drifts)).toBe(true);
+  expect(verifyTime(timeAfter5Mins, timeAfter10Mins, drifts)).toBe(true);
 
-  t.true(verifyTime(undefined, undefined, drifts));
+  expect(verifyTime(undefined, undefined, drifts)).toBe(true);
 });
 
 
 // new versions of xmldom realizes multiple_entitydescriptor.xml is invalid XML and doesn't parse it anymore.
 // It just logs an error and ignores the rest of the file, so this test is no longer a valid test case.
 // [xmldom error]  element parse error: Error: Hierarchy request error: Only one element can be added and only after doctype
-test.skip('metadata with multiple entity descriptors is invalid', t => {
+test.skip('metadata with multiple entity descriptors is invalid', () => {
+  expect(() => {
+    identityProvider({ ...defaultIdpConfig, metadata: readFileSync('./test/misc/multiple_entitydescriptor.xml') });
+  }).toThrow();
   try {
     identityProvider({ ...defaultIdpConfig, metadata: readFileSync('./test/misc/multiple_entitydescriptor.xml') });
-    t.fail();
   } catch ({ message }) {
-    t.is(message, 'ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
+    expect(message).toBe('ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
   }
 });
 
-test('undefined x509 key in metadata should return null', t => {
-  t.is(idp.entityMeta.getX509Certificate('undefined'), null);
-  t.is(sp.entityMeta.getX509Certificate('undefined'), null);
+test('undefined x509 key in metadata should return null', () => {
+  expect(idp.entityMeta.getX509Certificate('undefined')).toBe(null);
+  expect(sp.entityMeta.getX509Certificate('undefined')).toBe(null);
 });
 
-test('return list of x509 key in metadata when multiple keys are used', t => {
-  t.is(Array.isArray(idpRollingCert.entityMeta.getX509Certificate('signing')), true);
-  t.is(idpRollingCert.entityMeta.getX509Certificate('signing').length, 2);
-  t.is(typeof idpRollingCert.entityMeta.getX509Certificate('encryption'), 'string');
+test('return list of x509 key in metadata when multiple keys are used', () => {
+  expect(Array.isArray(idpRollingCert.entityMeta.getX509Certificate('signing'))).toBe(true);
+  expect(idpRollingCert.entityMeta.getX509Certificate('signing').length).toBe(2);
+  expect(typeof idpRollingCert.entityMeta.getX509Certificate('encryption')).toBe('string');
 });
 
-test('get name id format in metadata', t => {
-  t.is(sp.entityMeta.getNameIDFormat(), 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
-  t.is(Array.isArray(idp.entityMeta.getNameIDFormat()), true);
+test('get name id format in metadata', () => {
+  expect(sp.entityMeta.getNameIDFormat()).toBe('urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress');
+  expect(Array.isArray(idp.entityMeta.getNameIDFormat())).toBe(true);
 });
 
-test('get entity setting', t => {
-  t.is(typeof idp.getEntitySetting(), 'object');
-  t.is(typeof sp.getEntitySetting(), 'object');
+test('get entity setting', () => {
+  expect(typeof idp.getEntitySetting()).toBe('object');
+  expect(typeof sp.getEntitySetting()).toBe('object');
 });
 
-test('contains shared certificate for both signing and encryption in metadata', t => {
+test('contains shared certificate for both signing and encryption in metadata', () => {
   const metadata = idpMetadata(readFileSync('./test/misc/idpmeta_share_cert.xml'));
   const signingCertificate = metadata.getX509Certificate('signing');
   const encryptionCertificate = metadata.getX509Certificate('encryption');
-  t.not(signingCertificate, null);
-  t.not(encryptionCertificate, null);
-  t.is(signingCertificate, encryptionCertificate);
+  expect(signingCertificate).not.toBe(null);
+  expect(encryptionCertificate).not.toBe(null);
+  expect(signingCertificate).toBe(encryptionCertificate);
 });
 
-test('contains explicit certificate declaration for signing and encryption in metadata', t => {
+test('contains explicit certificate declaration for signing and encryption in metadata', () => {
   const signingCertificate = IdPMetadata.getX509Certificate('signing');
   const encryptionCertificate = IdPMetadata.getX509Certificate('encryption');
-  t.not(signingCertificate, null);
-  t.not(encryptionCertificate, null);
-  t.not(signingCertificate, encryptionCertificate);
+  expect(signingCertificate).not.toBe(null);
+  expect(encryptionCertificate).not.toBe(null);
+  expect(signingCertificate).not.toBe(encryptionCertificate);
 });
