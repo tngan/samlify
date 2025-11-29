@@ -1,0 +1,128 @@
+version: 2.1
+
+jobs:
+  test-node-18:
+    docker:
+      - image: cimg/node:18.0
+    environment:
+      INSTALL_JDK: 1
+    steps:
+      - checkout
+      - run:
+          name: Install Java JDK 20
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
+            echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+            sudo apt-get update
+            sudo apt-get install -y temurin-20-jdk
+            java -version
+            javac -version
+      - run:
+          name: Install dependencies
+          command: yarn install --production=true
+      - run:
+          name: Install test dependencies
+          command: yarn add @authenio/samlify-xsd-schema-validator
+      - run:
+          name: Run tests
+          command: yarn test 
+
+  test-node-20:
+    docker:
+      - image: cimg/node:20.0
+    environment:
+      INSTALL_JDK: 1
+    steps:
+      - checkout
+      - run:
+          name: Install Java JDK 20
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
+            echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+            sudo apt-get update
+            sudo apt-get install -y temurin-20-jdk
+            java -version
+            javac -version
+      - run:
+          name: Install dependencies
+          command: yarn install --production=true
+      - run:
+          name: Install test dependencies
+          command: yarn add @authenio/samlify-xsd-schema-validator
+      - run:
+          name: Run tests
+          command: yarn test 
+
+  test-node-22:
+    docker:
+      - image: cimg/node:22.0
+    environment:
+      INSTALL_JDK: 1
+    steps:
+      - checkout
+      - run:
+          name: Install Java JDK 20
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
+            echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+            sudo apt-get update
+            sudo apt-get install -y temurin-20-jdk
+            java -version
+            javac -version
+      - run:
+          name: Install dependencies
+          command: yarn install --production=true
+      - run:
+          name: Install test dependencies
+          command: yarn add @authenio/samlify-xsd-schema-validator
+      - run:
+          name: Run tests
+          command: yarn test 
+
+  test-node-24:
+    docker:
+      - image: cimg/node:24.0
+    environment:
+      INSTALL_JDK: 1
+    steps:
+      - checkout
+      - run:
+          name: Install Java JDK 20
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
+            echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+            sudo apt-get update
+            sudo apt-get install -y temurin-20-jdk
+            java -version
+            javac -version
+      - run:
+          name: Install dependencies
+          command: yarn install --production=true
+      - run:
+          name: Install test dependencies
+          command: yarn add @authenio/samlify-xsd-schema-validator
+      - run:
+          name: Run tests
+          command: yarn test 
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test-node-18
+      - test-node-20
+      - test-node-22
+      - test-node-24
+
