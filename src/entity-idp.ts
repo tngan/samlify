@@ -18,6 +18,7 @@ import simpleSignBinding from './binding-simplesign';
 import { flow, FlowResult } from './flow';
 import { isString } from './utility';
 import { BindingContext } from './entity';
+import {SAMLDocumentTemplate} from './types'
 
 /**
  * Identity provider can be configured using either metadata importing or idpSetting
@@ -85,7 +86,7 @@ export class IdentityProvider extends Entity {
     requestInfo: { [key: string]: any },
     binding: string,
     user: { [key: string]: any },
-    customTagReplacement?: (template: string) => BindingContext,
+    customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext,
     encryptThenSign?: boolean,
     relayState?: string,
   ) {
