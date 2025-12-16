@@ -750,8 +750,7 @@ const libSaml = () => {
         }
 
         sig.loadSignature(signatureNode);
-
-        verified = sig.checkSignature(doc.toString());
+        verified = sig.checkSignature(xml);
 
         // A signature that is present but does not verify fails the message;
         // falling through to the next one would let a broken message
