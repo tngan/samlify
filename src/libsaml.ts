@@ -370,7 +370,6 @@ const libSaml = () => {
       const { dom } = getContext();
       const doc = dom.parseFromString(xml);
 
-      const docParser = new DOMParser();
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
       // message signature (logout response / saml response)
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
@@ -455,8 +454,7 @@ const libSaml = () => {
         }
 
         sig.loadSignature(signatureNode);
-
-        verified = sig.checkSignature(doc.toString());
+        verified = sig.checkSignature(xml);
 
         // immediately throw error when any one of the signature is failed to get verified
         if (!verified) {
@@ -468,7 +466,7 @@ const libSaml = () => {
           throw new Error('NO_SIGNATURE_REFERENCES')
         }
         const signedVerifiedXML = sig.getSignedReferences()[0];
-        const rootNode = docParser.parseFromString(signedVerifiedXML, 'text/xml').documentElement;
+        const rootNode = dom.parseFromString(signedVerifiedXML, 'text/xml').documentElement;
         // process the verified signature:
         // case 1, rootSignedDoc is a response:
         if (rootNode.localName === 'Response') {
