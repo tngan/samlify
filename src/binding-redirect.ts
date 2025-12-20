@@ -10,6 +10,7 @@ import { IdentityProvider as Idp } from './entity-idp';
 import { ServiceProvider as Sp } from './entity-sp';
 import * as url from 'url';
 import { wording, namespace } from './urn';
+import { LoginRequestOptions } from './types';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -81,9 +82,10 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
 * @desc Redirect URL for login request
 * @param  {object} entity                       object includes both idp and sp
 * @param  {function} customTagReplacement      used when developers have their own login response template
+* @param  {LoginRequestOptions} options        options for this specific request
 * @return {string} redirect URL
 */
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext, options?: LoginRequestOptions): BindingContext {
 
   const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting: any = entity.sp.entitySetting;
@@ -109,6 +111,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
+        ForceAuthn: options?.forceAuthn ?? false,
       } as any);
     }
     return {

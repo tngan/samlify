@@ -13,6 +13,7 @@ import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
+  LoginRequestOptions,
 } from './types';
 import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
@@ -53,11 +54,13 @@ export class ServiceProvider extends Entity {
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
   * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {LoginRequestOptions} options       options for this specific request (e.g., forceAuthn)
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
     customTagReplacement?: (template: string) => BindingContext,
+    options?: LoginRequestOptions,
   ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -68,21 +71,21 @@ export class ServiceProvider extends Entity {
     let context: any = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement, options);
 
       case nsBinding.post:
-        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
+        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement, options);
         break;
 
       case nsBinding.simpleSign:
         // Object context = {id, context, signature, sigAlg}
-        context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
+        context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement, options);
         break;
 
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,

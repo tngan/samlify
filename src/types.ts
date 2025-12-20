@@ -92,6 +92,11 @@ export type ServiceProviderSettings = {
   clockDrifts?: [number, number];
 };
 
+export type LoginRequestOptions = {
+  /** Force re-authentication at the IdP */
+  forceAuthn?: boolean;
+};
+
 export type IdentityProviderSettings = {
   metadata?: string | Buffer;
 
