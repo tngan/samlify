@@ -95,6 +95,8 @@ export type ServiceProviderSettings = {
 export type LoginRequestOptions = {
   /** Force re-authentication at the IdP */
   forceAuthn?: boolean;
+  /** Custom tag replacement for login request template */
+  customTagReplacement?: (template: string) => any;
 };
 
 export type IdentityProviderSettings = {

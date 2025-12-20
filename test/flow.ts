@@ -208,7 +208,7 @@ test('create login request with post binding using default template and parse it
 });
 
 test('create login request with redirect binding and per-request forceAuthn=true', async () => {
-  const { id, context } = sp.createLoginRequest(idp, 'redirect', undefined, { forceAuthn: true });
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', { forceAuthn: true });
   expect(typeof id).toBe('string');
   expect(typeof context).toBe('string');
   const originalURL = url.parse(context, true);
@@ -222,7 +222,7 @@ test('create login request with redirect binding and per-request forceAuthn=true
 });
 
 test('create login request with post binding and per-request forceAuthn=true', async () => {
-  const { id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post', undefined, { forceAuthn: true }) as PostBindingContext;
+  const { id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post', { forceAuthn: true }) as PostBindingContext;
   expect(typeof id).toBe('string');
   expect(typeof SAMLRequest).toBe('string');
   const { extract } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
@@ -230,7 +230,7 @@ test('create login request with post binding and per-request forceAuthn=true', a
 });
 
 test('create login request with simpleSign binding and per-request forceAuthn=true', async () => {
-  const { id, context: SAMLRequest, type, sigAlg, signature, relayState } = sp.createLoginRequest(idp, 'simpleSign', undefined, { forceAuthn: true }) as SimpleSignBindingContext;
+  const { id, context: SAMLRequest, type, sigAlg, signature, relayState } = sp.createLoginRequest(idp, 'simpleSign', { forceAuthn: true }) as SimpleSignBindingContext;
   expect(typeof id).toBe('string');
   expect(typeof SAMLRequest).toBe('string');
   const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState, signature);

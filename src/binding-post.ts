@@ -14,12 +14,21 @@ const binding = wording.binding;
 
 /**
 * @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @param  {LoginRequestOptions} options       options for this specific request
+* @param  {string} referenceTagXPath                     reference uri
+* @param  {object} entity                                object includes both idp and sp
+* @param  {function | LoginRequestOptions} options       options for this specific request
 */
-function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext, options?: LoginRequestOptions): BindingContext {
+function base64LoginRequest(referenceTagXPath: string, entity: any, options?: ((template: string) => BindingContext) | LoginRequestOptions): BindingContext {
+  let customTagReplacement: ((template: string) => BindingContext) | undefined;
+  let requestOptions: LoginRequestOptions | undefined;
+
+  if (typeof options === 'function') {
+    customTagReplacement = options;
+  } else if (options) {
+    requestOptions = options;
+    customTagReplacement = options.customTagReplacement;
+  }
+
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
@@ -43,7 +52,7 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
-        ForceAuthn: options?.forceAuthn ?? false,
+        ForceAuthn: requestOptions?.forceAuthn ?? false,
         NameIDFormat: selectedNameIDFormat
       } as any);
     }
