@@ -13,6 +13,7 @@ import {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
+  LoginRequestOptions,
 } from './types';
 import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
@@ -50,14 +51,14 @@ export class ServiceProvider extends Entity {
 
   /**
   * @desc  Generates the login request for developers to design their own method
-  * @param  {IdentityProvider} idp               object of identity provider
-  * @param  {string}   binding                   protocol binding
-  * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {IdentityProvider} idp                         object of identity provider
+  * @param  {string}   binding                             protocol binding
+  * @param  {function | LoginRequestOptions} options       options for this specific request
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
+    options?: ((template: string) => BindingContext) | LoginRequestOptions,
   ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -68,21 +69,21 @@ export class ServiceProvider extends Entity {
     let context: any = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, options);
 
       case nsBinding.post:
-        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
+        context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, options);
         break;
 
       case nsBinding.simpleSign:
         // Object context = {id, context, signature, sigAlg}
-        context = simpleSignBinding.base64LoginRequest( { idp, sp: this }, customTagReplacement);
+        context = simpleSignBinding.base64LoginRequest({ idp, sp: this }, options);
         break;
 
       default:
         // Will support artifact in the next release
         throw new Error('ERR_SP_LOGIN_REQUEST_UNDEFINED_BINDING');
-    } 
+    }
 
     return {
       ...context,

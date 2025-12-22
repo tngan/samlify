@@ -8,6 +8,7 @@ import { wording, StatusCode } from './urn';
 import { BindingContext, SimpleSignComputedContext } from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
+import { LoginRequestOptions } from './types';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -71,11 +72,20 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
 
 /**
 * @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
+* @param  {object} entity                                object includes both idp and sp
+* @param  {function | LoginRequestOptions} options       options for this specific request
 */
-function base64LoginRequest(entity: any, customTagReplacement?: (template: string) => BindingContext): SimpleSignComputedContext {
+function base64LoginRequest(entity: any, options?: ((template: string) => BindingContext) | LoginRequestOptions): SimpleSignComputedContext {
+  let customTagReplacement: ((template: string) => BindingContext) | undefined;
+  let requestOptions: LoginRequestOptions | undefined;
+
+  if (typeof options === 'function') {
+    customTagReplacement = options;
+  } else if (options) {
+    requestOptions = options;
+    customTagReplacement = options.customTagReplacement;
+  }
+
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
@@ -99,6 +109,7 @@ function base64LoginRequest(entity: any, customTagReplacement?: (template: strin
         AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.simpleSign),
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
+        ForceAuthn: requestOptions?.forceAuthn ?? false,
         NameIDFormat: selectedNameIDFormat
       } as any);
     }

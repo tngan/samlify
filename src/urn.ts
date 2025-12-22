@@ -104,6 +104,7 @@ const namespace = {
 const tags = {
   request: {
     AllowCreate: '{AllowCreate}',
+    ForceAuthn: '{ForceAuthn}',
     AssertionConsumerServiceURL: '{AssertionConsumerServiceURL}',
     AuthnContextClassRef: '{AuthnContextClassRef}',
     AssertionID: '{AssertionID}',
