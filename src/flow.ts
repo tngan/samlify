@@ -1,4 +1,4 @@
-import { inflateString, base64Decode } from './utility';
+import { inflateString, base64Decode, WrappedError } from './utility';
 import { verifyTime } from './validator';
 import libsaml from './libsaml';
 import {
@@ -67,7 +67,13 @@ async function redirectFlow(options): Promise<FlowResult>  {
     return Promise.reject('ERR_REDIRECT_FLOW_BAD_ARGS');
   }
 
-  const xmlString = inflateString(decodeURIComponent(content));
+  let xmlString: string
+
+  try {
+    xmlString = inflateString(decodeURIComponent(content));
+  } catch (cause) {
+    throw new WrappedError('ERR_FAILED_INFLATION', { cause })
+  }
 
   // validate the xml
   try {

@@ -1383,3 +1383,11 @@ test.sequential('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML r
   }
 
 });
+
+test('should throw ERR_FAILED_INFLATION when pako is unable to inflate a redirect login request', async t => {
+  const query = { SAMLRequest: 'foo', Signature: 'bar', SigAlg: 'baz' };
+  const error = await t.throwsAsync<any>(idp.parseLoginRequest(sp, 'redirect', { query }));
+
+  t.is(error.message, 'ERR_FAILED_INFLATION');
+  t.is(error.cause, 'invalid block type'); // pako throws strings instead of Error instances for bad input
+});
