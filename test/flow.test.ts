@@ -248,8 +248,8 @@ const defaultSpEddConfig = {
     signingCert: readFileSync('./test/key/sp/ed25519.crt'),
     privateKeyPass: '79547236Qw.',
 
-    encryptCert: readFileSync('./test/key/sp/ed25519.crt'),
-    encPrivateKey: readFileSync('./test/key/sp/ed25519.pem'),
+    encryptCert: readFileSync('./test/key/sp/encryptionCert1.cer'),
+    encPrivateKey: readFileSync('./test/key/sp/encryptKey1.pem'),
     encPrivateKeyPass: '79547236Qw.',
 
     requestSignatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
