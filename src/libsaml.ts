@@ -11,7 +11,7 @@ import {algorithms, namespace, wording} from './urn.js';
 import xpath, {select} from 'xpath';
 import nrsa, {SigningSchemeHash} from 'node-rsa';
 import type {MetadataInterface} from './metadata.js';
-import {SignedXml} from 'xml-crypto';
+import {SignedXml} from 'xml-crypto-next';
 import * as xmlenc from 'xml-encryption';
 import camelCase from 'camelcase';
 import {getContext} from './api.js';

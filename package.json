@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "2.18.5",
+  "version": "2.19.0",
   "description": "High-level API for Single Sign On (SAML 2.0) baseed on samlify ",
   "main": "build/index.js",
   "keywords": [
@@ -53,7 +53,7 @@
     "uuid": "^13.0.0",
     "vite-tsconfig-paths": "^6.1.1",
     "xml": "^1.0.1",
-    "xml-crypto": "^6.1.2",
+    "xml-crypto-next": "^7.0.0",
     "xml-encryption": "^3.1.0",
     "xml-escape": "^1.1.0",
     "xml2js": "^0.6.2",

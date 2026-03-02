@@ -1,6 +1,6 @@
 import {getContext} from "./api.js";
 import {select} from "xpath";
-import {SignedXml} from "xml-crypto";
+import {SignedXml} from "xml-crypto-next";
 import fs from "fs";
 import utility, {flattenDeep} from "./utility.js";
 import libsaml, {SignatureVerifierOptions} from "./libsaml.js";
