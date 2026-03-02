@@ -247,7 +247,7 @@ function validatePEMHeaders(pem: string, keyType: string): string {
       .trim() +                               // 清理空白
     `\n${expectedHeader}\n${pem}\n${expectedFooter}\n`;
 }
-export function readPrivateKey(
+/*export function readPrivateKey(
   keyString: string | Buffer,
   passphrase?: string,
   isOutputString: boolean = true
@@ -279,9 +279,54 @@ export function readPrivateKey(
   } catch (error) {
     throw new Error(`私钥读取失败: ${error.message}`);
   }
+}*/
+
+export function readPrivateKey(
+    keyString: string | Buffer,
+    passphrase?: string,
+    isOutputString: boolean = true
+): string | Buffer {
+    try {
+        // 统一转换为字符串格式处理
+        const pemKey = Buffer.isBuffer(keyString)
+            ? keyString.toString('utf8')
+            : keyString;
+
+        // 创建私钥对象 (自动处理加密)
+        const keyObject = createPrivateKey({
+            key: pemKey,
+            format: 'pem',
+            passphrase: typeof passphrase === 'string' ? passphrase : undefined,
+            encoding: 'utf8'
+        });
+
+        // 根据密钥类型选择导出格式
+        const keyType = keyObject.asymmetricKeyType;
+        let exportType: 'pkcs1' | 'pkcs8';
+
+        switch (keyType) {
+            case 'rsa':
+                exportType = 'pkcs1'; // RSA 传统格式
+                break;
+            case 'ec':
+            case 'ed25519':
+                exportType = 'pkcs8'; // ECC/Ed25519 标准格式
+                break;
+            default:
+                throw new Error(`不支持的密钥类型: ${keyType}`);
+        }
+
+        // 导出密钥
+        const exported = keyObject.export({
+            type: exportType,
+            format: 'pem'
+        }) as string;
+
+        return isOutputString ? exported : Buffer.from(exported, 'utf8');
+    } catch (error) {
+        throw new Error(`私钥读取失败: ${error.message}`);
+    }
 }
-
-
 /**
  * @desc Inline syntax sugar
  */

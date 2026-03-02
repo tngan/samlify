@@ -181,6 +181,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
 
     // SAML response must be signed sign message first, then encrypt
     if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
+        console.log("来到了这里===============")
       // console.debug('sign then encrypt and sign entire message');
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
@@ -192,6 +193,9 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
           location: {reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']", action: 'after'},
         },
       });
+
+        console.log(rawSamlResponse)
+        console.log("22222222来到了这里2===============")
     }
 
 /*    if (spSetting.wantMessageSigned) {
@@ -207,10 +211,14 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }*/
-
+      console.log(idpSetting.isAssertionEncrypted)
+console.log('我看一下=====')
     if (idpSetting.isAssertionEncrypted) {
+        console.log("加密了=======")
       // console.debug('idp is configured to do encryption');
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
+        console.log(context)
+        console.log("加密上下文=====================")
       if (encryptThenSign) {
         //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
@@ -218,7 +226,6 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         return Promise.resolve({id, context});
       }
     }
-
     //sign after encrypting
 /*    if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       rawSamlResponse = libsaml.constructSAMLSignature({
@@ -232,6 +239,8 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
         },
       });
     }*/
+      console.log(rawSamlResponse)
+      console.log("签名后的2222222222222222222222222222====")
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),

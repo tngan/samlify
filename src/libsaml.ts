@@ -279,7 +279,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                 return algAlias;
             }
         }
-        return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
+        return nrsaAliasMapping[signatureAlgorithms.RSA_SHA256];
     }
 
     function validateAndInflateSamlResponse(urlEncodedResponse) {
@@ -1521,6 +1521,8 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
         ) {
             // Default returning base64 encoded signature
             // Embed with node-rsa module
+            console.log(signingAlgorithm)
+            console.log("获取的schema")
             const decryptedKey = new nrsa(
                 utility.readPrivateKey(key, passphrase),
                 undefined,
@@ -1604,6 +1606,8 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                 const doc = dom.parseFromString(xml, 'application/xml');
                 // @ts-expect-error misssing Node properties are not needed
                 const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
+                console.log(assertions)
+                console.log("找到了断言节点")
                 if (!Array.isArray(assertions) || assertions.length === 0) {
                     throw new Error('ERR_NO_ASSERTION');
                 }
@@ -1615,7 +1619,8 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                 if (sourceEntitySetting.isAssertionEncrypted) {
 
                     const publicKeyPem = utility.getPublicKeyPemFromCertificate(targetEntityMetadata.getX509Certificate(certUse.encrypt));
-
+                      console.log(publicKeyPem)
+                    console.log('确实找到了=====')
                     xmlenc.encrypt(rawAssertionNode.toString(), {
                         // use xml-encryption module
                         rsa_pub: Buffer.from(publicKeyPem), // public key from certificate
@@ -1626,6 +1631,8 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                         disallowEncryptionWithInsecureAlgorithm: true,
                         warnInsecureAlgorithm: true
                     }, (err, res) => {
+                        console.log(err);
+                        console.log("我要来看下=====")
                         if (err) {
                             return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_ENCRYPTION'));
                         }

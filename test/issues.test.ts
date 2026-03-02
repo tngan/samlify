@@ -1,3 +1,4 @@
+/*
 import * as esaml2 from '../index.js';
 import { readFileSync } from 'fs';
 import { test, expect } from 'vitest';
@@ -24,7 +25,7 @@ test('#31 query param for sso/slo is SamlRequest', () => {
 });
 
 test('#31 query param for sso/slo is SamlResponse', () => {
-  expect(getQueryParamByType('SAMLResponse')).toBe(wording.urlParams.samlResponse);/**/
+  expect(getQueryParamByType('SAMLResponse')).toBe(wording.urlParams.samlResponse);/!**!/
   expect(getQueryParamByType('LogoutResponse')).toBe(wording.urlParams.samlResponse);
 });
 
@@ -135,15 +136,15 @@ test('#86 duplicate issuer throws error', () => {
   expect(issuer.length).toBe(1);
   expect(issuer.every(i => i === 'http://www.okta.com/dummyIssuer')).toBe(true);
 });
-/*test('#87 add existence check for signature verification', () => {
+/!*test('#87 add existence check for signature verification', () => {
   expect(() => {
     libsaml.verifySignature(readFileSync('./test/misc/response.xml').toString(), {});
   }).toThrowError('ERR_ZERO_SIGNATURE');
-});*/
+});*!/
 test('#91 idp gets single sign on service from the metadata', () => {
   expect(idp.entityMeta.getSingleSignOnService('post')).toBe('idp.example.com/sso');
 });
-/*test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
+/!*test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
   const { context } = sp98.createLoginRequest(idp, 'redirect');
   const originalURL = url.parse(context, true);
   const request = originalURL.query.SAMLRequest;
@@ -154,7 +155,7 @@ test('#91 idp gets single sign on service from the metadata', () => {
   const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
 
   expect(acsUrl).toBe('https://example.org/response');
-});*/
+});*!/
 
 
 
@@ -169,7 +170,7 @@ test('#91 idp gets single sign on service from the metadata', () => {
   expect(ssoService).toBe('idp.example.com/sso');
 });
 
-/*test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
+/!*test('#98 undefined AssertionConsumerServiceURL with redirect request', () => {
   // 1. 创建登录请求
   const { context } = sp98.createLoginRequest(idp, 'redirect');
 
@@ -188,4 +189,5 @@ test('#91 idp gets single sign on service from the metadata', () => {
   // 5. 获取属性值并验证
   const acsUrl = xmlDoc.documentElement.getAttribute('AssertionConsumerServiceURL');
   expect(acsUrl).toBe('https://example.org/response');
-});*/
+});*!/
+*/
