@@ -347,7 +347,6 @@ const spWithClockDrift = serviceProvider({...defaultSpConfig, clockDrifts: [-200
 function writer(str: string) {
   writeFileSync('test.txt', str);
 }
-/*
 
 describe('SAML Login Request Tests', () => {
   test('create login request with redirect binding using default template and parse it', async () => {
@@ -1465,7 +1464,7 @@ test('send response with [custom template] and signed message by redirect and pa
   expect(extractedData.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
   expect(extractedData.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
 });
-/!** 错误了五个------------------*!/
+/** 错误了五个------------------*/
 test('send response with [custom template] and signed message by post simplesign and parse it', async () => {
   const requestInfo = { extract: { authnrequest: { id: 'request_id' } } };
   const user = { NameID: 'user@esaml2.com' };
@@ -2274,8 +2273,8 @@ test('idp sends a post logout request without signature and sp parses it', async
 
     expect(typeof id).toBe('string');
     expect(typeof context).toBe('string');
-    /!** 不接受没有签名的注销请求*!/
-/!*    const {extract: extractedData} = await sp.parseLogoutRequest(
+    /** 不接受没有签名的注销请求*/
+/*    const {extract: extractedData} = await sp.parseLogoutRequest(
         idp,
         'post',
         {body: {SAMLRequest: context}}
@@ -2285,7 +2284,7 @@ test('idp sends a post logout request without signature and sp parses it', async
     expect(extractedData.issuer).toBe('https://idp.example.com/metadata');
     expect(typeof extractedData.request.id).toBe('string');
     expect(extractedData.request.destination).toBe('https://sp.example.org/sp/slo');
-    expect(extractedData.signature).toBeNull();*!/
+    expect(extractedData.signature).toBeNull();*/
 
     await expect( sp.parseLogoutRequest(
         idp,
@@ -2307,7 +2306,7 @@ test('sp sends a post logout response without signature and parse', async () => 
   ) as PostBindingContext;
 
   const { context: SAMLResponse } = result;
-/!*
+/*
   const { extract: extractedData } = await idp.parseLogoutResponse(
     sp,
     'post',
@@ -2317,7 +2316,7 @@ test('sp sends a post logout response without signature and parse', async () => 
   expect(extractedData.signature).toBeNull();
   expect(extractedData.issuer).toBe('https://sp.example.org/metadata');
   expect(typeof extractedData.response.id).toBe('string');
-  expect(extractedData.response.destination).toBe('https://idp.example.org/sso/SingleLogoutService');*!/
+  expect(extractedData.response.destination).toBe('https://idp.example.org/sso/SingleLogoutService');*/
     await expect(idp.parseLogoutResponse(
         sp,
         'post',
@@ -2629,7 +2628,7 @@ test('should reject signature wrapped response - case 1', async () => {
   ).rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
 });
 
-/!*!// 测试：拒绝签名包装的响应 - 案例2
+/*// 测试：拒绝签名包装的响应 - 案例2
 test('should reject signature wrapped response - case 2', async () => {
   const user = { NameID: 'user@esaml2.com' };
 
@@ -2671,7 +2670,7 @@ test('should reject signature wrapped response - case 2', async () => {
       { body: { SAMLResponse: wrappedResponse } }
     )
   ).rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
-/!*  await expect(
+/*  await expect(
     sp.parseLoginResponse(
       idpNoEncrypt,
       'post',
@@ -2679,7 +2678,7 @@ test('should reject signature wrapped response - case 2', async () => {
     )
   ).rejects.toThrow('ERR_FAIL_TO_VERIFY_ETS_SIGNATURE');*!/
 
-});*!/
+});*/
 
 // 测试：当响应返回失败状态时抛出两层代码错误
 test('should throw two-tiers code error when the response does not return success status', async () => {
@@ -2990,9 +2989,8 @@ test('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML response by 
 
 
 
-*/
 
-//测试Edd5519签名
+/*//测试Edd5519签名
 test('send response with signed assertion with edd25519  and parse it', async function() {
     const user = { NameID: 'user@esaml2.com'};
 
@@ -3028,4 +3026,4 @@ test('send response with signed assertion with edd25519  and parse it', async fu
     expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
     expect(extract.nameID).toBe('user@esaml2.com');
     expect(extract.response.inResponseTo).toBe('request_id');
-});
+})*/;

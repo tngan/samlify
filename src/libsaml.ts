@@ -279,7 +279,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                 return algAlias;
             }
         }
-        return nrsaAliasMapping[signatureAlgorithms.RSA_SHA256];
+        return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
     }
 
     function validateAndInflateSamlResponse(urlEncodedResponse) {
