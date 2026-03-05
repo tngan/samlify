@@ -11,7 +11,7 @@
     <import namespace="http://www.w3.org/2000/09/xmldsig#"
         schemaLocation="xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/2001/04/xmlenc#"
-        schemaLocation="xenc-schema.xsd"/>
+        schemaLocation="xenc-schema-11.xsd"/>
     <annotation>
         <documentation>
             Document identifier: saml-schema-assertion-2.0

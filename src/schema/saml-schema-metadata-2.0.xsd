@@ -13,7 +13,7 @@
     <import namespace="http://www.w3.org/2000/09/xmldsig#"
         schemaLocation="xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/2001/04/xmlenc#"
-        schemaLocation="xenc-schema.xsd"/>
+        schemaLocation="xenc-schema-11.xsd"/>
     <import namespace="urn:oasis:names:tc:SAML:2.0:assertion"
         schemaLocation="saml-schema-assertion-2.0.xsd"/>
     <import namespace="http://www.w3.org/XML/1998/namespace"

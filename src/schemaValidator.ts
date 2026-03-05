@@ -10,6 +10,7 @@ let normal =[
     'saml-schema-assertion-2.0.xsd',
     'xmldsig-core-schema.xsd',
     'xenc-schema.xsd',
+  'xenc-schema-11.xsd',
     'saml-schema-metadata-2.0.xsd',
     'saml-schema-ecp-2.0.xsd',
     'saml-schema-dce-2.0.xsd'
@@ -26,7 +27,7 @@ let soapSchema = [
 
     // 4. XML加密模式（SAML断言加密的前置依赖）
     'xenc-schema.xsd',
-
+   'xenc-schema-11.xsd',
     // 5. SAML核心模式（最基础的SAML组件）
     'saml-schema-assertion-2.0.xsd', // 断言定义
 
@@ -45,7 +46,7 @@ let meta = [
     'saml-schema-assertion-2.0.xsd',
     'xmldsig-core-schema.xsd',
     'xenc-schema.xsd',
-
+   'xenc-schema-11.xsd',
 
 ]
 let  schemas = normal;
