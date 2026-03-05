@@ -3,7 +3,7 @@
 * @author tngan
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
-import { pki, util, asn1 } from 'node-forge';
+import { X509Certificate, createPrivateKey } from 'crypto';
 import { inflate, deflate } from 'pako';
 
 const BASE64_STR = 'base64';
@@ -173,10 +173,9 @@ function applyDefault(obj1, obj2) {
 * @return {string} public key fetched from the certificate
 */
 function getPublicKeyPemFromCertificate(x509Certificate: string) {
-  const certDerBytes = util.decode64(x509Certificate);
-  const obj = asn1.fromDer(certDerBytes);
-  const cert = pki.certificateFromAsn1(obj);
-  return pki.publicKeyToPem(cert.publicKey);
+  const der = Buffer.from(x509Certificate, 'base64');
+  const cert = new X509Certificate(der);
+  return cert.publicKey.export({ type: 'spki', format: 'pem' });
 }
 /**
 * @desc Read private key from pem-formatted string
@@ -186,7 +185,12 @@ function getPublicKeyPemFromCertificate(x509Certificate: string) {
 * If passphrase is used to protect the .pem content (recommend)
 */
 export function readPrivateKey(keyString: string | Buffer, passphrase: string | undefined, isOutputString?: boolean) {
-  return isString(passphrase) ? this.convertToString(pki.privateKeyToPem(pki.decryptRsaPrivateKey(String(keyString), passphrase)), isOutputString) : keyString;
+  if (isString(passphrase)) {
+    const key = createPrivateKey({ key: keyString, format: 'pem', passphrase });
+    const pem = key.export({ type: 'pkcs1', format: 'pem' });
+    return convertToString(pem, isOutputString);
+  }
+  return keyString;
 }
 /**
 * @desc Inline syntax sugar
