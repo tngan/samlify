@@ -216,8 +216,8 @@ function loginRequestRedirectURLArt(entity: {
                 AuthnRequest: rawSamlRequest
             } as any);
 
+            // @ts-ignore
             let rootSignSoap = libsaml.constructSAMLSignature({
-
                 isMessageSigned: true,
                 isBase64Output: false,
                 privateKey,

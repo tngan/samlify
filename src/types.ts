@@ -1,5 +1,7 @@
 import  type { LoginResponseTemplate } from './libsaml.js';
-
+import {IdentityProvider} from "./entity-idp.js";
+import {ServiceProvider} from "./entity-sp.js";
+import {BindingContext} from './entity.js';
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp.js';
 export { IdpMetadata as IdentityProviderMetadata } from './metadata-idp.js';
 
@@ -7,7 +9,18 @@ export { ServiceProvider as ServiceProviderConstructor } from './entity-sp.js';
 export { SpMetadata as ServiceProviderMetadata } from './metadata-sp.js';
 
 export type MetadataFile = string | Buffer;
-
+export  interface Base64LoginResponseParams {
+    requestInfo?: Record<string, any>;
+    entity: {
+        idp: IdentityProvider;
+        sp: ServiceProvider;
+    };
+    user?: Record<string, any>;
+    customTagReplacement?: (template: string) => BindingContext;
+    encryptThenSign?: boolean;
+    AttributeStatement?: any[];
+    idpInit?: Boolean
+}
 type SSOService = {
   isDefault?: boolean;
   Binding: string;

@@ -102,19 +102,22 @@ function soapLoginRequest(referenceTagXPath: string, entity: any, customTagRepla
         } = spSetting;
                 if (metadata.idp.isWantAuthnRequestsSigned()) {
                   Response = libsaml.constructSAMLSignature({
-                        referenceTagXPath,
-                        privateKey,
-                        privateKeyPass,
-                        signatureAlgorithm,
-                        transformationAlgorithms,
-                        rawSamlMessage: rawSamlRequest,
-                        isBase64Output: false,
-                        signingCert: metadata.sp.getX509Certificate('signing'),
+                      referenceTagXPath,
+                      privateKey,
+                      privateKeyPass,
+                      signatureAlgorithm,
+                      transformationAlgorithms,
+                      rawSamlMessage: rawSamlRequest,
+                      isBase64Output: false,
+                      signingCert: metadata.sp.getX509Certificate('signing'),
                       signatureConfig: spSetting.signatureConfig || {
                           prefix: 'ds',
-                          location: {reference: "/*[local-name(.)='AuthnRequest']/!*[local-name(.)='Issuer']", action: 'after'},
+                          location: {
+                              reference: "/*[local-name(.)='AuthnRequest']/!*[local-name(.)='Issuer']",
+                              action: 'after'
+                          },
                       }
-                    })
+                  })
                     soapTemplate = libsaml.replaceTagsByValue(libsaml.defaultArtAuthnRequestTemplate.context, {
                         ID: id2,
                         IssueInstant: new Date().toISOString(),
@@ -252,6 +255,7 @@ async function soapLoginResponse(requestInfo: any = {}, entity: any, user: any =
         // SAML response must be signed sign message first, then encrypt
         if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
             // console.debug('sign then encrypt and sign entire message');
+            // @ts-ignore
             rawSamlResponse = libsaml.constructSAMLSignature({
                 ...config,
                 rawSamlMessage: rawSamlResponse,
@@ -279,6 +283,7 @@ async function soapLoginResponse(requestInfo: any = {}, entity: any, user: any =
 
         //sign after encrypting
         if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
+            // @ts-ignore
             rawSamlResponse = libsaml.constructSAMLSignature({
                 ...config,
                 rawSamlMessage: rawSamlResponse,
