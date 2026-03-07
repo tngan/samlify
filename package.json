@@ -1,6 +1,6 @@
 {
   "name": "samlesa",
-  "version": "3.1          pnpm run test.0",
+  "version": "3.2.0",
   "description": "High-level API for Single Sign On (SAML 2.0) baseed on samlify ",
   "main": "build/index.js",
   "keywords": [
@@ -55,7 +55,7 @@
     "xml": "^1.0.1",
     "xml-crypto-next": "^7.0.0",
     "xml-crypto": "^6.1.2",
-    "xml-encryption-next": "^4.3.0",
+    "xml-encryption-next": "^4.5.0",
     "xml-escape": "^1.1.0",
     "xml2js": "^0.6.2",
     "xmllint-wasm": "^5.1.0",

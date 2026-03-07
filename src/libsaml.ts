@@ -1247,7 +1247,8 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                         pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
                         encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
                         keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
-                        /*       keyEncryptionDigest: 'SHA-512',*/
+                        keyEncryptionDigest: sourceEntitySetting.keyEncryptionDigest  ?? 'sha256', //default sha256
+                        keyEncryptionMgf1: sourceEntitySetting.keyEncryptionMgf1  ?? 'sha256',
                         disallowEncryptionWithInsecureAlgorithm: true,
                         warnInsecureAlgorithm: true
                     }, (err, res) => {
@@ -1483,7 +1484,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
                         {key: privateKey},
                         (err, result) => {
                             if (err) {
-                                return reject(new Error('ERR_ASSERTION_DECRYPTION_FAILED'));
+                                return reject(err);
                             }
                             if (!result) {
                                 return reject(new Error('ERR_EMPTY_DECRYPTED_ASSERTION'));
