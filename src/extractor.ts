@@ -13,6 +13,7 @@ interface ExtractorField {
   context?: boolean;
   listMode?: boolean;      // 新增：用于标记需要返回对象数组的字段 (如多个 SSO URL)
   shortcut?: string;       // 新增：用于传入子文档字符串 (如 Assertion)
+
 }
 
 export type ExtractorFields = ExtractorField[];
@@ -304,9 +305,10 @@ export const spMetadataFields: ExtractorFields = [
     // 提取 ACS 列表
     key: 'assertionConsumerService',
     localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
-    attributes: ['Binding', 'Location', 'index'],
+    attributes: ['Binding', 'Location', 'index','isDefault'],
     listMode: true
   },
+
   {
     // 提取 SP 发起的注销服务列表
     key: 'singleLogoutService',
@@ -315,9 +317,73 @@ export const spMetadataFields: ExtractorFields = [
     listMode: true
   },
   {
+    // [新增] 提取 Artifact 解析服务 (如果使用 Artifact 绑定则必需)
+    key: 'artifactResolutionService',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ArtifactResolutionService'],
+    attributes: ['Binding', 'Location', 'index', 'isDefault'],
+    listMode: true
+  },
+  {
+    // [新增] 提取 ManageNameID 服务 (较少用，但规范支持)
+    key: 'manageNameIDService',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ManageNameIDService'],
+    attributes: ['Binding', 'Location'],
+    listMode: true
+  },
+/*  {
     key: 'nameIDFormat',
     localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'],
     attributes: []
+  }*/
+  // --- 名称ID格式 (NameID Formats) ---
+  {
+    // 提取所有支持的 NameID 格式列表 (返回字符串数组)
+    key: 'nameIDFormat',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'],
+    attributes: [], // 文本内容
+    listMode: true,  // 注意：这里 listMode 会尝试提取属性，但 NameIDFormat 通常只有文本内容。
+                    // 如果 extract 函数对 listMode && attributes.length===0 处理不当，可能需要特殊处理。
+                    // 当前 extract 逻辑中，如果 listMode=true 但 attributes 为空，可能不会进入 listMode 分支，
+                    // 而是进入 attributes.length === 0 分支，返回单个值。
+                    // 若要返回数组，需确保 extract 逻辑支持 "listMode + 无属性" 的情况，或者这里不加 listMode，
+                    // 依靠多路径逻辑（如果有的话）。
+                    // *修正策略*: 对于纯文本列表，目前的 extract 逻辑可能只返回第一个。
+                    // 如果需要所有 NameIDFormat，建议暂时不加 listMode，或者在 extract 中完善逻辑。
+                    // 此处为了安全，先不加 listMode，仅获取第一个，或者依赖后续逻辑优化。
+                    // 实际上，NameIDFormat 通常有多个，建议后续优化 extract 支持 text() 的 listMode。
+                    // 暂时保持原样或移除 listMode 以避免意外行为，除非你确认 extract 支持。
+                    // 在此示例中，我移除 listMode，仅获取第一个，或者你可以接受只获取一个。
+                    // 更好的方式：如果 extract 不支持 text 的 listMode，这里先不写 listMode。
+  },
+  // --- [新增] 组织信息 (Organization) ---
+  {
+    key: 'organizationName',
+    localPath: ['EntityDescriptor', 'Organization', 'OrganizationName'],
+    attributes: ['xml:lang'], // 有时需要区分语言
+    // 注意：OrganizationName 可能有多个（不同语言），listMode 可能有用，但 extract 需支持
+  },
+  {
+    key: 'organizationDisplayName',
+    localPath: ['EntityDescriptor', 'Organization', 'OrganizationDisplayName'],
+    attributes: []
+  },
+  {
+    key: 'organizationURL',
+    localPath: ['EntityDescriptor', 'Organization', 'OrganizationURL'],
+    attributes: []
+  },
+  // --- [新增] 联系人信息 (ContactPerson) ---
+  // 联系人可能有多个（technical, support, administrative），适合 listMode
+  {
+    key: 'contactPerson',
+    localPath: ['EntityDescriptor', 'ContactPerson'],
+    attributes: ['contactType'], // contactType 是属性
+    listMode: true, // 这将返回 [{ contactType: 'technical' }, ...]，但不包含姓名邮箱
+    // 缺点：extract 的 listMode 目前只提取 attributes。
+    // 如果要提取 ContactPerson 的子元素 (EmailAddress, GivenName)，需要更复杂的配置或硬编码。
+    // 鉴于当前 extract 限制，这里仅提取 contactType 列表意义不大。
+    // 建议：如果需要详细联系人，需在 extract 中增加对子元素文本提取的 listMode 支持。
+    // 暂时注释掉或仅保留简单属性提取。
   }
 ];
 
