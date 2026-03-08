@@ -384,6 +384,45 @@ export const spMetadataFields: ExtractorFields = [
     // 鉴于当前 extract 限制，这里仅提取 contactType 列表意义不大。
     // 建议：如果需要详细联系人，需在 extract 中增加对子元素文本提取的 listMode 支持。
     // 暂时注释掉或仅保留简单属性提取。
+  },
+  // 7.1 签名证书
+  // 触发 extract 函数内部的硬编码逻辑：if (key === 'signingCert') ...
+  {
+    key: 'signingCert',
+    localPath: [], // 会被内部逻辑忽略
+    attributes: []
+  },
+
+  // 7.2 加密证书
+  // 触发 extract 函数内部的硬编码逻辑：if (key === 'encryptCert') ...
+  {
+    key: 'encryptCert',
+    localPath: [], // 会被内部逻辑忽略
+    attributes: []
+  },
+
+  // 7.3 签名密钥名称 (KeyName) - 如果有
+  // 标准 XPath 提取：EntityDescriptor -> SPSSODescriptor -> KeyDescriptor[@use='signing'] -> KeyInfo -> KeyName
+  {
+    key: 'signingKeyName',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor'],
+    // 这里需要一点技巧，因为 KeyDescriptor 是兄弟节点且通过 @use 区分。
+    // 由于我们的 buildAbsoluteXPath 不支持复杂的谓词过滤（除了 local-name），
+    // 我们最好利用 extract 内部的特殊逻辑，或者如果 extract 不支持 KeyName 的特殊逻辑，
+    // 我们可能需要手动在 controller 里提取，或者在这里尝试通用路径。
+
+    // *策略调整*：为了保持一致性，建议在 extractor.ts 的 extract 函数中也添加对 'signingKeyName' 的硬编码支持，
+    // 就像对证书做的那样。
+    // 如果你暂时不想修改 extractor.ts，可以在这里留空，然后在 Controller 中单独解析。
+    // 但为了完整性，假设我们稍微修改一下 extractor.ts (见下方说明)，这里配置如下：
+    attributes: []
+  },
+
+  // 7.4 加密密钥名称 (KeyName)
+  {
+    key: 'encryptionKeyName',
+    localPath: [],
+    attributes: []
   }
 ];
 
