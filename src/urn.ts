@@ -152,6 +152,21 @@ const algorithms = {
     RSA_SHA384: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384',
     RSA_SHA512: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
   },
+  digest: {
+    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'http://www.w3.org/2000/09/xmldsig#sha1',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224': 'http://www.w3.org/2001/04/xmldsig-more#sha224',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512',
+    "http://www.w3.org/2000/09/xmldsig#dsa-sha1":"http://www.w3.org/2000/09/xmldsig#sha1",
+
+
+    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha256',
+    'http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
+    'http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
+    'http://www.w3.org/2007/05/xmldsig-more#eddsa-ed25519': 'http://www.w3.org/2001/04/xmlenc#sha512'
+
+  },
   encryption: {
     data: {
       AES_128: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
@@ -167,22 +182,7 @@ const algorithms = {
   },
 
 
-  digest: {
-    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'http://www.w3.org/2000/09/xmldsig#sha1',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224': 'http://www.w3.org/2001/04/xmldsig-more#sha224',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256':"http://www.w3.org/2001/04/xmlenc#sha256",
-    "http://www.w3.org/2000/09/xmldsig#dsa-sha1":"http://www.w3.org/2000/09/xmldsig#sha1",
 
-
-    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha256',
-    'http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
-    'http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
-    'http://www.w3.org/2007/05/xmldsig-more#eddsa-ed25519': 'http://www.w3.org/2001/04/xmlenc#sha512'
-
-  },
 };
 
 export enum ParserType {
