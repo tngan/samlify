@@ -55,7 +55,7 @@
     "xml": "^1.0.1",
     "xml-crypto-next": "^7.0.0",
     "xml-crypto": "^6.1.2",
-    "xml-encryption-next": "^4.5.0",
+    "xml-encryption-next": "^4.6.0",
     "xml-escape": "^1.1.0",
     "xml2js": "^0.6.2",
     "xmllint-wasm": "^5.1.0",
