@@ -485,7 +485,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
         referenceTagXPath,
         privateKey,
         privateKeyPass,
-        signatureAlgorithm = signatureAlgorithms.RSA_SHA512,
+        signatureAlgorithm = signatureAlgorithms.RSA_SHA256,
         transformationAlgorithms = [
           'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
           'http://www.w3.org/2001/10/xml-exc-c14n#',
