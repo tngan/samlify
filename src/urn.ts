@@ -143,47 +143,120 @@ const messageConfigurations = {
 };
 
 const algorithms = {
+  // 1. 签名算法定义 (SignatureMethod)
   signature: {
-    ECDSA_SHA256: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
-    DSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#dsa-sha1',
-    RSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
-    RSA_SHA224: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224',
-    RSA_SHA256: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
-    RSA_SHA384: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384',
-    RSA_SHA512: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
+    // ❌ 原文错误修正：ECDSA 不能用 rsa-sha256 的 URI
+    ECDSA_SHA256: 'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha256',
+    ECDSA_SHA384: 'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha384',
+    ECDSA_SHA512: 'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha512',
+
+    DSA_SHA1:      'http://www.w3.org/2000/09/xmldsig#dsa-sha1',
+
+    RSA_SHA1:      'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
+    RSA_SHA224:    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224',
+    RSA_SHA256:    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256', // 推荐
+    RSA_SHA384:    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384',
+    RSA_SHA512:    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
+
+    // XML Signature 1.1 PSS 填充 (更安全)
+    RSA_PSS_SHA256: 'http://www.w3.org/2007/05/xmldsig-more#rsa-pss-sha256',
+
+    // EdDSA (Ed25519)
+    EDDSA_ED25519: 'http://www.w3.org/2007/05/xmldsig-more#eddsa-ed25519'
   },
+
+  // 2. 摘要算法定义 (DigestMethod)
+  // 注意：这里直接使用标准推荐的 URI，SHA-2xx 系列推荐使用 xmlenc 命名空间
   digest: {
-    'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'http://www.w3.org/2000/09/xmldsig#sha1',
+    SHA1:   'http://www.w3.org/2000/09/xmldsig#sha1',
+    SHA224: 'http://www.w3.org/2001/04/xmldsig-more#sha224', // 较少见，有时也用 xmlenc 但 xmldsig-more 更准确对应
+    SHA256: 'http://www.w3.org/2001/04/xmlenc#sha256',       // ✅ 标准推荐
+    SHA384: 'http://www.w3.org/2001/04/xmlenc#sha384',       // ✅ 标准推荐
+    SHA512: 'http://www.w3.org/2001/04/xmlenc#sha512'        // ✅ 标准推荐
+  },
+
+  // 3. 映射关系表：给定一个签名算法 URI，它应该配合哪个摘要算法 URI？
+  // 这修复了你原代码中 digest 字段作为 "Map" 的意图
+  signatureToDigestMap: {
+    'http://www.w3.org/2000/09/xmldsig#rsa-sha1':      'http://www.w3.org/2000/09/xmldsig#sha1',
+    'http://www.w3.org/2000/09/xmldsig#dsa-sha1':      'http://www.w3.org/2000/09/xmldsig#sha1',
+
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224': 'http://www.w3.org/2001/04/xmldsig-more#sha224',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384': 'http://www.w3.org/2001/04/xmlenc#sha384',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512',
-    "http://www.w3.org/2000/09/xmldsig#dsa-sha1":"http://www.w3.org/2000/09/xmldsig#sha1",
 
+    'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
+    'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha384': 'http://www.w3.org/2001/04/xmlenc#sha384',
+    'http://www.w3.org/2007/05/xmldsig-more#ecdsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512',
 
-    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha256',
-    'http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1': 'http://www.w3.org/2001/04/xmldsig-more#sha384',
-    'http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
+    'http://www.w3.org/2007/05/xmldsig-more#rsa-pss-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
+
+    // EdDSA 比较特殊，它内部硬编码了 SHA-512，但在 XML 结构中如果需要显式声明 DigestMethod，通常指向 SHA-512
     'http://www.w3.org/2007/05/xmldsig-more#eddsa-ed25519': 'http://www.w3.org/2001/04/xmlenc#sha512'
-
   },
+
   encryption: {
     data: {
-      AES_128: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
-      AES_256: 'http://www.w3.org/2001/04/xmlenc#aes256-cbc',
+// --- CBC 模式 (XML Enc 1.0 - 兼容性最好) ---
+      AES_128_CBC: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+      AES_192_CBC: 'http://www.w3.org/2001/04/xmlenc#aes192-cbc',
+      AES_256_CBC: 'http://www.w3.org/2001/04/xmlenc#aes256-cbc',
+
+      // --- GCM 模式 (XML Enc 1.1 - 推荐，提供完整性保护) ---
+      AES_128_GCM: 'http://www.w3.org/2009/xmlenc11#aes128-gcm',
+      AES_192_GCM: 'http://www.w3.org/2009/xmlenc11#aes192-gcm',
       AES_256_GCM: 'http://www.w3.org/2009/xmlenc11#aes256-gcm',
-      TRI_DEC: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc',
-      AES_128_GCM: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
+
+      // --- CTR 模式 (XML Enc 1.1) ---
+      AES_128_CTR: 'http://www.w3.org/2009/xmlenc11#aes128-ctr',
+      AES_192_CTR: 'http://www.w3.org/2009/xmlenc11#aes192-ctr',
+      AES_256_CTR: 'http://www.w3.org/2009/xmlenc11#aes256-ctr',
+
+      // --- 旧算法 (不推荐，仅用于遗留系统) ---
+      TRIPLE_DES: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'
+
     },
+    /**
+     * 密钥加密算法 (用于加密生成的 AES 会话密钥)
+     * 这里包含了 RSA-OAEP 和 AES Key Wrap
+     */
     key: {
+      // --- RSA OAEP (推荐) ---
+      // 默认使用 SHA-1 的 OAEP (XML Enc 1.0)
       RSA_OAEP_MGF1P: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
-      RSA_1_5: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+
+      // XML Enc 1.1 的通用 OAEP (通常配合 DigestMethod 参数使用 SHA-256)
+      RSA_OAEP:       'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+
+      // --- RSA PKCS#1 v1.5 (旧标准，不推荐，但广泛存在) ---
+      RSA_1_5:        'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+
+      // --- AES Key Wrap (用于对称密钥加密对称密钥的场景) ---
+      AES_128_KW:     'http://www.w3.org/2001/04/xmlenc#kw-aes128',
+      AES_192_KW:     'http://www.w3.org/2001/04/xmlenc#kw-aes192',
+      AES_256_KW:     'http://www.w3.org/2001/04/xmlenc#kw-aes256',
+
+      // --- AES GCM Key Wrap (XML Enc 1.1) ---
+      AES_128_GCM_KW: 'http://www.w3.org/2009/xmlenc11#aes128-gcmkw',
+      AES_192_GCM_KW: 'http://www.w3.org/2009/xmlenc11#aes192-gcmkw',
+      AES_256_GCM_KW: 'http://www.w3.org/2009/xmlenc11#aes256-gcmkw',
+
     },
   },
-
-
-
 };
+
+// 使用示例：
+// 如果你选择了 RSA_SHA256 签名
+const selectedSigAlg = algorithms.signature.RSA_SHA256;
+// 自动获取对应的摘要算法
+const requiredDigestAlg = algorithms.signatureToDigestMap[selectedSigAlg];
+
+console.log(`Signature: ${selectedSigAlg}`);
+console.log(`Required Digest: ${requiredDigestAlg}`);
+// 输出:
+// Signature: http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
+// Required Digest: http://www.w3.org/2001/04/xmlenc#sha256
 
 export enum ParserType {
   SAMLRequest = 'SAMLRequest',

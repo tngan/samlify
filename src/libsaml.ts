@@ -20,7 +20,7 @@ import * as fs from 'fs';
 import {DOMParser} from '@xmldom/xmldom';
 
 const signatureAlgorithms = algorithms.signature;
-const digestAlgorithms = algorithms.digest;
+const digestAlgorithms = algorithms.signatureToDigestMap;
 const certUse = wording.certUse;
 const urlParams = wording.urlParams;
 
