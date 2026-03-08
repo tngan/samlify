@@ -1249,7 +1249,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${targetEntityMetadata.getX509Certificate(certUse.encrypt)}-----END CERTIFICATE-----`),
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
-            keyEncryptionDigest: sourceEntitySetting.keyEncryptionDigest ?? 'sha256', //default sha256
+            keyEncryptionDigest: sourceEntitySetting.keyEncryptionDigest ?? 'sha1', //default sha256
             keyEncryptionMgf1: sourceEntitySetting.keyEncryptionMgf1 ?? 'sha256',
             disallowEncryptionWithInsecureAlgorithm: sourceEntitySetting.disallowEncryptionWithInsecureAlgorithm, // 禁止使用rsa-1_5  tripledes-cbc
             disallowInsecureEncryption: sourceEntitySetting.disallowInsecureEncryption,//禁aes cbc系列加密算法
@@ -1348,9 +1348,9 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
       // 使用同步方式处理解密
       xmlenc.decrypt(encAssertionNode.toString(), {
         key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
-        disallowInsecureEncryption:hereSetting.disallowInsecureEncryption,//开启会禁止解密使用aes cbc系列加密算法的xml
+/*        disallowInsecureEncryption:hereSetting.disallowInsecureEncryption,//开启会禁止解密使用aes cbc系列加密算法的xml
         disallowDecryptionWithInsecureAlgorithm: hereSetting.disallowDecryptionWithInsecureAlgorithm,//开启会禁止解密使用rsa-1_5 tripledes-cbc加密算法的xml
-        disallowInsecureHash: hereSetting.disallowInsecureHash,//开启会禁止解密使用 hsa1系列 hash算法的xml
+        disallowInsecureHash: hereSetting.disallowInsecureHash,//开启会禁止解密使用 hsa1系列 hash算法的xml*/
         warnInsecureAlgorithm: true,
 
       }, (err, res) => {

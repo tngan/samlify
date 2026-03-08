@@ -3,6 +3,7 @@ import { uniq, last, zipObject, notEmpty } from './utility.js';
 import { getContext } from './api.js';
 import camelCase from 'camelcase';
 
+// 1. 扩展接口定义，支持 listMode (列表模式) 和 shortcut (快捷方式/子文档)
 interface ExtractorField {
   key: string;
   localPath: string[] | string[][];
@@ -10,11 +11,13 @@ interface ExtractorField {
   index?: string[];
   attributePath?: string[];
   context?: boolean;
+  listMode?: boolean;      // 新增：用于标记需要返回对象数组的字段 (如多个 SSO URL)
+  shortcut?: string;       // 新增：用于传入子文档字符串 (如 Assertion)
 }
 
 export type ExtractorFields = ExtractorField[];
 
-function buildAbsoluteXPath(paths) {
+function buildAbsoluteXPath(paths: string[]) {
   return paths.reduce((currentPath, name) => {
     let appendedPath = currentPath;
     const isWildcard = name.startsWith('~');
@@ -29,7 +32,7 @@ function buildAbsoluteXPath(paths) {
   }, '');
 }
 
-function buildAttributeXPath(attributes) {
+function buildAttributeXPath(attributes: string[]) {
   if (attributes.length === 0) {
     return '/text()';
   }
@@ -68,7 +71,8 @@ export const loginRequestFields: ExtractorFields = [
     context: true
   }
 ];
-export const artifactResolveFields = [
+
+export const artifactResolveFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['ArtifactResolve'],
@@ -77,16 +81,15 @@ export const artifactResolveFields = [
   {
     key: 'issuer', localPath: ['ArtifactResolve', 'Issuer'], attributes: []
   },
-
   {
     key: 'Artifact', localPath: ['ArtifactResolve','Artifact'], attributes: []
   },
   {
     key: 'signature', localPath: ['ArtifactResolve', 'Signature'], attributes: [], context: true
   },
-
 ];
-export const artifactResponseFields = [
+
+export const artifactResponseFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['Envelope','Body','ArtifactResolve'],
@@ -95,17 +98,15 @@ export const artifactResponseFields = [
   {
     key: 'issuer', localPath: ['Envelope','Body','ArtifactResolve', 'Issuer'], attributes: []
   },
-
   {
     key: 'Artifact', localPath: ['Envelope','Body','ArtifactResolve','Artifact'], attributes: []
   },
   {
     key: 'signature', localPath: ['Envelope','Body','ArtifactResolve', 'Signature'], attributes: [], context: true
   },
-
 ];
-// support two-tiers status code
-export const loginResponseStatusFields = [
+
+export const loginResponseStatusFields: ExtractorFields = [
   {
     key: 'top',
     localPath: ['Response', 'Status', 'StatusCode'],
@@ -117,8 +118,8 @@ export const loginResponseStatusFields = [
     attributes: ['Value'],
   }
 ];
-// support two-tiers status code
-export const loginArtifactResponseStatusFields = [
+
+export const loginArtifactResponseStatusFields: ExtractorFields = [
   {
     key: 'top',
     localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode'],
@@ -131,8 +132,7 @@ export const loginArtifactResponseStatusFields = [
   }
 ];
 
-// support two-tiers status code
-export const logoutResponseStatusFields = [
+export const logoutResponseStatusFields: ExtractorFields = [
   {
     key: 'top',
     localPath: ['LogoutResponse', 'Status', 'StatusCode'],
@@ -163,11 +163,6 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
     attributes: [],
     shortcut: assertion
   },
-  // {
-  //   key: 'issuer',
-  //   localPath: ['Response', 'Issuer'],
-  //   attributes: []
-  // },
   {
     key: 'issuer',
     localPath: ['Assertion', 'Issuer'],
@@ -194,23 +189,23 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
     attributes: [],
     shortcut: assertion
   },
-    {
-        key: 'subjectConfirmation',
-        localPath: ['Assertion', 'Subject', 'SubjectConfirmation', 'SubjectConfirmationData'],
-        attributes: ['Recipient', 'InResponseTo', 'NotOnOrAfter'],
-        shortcut: assertion
-    },
-    {
-        key: 'oneTimeUse',
-        localPath: ['Assertion', 'Conditions', 'OneTimeUse'],
-        attributes: [],
-        shortcut: assertion
-    },
-    {
-        key: 'status',
-        localPath: ['Response', 'Status', 'StatusCode'],
-        attributes: ['Value']
-    },
+  {
+    key: 'subjectConfirmation',
+    localPath: ['Assertion', 'Subject', 'SubjectConfirmation', 'SubjectConfirmationData'],
+    attributes: ['Recipient', 'InResponseTo', 'NotOnOrAfter'],
+    shortcut: assertion
+  },
+  {
+    key: 'oneTimeUse',
+    localPath: ['Assertion', 'Conditions', 'OneTimeUse'],
+    attributes: [],
+    shortcut: assertion
+  },
+  {
+    key: 'status',
+    localPath: ['Response', 'Status', 'StatusCode'],
+    attributes: ['Value']
+  },
 ];
 
 export const logoutRequestFields: ExtractorFields = [
@@ -261,155 +256,214 @@ export const logoutResponseFields: ExtractorFields = [
   }
 ];
 
-export function extract(context: string, fields) {
+// ============================================================================
+// 新增：IdP 元数据提取字段配置
+// ============================================================================
+export const idpMetadataFields: ExtractorFields = [
+  {
+    key: 'entityID',
+    localPath: ['EntityDescriptor'],
+    attributes: ['entityID']
+  },
+  {
+    key: 'idpSSODescriptor',
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor'],
+    attributes: ['protocolSupportEnumeration']
+  },
+  {
+    // 提取单点登录服务列表
+    key: 'singleSignOnService',
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
+    attributes: ['Binding', 'Location'],
+    listMode: true
+  },
+  {
+    // 提取单点注销服务列表
+    key: 'singleLogoutService',
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleLogoutService'],
+    attributes: ['Binding', 'Location'],
+    listMode: true
+  }
+];
+
+// ============================================================================
+// 新增：SP 元数据提取字段配置
+// ============================================================================
+export const spMetadataFields: ExtractorFields = [
+  {
+    key: 'entityID',
+    localPath: ['EntityDescriptor'],
+    attributes: ['entityID']
+  },
+  {
+    key: 'spSSODescriptor',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor'],
+    attributes: ['protocolSupportEnumeration', 'AuthnRequestsSigned', 'WantAssertionsSigned']
+  },
+  {
+    // 提取 ACS 列表
+    key: 'assertionConsumerService',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
+    attributes: ['Binding', 'Location', 'index'],
+    listMode: true
+  },
+  {
+    // 提取 SP 发起的注销服务列表
+    key: 'singleLogoutService',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'SingleLogoutService'],
+    attributes: ['Binding', 'Location'],
+    listMode: true
+  },
+  {
+    key: 'nameIDFormat',
+    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'],
+    attributes: []
+  }
+];
+
+export function extract(context: string, fields: ExtractorFields) {
   const { dom } = getContext();
-  const rootDoc = dom.parseFromString(context,'application/xml');
+  const rootDoc = dom.parseFromString(context, 'application/xml');
 
   return fields.reduce((result: any, field) => {
-    // get essential fields
     const key = field.key;
     const localPath = field.localPath;
     const attributes = field.attributes;
     const isEntire = field.context;
     const shortcut = field.shortcut;
-    // get optional fields
     const index = field.index;
     const attributePath = field.attributePath;
+    const listMode = field.listMode;
 
-    // set allowing overriding if there is a shortcut injected
     let targetDoc = rootDoc;
 
-    // if shortcut is used, then replace the doc
-    // it's a design for overriding the doc used during runtime
     if (shortcut) {
-      targetDoc = dom.parseFromString(shortcut,'application/xml');
+      targetDoc = dom.parseFromString(shortcut, 'application/xml');
     }
 
-    // special case: multiple path
-    /*
-      {
-        key: 'issuer',
-        localPath: [
-          ['Response', 'Issuer'],
-          ['Response', 'Assertion', 'Issuer']
-        ],
-        attributes: []
-      }
-     */
-    if (localPath.every(path => Array.isArray(path))) {
-      const multiXPaths = localPath
-        .map(path => {
-          // not support attribute yet, so ignore it
-          return `${buildAbsoluteXPath(path)}/text()`;
-        })
-        .join(' | ');
+    // --- 特殊处理：证书提取 (Hardcoded logic for Certificates with @use filter) ---
+    if (key === 'signingCert' || key === 'encryptCert') {
+      const useType = key === 'signingCert' ? 'signing' : 'encryption';
+      const basePath = buildAbsoluteXPath(['EntityDescriptor', 'IDPSSODescriptor']);
+      const fullXPath = `${basePath}/*[local-name(.)='KeyDescriptor' and @use='${useType}']/*[local-name(.)='KeyInfo']/*[local-name(.)='X509Data']/*[local-name(.)='X509Certificate']/text()`;
 
+      try {
+        // @ts-ignore
+        const nodes = select(fullXPath, targetDoc);
+        const certs = nodes.map((n: any) => {
+          const val = n.nodeValue || n.value;
+          return val ? val.replace(/\r\n|\r|\n/g, '') : null;
+        }).filter(notEmpty);
+
+        return {
+          ...result,
+          [key]: certs.length > 0 ? certs[0] : null
+        };
+      } catch (e) {
+        return { ...result, [key]: null };
+      }
+    }
+
+    // 特殊 case: 多路径 (原有逻辑)
+    // 检查是否是 string[][] (即每个元素都是数组)
+    if (Array.isArray(localPath) && localPath.length > 0 && Array.isArray(localPath[0])) {
+      const multiXPaths = (localPath as string[][]).map(path => `${buildAbsoluteXPath(path)}/text()`).join(' | ');
+      // @ts-ignore
+      const nodes = select(multiXPaths, targetDoc);
       return {
         ...result,
-        // @ts-expect-error misssing Node properties are not needed
-        [key]: uniq(select(multiXPaths, targetDoc).map((n: Node) => n.nodeValue).filter(notEmpty))
+        [key]: uniq(nodes.map((n: any) => n.nodeValue).filter(notEmpty))
       };
     }
-    // eo special case: multiple path
 
-    const baseXPath = buildAbsoluteXPath(localPath);
+    // 此时 localPath 必然是 string[]，因为如果是 string[][] 已经在上面 return 了
+    // 我们显式地将其断言为 string[] 以消除 TS 疑虑
+    const currentLocalPath = localPath as string[];
+
+    const baseXPath = buildAbsoluteXPath(currentLocalPath);
+
+    // --- 新增：列表模式处理 (用于 SSO Service, ACS 等) ---
+    if (listMode && attributes.length > 0) {
+      // @ts-ignore
+      const nodes = select(baseXPath, targetDoc);
+
+      const resultList = nodes.map((node: any) => {
+        const attrResult: any = {};
+        attributes.forEach(attr => {
+          if (node.getAttribute) {
+            const val = node.getAttribute(attr);
+            if (val) {
+              attrResult[camelCase(attr, { locale: 'en-us' })] = val;
+            }
+          }
+        });
+        return attrResult;
+      });
+      return {
+        ...result,
+        [key]: resultList
+      };
+    }
+
     const attributeXPath = buildAttributeXPath(attributes);
 
-    // special case: get attributes where some are in child, some are in parent
-    /*
-      {
-        key: 'attributes',
-        localPath: ['Response', 'Assertion', 'AttributeStatement', 'Attribute'],
-        index: ['Name'],
-        attributePath: ['AttributeValue'],
-        attributes: []
-      }
-    */
+    // 特殊 case: 属性聚合 (原有逻辑 - Attributes with index)
     if (index && attributePath) {
-      // find the index in localpath
       const indexPath = buildAttributeXPath(index);
       const fullLocalXPath = `${baseXPath}${indexPath}`;
-      // @ts-expect-error misssing Node properties are not needed
+      // @ts-ignore
       const parentNodes = select(baseXPath, targetDoc);
-      // [uid, mail, edupersonaffiliation], ready for aggregate
-      // @ts-expect-error misssing Node properties are not needed
-      const parentAttributes = select(fullLocalXPath, targetDoc).map((n: Attr) => n.value);
-      // [attribute, attributevalue]
-      const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
+      // @ts-ignore
+      const parentAttributes = select(fullLocalXPath, targetDoc).map((n: any) => n.value);
+
+      const childXPath = buildAbsoluteXPath([last(currentLocalPath)].concat(attributePath));
       const childAttributeXPath = buildAttributeXPath(attributes);
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
-      // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
-      const childAttributes = parentNodes.map(node => {
-        const nodeDoc = dom.parseFromString(node.toString(),'application/xml');
+
+      const childAttributes = parentNodes.map((node: any) => {
+        const nodeDoc = dom.parseFromString(node.toString(), 'application/xml');
         if (attributes.length === 0) {
           // @ts-ignore
-          const childValues = select(fullChildXPath, nodeDoc).map((n: Node) => n.nodeValue);
-          if (childValues.length === 1) {
-            return childValues[0];
-          }
-          return childValues;
+          const childValues = select(fullChildXPath, nodeDoc).map((n: any) => n.nodeValue);
+          return childValues.length === 1 ? childValues[0] : childValues;
         }
         if (attributes.length > 0) {
           // @ts-ignore
-          const childValues = select(fullChildXPath, nodeDoc).map((n: Attr) => n.value);
-          if (childValues.length === 1) {
-            return childValues[0];
-          }
-          return childValues;
+          const childValues = select(fullChildXPath, nodeDoc).map((n: any) => n.value);
+          return childValues.length === 1 ? childValues[0] : childValues;
         }
         return null;
       });
-      // aggregation
-      const obj = zipObject(parentAttributes, childAttributes, false);
-      return {
-        ...result,
-        [key]: obj
-      };
 
+      const obj = zipObject(parentAttributes, childAttributes, false);
+      return { ...result, [key]: obj };
     }
-    // case: fetch entire content, only allow one existence
-    /*
-      {
-        key: 'signature',
-        localPath: ['AuthnRequest', 'Signature'],
-        attributes: [],
-        context: true
-      }
-    */
+
+    // 特殊 case: 获取整个节点内容 (原有逻辑)
     if (isEntire) {
-      // @ts-expect-error misssing Node properties are not needed
+      // @ts-ignore
       const node = select(baseXPath, targetDoc);
       let value: string | string[] | null = null;
       if (node.length === 1) {
         value = node[0].toString();
       }
       if (node.length > 1) {
-        value = node.map(n => n.toString());
+        value = node.map((n: any) => n.toString());
       }
-      return {
-        ...result,
-        [key]: value
-      };
+      return { ...result, [key]: value };
     }
 
-    // case: multiple attribute
-    /*
-      {
-        key: 'nameIDPolicy',
-        localPath: ['AuthnRequest', 'NameIDPolicy'],
-        attributes: ['Format', 'AllowCreate']
-      }
-    */
-    if (attributes.length > 1) {
+    // 特殊 case: 多属性对象 (原有逻辑，非 listMode)
+    if (attributes.length > 1 && !listMode) {
       // @ts-ignore
-      const baseNode = select(baseXPath, targetDoc).map(n => n.toString());
-      const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
-      const attributeValues = baseNode.map((node: string) => {
+      const baseNode = select(baseXPath, targetDoc).map((n: any) => n.toString());
+      const childXPath = `${buildAbsoluteXPath([last(currentLocalPath)])}${attributeXPath}`;
+      const attributeValues = baseNode.map((nodeStr: string) => {
         // @ts-ignore
-        const nodeDoc = dom.parseFromString(node,'application/xml');
+        const nodeDoc = dom.parseFromString(nodeStr, 'application/xml');
         // @ts-ignore
-        const values = select(childXPath, nodeDoc).reduce((r: any, n: Attr) => {
-          r[camelCase(n.name, {locale: 'en-us'})] = n.value;
+        const values = select(childXPath, nodeDoc).reduce((r: any, n: any) => {
+          r[camelCase(n.name, { locale: 'en-us' })] = n.value;
           return r;
         }, {});
         return values;
@@ -419,51 +473,54 @@ export function extract(context: string, fields) {
         [key]: attributeValues.length === 1 ? attributeValues[0] : attributeValues
       };
     }
-    // case: single attribute
-    /*
-      {
-        key: 'statusCode',
-        localPath: ['Response', 'Status', 'StatusCode'],
-        attributes: ['Value'],
-      }
-    */
-    if (attributes.length === 1) {
+
+    // 特殊 case: 单个属性 (原有逻辑)
+    if (attributes.length === 1 && !listMode) {
       const fullPath = `${baseXPath}${attributeXPath}`;
       // @ts-ignore
-      const attributeValues = select(fullPath, targetDoc).map((n: Attr) => n.value);
-      return {
-        ...result,
-        [key]: attributeValues[0]
-      };
+      const attributeValues = select(fullPath, targetDoc).map((n: any) => n.value);
+      return { ...result, [key]: attributeValues[0] };
     }
-    // case: zero attribute
-    /*
-      {
-        key: 'issuer',
-        localPath: ['AuthnRequest', 'Issuer'],
-        attributes: []
-      }
-    */
-    if (attributes.length === 0) {
+
+    // 特殊 case: 无属性/文本内容 (原有逻辑)
+    if (attributes.length === 0 && !listMode) {
       let attributeValue: SelectedValue[] | (string | null)[] | null = null;
-      // @ts-expect-error misssing Node properties are not needed
+      // @ts-ignore
       const node = select(baseXPath, targetDoc);
       if (node.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
-        // @ts-expect-error misssing Node properties are not needed
+        // @ts-ignore
         attributeValue = select(fullPath, targetDoc);
       }
       if (node.length > 1) {
-        attributeValue = node.filter((n: Node) => n.firstChild)
-          .map((n: Node) => n.firstChild!.nodeValue);
+        attributeValue = node.filter((n: any) => n.firstChild)
+          .map((n: any) => n.firstChild?.nodeValue);
       }
-      return {
-        ...result,
-        [key]: attributeValue
-      };
+      return { ...result, [key]: attributeValue };
     }
 
     return result;
   }, {});
-
 }
+
+// ============================================================================
+// 新增：便捷导出函数
+// ============================================================================
+
+/**
+ * 提取 IdP 元数据
+ * @param context IdP 元数据 XML 字符串
+ */
+export function extractIdp(context: string) {
+  return extract(context, idpMetadataFields);
+}
+
+/**
+ * 提取 SP 元数据
+ * @param context SP 元数据 XML 字符串
+ */
+export function extractSp(context: string) {
+  return extract(context, spMetadataFields);
+}
+
+
