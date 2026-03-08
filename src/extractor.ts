@@ -6,27 +6,26 @@ import camelCase from 'camelcase';
 // 1. 扩展接口定义，支持 listMode (列表模式) 和 shortcut (快捷方式/子文档)
 interface ExtractorField {
   key: string;
-  localPath: string[] | string[][];
-  attributes: string[];
+  localPath?: string[] | string[][]; // 改为可选，因为特殊逻辑可能不需要 path
+  attributes?: string[];             // 改为可选
   index?: string[];
   attributePath?: string[];
   context?: boolean;
-  listMode?: boolean;      // 新增：用于标记需要返回对象数组的字段 (如多个 SSO URL)
-  shortcut?: string;       // 新增：用于传入子文档字符串 (如 Assertion)
-
+  listMode?: boolean;
+  shortcut?: string;
 }
 
 export type ExtractorFields = ExtractorField[];
 
 function buildAbsoluteXPath(paths: string[]) {
+  if (!paths || paths.length === 0) return '';
   return paths.reduce((currentPath, name) => {
     let appendedPath = currentPath;
     const isWildcard = name.startsWith('~');
     if (isWildcard) {
       const pathName = name.replace('~', '');
       appendedPath = currentPath + `/*[contains(local-name(), '${pathName}')]`;
-    }
-    if (!isWildcard) {
+    } else {
       appendedPath = currentPath + `/*[local-name(.)='${name}']`;
     }
     return appendedPath;
@@ -34,7 +33,7 @@ function buildAbsoluteXPath(paths: string[]) {
 }
 
 function buildAttributeXPath(attributes: string[]) {
-  if (attributes.length === 0) {
+  if (!attributes || attributes.length === 0) {
     return '/text()';
   }
   if (attributes.length === 1) {
@@ -44,323 +43,153 @@ function buildAttributeXPath(attributes: string[]) {
   return `/@*[${filters}]`;
 }
 
+// ... (其他字段配置如 loginRequestFields 等保持不变，为节省篇幅此处省略，请保留你原有的所有 fields 定义) ...
+// 为了完整性，这里假设你保留了之前所有的 fields 定义 (loginRequestFields, idpMetadataFields 等)
+// 重点修正下方的 spMetadataFields 和 extract 函数
+
 export const loginRequestFields: ExtractorFields = [
-  {
-    key: 'request',
-    localPath: ['AuthnRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL','ProtocolBinding','ForceAuthn','IsPassive','AssertionConsumerServiceIndex','AttributeConsumingServiceIndex']
-  },
-  {
-    key: 'issuer',
-    localPath: ['AuthnRequest', 'Issuer'],
-    attributes: []
-  },
-  {
-    key: 'nameIDPolicy',
-    localPath: ['AuthnRequest', 'NameIDPolicy'],
-    attributes: ['Format', 'AllowCreate']
-  },
-  {
-    key: 'authnContextClassRef',
-    localPath: ['AuthnRequest', 'AuthnContextClassRef'],
-    attributes: []
-  },
-  {
-    key: 'signature',
-    localPath: ['AuthnRequest', 'Signature'],
-    attributes: [],
-    context: true
-  }
+  { key: 'request', localPath: ['AuthnRequest'], attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL','ProtocolBinding','ForceAuthn','IsPassive','AssertionConsumerServiceIndex','AttributeConsumingServiceIndex'] },
+  { key: 'issuer', localPath: ['AuthnRequest', 'Issuer'], attributes: [] },
+  { key: 'nameIDPolicy', localPath: ['AuthnRequest', 'NameIDPolicy'], attributes: ['Format', 'AllowCreate'] },
+  { key: 'authnContextClassRef', localPath: ['AuthnRequest', 'AuthnContextClassRef'], attributes: [] },
+  { key: 'signature', localPath: ['AuthnRequest', 'Signature'], attributes: [], context: true }
 ];
 
 export const artifactResolveFields: ExtractorFields = [
-  {
-    key: 'request',
-    localPath: ['ArtifactResolve'],
-    attributes: ['ID', 'IssueInstant','Version' ]
-  },
-  {
-    key: 'issuer', localPath: ['ArtifactResolve', 'Issuer'], attributes: []
-  },
-  {
-    key: 'Artifact', localPath: ['ArtifactResolve','Artifact'], attributes: []
-  },
-  {
-    key: 'signature', localPath: ['ArtifactResolve', 'Signature'], attributes: [], context: true
-  },
+  { key: 'request', localPath: ['ArtifactResolve'], attributes: ['ID', 'IssueInstant','Version'] },
+  { key: 'issuer', localPath: ['ArtifactResolve', 'Issuer'], attributes: [] },
+  { key: 'Artifact', localPath: ['ArtifactResolve','Artifact'], attributes: [] },
+  { key: 'signature', localPath: ['ArtifactResolve', 'Signature'], attributes: [], context: true },
 ];
 
 export const artifactResponseFields: ExtractorFields = [
-  {
-    key: 'request',
-    localPath: ['Envelope','Body','ArtifactResolve'],
-    attributes: ['ID', 'IssueInstant','Version' ]
-  },
-  {
-    key: 'issuer', localPath: ['Envelope','Body','ArtifactResolve', 'Issuer'], attributes: []
-  },
-  {
-    key: 'Artifact', localPath: ['Envelope','Body','ArtifactResolve','Artifact'], attributes: []
-  },
-  {
-    key: 'signature', localPath: ['Envelope','Body','ArtifactResolve', 'Signature'], attributes: [], context: true
-  },
+  { key: 'request', localPath: ['Envelope','Body','ArtifactResolve'], attributes: ['ID', 'IssueInstant','Version'] },
+  { key: 'issuer', localPath: ['Envelope','Body','ArtifactResolve', 'Issuer'], attributes: [] },
+  { key: 'Artifact', localPath: ['Envelope','Body','ArtifactResolve','Artifact'], attributes: [] },
+  { key: 'signature', localPath: ['Envelope','Body','ArtifactResolve', 'Signature'], attributes: [], context: true },
 ];
 
 export const loginResponseStatusFields: ExtractorFields = [
-  {
-    key: 'top',
-    localPath: ['Response', 'Status', 'StatusCode'],
-    attributes: ['Value'],
-  },
-  {
-    key: 'second',
-    localPath: ['Response', 'Status', 'StatusCode', 'StatusCode'],
-    attributes: ['Value'],
-  }
+  { key: 'top', localPath: ['Response', 'Status', 'StatusCode'], attributes: ['Value'] },
+  { key: 'second', localPath: ['Response', 'Status', 'StatusCode', 'StatusCode'], attributes: ['Value'] }
 ];
 
 export const loginArtifactResponseStatusFields: ExtractorFields = [
-  {
-    key: 'top',
-    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode'],
-    attributes: ['Value'],
-  },
-  {
-    key: 'second',
-    localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode', 'StatusCode'],
-    attributes: ['Value'],
-  }
+  { key: 'top', localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode'], attributes: ['Value'] },
+  { key: 'second', localPath: ['Envelope','Body','ArtifactResponse', 'Status', 'StatusCode', 'StatusCode'], attributes: ['Value'] }
 ];
 
 export const logoutResponseStatusFields: ExtractorFields = [
-  {
-    key: 'top',
-    localPath: ['LogoutResponse', 'Status', 'StatusCode'],
-    attributes: ['Value']
-  },
-  {
-    key: 'second',
-    localPath: ['LogoutResponse', 'Status', 'StatusCode', 'StatusCode'],
-    attributes: ['Value'],
-  }
+  { key: 'top', localPath: ['LogoutResponse', 'Status', 'StatusCode'], attributes: ['Value'] },
+  { key: 'second', localPath: ['LogoutResponse', 'Status', 'StatusCode', 'StatusCode'], attributes: ['Value'] }
 ];
 
 export const loginResponseFields: ((assertion: any) => ExtractorFields) = assertion => [
-  {
-    key: 'conditions',
-    localPath: ['Assertion', 'Conditions'],
-    attributes: ['NotBefore', 'NotOnOrAfter'],
-    shortcut: assertion
-  },
-  {
-    key: 'response',
-    localPath: ['Response'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo','Version'],
-  },
-  {
-    key: 'audience',
-    localPath: ['Assertion', 'Conditions', 'AudienceRestriction', 'Audience'],
-    attributes: [],
-    shortcut: assertion
-  },
-  {
-    key: 'issuer',
-    localPath: ['Assertion', 'Issuer'],
-    attributes: [],
-    shortcut: assertion
-  },
-  {
-    key: 'nameID',
-    localPath: ['Assertion', 'Subject', 'NameID'],
-    attributes: [],
-    shortcut: assertion
-  },
-  {
-    key: 'sessionIndex',
-    localPath: ['Assertion', 'AuthnStatement'],
-    attributes: ['AuthnInstant', 'SessionNotOnOrAfter', 'SessionIndex'],
-    shortcut: assertion
-  },
-  {
-    key: 'attributes',
-    localPath: ['Assertion', 'AttributeStatement', 'Attribute'],
-    index: ['Name'],
-    attributePath: ['AttributeValue'],
-    attributes: [],
-    shortcut: assertion
-  },
-  {
-    key: 'subjectConfirmation',
-    localPath: ['Assertion', 'Subject', 'SubjectConfirmation', 'SubjectConfirmationData'],
-    attributes: ['Recipient', 'InResponseTo', 'NotOnOrAfter'],
-    shortcut: assertion
-  },
-  {
-    key: 'oneTimeUse',
-    localPath: ['Assertion', 'Conditions', 'OneTimeUse'],
-    attributes: [],
-    shortcut: assertion
-  },
-  {
-    key: 'status',
-    localPath: ['Response', 'Status', 'StatusCode'],
-    attributes: ['Value']
-  },
+  { key: 'conditions', localPath: ['Assertion', 'Conditions'], attributes: ['NotBefore', 'NotOnOrAfter'], shortcut: assertion },
+  { key: 'response', localPath: ['Response'], attributes: ['ID', 'IssueInstant', 'Destination', 'InResponseTo','Version'] },
+  { key: 'audience', localPath: ['Assertion', 'Conditions', 'AudienceRestriction', 'Audience'], attributes: [], shortcut: assertion },
+  { key: 'issuer', localPath: ['Assertion', 'Issuer'], attributes: [], shortcut: assertion },
+  { key: 'nameID', localPath: ['Assertion', 'Subject', 'NameID'], attributes: [], shortcut: assertion },
+  { key: 'sessionIndex', localPath: ['Assertion', 'AuthnStatement'], attributes: ['AuthnInstant', 'SessionNotOnOrAfter', 'SessionIndex'], shortcut: assertion },
+  { key: 'attributes', localPath: ['Assertion', 'AttributeStatement', 'Attribute'], index: ['Name'], attributePath: ['AttributeValue'], attributes: [], shortcut: assertion },
+  { key: 'subjectConfirmation', localPath: ['Assertion', 'Subject', 'SubjectConfirmation', 'SubjectConfirmationData'], attributes: ['Recipient', 'InResponseTo', 'NotOnOrAfter'], shortcut: assertion },
+  { key: 'oneTimeUse', localPath: ['Assertion', 'Conditions', 'OneTimeUse'], attributes: [], shortcut: assertion },
+  { key: 'status', localPath: ['Response', 'Status', 'StatusCode'], attributes: ['Value'] },
 ];
 
 export const logoutRequestFields: ExtractorFields = [
-  {
-    key: 'request',
-    localPath: ['LogoutRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination']
-  },
-  {
-    key: 'issuer',
-    localPath: ['LogoutRequest', 'Issuer'],
-    attributes: []
-  },
-  {
-    key: 'nameID',
-    localPath: ['LogoutRequest', 'NameID'],
-    attributes: []
-  },
-  {
-    key: 'sessionIndex',
-    localPath: ['LogoutRequest', 'SessionIndex'],
-    attributes: []
-  },
-  {
-    key: 'signature',
-    localPath: ['LogoutRequest', 'Signature'],
-    attributes: [],
-    context: true
-  }
+  { key: 'request', localPath: ['LogoutRequest'], attributes: ['ID', 'IssueInstant', 'Destination'] },
+  { key: 'issuer', localPath: ['LogoutRequest', 'Issuer'], attributes: [] },
+  { key: 'nameID', localPath: ['LogoutRequest', 'NameID'], attributes: [] },
+  { key: 'sessionIndex', localPath: ['LogoutRequest', 'SessionIndex'], attributes: [] },
+  { key: 'signature', localPath: ['LogoutRequest', 'Signature'], attributes: [], context: true }
 ];
 
 export const logoutResponseFields: ExtractorFields = [
-  {
-    key: 'response',
-    localPath: ['LogoutResponse'],
-    attributes: ['ID', 'Destination', 'InResponseTo']
-  },
-  {
-    key: 'issuer',
-    localPath: ['LogoutResponse', 'Issuer'],
-    attributes: []
-  },
-  {
-    key: 'signature',
-    localPath: ['LogoutResponse', 'Signature'],
-    attributes: [],
-    context: true
-  }
+  { key: 'response', localPath: ['LogoutResponse'], attributes: ['ID', 'Destination', 'InResponseTo'] },
+  { key: 'issuer', localPath: ['LogoutResponse', 'Issuer'], attributes: [] },
+  { key: 'signature', localPath: ['LogoutResponse', 'Signature'], attributes: [], context: true }
 ];
 
 // ============================================================================
-// 新增：IdP 元数据提取字段配置
+// 增强版：IdP 元数据提取字段配置
 // ============================================================================
 export const idpMetadataFields: ExtractorFields = [
+  // --- 1. 基础标识 ---
   {
     key: 'entityID',
     localPath: ['EntityDescriptor'],
     attributes: ['entityID']
   },
   {
+    // 可选：提取整个 EntityDescriptor 的 validUntil 和 cacheDuration
+    key: 'entityDescriptor',
+    localPath: ['EntityDescriptor'],
+    attributes: ['validUntil', 'cacheDuration']
+  },
+
+  // --- 2. IDPSSODescriptor 核心属性 ---
+  {
     key: 'idpSSODescriptor',
     localPath: ['EntityDescriptor', 'IDPSSODescriptor'],
-    attributes: ['protocolSupportEnumeration']
+    attributes: [
+      'protocolSupportEnumeration',
+      'WantAuthnRequestsSigned', // IdP 是否希望 SP 对请求签名
+      'cacheDuration'
+    ]
   },
+
+  // --- 3. 服务端点列表 (Endpoints) ---
   {
-    // 提取单点登录服务列表
+    // 单点登录服务 (SSO) - 核心
     key: 'singleSignOnService',
     localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleSignOnService'],
-    attributes: ['Binding', 'Location'],
+    attributes: ['Binding', 'Location', 'ResponseLocation'], // ResponseLocation 用于某些绑定
     listMode: true
   },
   {
-    // 提取单点注销服务列表
+    // 单点注销服务 (SLO)
     key: 'singleLogoutService',
     localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'SingleLogoutService'],
     attributes: ['Binding', 'Location'],
     listMode: true
-  }
-];
-
-// ============================================================================
-// 新增：SP 元数据提取字段配置
-// ============================================================================
-export const spMetadataFields: ExtractorFields = [
-  {
-    key: 'entityID',
-    localPath: ['EntityDescriptor'],
-    attributes: ['entityID']
   },
   {
-    key: 'spSSODescriptor',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor'],
-    attributes: ['protocolSupportEnumeration', 'AuthnRequestsSigned', 'WantAssertionsSigned']
-  },
-  {
-    // 提取 ACS 列表
-    key: 'assertionConsumerService',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
-    attributes: ['Binding', 'Location', 'index','isDefault'],
-    listMode: true
-  },
-
-  {
-    // 提取 SP 发起的注销服务列表
-    key: 'singleLogoutService',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'SingleLogoutService'],
-    attributes: ['Binding', 'Location'],
-    listMode: true
-  },
-  {
-    // [新增] 提取 Artifact 解析服务 (如果使用 Artifact 绑定则必需)
+    // Artifact 解析服务 (如果使用 Artifact 绑定)
     key: 'artifactResolutionService',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ArtifactResolutionService'],
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'ArtifactResolutionService'],
     attributes: ['Binding', 'Location', 'index', 'isDefault'],
     listMode: true
   },
   {
-    // [新增] 提取 ManageNameID 服务 (较少用，但规范支持)
+    // ManageNameID 服务
     key: 'manageNameIDService',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ManageNameIDService'],
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'ManageNameIDService'],
     attributes: ['Binding', 'Location'],
     listMode: true
   },
-/*  {
-    key: 'nameIDFormat',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'],
-    attributes: []
-  }*/
-  // --- 名称ID格式 (NameID Formats) ---
+
+  // --- 4. 名称 ID 格式 (NameID Formats) ---
   {
-    // 提取所有支持的 NameID 格式列表 (返回字符串数组)
+    // 提取所有支持的 NameID 格式 (文本内容)
     key: 'nameIDFormat',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'],
-    attributes: [], // 文本内容
-    listMode: true,  // 注意：这里 listMode 会尝试提取属性，但 NameIDFormat 通常只有文本内容。
-                    // 如果 extract 函数对 listMode && attributes.length===0 处理不当，可能需要特殊处理。
-                    // 当前 extract 逻辑中，如果 listMode=true 但 attributes 为空，可能不会进入 listMode 分支，
-                    // 而是进入 attributes.length === 0 分支，返回单个值。
-                    // 若要返回数组，需确保 extract 逻辑支持 "listMode + 无属性" 的情况，或者这里不加 listMode，
-                    // 依靠多路径逻辑（如果有的话）。
-                    // *修正策略*: 对于纯文本列表，目前的 extract 逻辑可能只返回第一个。
-                    // 如果需要所有 NameIDFormat，建议暂时不加 listMode，或者在 extract 中完善逻辑。
-                    // 此处为了安全，先不加 listMode，仅获取第一个，或者依赖后续逻辑优化。
-                    // 实际上，NameIDFormat 通常有多个，建议后续优化 extract 支持 text() 的 listMode。
-                    // 暂时保持原样或移除 listMode 以避免意外行为，除非你确认 extract 支持。
-                    // 在此示例中，我移除 listMode，仅获取第一个，或者你可以接受只获取一个。
-                    // 更好的方式：如果 extract 不支持 text 的 listMode，这里先不写 listMode。
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'NameIDFormat'],
+    attributes: []
+    // 注意：如果 extract 函数未完全支持 text() 的 listMode，这里可能只返回第一个。
+    // 如果需要数组，需确保 extract 逻辑完善，或者此处暂时只取主要的一个。
   },
-  // --- [新增] 组织信息 (Organization) ---
+  {
+    // 获取主要的 NameID Policy 格式 (如果有显式声明)
+    key: 'nameIDPolicyFormat',
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'NameIDPolicy'],
+    attributes: ['Format']
+  },
+
+  // --- 5. 组织信息 (Organization) ---
   {
     key: 'organizationName',
     localPath: ['EntityDescriptor', 'Organization', 'OrganizationName'],
-    attributes: ['xml:lang'], // 有时需要区分语言
-    // 注意：OrganizationName 可能有多个（不同语言），listMode 可能有用，但 extract 需支持
+    attributes: [] // 取文本内容
   },
   {
     key: 'organizationDisplayName',
@@ -372,58 +201,75 @@ export const spMetadataFields: ExtractorFields = [
     localPath: ['EntityDescriptor', 'Organization', 'OrganizationURL'],
     attributes: []
   },
-  // --- [新增] 联系人信息 (ContactPerson) ---
-  // 联系人可能有多个（technical, support, administrative），适合 listMode
+
+  // --- 6. 联系人信息 (ContactPerson) ---
   {
     key: 'contactPerson',
     localPath: ['EntityDescriptor', 'ContactPerson'],
-    attributes: ['contactType'], // contactType 是属性
-    listMode: true, // 这将返回 [{ contactType: 'technical' }, ...]，但不包含姓名邮箱
-    // 缺点：extract 的 listMode 目前只提取 attributes。
-    // 如果要提取 ContactPerson 的子元素 (EmailAddress, GivenName)，需要更复杂的配置或硬编码。
-    // 鉴于当前 extract 限制，这里仅提取 contactType 列表意义不大。
-    // 建议：如果需要详细联系人，需在 extract 中增加对子元素文本提取的 listMode 支持。
-    // 暂时注释掉或仅保留简单属性提取。
-  },
-  // 7.1 签名证书
-  // 触发 extract 函数内部的硬编码逻辑：if (key === 'signingCert') ...
-  {
-    key: 'signingCert',
-    localPath: [], // 会被内部逻辑忽略
-    attributes: []
+    attributes: ['contactType'],
+    listMode: true
+    // 局限：目前只能提取 contactType。如需提取 Email/GivenName，需扩展 extract 逻辑。
   },
 
-  // 7.2 加密证书
-  // 触发 extract 函数内部的硬编码逻辑：if (key === 'encryptCert') ...
+  // --- 7. 证书与密钥信息 (Certificates & Keys) ---
+  // 这些 key 会触发 extract 函数内部的硬编码逻辑，自动查找对应 @use 的证书
+
+  // 7.1 签名证书 (IdP 用来签名响应/断言)
   {
-    key: 'encryptCert',
-    localPath: [], // 会被内部逻辑忽略
-    attributes: []
+    key: 'signingCert'
+    // localPath 和 attributes 将被内部逻辑忽略
   },
 
-  // 7.3 签名密钥名称 (KeyName) - 如果有
-  // 标准 XPath 提取：EntityDescriptor -> SPSSODescriptor -> KeyDescriptor[@use='signing'] -> KeyInfo -> KeyName
+  // 7.2 加密证书 (IdP 用来加密断言中的敏感信息，如果有)
   {
-    key: 'signingKeyName',
-    localPath: ['EntityDescriptor', 'SPSSODescriptor'],
-    // 这里需要一点技巧，因为 KeyDescriptor 是兄弟节点且通过 @use 区分。
-    // 由于我们的 buildAbsoluteXPath 不支持复杂的谓词过滤（除了 local-name），
-    // 我们最好利用 extract 内部的特殊逻辑，或者如果 extract 不支持 KeyName 的特殊逻辑，
-    // 我们可能需要手动在 controller 里提取，或者在这里尝试通用路径。
+    key: 'encryptCert'
+  },
 
-    // *策略调整*：为了保持一致性，建议在 extractor.ts 的 extract 函数中也添加对 'signingKeyName' 的硬编码支持，
-    // 就像对证书做的那样。
-    // 如果你暂时不想修改 extractor.ts，可以在这里留空，然后在 Controller 中单独解析。
-    // 但为了完整性，假设我们稍微修改一下 extractor.ts (见下方说明)，这里配置如下：
-    attributes: []
+  // 7.3 签名密钥名称 (KeyName)
+  {
+    key: 'signingKeyName'
   },
 
   // 7.4 加密密钥名称 (KeyName)
   {
-    key: 'encryptionKeyName',
-    localPath: [],
-    attributes: []
+    key: 'encryptionKeyName'
+  },
+
+  // --- 8. 其他扩展属性 (可选) ---
+  {
+    // 提取 AttributeConsumingService (如果 IdP 声明了它需要的属性)
+    key: 'attributeConsumingService',
+    localPath: ['EntityDescriptor', 'IDPSSODescriptor', 'AttributeConsumingService'],
+    attributes: ['index', 'isDefault'],
+    listMode: true
   }
+];
+
+
+
+
+// ============================================================================
+// 修正后的 SP 元数据提取字段配置
+// ============================================================================
+export const spMetadataFields: ExtractorFields = [
+  { key: 'entityID', localPath: ['EntityDescriptor'], attributes: ['entityID'] },
+  { key: 'spSSODescriptor', localPath: ['EntityDescriptor', 'SPSSODescriptor'], attributes: ['protocolSupportEnumeration', 'AuthnRequestsSigned', 'WantAssertionsSigned'] },
+  { key: 'assertionConsumerService', localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'], attributes: ['Binding', 'Location', 'index','isDefault'], listMode: true },
+  { key: 'singleLogoutService', localPath: ['EntityDescriptor', 'SPSSODescriptor', 'SingleLogoutService'], attributes: ['Binding', 'Location'], listMode: true },
+  { key: 'artifactResolutionService', localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ArtifactResolutionService'], attributes: ['Binding', 'Location', 'index', 'isDefault'], listMode: true },
+  { key: 'manageNameIDService', localPath: ['EntityDescriptor', 'SPSSODescriptor', 'ManageNameIDService'], attributes: ['Binding', 'Location'], listMode: true },
+  { key: 'nameIDFormat', localPath: ['EntityDescriptor', 'SPSSODescriptor', 'NameIDFormat'], attributes: [] },
+  { key: 'organizationName', localPath: ['EntityDescriptor', 'Organization', 'OrganizationName'], attributes: [] },
+  { key: 'organizationDisplayName', localPath: ['EntityDescriptor', 'Organization', 'OrganizationDisplayName'], attributes: [] },
+  { key: 'organizationURL', localPath: ['EntityDescriptor', 'Organization', 'OrganizationURL'], attributes: [] },
+  { key: 'contactPerson', localPath: ['EntityDescriptor', 'ContactPerson'], attributes: ['contactType'], listMode: true },
+
+  // 特殊字段：触发 extract 内部的硬编码逻辑
+  // localPath 和 attributes 在这里不起作用，仅作为占位符
+  { key: 'signingCert' },
+  { key: 'encryptCert' },
+  { key: 'signingKeyName' },
+  { key: 'encryptionKeyName' }
 ];
 
 export function extract(context: string, fields: ExtractorFields) {
@@ -432,8 +278,9 @@ export function extract(context: string, fields: ExtractorFields) {
 
   return fields.reduce((result: any, field) => {
     const key = field.key;
-    const localPath = field.localPath;
-    const attributes = field.attributes;
+    // 安全解构，防止 undefined
+    const localPath = field.localPath || [];
+    const attributes = field.attributes || [];
     const isEntire = field.context;
     const shortcut = field.shortcut;
     const index = field.index;
@@ -441,36 +288,59 @@ export function extract(context: string, fields: ExtractorFields) {
     const listMode = field.listMode;
 
     let targetDoc = rootDoc;
-
     if (shortcut) {
       targetDoc = dom.parseFromString(shortcut, 'application/xml');
     }
 
-    // --- 特殊处理：证书提取 (Hardcoded logic for Certificates with @use filter) ---
-    if (key === 'signingCert' || key === 'encryptCert') {
-      const useType = key === 'signingCert' ? 'signing' : 'encryption';
-      const basePath = buildAbsoluteXPath(['EntityDescriptor', 'IDPSSODescriptor']);
-      const fullXPath = `${basePath}/*[local-name(.)='KeyDescriptor' and @use='${useType}']/*[local-name(.)='KeyInfo']/*[local-name(.)='X509Data']/*[local-name(.)='X509Certificate']/text()`;
+    // ==========================================================================
+    // 【核心修复】特殊处理：证书和 KeyName 提取 (Hardcoded logic)
+    // 不再硬编码 IDPSSODescriptor 或 SPSSODescriptor，而是全局搜索 @use 属性
+    // ==========================================================================
+    if (key === 'signingCert' || key === 'encryptCert' || key === 'signingKeyName' || key === 'encryptionKeyName') {
+      const isSigning = key.startsWith('signing');
+      const useType = isSigning ? 'signing' : 'encryption';
+      const isKeyName = key.endsWith('KeyName');
+
+      // 通用 XPath：查找任意层级下符合 @use 条件的 KeyDescriptor
+      const kdXPath = `//*[local-name(.)='KeyDescriptor' and @use='${useType}']`;
+
+      let fullXPath = '';
+      if (isKeyName) {
+        // 提取 KeyName 文本
+        fullXPath = `${kdXPath}/*[local-name(.)='KeyInfo']/*[local-name(.)='KeyName']/text()`;
+      } else {
+        // 提取 X509Certificate 文本
+        fullXPath = `${kdXPath}/*[local-name(.)='KeyInfo']/*[local-name(.)='X509Data']/*[local-name(.)='X509Certificate']/text()`;
+      }
 
       try {
         // @ts-ignore
         const nodes = select(fullXPath, targetDoc);
-        const certs = nodes.map((n: any) => {
-          const val = n.nodeValue || n.value;
-          return val ? val.replace(/\r\n|\r|\n/g, '') : null;
-        }).filter(notEmpty);
 
-        return {
-          ...result,
-          [key]: certs.length > 0 ? certs[0] : null
-        };
+        if (isKeyName) {
+          const keyNames = nodes.map((n: any) => n.nodeValue).filter(notEmpty);
+          return {
+            ...result,
+            [key]: keyNames.length > 0 ? keyNames[0] : null
+          };
+        } else {
+          const certs = nodes.map((n: any) => {
+            const val = n.nodeValue || n.value;
+            return val ? val.replace(/\r\n|\r|\n/g, '') : null;
+          }).filter(notEmpty);
+
+          return {
+            ...result,
+            [key]: certs.length > 0 ? certs[0] : null
+          };
+        }
       } catch (e) {
+        console.error(`Error extracting ${key}:`, e);
         return { ...result, [key]: null };
       }
     }
 
     // 特殊 case: 多路径 (原有逻辑)
-    // 检查是否是 string[][] (即每个元素都是数组)
     if (Array.isArray(localPath) && localPath.length > 0 && Array.isArray(localPath[0])) {
       const multiXPaths = (localPath as string[][]).map(path => `${buildAbsoluteXPath(path)}/text()`).join(' | ');
       // @ts-ignore
@@ -481,9 +351,14 @@ export function extract(context: string, fields: ExtractorFields) {
       };
     }
 
-    // 此时 localPath 必然是 string[]，因为如果是 string[][] 已经在上面 return 了
-    // 我们显式地将其断言为 string[] 以消除 TS 疑虑
+    // 此时 localPath 必然是 string[]
     const currentLocalPath = localPath as string[];
+
+    // 如果 localPath 为空数组（如特殊字段未定义 path），且未命中上面的特殊逻辑，则跳过
+    if (currentLocalPath.length === 0 && !isEntire) {
+      // 对于没有 path 且不是特殊处理的字段，返回 null 或跳过
+      return { ...result, [key]: null };
+    }
 
     const baseXPath = buildAbsoluteXPath(currentLocalPath);
 
@@ -608,22 +483,10 @@ export function extract(context: string, fields: ExtractorFields) {
   }, {});
 }
 
-// ============================================================================
-// 新增：便捷导出函数
-// ============================================================================
-
-/**
- * 提取 IdP 元数据
- * @param context IdP 元数据 XML 字符串
- */
 export function extractIdp(context: string) {
   return extract(context, idpMetadataFields);
 }
 
-/**
- * 提取 SP 元数据
- * @param context SP 元数据 XML 字符串
- */
 export function extractSp(context: string) {
   return extract(context, spMetadataFields);
 }
