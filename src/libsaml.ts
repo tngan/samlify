@@ -1275,50 +1275,7 @@ xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{ID}"
         }
       });
     },
-    /**
-     * @desc Decrypt the assertion section in Response
-     * @param  {string} type             only accept SAMLResponse to proceed decryption
-     * @param  {Entity} here             this entity
-     * @param  {Entity} from             from the entity where the message is sent
-     * @param {string} entireXML         response in xml string format
-     * @return {function} a promise to get back the entire xml with decrypted assertion
-     */
-    decryptAssertion(here, entireXML: string) {
-      return new Promise<[string, any]>((resolve, reject) => {
-        // Implement decryption first then check the signature
-        if (!entireXML) {
-          return reject(new Error('ERR_UNDEFINED_ASSERTION'));
-        }
-        // Perform encryption depends on the setting of where the message is sent, default is false
-        const hereSetting = here.entitySetting;
-        const {dom} = getContext();
-        const doc = dom.parseFromString(entireXML, 'application/xml');
-        // @ts-expect-error misssing Node properties are not needed
 
-        const encryptedAssertions = select("/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']", doc) as Node[];
-        if (!Array.isArray(encryptedAssertions) || encryptedAssertions.length === 0) {
-          throw new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION');
-        }
-        if (encryptedAssertions.length > 1) {
-          throw new Error('ERR_MULTIPLE_ASSERTION');
-        }
-        const encAssertionNode = encryptedAssertions[0];
-        return xmlenc.decrypt(encAssertionNode.toString(), {
-          key: utility.readPrivateKey(hereSetting.encPrivateKey, hereSetting.encPrivateKeyPass),
-        }, (err, res) => {
-          if (err) {
-            return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
-          }
-          if (!res) {
-            return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
-          }
-          const rawAssertionDoc = dom.parseFromString(res, 'application/xml');
-          // @ts-ignore
-          doc.documentElement.replaceChild(rawAssertionDoc.documentElement, encAssertionNode);
-          return resolve([doc.toString(), res]);
-        });
-      });
-    },
     /**
      * 同步版本的断言解密函数
      */
