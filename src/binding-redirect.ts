@@ -96,6 +96,10 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
       const info = customTagReplacement(spSetting.loginRequestTemplate);
       id = get(info, 'id', null);
       rawSamlRequest = get(info, 'context', null);
+      // Support callback returning { context: string } or { context: { context: string } }
+      if (typeof rawSamlRequest === 'object' && rawSamlRequest !== null && 'context' in rawSamlRequest) {
+        rawSamlRequest = (rawSamlRequest as { context: string }).context;
+      }
     } else {
       const nameIDFormat = spSetting.nameIDFormat;
       const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
