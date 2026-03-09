@@ -3,9 +3,9 @@
 * @author tngan
 * @desc  An abstraction for identity provider and service provider.
 */
+import { randomUUID } from 'crypto';
 import { isString, isNonEmptyArray } from './utility';
 import { namespace, wording, algorithms, messageConfigurations } from './urn';
-import * as uuid from 'uuid';
 import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-idp';
 import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
 import redirectBinding from './binding-redirect';
@@ -27,7 +27,7 @@ const defaultEntitySetting = {
   requestSignatureAlgorithm: signatureAlgorithms.RSA_SHA256,
   dataEncryptionAlgorithm: dataEncryptionAlgorithm.AES_256,
   keyEncryptionAlgorithm: keyEncryptionAlgorithm.RSA_OAEP_MGF1P,
-  generateID: (): string => ('_' + uuid.v4()),
+  generateID: (): string => ('_' + randomUUID()),
   relayState: '',
 };
 

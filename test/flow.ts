@@ -2,7 +2,7 @@ import * as esaml2 from '../index';
 import { readFileSync, writeFileSync } from 'fs';
 import { test, expect } from 'vitest';
 import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
-import * as uuid from 'uuid';
+import { randomUUID } from 'crypto';
 import * as url from 'url';
 import util from '../src/utility';
 import * as tk from 'timekeeper';
@@ -51,7 +51,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
   const tvalue = {
     ID: _id,
-    AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${uuid.v4()}`,
+    AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${randomUUID()}`,
     Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
     Audience: spEntityID,
     SubjectRecipient: spEntityID,
