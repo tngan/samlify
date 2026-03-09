@@ -438,3 +438,10 @@ test('contains explicit certificate declaration for signing and encryption in me
   expect(encryptionCertificate).not.toBe(null);
   expect(signingCertificate).not.toBe(encryptionCertificate);
 });
+
+test('getPublicKeyPemFromCertificate handles certificates with OID components exceeding 53-bit integers', () => {
+  const largeOIDCert = utility.normalizeCerString(readFileSync('./test/key/largeOID.cer'));
+  const pem = utility.getPublicKeyPemFromCertificate(largeOIDCert);
+  expect(pem).toContain('-----BEGIN PUBLIC KEY-----');
+  expect(pem).toContain('-----END PUBLIC KEY-----');
+});
