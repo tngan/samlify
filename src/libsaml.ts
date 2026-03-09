@@ -6,7 +6,13 @@
 
 import utility, { flattenDeep, isString } from './utility';
 import { algorithms, wording, namespace } from './urn';
-import { select } from 'xpath';
+import { select, SelectReturnType } from 'xpath';
+
+function toNodeArray(result: SelectReturnType): Node[] {
+  if (Array.isArray(result)) return result;
+  if (result != null && typeof result === 'object' && 'nodeType' in (result as object)) return [result as Node];
+  return [];
+}
 import { MetadataInterface } from './metadata';
 import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
@@ -380,10 +386,10 @@ const libSaml = () => {
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
 
       // select the signature node
-      let selection: any = [];
-      const messageSignatureNode = select(messageSignatureXpath, doc);
-      const assertionSignatureNode = select(assertionSignatureXpath, doc);
-      const wrappingElementNode = select(wrappingElementsXPath, doc);
+      let selection: Node[] = [];
+      const messageSignatureNode = toNodeArray(select(messageSignatureXpath, doc));
+      const assertionSignatureNode = toNodeArray(select(assertionSignatureXpath, doc));
+      const wrappingElementNode = toNodeArray(select(wrappingElementsXPath, doc));
 
       selection = selection.concat(messageSignatureNode);
       selection = selection.concat(assertionSignatureNode);
@@ -415,7 +421,7 @@ const libSaml = () => {
 
         if (opts.metadata) {
 
-          const certificateNode = select(".//*[local-name(.)='X509Certificate']", signatureNode) as any;
+          const certificateNode = toNodeArray(select(".//*[local-name(.)='X509Certificate']", signatureNode));
           // certificate in metadata
           let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
           // flattens the nested array of Certificates from each KeyDescriptor
@@ -434,7 +440,8 @@ const libSaml = () => {
 
           // certificate node in response
           if (certificateNode.length !== 0) {
-            const x509CertificateData = certificateNode[0].firstChild.data;
+            const certEl = certificateNode[0] as Element;
+            const x509CertificateData = certEl.textContent ?? '';
             const x509Certificate = utility.normalizeCerString(x509CertificateData);
 
             if (
@@ -473,15 +480,15 @@ const libSaml = () => {
         // case 1, rootSignedDoc is a response:
         if (rootNode.localName === 'Response') {
           // try getting the Xml from the first assertion
-          const assertions = select(
+          const assertions = toNodeArray(select(
             "./*[local-name()='Assertion']",
             rootNode
-          );
+          ));
 
-          const encryptedAssertions = select(
+          const encryptedAssertions = toNodeArray(select(
             "./*[local-name()='EncryptedAssertion']",
             rootNode
-          );
+          ));
           // now we can process the assertion as an assertion
           if (assertions.length === 1) {
             return [true, assertions[0].toString()];
