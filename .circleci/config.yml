@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   test-node-20:
     docker:
-      - image: cimg/node:20.0
+      - image: cimg/node:20.19
     environment:
       INSTALL_JDK: 1
     steps:
@@ -32,7 +32,7 @@ jobs:
 
   test-node-22:
     docker:
-      - image: cimg/node:22.0
+      - image: cimg/node:22.12
     environment:
       INSTALL_JDK: 1
     steps:
@@ -61,7 +61,7 @@ jobs:
 
   test-node-24:
     docker:
-      - image: cimg/node:24.0
+      - image: cimg/node:24
     environment:
       INSTALL_JDK: 1
     steps:
