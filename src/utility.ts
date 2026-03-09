@@ -4,7 +4,7 @@
 * @desc  Library for some common functions (e.g. de/inflation, en/decoding)
 */
 import { X509Certificate, createPrivateKey } from 'crypto';
-import { inflate, deflate } from 'pako';
+import { deflateRawSync, inflateRawSync } from 'zlib';
 
 const BASE64_STR = 'base64';
 
@@ -102,8 +102,8 @@ export function base64Decode(base64Message: string, isBytes?: boolean): string |
 * @return {string} compressed string
 */
 function deflateString(message: string): number[] {
-  const input = Array.prototype.map.call(message, char => char.charCodeAt(0));
-  return Array.from(deflate(input, { raw: true }));
+  const input = Buffer.from(message, 'utf8');
+  return Array.from(deflateRawSync(input));
 }
 /**
 * @desc Decompress the compressed string
@@ -112,10 +112,7 @@ function deflateString(message: string): number[] {
 */
 export function inflateString(compressedString: string): string {
   const inputBuffer = Buffer.from(compressedString, BASE64_STR);
-  const input = Array.prototype.map.call(inputBuffer.toString('binary'), char => char.charCodeAt(0));
-  return Array.from(inflate(input, { raw: true }))
-    .map((byte: number) => String.fromCharCode(byte))
-    .join('');
+  return inflateRawSync(inputBuffer).toString('utf8');
 }
 /**
 * @desc Abstract the normalizeCerString and normalizePemString
