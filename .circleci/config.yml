@@ -9,7 +9,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Java JDK 20
+          name: Install Java JDK 21
           command: |
             sudo apt-get update
             sudo apt-get install -y wget lsb-release
@@ -17,7 +17,7 @@ jobs:
             wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
             echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
             sudo apt-get update
-            sudo apt-get install -y temurin-20-jdk
+            sudo apt-get install -y temurin-21-jdk
             java -version
             javac -version
       - run:
@@ -38,7 +38,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Java JDK 20
+          name: Install Java JDK 21
           command: |
             sudo apt-get update
             sudo apt-get install -y wget lsb-release
@@ -46,7 +46,7 @@ jobs:
             wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
             echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
             sudo apt-get update
-            sudo apt-get install -y temurin-20-jdk
+            sudo apt-get install -y temurin-21-jdk
             java -version
             javac -version
       - run:
@@ -61,13 +61,13 @@ jobs:
 
   test-node-24:
     docker:
-      - image: cimg/node:24
+      - image: cimg/node:24.0
     environment:
       INSTALL_JDK: 1
     steps:
       - checkout
       - run:
-          name: Install Java JDK 20
+          name: Install Java JDK 21
           command: |
             sudo apt-get update
             sudo apt-get install -y wget lsb-release
@@ -75,7 +75,7 @@ jobs:
             wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo tee /etc/apt/keyrings/adoptium.asc
             echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
             sudo apt-get update
-            sudo apt-get install -y temurin-20-jdk
+            sudo apt-get install -y temurin-21-jdk
             java -version
             javac -version
       - run:
