@@ -50,7 +50,7 @@ export const loginRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['AuthnRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
+    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL', 'ForceAuthn']
   },
   {
     key: 'issuer',

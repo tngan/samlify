@@ -14,6 +14,9 @@ import * as Extractor from './src/extractor';
 // exposed methods for customizing samlify
 import { setSchemaValidator, setDOMParserOptions } from './src/api';
 
+// export types
+export type { LoginRequestOptions } from './src/types';
+
 export {
   Constants,
   Extractor,
