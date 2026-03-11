@@ -211,6 +211,21 @@ export function notEmpty<TValue>(value: TValue | null | undefined): value is TVa
   return value !== null && value !== undefined;
 }
 
+export function camelCase(input: string): string {
+  const words = input
+    .replace(/([a-z\d])([A-Z])/g, '$1\0$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1\0$2')
+    .split(/[\0\s\-_\.]+/)
+    .filter(w => w.length > 0);
+
+  return words
+    .map((word, i) => {
+      const lower = word.toLocaleLowerCase('en-US');
+      return i === 0 ? lower : lower.charAt(0).toLocaleUpperCase('en-US') + lower.slice(1);
+    })
+    .join('');
+}
+
 const utility = {
   isString,
   base64Encode,

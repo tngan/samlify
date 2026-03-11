@@ -7,7 +7,7 @@ function toNodeArray(result: SelectReturnType): Node[] {
   return [];
 }
 import { getContext } from './api';
-import camelCase from 'camelcase';
+import { camelCase } from './utility';
 
 interface ExtractorField {
   key: string;
@@ -341,7 +341,7 @@ export function extract(context: string, fields) {
       const attributeValues = baseNode.map((node: string) => {
         const nodeDoc = dom.parseFromString(node);
         const values = toNodeArray(select(childXPath, nodeDoc)).reduce((r: any, n: Attr) => {
-          r[camelCase(n.name, {locale: 'en-us'})] = n.value;
+          r[camelCase(n.name)] = n.value;
           return r;
         }, {});
         return values;
