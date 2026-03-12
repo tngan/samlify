@@ -405,6 +405,7 @@ test('send response with signed assertion and parse it', async () => {
   expect(typeof id).toBe('string');
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(samlContent).toContain('>user@esaml2.com</saml:NameID>')
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.response.inResponseTo).toBe('request_id');
 });
@@ -930,6 +931,7 @@ test('send login response with encrypted non-signed assertion and parse it', asy
   expect(typeof id).toBe('string');
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(samlContent).toContain('>user@esaml2.com</saml:NameID>')
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.response.inResponseTo).toBe('request_id');
 });
@@ -1102,6 +1104,7 @@ test('send login response with encrypted non-signed assertion with EncryptThenSi
   expect(typeof id).toBe('string');
   expect(samlContent.startsWith('<samlp:Response')).toBe(true);
   expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
+  expect(samlContent).toContain('>user@esaml2.com</saml:NameID>')
   expect(extract.nameID).toBe('user@esaml2.com');
 });
 
