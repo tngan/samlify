@@ -18,7 +18,7 @@ import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { extract } from './extractor';
-import camelCase from 'camelcase';
+import { camelCase } from './utility';
 import { getContext } from './api';
 import xmlEscape from 'xml-escape';
 import * as fs from 'fs';
@@ -240,7 +240,7 @@ const libSaml = () => {
    * @return {string}
    */
   function tagging(prefix: string, content: string): string {
-    const camelContent = camelCase(content, {locale: 'en-us'});
+    const camelContent = camelCase(content);
     return prefix + camelContent.charAt(0).toUpperCase() + camelContent.slice(1);
   }
 

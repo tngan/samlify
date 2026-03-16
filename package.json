@@ -36,7 +36,6 @@
   "dependencies": {
     "@authenio/xml-encryption": "^2.0.2",
     "@xmldom/xmldom": "^0.8.11",
-    "camelcase": "^9.0.0",
     "node-rsa": "^1.1.1",
     "xml": "^1.0.1",
     "xml-crypto": "^6.1.2",
