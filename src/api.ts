@@ -11,9 +11,21 @@ interface DOMParserContext {
   dom: dom;
 }
 
+const XXE_SAFE_OPTIONS: DOMParserOptions = {
+  /**
+   * Treat XML parsing errors as fatal to prevent XXE attacks.
+   * Entity references (e.g. &xxe;) and malformed XML in SAML messages
+   * are not expected and may indicate an attack attempt.
+   */
+  errorHandler: {
+    error: (msg: string) => { throw new Error(`XML parsing error: ${msg}`); },
+    fatalError: (msg: string) => { throw new Error(`XML fatal error: ${msg}`); },
+  },
+};
+
 const context: Context = {
   validate: undefined,
-  dom: new dom()
+  dom: new dom(XXE_SAFE_OPTIONS)
 };
 
 export function getContext() {

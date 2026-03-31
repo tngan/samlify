@@ -1,5 +1,5 @@
 import { select, SelectedValue, SelectReturnType } from 'xpath';
-import { uniq, last, zipObject, notEmpty } from './utility';
+import { uniq, last, zipObject, notEmpty, escapeXPathValue } from './utility';
 
 function toNodeArray(result: SelectReturnType): Node[] {
   if (Array.isArray(result)) return result;
@@ -26,10 +26,10 @@ function buildAbsoluteXPath(paths) {
     const isWildcard = name.startsWith('~');
     if (isWildcard) {
       const pathName = name.replace('~', '');
-      appendedPath = currentPath + `/*[contains(local-name(), '${pathName}')]`;
+      appendedPath = currentPath + `/*[contains(local-name(), ${escapeXPathValue(pathName)})]`;
     }
     if (!isWildcard) {
-      appendedPath = currentPath + `/*[local-name(.)='${name}']`;
+      appendedPath = currentPath + `/*[local-name(.)=${escapeXPathValue(name)}]`;
     }
     return appendedPath;
   }, '');
@@ -42,7 +42,7 @@ function buildAttributeXPath(attributes) {
   if (attributes.length === 1) {
     return `/@${attributes[0]}`;
   }
-  const filters = attributes.map(attribute => `name()='${attribute}'`).join(' or ');
+  const filters = attributes.map(attribute => `name()=${escapeXPathValue(attribute)}`).join(' or ');
   return `/@*[${filters}]`;
 }
 

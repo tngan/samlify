@@ -211,6 +211,19 @@ export function notEmpty<TValue>(value: TValue | null | undefined): value is TVa
   return value !== null && value !== undefined;
 }
 
+/**
+ * @desc Escape a string for safe use inside an XPath single-quoted string literal.
+ * Prevents XPath injection by splitting on single quotes and using concat().
+ */
+export function escapeXPathValue(value: string): string {
+  if (!value.includes("'")) {
+    return "'" + value + "'";
+  }
+  // Use XPath concat() to safely handle strings containing single quotes
+  const parts = value.split("'").map(part => "'" + part + "'");
+  return 'concat(' + parts.join(`,"'",`) + ')';
+}
+
 export function camelCase(input: string): string {
   const words = input
     .replace(/([a-z\d])([A-Z])/g, '$1\0$2')

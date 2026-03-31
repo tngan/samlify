@@ -4,7 +4,7 @@
 * @desc  A simple library including some common functions
 */
 
-import utility, { flattenDeep, isString } from './utility';
+import utility, { flattenDeep, isString, escapeXPathValue } from './utility';
 import { algorithms, wording, namespace } from './urn';
 import { select, SelectReturnType } from 'xpath';
 
@@ -227,9 +227,10 @@ const libSaml = () => {
   */
   function createXPath(local, isExtractAll?: boolean): string {
     if (isString(local)) {
-      return isExtractAll === true ? "//*[local-name(.)='" + local + "']/text()" : "//*[local-name(.)='" + local + "']";
+      const escaped = escapeXPathValue(local);
+      return isExtractAll === true ? "//*[local-name(.)=" + escaped + "]/text()" : "//*[local-name(.)=" + escaped + "]";
     }
-    return "//*[local-name(.)='" + local.name + "']/@" + local.attr;
+    return "//*[local-name(.)=" + escapeXPathValue(local.name) + "]/@" + local.attr;
   }
 
   /**
@@ -376,7 +377,8 @@ const libSaml = () => {
       const { dom } = getContext();
       const doc = dom.parseFromString(xml);
 
-      const docParser = new DOMParser();
+      const { dom: contextDom } = getContext();
+      const docParser = contextDom;
       // In order to avoid the wrapping attack, we have changed to use absolute xpath instead of naively fetching the signature element
       // message signature (logout response / saml response)
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
