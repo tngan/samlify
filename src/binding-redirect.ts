@@ -45,12 +45,20 @@ function pvPair(param: string, value: string, first?: boolean): string {
 */
 function buildRedirectURL(opts: BuildRedirectConfig) {
   const {
-    baseUrl,
     type,
     isSigned,
     context,
     entitySetting,
   } = opts;
+  let { baseUrl } = opts;
+  if (typeof baseUrl === 'object') {
+    const baseUrlKeys = Object.keys(baseUrl);
+    if (baseUrlKeys.length > 0) {
+      baseUrl = baseUrl['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'] || baseUrl[baseUrlKeys[0]];
+    }
+  } else if (Array.isArray(baseUrl) && baseUrl.length > 0) {
+    baseUrl = baseUrl[0];
+  }
   let { relayState = '' } = opts;
   const noParams = (url.parse(baseUrl).query || []).length === 0;
   const queryParam = libsaml.getQueryParamByType(type);
