@@ -52,12 +52,14 @@ export class ServiceProvider extends Entity {
   * @desc  Generates the login request for developers to design their own method
   * @param  {IdentityProvider} idp               object of identity provider
   * @param  {string}   binding                   protocol binding
-  * @param  {function} customTagReplacement     used when developers have their own login response template
+  * @param  {function} [customTagReplacement]    used when developers have their own login response template
+  * @param  {string}   [relayState]              relay state override. pass empty string to remove sp's relay state.
   */
   public createLoginRequest(
     idp: IdentityProvider,
     binding = 'redirect',
     customTagReplacement?: (template: string) => BindingContext,
+    relayState?: string,
   ): BindingContext | PostBindingContext| SimpleSignBindingContext  {
     const nsBinding = namespace.binding;
     const protocol = nsBinding[binding];
@@ -68,7 +70,7 @@ export class ServiceProvider extends Entity {
     let context: any = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL({ idp, sp: this, relayState }, customTagReplacement);
 
       case nsBinding.post:
         context = postBinding.base64LoginRequest("/*[local-name(.)='AuthnRequest']", { idp, sp: this }, customTagReplacement);
@@ -86,7 +88,7 @@ export class ServiceProvider extends Entity {
 
     return {
       ...context,
-      relayState: this.entitySetting.relayState,
+      relayState: relayState !== undefined ? relayState : this.entitySetting.relayState,
       entityEndpoint: idp.entityMeta.getSingleSignOnService(binding) as string,
       type: 'SAMLRequest',
     };

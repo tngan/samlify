@@ -83,7 +83,7 @@ function buildRedirectURL(opts: BuildRedirectConfig) {
 * @param  {function} customTagReplacement      used when developers have their own login response template
 * @return {string} redirect URL
 */
-function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp, relayState?: string }, customTagReplacement?: (template: string) => BindingContext): BindingContext {
 
   const metadata: any = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting: any = entity.sp.entitySetting;
@@ -123,7 +123,7 @@ function loginRequestRedirectURL(entity: { idp: Idp, sp: Sp }, customTagReplacem
         isSigned: metadata.sp.isAuthnRequestSigned(),
         entitySetting: spSetting,
         baseUrl: base,
-        relayState: spSetting.relayState,
+        relayState: entity.relayState !== undefined ? entity.relayState : spSetting.relayState,
       }),
     };
   }
@@ -232,7 +232,8 @@ function loginResponseRedirectURL(requestInfo: any, entity: any, user: any = {},
 * @desc Redirect URL for logout request
 * @param  {object} user                        current logged user (e.g. req.user)
 * @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
+* @param  {string} [relayState]                object includes both idp and sp
+* @param  {function} [customTagReplacement]    used when developers have their own login response template
 * @return {string} redirect URL
 */
 function logoutRequestRedirectURL(user, entity, relayState?: string, customTagReplacement?: (template: string, tags: object) => BindingContext): BindingContext {

@@ -181,6 +181,18 @@ test('create login request with redirect binding using default template and pars
   expect(extract.nameIDPolicy.allowCreate).toBe('false');
 });
 
+test('create login request with redirect binding relayState override and removal', () => {
+  const noRelayStateReq = url.parse(serviceProvider(defaultSpConfig).createLoginRequest(idp, 'redirect').context, true);
+  const _sp = serviceProvider({ ...defaultSpConfig, relayState: 'default-relay-state' });
+  const defaultReq = url.parse(_sp.createLoginRequest(idp, 'redirect').context, true);
+  const overrideReq = url.parse(_sp.createLoginRequest(idp, 'redirect', undefined, 'override-relay-state').context, true);
+  const removedReq = url.parse(_sp.createLoginRequest(idp, 'redirect', undefined, '').context, true);
+  expect(noRelayStateReq.query.RelayState).toBeUndefined();
+  expect(defaultReq.query.RelayState).toBe('default-relay-state');
+  expect(overrideReq.query.RelayState).toBe('override-relay-state');
+  expect(removedReq.query.RelayState).toBeUndefined();
+});
+
 test('create login request with post simpleSign binding using default template and parse it', async () => {
   const { relayState, id, context: SAMLRequest, type, sigAlg, signature } = sp.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
   expect(typeof id).toBe('string');
