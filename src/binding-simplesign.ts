@@ -8,6 +8,7 @@ import { wording, StatusCode } from './urn';
 import { BindingContext, SimpleSignComputedContext } from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
+import {SAMLDocumentTemplate} from './types'
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
@@ -75,7 +76,7 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
 * @param  {object} entity                      object includes both idp and sp
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-function base64LoginRequest(entity: any, customTagReplacement?: (template: string) => BindingContext): SimpleSignComputedContext {
+function base64LoginRequest(entity: any, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): SimpleSignComputedContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
   let id: string = '';
@@ -134,7 +135,7 @@ function base64LoginRequest(entity: any, customTagReplacement?: (template: strin
 * @param  {string}  relayState               the relay state
 * @param  {function} customTagReplacement     used when developers have their own login response template
 */
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): Promise<BindingSimpleSignContext> {
+async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: SAMLDocumentTemplate) => BindingContext): Promise<BindingSimpleSignContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
   const id = idpSetting.generateID();
