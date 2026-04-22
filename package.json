@@ -11,6 +11,12 @@
     "metadata"
   ],
   "typings": "types/index.d.ts",
+  "files": [
+    "build",
+    "types",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "yarn audit;make rebuild",
     "docs:dev": "vitepress dev docs",

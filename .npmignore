@@ -1,7 +1,0 @@
-node_modules
-examples
-test
-@types
-docs
-yarn*
-.nyc_output
