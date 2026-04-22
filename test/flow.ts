@@ -207,6 +207,50 @@ test('create login request with post binding using default template and parse it
   expect(typeof extract.signature).toBe('string');
 });
 
+test('create login request with redirect binding and per-request forceAuthn=true', async () => {
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', { forceAuthn: true });
+  expect(typeof id).toBe('string');
+  expect(typeof context).toBe('string');
+  const originalURL = url.parse(context, true);
+  const SAMLRequest = originalURL.query.SAMLRequest;
+  const Signature = originalURL.query.Signature;
+  const SigAlg = originalURL.query.SigAlg;
+  delete originalURL.query.Signature;
+  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
+  const { extract } = await idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
+  expect(extract.request.forceAuthn).toBe('true');
+});
+
+test('create login request with post binding and per-request forceAuthn=true', async () => {
+  const { id, context: SAMLRequest } = sp.createLoginRequest(idp, 'post', { forceAuthn: true }) as PostBindingContext;
+  expect(typeof id).toBe('string');
+  expect(typeof SAMLRequest).toBe('string');
+  const { extract } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest }});
+  expect(extract.request.forceAuthn).toBe('true');
+});
+
+test('create login request with simpleSign binding and per-request forceAuthn=true', async () => {
+  const { id, context: SAMLRequest, type, sigAlg, signature, relayState } = sp.createLoginRequest(idp, 'simpleSign', { forceAuthn: true }) as SimpleSignBindingContext;
+  expect(typeof id).toBe('string');
+  expect(typeof SAMLRequest).toBe('string');
+  const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState, signature);
+  const { extract } = await idp.parseLoginRequest(sp, 'simpleSign', { body: { SAMLRequest, Signature: signature, SigAlg: sigAlg }, octetString});
+  expect(extract.request.forceAuthn).toBe('true');
+});
+
+test('create login request with default forceAuthn=false', async () => {
+  const { id, context } = sp.createLoginRequest(idp, 'redirect');
+  const originalURL = url.parse(context, true);
+  const SAMLRequest = originalURL.query.SAMLRequest;
+  const Signature = originalURL.query.Signature;
+  const SigAlg = originalURL.query.SigAlg;
+  delete originalURL.query.Signature;
+  const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
+  const { extract } = await idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString});
+  expect(extract.request.forceAuthn).toBe('false');
+});
+
+
 test('signed in sp is not matched with the signed notation in idp with post request', () => {
   const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
   try {
