@@ -1,10 +1,10 @@
-# Work with Gitlab (samlify as idp)
+# GitLab integration (samlify as IdP)
 
-In this tutorial, we will walk through step by step to configure self-hosted and dockerized Gitlab CE, also integrates with samlify.
+This chapter walks through the configuration of a self-hosted, Dockerized GitLab CE instance that integrates with samlify as the identity provider.
 
-### Setup postgresql
+## 1. Set up PostgreSQL
 
-```
+```console
 docker run --name gitlab-postgresql -d \
     --env 'DB_NAME=gitlabhq_production' \
     --env 'DB_USER=gitlab' --env 'DB_PASS=password' \
@@ -12,19 +12,22 @@ docker run --name gitlab-postgresql -d \
     --volume /esaml2/postgresql:/var/lib/postgresql \
     sameersbn/postgresql:9.6-2
 ```
-!> Remember to configure file sharing when work with volume mount
 
-### Setup redis
+::: warning
+Remember to configure file sharing when using volume mounts.
+:::
 
-```
+## 2. Set up Redis
+
+```console
 docker run --name gitlab-redis -d \
     --volume /esaml2/redis:/var/lib/redis \
     sameersbn/redis:latest
 ```
 
-### Running gitlab in container
+## 3. Run GitLab in a container
 
-```
+```console
 docker run --name gitlab -d \
     --link gitlab-postgresql:postgresql --link gitlab-redis:redisio \
     --publish 10022:22 --publish 10080:80 \
@@ -41,29 +44,36 @@ docker run --name gitlab -d \
     sameersbn/gitlab:9.1.2
 ```
 
-### Get fingerprint (This is another way I found)
+## 4. Retrieve the certificate fingerprint
 
 ```console
 $ openssl x509 -in ./key/idp/cert.cer -sha1 -noout -fingerprint
 ```
 
-### Get metadata from gitlab
+## 5. Retrieve the GitLab metadata
 
-`http://localhost:10080/users/auth/saml/metadata`
+Fetch the metadata from:
 
-remember to modify the acs endpoint to http://localhost:10080/users/auth/saml/callback
+```
+http://localhost:10080/users/auth/saml/metadata
+```
 
-### The step-by-step configuration of IDP with samlify
+Update the ACS endpoint in the metadata to `http://localhost:10080/users/auth/saml/callback`.
 
-After setting up the gitlab, we need to set up the IDP with samlify. Beside, the identity provider is an experimental feature in this module.
+## 6. Configure the IdP with samlify
 
-Since there are some required attributes are required and specified in the Gitlab metadata, so we need to add attributes to the response, so we need to customize response template when we construct the Identity provider.
+The IdP in samlify is an experimental feature. GitLab's metadata declares several required attributes, so the response template must be customised to include them:
 
-`email`, `name`, `first_name` and `last_name` (default email and name are `admin@example.com` and `Administrator` in docker-gitlab)
+- `email`
+- `name`
+- `first_name`
+- `last_name`
 
-And we need to change our metadata by setting `WantAuthnRequestsSigned` to false since the request from SP is not signed.
+The default values used by the `docker-gitlab` image are `admin@example.com` for `email` and `Administrator` for `name`.
 
-Signed response is highly RECOMMENDED (compulsory in Gitlab's implementation), including assertion signature or/and entire message signature, so a new property `signatureConfig` is introduced into constructor of identity provider to specify the location, prefix of messsage signature, this configuration is exactly the same as [xml-crypto](https://github.com/yaronn/xml-crypto#examples).
+Set `WantAuthnRequestsSigned` to `false` in the IdP metadata because the request from this SP is not signed.
+
+A signed response is strongly recommended (it is mandatory in GitLab's implementation), either at the assertion level, the message level, or both. Use `signatureConfig` to control the location and prefix of the message signature; the options match those of [xml-crypto](https://github.com/yaronn/xml-crypto#examples).
 
 ```javascript
 const idp = require('samlify').IdentityProvider({
@@ -74,10 +84,10 @@ const idp = require('samlify').IdentityProvider({
   loginResponseTemplate: {
     context: '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:Status><samlp:StatusCode Value="{StatusCode}"/></samlp:Status><saml:Assertion ID="{AssertionID}" Version="2.0" IssueInstant="{IssueInstant}" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>{Issuer}</saml:Issuer><saml:Subject><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="{SubjectConfirmationDataNotOnOrAfter}" Recipient="{SubjectRecipient}"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="{ConditionsNotBefore}" NotOnOrAfter="{ConditionsNotOnOrAfter}"><saml:AudienceRestriction><saml:Audience>{Audience}</saml:Audience></saml:AudienceRestriction></saml:Conditions><AuthnStatement AuthnInstant="{IssueInstant}"> <AuthnContext><AuthnContextClassRef>AuthnContextClassRef</AuthnContextClassRef></AuthnContext></AuthnStatement></samlp:Response>',
     attributes: [
-      { name: "mail", valueTag: "user.email", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
-      { name: "name", valueTag: "user.name", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
-      { name: "first_name", valueTag: "user.first", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
-      { name: "last_name", valueTag: "user.last", nameFormat: "urn:oasis:names:tc:SAML:2.0:attrname-format:basic", valueXsiType: "xs:string" },
+      { name: 'mail',       valueTag: 'user.email', nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },
+      { name: 'name',       valueTag: 'user.name',  nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },
+      { name: 'first_name', valueTag: 'user.first', nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },
+      { name: 'last_name',  valueTag: 'user.last',  nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },
     ]
   },
   signatureConfig: {
@@ -87,7 +97,7 @@ const idp = require('samlify').IdentityProvider({
 });
 ```
 
-### The step-by-step configuration of SP with samlify
+## 7. Configure the SP with samlify
 
 ```javascript
 const sp = require('samlify').ServiceProvider({
@@ -95,4 +105,4 @@ const sp = require('samlify').ServiceProvider({
 });
 ```
 
-the metadata is obtained from `http://localhost:10080/users/auth/saml/metadata`
+The SP metadata is obtained from `http://localhost:10080/users/auth/saml/metadata`.

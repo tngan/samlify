@@ -1,77 +1,79 @@
-# Multiple entities
+# Multiple Entities
 
-For those applications with many clients, each client may have its own Identity Provider. Developers just need to configure multiple IdPs. Different configuration of SP is required for different IdP, therefore multiple SPs are allowed.
+An application with many clients may need to support multiple identity providers. Different IdPs often require different SP configurations, so multiple SP instances may also be needed.
 
-**Multiple IdPs - Single SP**
+## Multiple IdPs, single SP
 
 ```javascript
-// define SP
+// Define the SP.
 const sp = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')
 });
-// define multiple IdPs
+
+// Define multiple IdPs.
 const defaultIdP = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata_idp_default.xml')
 });
 const oneloginIdP = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata_onelogin.xml')
 });
-// URL routing for SP-initiated SSO 
+
+// SP-initiated SSO route, parameterised by IdP name.
 router.get('/spinitsso-post/:idp', (req, res) => {
-  let targetIdP = undefined;
-  switch(req.params.idp) {
-    case 'onelogin': {
+  let targetIdP;
+  switch (req.params.idp) {
+    case 'onelogin':
       targetIdP = oneloginIdP;
       break;
-    }
-    default: {
-      targetIdP = idp;
+    default:
+      targetIdP = defaultIdP;
       break;
-    }
   }
   return sp.createLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', req));
 });
 ```
 
-Using the same SP configuration, it can apply to different IdPs. We've played a trick here, the initiated URL for SP-inititated SSO is controlled by a parameter. When user accesses `/spinitsso-post/onelogin`, the OneLogin IdP is used. When user accesses `/spinitsso-post/default`, the default IdP is then used for authentication.
+With a single SP configuration, the request can be routed to different IdPs based on a path parameter. `/spinitsso-post/onelogin` authenticates against OneLogin; `/spinitsso-post/default` (or any unknown value) falls back to the default IdP.
 
-**Multiple IdPs - Mutiple SPs**
+## Multiple IdPs, multiple SPs
 
-Different IdPs may have different preference, so single SP configuration may not be suitable. For example, OneLogin IdP requires a request with signature but our default IdP does not. Here we come up with another solution which is very similar to the previous one.
+Different IdPs may require different SP configurations — for example, OneLogin may require signed requests while the default IdP does not. The pattern below uses one SP instance per IdP.
 
 ```javascript
-// define a default SP
+// Define the default SP.
 const defaultSP = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')
 });
-// define SP for OneLogin with different metadta
+
+// Define an SP specifically configured for OneLogin.
 const oneloginSP = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp_for_oneLogin.xml')
 });
-// define a default IdP
+
+// Define the default IdP.
 const defaultIdP = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata_idp_default.xml')
 });
-// define OneLogin IdP
+
+// Define the OneLogin IdP.
 const oneloginIdP = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata_idp_onelogin.xml')
 });
-// URL routing for SP-initiated SSO 
-router.get('/spinitsso-post/:idp', function(req, res) {
-  let targetIdP = undefined;
-  let sourceSP = undefined;
-  switch(req.params.idp || '') {
-    case 'onelogin': {
+
+// SP-initiated SSO route, parameterised by IdP name.
+router.get('/spinitsso-post/:idp', (req, res) => {
+  let targetIdP;
+  let sourceSP;
+  switch (req.params.idp || '') {
+    case 'onelogin':
       targetIdP = oneloginIdP;
       sourceSP = oneloginSP;
       break;
-    }
-    default: {
-      targetIdP = idp;
+    default:
+      targetIdP = defaultIdP;
       sourceSP = defaultSP;
       break;
-    }
   }
-  return sourceSP.createLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', request));
+  return sourceSP.createLoginRequest(targetIdP, 'post', (req, res) => res.render('actions', req));
 });
 ```

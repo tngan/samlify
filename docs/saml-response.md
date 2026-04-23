@@ -1,8 +1,8 @@
-# Receive a SAML Response
+# Receiving a SAML Response
 
-SP sends out the SAML Request to IdP, IdP will send back a SAML Response telling the authentication result. In SAML specification, SP doesn't expect the returned response which includes signature by default. In our module, it's recommended to accept signed SAML Response. In this chapter, we begin with receiving a SAML Response without signature first.
+When the SP sends a SAML request, the IdP replies with a SAML response containing the authentication result. The SAML specification does not require signed responses by default, but samlify strongly recommends that SPs accept only signed responses. This chapter begins with the simpler unsigned case.
 
-The following is the sample Response XML, it must be sent using Post-Binding instead of Redirect-Binding. It would exceed the limitation of URL length because of the lengthy assertion.
+The example below shows a typical SAML response. Responses are delivered via HTTP-POST rather than HTTP-Redirect because the assertion would exceed the URL length limits imposed by many browsers.
 
 ```xml
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6" Version="2.0" IssueInstant="2014-07-17T01:01:48Z" Destination="http://sp.example.com/demo1/index.php?acs" InResponseTo="_41e758fee373d51639552c4b040b1090e97f6685">
@@ -44,37 +44,39 @@ The following is the sample Response XML, it must be sent using Post-Binding ins
 </samlp:Response>
 ```
 
-The assertion can also be encrypted in case there exists sensitive information. See the chapter 'Encrypted SAML Response' for more detail.
+When the assertion carries sensitive information, it may also be encrypted. See [Encrypted SAML Response](/encrypted-saml-response) for details.
 
-By using this module, parsing and verifying this response is the job of SP. See the following code snippet:
+Parsing and verifying the response is the SP's responsibility:
 
 ```javascript
 router.post('/acs', (req, res) => {
   sp.parseLoginResponse(idp, 'post', req)
-  .then(parseResult => {
-    // Use the parseResult can do customized action
-  })
-  .catch(console.error);
+    .then(parseResult => {
+      // Use parseResult to run your business logic.
+    })
+    .catch(console.error);
 });
 ```
 
-Here an endpoint for assertion consumer service (acs) is created, where the SAML Response is sent to. This URL must be same as the one specified in SP's metadata.
+The handler is mounted at the Assertion Consumer Service (ACS) endpoint, the URL to which the IdP posts SAML responses. It must match the `Location` declared in the SP metadata:
 
 ```xml
-<AssertionConsumerService 
-        isDefault="true" 
-        index="0" 
-        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+<AssertionConsumerService
+        isDefault="true"
+        index="0"
+        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
         Location="http://localhost:4002/sso/acs"
 />
 ```
-`sp.parseLoginResponse` is used to parse the SAML Response and extract the attributes, name ID, and other information from the SAML Response. Therefore, developer can write their own business logic by taking the parsed data. Also, this method also helps to do verification of signature if `WantAssertionSigned` is specified in SP's metadata. See 'Signed SAML Response' for more detail.
 
-The verification is done inside `sp.parseLoginResponse`:
-+ Signature
-+ Issuer name
+`sp.parseLoginResponse` parses the SAML response and extracts attributes, the NameID, and other fields so that application code can act on them. It also verifies the assertion signature when `WantAssertionsSigned` is declared in the SP metadata; see [Signed SAML Response](/signed-saml-response) for details.
 
-The callback function inside `sp.parseLoginResponse` returns an object named `parseResult`:
+Signature verification performed inside `sp.parseLoginResponse`:
+
+- XML signature
+- Issuer name
+
+The promise resolves to a `parseResult` object:
 
 ```javascript
 {
@@ -87,11 +89,11 @@ The callback function inside `sp.parseLoginResponse` returns an object named `pa
       firstName: "E"
     },
     conditions: {
-      notbefore: "2015-10-26T11:41:43.500Z"
+      notbefore: "2015-10-26T11:41:43.500Z",
       notonorafter: "2015-10-26T11:46:43.500Z"
     },
     issuer: ['https://sp.example.org/sso/metadata'],
-    nameID: "user@esaml2.com"
+    nameID: "user@esaml2.com",
     signature: "<Signature ... </Signature>",
     statuscode: {
       value: "urn:oasis:names:tc:SAML:2.0:status:Success"
@@ -100,35 +102,34 @@ The callback function inside `sp.parseLoginResponse` returns an object named `pa
 }
 ```
 
-We do the basic checking and leave for developers to write their own callback. (e.g. verify the conditions, status code ... etc). See 'Advanced' tutorial for more detail. And some common status codes are shown in the list:
+samlify performs baseline validation and leaves application-specific checks (time conditions, status codes, etc.) to the caller. See the [Advanced](/advanced) tutorial for more detail. The full set of SAML status codes is:
 
 ```javascript
 statusCode: {
-  // permissible top-level status codes
+  // Permissible top-level status codes.
   success: 'urn:oasis:names:tc:SAML:2.0:status:Success',
   requester: 'urn:oasis:names:tc:SAML:2.0:status:Requester',
   responder: 'urn:oasis:names:tc:SAML:2.0:status:Responder',
   versionMismatch: 'urn:oasis:names:tc:SAML:2.0:status:VersionMismatch',
-  // second-level status codes
+  // Second-level status codes.
   authFailed: 'urn:oasis:names:tc:SAML:2.0:status:AuthnFailed',
   invalidAttrNameOrValue: 'urn:oasis:names:tc:SAML:2.0:status:InvalidAttrNameOrValue',
   invalidNameIDPolicy: 'urn:oasis:names:tc:SAML:2.0:status:InvalidNameIDPolicy',
-  noAuthnContext:'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
-  noAvailableIDP:'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
-  noPassive:'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
-  noSupportedIDP:'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
-  partialLogout:'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
-  proxyCountExceeded:'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
-  requestDenied:'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
-  requestUnsupported:'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
-  requestVersionDeprecated:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
-  requestVersionTooHigh:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
-  requestVersionTooLow:'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
-  resourceNotRecognized:'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
-  tooManyResponses:'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
-  unknownAttrProfile:'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
-  unknownPrincipal:'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
-  unsupportedBinding:'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding'
+  noAuthnContext: 'urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext',
+  noAvailableIDP: 'urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP',
+  noPassive: 'urn:oasis:names:tc:SAML:2.0:status:NoPassive',
+  noSupportedIDP: 'urn:oasis:names:tc:SAML:2.0:status:NoSupportedIDP',
+  partialLogout: 'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
+  proxyCountExceeded: 'urn:oasis:names:tc:SAML:2.0:status:ProxyCountExceeded',
+  requestDenied: 'urn:oasis:names:tc:SAML:2.0:status:RequestDenied',
+  requestUnsupported: 'urn:oasis:names:tc:SAML:2.0:status:RequestUnsupported',
+  requestVersionDeprecated: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionDeprecated',
+  requestVersionTooHigh: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooHigh',
+  requestVersionTooLow: 'urn:oasis:names:tc:SAML:2.0:status:RequestVersionTooLow',
+  resourceNotRecognized: 'urn:oasis:names:tc:SAML:2.0:status:ResourceNotRecognized',
+  tooManyResponses: 'urn:oasis:names:tc:SAML:2.0:status:TooManyResponses',
+  unknownAttrProfile: 'urn:oasis:names:tc:SAML:2.0:status:UnknownAttrProfile',
+  unknownPrincipal: 'urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal',
+  unsupportedBinding: 'urn:oasis:names:tc:SAML:2.0:status:UnsupportedBinding'
 }
 ```
-

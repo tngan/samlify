@@ -2,20 +2,20 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'samlify',
-  description: 'Nodejs library for Single Sign On with SAML 2.0',
+  description: 'Node.js library for Single Sign-On with SAML 2.0',
   base: '/',
   ignoreDeadLinks: 'localhostLinks',
-  
+
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }]
   ],
 
   themeConfig: {
     logo: '/padlock.png',
-    
+
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Get Started', link: '/prerequistite' },
+      { text: 'Get Started', link: '/prerequisite' },
       { text: 'GitHub', link: 'https://github.com/tngan/samlify' }
     ],
 
@@ -23,7 +23,7 @@ export default defineConfig({
       {
         text: 'Get Started',
         items: [
-          { text: 'Prerequisite', link: '/prerequistite' }
+          { text: 'Prerequisite', link: '/prerequisite' }
         ]
       },
       {
@@ -53,24 +53,24 @@ export default defineConfig({
       {
         text: 'Advanced',
         items: [
-          { text: 'Introduction', link: '/advance' },
+          { text: 'Introduction', link: '/advanced' },
           { text: 'Metadata Distribution', link: '/metadata-distribution' },
           {
-            text: 'IDP/SP Configuration',
+            text: 'IdP / SP Configuration',
             items: [
               { text: 'Configuration', link: '/configuration' },
               { text: 'Identity Provider', link: '/idp-configuration' },
               { text: 'Service Provider', link: '/sp-configuration' }
             ]
           },
-          { text: 'Attributes & Template', link: '/template' },
+          { text: 'Attributes & Templates', link: '/template' },
           { text: 'Multiple Entities', link: '/multi-entities' }
         ]
       },
       {
         text: 'Examples',
         items: [
-          { text: 'Gitlab', link: '/gitlab' },
+          { text: 'GitLab', link: '/gitlab' },
           { text: 'OneLogin', link: '/onelogin' },
           { text: 'Okta', link: '/okta' },
           { text: 'Inbound SAML', link: '/okta-inbound' }

@@ -1,71 +1,70 @@
-## Implementing Google SSO with SAML2.0 using Samlify
+# Google Workspace SSO with SAML 2.0 using samlify
 
-### Introduction
+## Introduction
 
-This document provides a step-by-step tutorial for implementing Single Sign-On (SSO) with Google Workspace using SAML2.0. We will create a sample application that implements SP-initiated SSO (Service Provider-initiated SSO).
+This chapter walks through an SP-initiated SSO integration with Google Workspace using SAML 2.0.
 
-### Credits
+## Credits
 
 Credit for this tutorial goes to [@hmagdy](https://github.com/hmagdy).
 
-### Prerequisites
+## Prerequisites
 
-Before you begin, make sure you have the following prerequisites installed in your project:
+Before starting, install the following dependencies in your project:
 
-- Samlify
-- Express (or any other Node.js web framework)
-- Body-parser
+- samlify
+- Express (or another Node.js web framework)
+- body-parser
 
-### Tutorial
+## Tutorial
 
-#### Step 1: Create a New Web App in Google Workspace
+### Step 1: Create a new SAML 2.0 web app in Google Workspace
 
-- In your Google Workspace admin console, create a new web app with SAML2.0 integration. You can follow the steps provided by Google to set up the app.
+In the Google Workspace admin console, create a new web app with SAML 2.0 integration, following the Google setup instructions.
 
-![Google Workspace SAML2.0 Setup](image.png)
+![Google Workspace SAML 2.0 setup](image.png)
 
-#### Step 2: Retrieve IdP (Identity Provider) Metadata
+### Step 2: Retrieve IdP metadata
 
-- Once your app is created, copy the following information from the IdP metadata (Step 2):
-  - Identity Provider Entity ID
-  - Identity Provider Single Sign-On (SSO) URL
-  - Identity Provider Certificate
+Once the app is created, copy the following values from the IdP metadata (Step 2 in the Google wizard):
+
+- Identity Provider Entity ID
+- Identity Provider Single Sign-On (SSO) URL
+- Identity Provider Certificate
 
 ```javascript
-// IdP (Identity Provider) metadata
+// IdP metadata.
 const identityProviderEntityID = 'https://accounts.google.com/o/saml2?idpid=XYZ';
-const identityProviderSsoURL = 'https://accounts.google.com/o/saml2/idp?idpid=XYZ';
+const identityProviderSsoURL   = 'https://accounts.google.com/o/saml2/idp?idpid=XYZ';
 const identityProviderCert = `-----BEGIN CERTIFICATE-----
 XYZ
 -----END CERTIFICATE-----`;
 ```
 
-#### Step 3: Configure Callback URL for Service Provider
+### Step 3: Configure the SP callback URL
 
-- Add the callback URL for your Service Provider (SP) details as provided in your application setup.
+Add the callback URL declared in your application configuration.
 
-![SP Callback URL](image-3.png)
+![SP callback URL](image-3.png)
 
-#### Step 4: Set Up Attribute Mapping
+### Step 4: Configure attribute mapping
 
-- Configure attribute mapping for your application as needed.
+Configure the attributes Google Workspace should send in the assertion.
 
-![Attribute Mapping](image-4.png)
+![Attribute mapping](image-4.png)
 
-#### Step 5: Application Setup
+### Step 5: Finalise the application setup
 
-- Your application is now ready for SSO integration.
+The application is now ready for SSO integration.
 
-![Ready Application](image-5.png)
+![Application ready](image-5.png)
 
-#### Step 6: Example Code Configuration
-
-- Use the following code snippet as an example to configure your Node.js application for SSO:
+### Step 6: Example configuration
 
 ```javascript
 const samlify = require('samlify');
 
-// Set up schema validation (customize as needed)
+// Supply a schema validator. Replace with your own implementation in production.
 samlify.setSchemaValidator({
   validate: (response) => {
     console.log('response', response);
@@ -73,11 +72,11 @@ samlify.setSchemaValidator({
   },
 });
 
-// SP (Service Provider) metadata
+// SP metadata.
 const serviceProviderEntityID = 'https://your-app-url/google/sso/callback';
 
-// IdP (Identity Provider) metadata
-const identityProviderSsoURL = 'https://accounts.google.com/o/saml2/idp?idpid=XYZ';
+// IdP metadata.
+const identityProviderSsoURL   = 'https://accounts.google.com/o/saml2/idp?idpid=XYZ';
 const identityProviderEntityID = 'https://accounts.google.com/o/saml2?idpid=XYZ';
 const identityProviderCert = `-----BEGIN CERTIFICATE-----
 XYZ
@@ -105,50 +104,48 @@ const sp = samlify.ServiceProvider({
   assertionConsumerService: [{
     Binding: samlify.Constants.namespace.binding.post,
     Location: serviceProviderEntityID,
-  }];
+  }],
+});
 
-// Implement express with APIs for callback, login request, and metadata endpoints as needed
+// Express setup for the callback, login, and metadata endpoints.
 const express = require('express');
 const fs = require('fs');
 const saml = require('samlify');
 const axios = require('axios');
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(serveStatic(path.resolve(__dirname, 'public')));
 
-// callback
-  app.post('/google/sso/callback', async (req, res) => {
-    try {
-      const { extract } = await sp.parseLoginResponse(idp, 'post', req);
-      const result = {
-        obj: extract.attributes,
-      };
-      next(result);
-    } catch (e) {
-      console.log('[FATAL] when parsing login response sent from Google');
-      console.log(e);
-    }
-    return;
-  });
+// SAML callback endpoint.
+app.post('/google/sso/callback', async (req, res) => {
+  try {
+    const { extract } = await sp.parseLoginResponse(idp, 'post', req);
+    const result = { obj: extract.attributes };
+    next(result);
+  } catch (e) {
+    console.log('[FATAL] failed to parse the login response from Google');
+    console.log(e);
+  }
+  return;
+});
 
-  app.get('/login', async (req, res) => {
-        const { context } = sp.createLoginRequest(idp, 'redirect');
-        return res.redirect(context);
-      });
+// Login entry point.
+app.get('/login', async (req, res) => {
+  const { context } = sp.createLoginRequest(idp, 'redirect');
+  return res.redirect(context);
+});
 
-  app.get('/google/sso/metadata', (req, res) => {
-    console.log("here");
-    res.header('Content-Type', 'text/xml').send(idp.getMetadata());
-  });
+// Metadata endpoint.
+app.get('/google/sso/metadata', (req, res) => {
+  res.header('Content-Type', 'text/xml').send(idp.getMetadata());
+});
 
-// Start the application
+// Start the application.
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 ```
 
-This code sets up the SSO configuration for your application.
-
-That's it! You have successfully set up SSO with Google Workspace using SAML2.0 for your web application. You can customize and extend this code to suit your specific requirements.
+That completes the SSO setup for Google Workspace with SAML 2.0. Adapt the code to your application's specific requirements.
