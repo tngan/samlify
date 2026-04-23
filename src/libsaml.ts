@@ -426,6 +426,9 @@ const libSaml = () => {
           const certificateNode = toNodeArray(select(".//*[local-name(.)='X509Certificate']", signatureNode));
           // certificate in metadata
           let metadataCert: any = opts.metadata.getX509Certificate(certUse.signing);
+          if (!metadataCert) {
+            throw new Error('INVALID_CERTIFICATE_PROVIDED')
+          }
           // flattens the nested array of Certificates from each KeyDescriptor
           if (Array.isArray(metadataCert)) {
             metadataCert = flattenDeep(metadataCert);
