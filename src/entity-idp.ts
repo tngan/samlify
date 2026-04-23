@@ -1,67 +1,81 @@
 /**
-* @file entity-idp.ts
-* @author tngan
-* @desc  Declares the actions taken by identity provider
-*/
-import Entity, { ESamlHttpRequest } from './entity';
-import {
-  ServiceProviderConstructor as ServiceProvider,
+ * @file entity-idp.ts
+ * @author tngan
+ * @desc Identity provider: builds login responses and parses inbound
+ * login requests coming from a service provider.
+ */
+import Entity from './entity';
+import type {
+  BindingContext,
+  ESamlHttpRequest,
+  PostBindingContext,
+  SimpleSignBindingContext,
+  RequestInfo,
+  SAMLUser,
+  IdentityProviderSettings,
   ServiceProviderMetadata,
   IdentityProviderMetadata,
-  IdentityProviderSettings,
+  ServiceProviderConstructor as ServiceProvider,
 } from './types';
 import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
 import redirectBinding from './binding-redirect';
 import simpleSignBinding from './binding-simplesign';
-import { flow, FlowResult } from './flow';
+import { flow } from './flow';
 import { isString } from './utility';
-import { BindingContext } from './entity';
 
 /**
- * Identity provider can be configured using either metadata importing or idpSetting
+ * Factory returning a new {@link IdentityProvider}. An IdP can be built
+ * from an XML metadata document or from a programmatic settings object.
+ *
+ * @param props IdP settings
  */
-export default function(props: IdentityProviderSettings) {
+export default function (props: IdentityProviderSettings): IdentityProvider {
   return new IdentityProvider(props);
 }
 
-/**
- * Identity provider can be configured using either metadata importing or idpSetting
- */
+/** Identity-provider entity. */
 export class IdentityProvider extends Entity {
 
-  entityMeta: IdentityProviderMetadata;
+  entityMeta!: IdentityProviderMetadata;
 
+  /**
+   * Build an IdP, expanding `loginResponseTemplate.attributes` into a
+   * pre-baked AttributeStatement template when supplied.
+   */
   constructor(idpSetting: IdentityProviderSettings) {
-    const defaultIdpEntitySetting = {
+    const defaultIdpEntitySetting: Partial<IdentityProviderSettings> = {
       wantAuthnRequestsSigned: false,
       tagPrefix: {
         encryptedAssertion: 'saml',
       },
     };
-    const entitySetting = Object.assign(defaultIdpEntitySetting, idpSetting);
-    // build attribute part
+    const entitySetting = Object.assign({}, defaultIdpEntitySetting, idpSetting) as IdentityProviderSettings;
+
     if (idpSetting.loginResponseTemplate) {
-      if (isString(idpSetting.loginResponseTemplate.context) && Array.isArray(idpSetting.loginResponseTemplate.attributes)) {
-        let attributeStatementTemplate;
-        let attributeTemplate;
-        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate) {
-          attributeStatementTemplate = libsaml.defaultAttributeStatementTemplate;
-        } else {
-          attributeStatementTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeStatementTemplate!;
-        }
-        if (!idpSetting.loginResponseTemplate.additionalTemplates || !idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate) {
-          attributeTemplate = libsaml.defaultAttributeTemplate;
-        } else {
-          attributeTemplate = idpSetting.loginResponseTemplate.additionalTemplates!.attributeTemplate!;
-        }
+      const template = idpSetting.loginResponseTemplate as typeof idpSetting.loginResponseTemplate & {
+        attributes?: Parameters<typeof libsaml.attributeStatementBuilder>[0];
+      };
+      if (isString(template.context) && Array.isArray(template.attributes)) {
+        const additional = template.additionalTemplates;
+        const attributeStatementTemplate = additional && additional.attributeStatementTemplate
+          ? additional.attributeStatementTemplate
+          : libsaml.defaultAttributeStatementTemplate;
+        const attributeTemplate = additional && additional.attributeTemplate
+          ? additional.attributeTemplate
+          : libsaml.defaultAttributeTemplate;
+
         const replacement = {
-          AttributeStatement: libsaml.attributeStatementBuilder(idpSetting.loginResponseTemplate.attributes, attributeTemplate, attributeStatementTemplate),
+          AttributeStatement: libsaml.attributeStatementBuilder(
+            template.attributes!,
+            attributeTemplate,
+            attributeStatementTemplate,
+          ),
         };
         entitySetting.loginResponseTemplate = {
           ...entitySetting.loginResponseTemplate,
-          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate!.context, replacement),
+          context: libsaml.replaceTagsByValue(entitySetting.loginResponseTemplate!.context!, replacement),
         };
       } else {
         console.warn('Invalid login response template');
@@ -71,27 +85,27 @@ export class IdentityProvider extends Entity {
   }
 
   /**
-  * @desc  Generates the login response for developers to design their own method
-  * @param  sp                        object of service provider
-  * @param  requestInfo               corresponding request, used to obtain the id
-  * @param  binding                   protocol binding
-  * @param  user                      current logged user (e.g. req.user)
-  * @param  customTagReplacement      used when developers have their own login response template
-  * @param  encryptThenSign           whether or not to encrypt then sign first (if signing)
-  * @param  relayState             the relayState from corresponding request
-  */
+   * Build a login response for delivery to the supplied service provider.
+   *
+   * @param sp target service provider
+   * @param requestInfo parsed request used to set `InResponseTo`
+   * @param binding `post`, `simpleSign`, or `redirect`
+   * @param user authenticated user
+   * @param customTagReplacement optional custom template transformer
+   * @param encryptThenSign when true, encrypt the assertion first then sign
+   * @param relayState caller-supplied redirect URL
+   */
   public async createLoginResponse(
     sp: ServiceProvider,
-    requestInfo: { [key: string]: any },
+    requestInfo: RequestInfo,
     binding: string,
-    user: { [key: string]: any },
+    user: SAMLUser,
     customTagReplacement?: (template: string) => BindingContext,
     encryptThenSign?: boolean,
     relayState?: string,
-  ) {
+  ): Promise<BindingContext | PostBindingContext | SimpleSignBindingContext> {
     const protocol = namespace.binding[binding];
-    // can support post, redirect and post simple sign bindings for login response
-    let context: any = null;
+    let context: BindingContext | SimpleSignBindingContext | null = null;
     switch (protocol) {
       case namespace.binding.post:
         context = await postBinding.base64LoginResponse(requestInfo, {
@@ -101,9 +115,10 @@ export class IdentityProvider extends Entity {
         break;
 
       case namespace.binding.simpleSign:
-        context = await simpleSignBinding.base64LoginResponse( requestInfo, {
-          idp: this, sp,
-        }, user, relayState, customTagReplacement);
+        context = await simpleSignBinding.base64LoginResponse(requestInfo, {
+          idp: this,
+          sp,
+        }, user, relayState, customTagReplacement) as SimpleSignBindingContext;
         break;
 
       case namespace.binding.redirect:
@@ -120,26 +135,26 @@ export class IdentityProvider extends Entity {
       ...context,
       relayState,
       entityEndpoint: (sp.entityMeta as ServiceProviderMetadata).getAssertionConsumerService(binding) as string,
-      type: 'SAMLResponse'
+      type: 'SAMLResponse',
     };
   }
 
   /**
-   * Validation of the parsed URL parameters
-   * @param sp ServiceProvider instance
-   * @param binding Protocol binding
-   * @param req RequesmessageSigningOrderst
+   * Parse, validate and verify an inbound login request.
+   *
+   * @param sp service provider that produced the request
+   * @param binding `redirect`, `post`, or `simpleSign`
+   * @param req HTTP request envelope
    */
   parseLoginRequest(sp: ServiceProvider, binding: string, req: ESamlHttpRequest) {
-    const self = this;
     return flow({
       from: sp,
-      self: self,
-      checkSignature: self.entityMeta.isWantAuthnRequestsSigned(),
+      self: this,
+      checkSignature: this.entityMeta.isWantAuthnRequestsSigned(),
       parserType: 'SAMLRequest',
       type: 'login',
-      binding: binding,
-      request: req
+      binding,
+      request: req,
     });
   }
 }

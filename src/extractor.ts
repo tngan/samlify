@@ -1,41 +1,50 @@
+/**
+ * @file extractor.ts
+ * @author tngan
+ * @desc Declarative XPath extractor for SAML messages. Defines the field
+ * catalogs (login/logout request & response) and a generic `extract` that
+ * evaluates them against an XML document.
+ */
 import { select, SelectedValue, SelectReturnType } from 'xpath';
-import { uniq, last, zipObject, notEmpty, escapeXPathValue } from './utility';
+import { uniq, last, zipObject, notEmpty, escapeXPathValue, camelCase } from './utility';
+import { getContext } from './api';
+import type { ExtractorField, ExtractorFields, ExtractorResult, ExtractorValue } from './types';
 
+export type { ExtractorField, ExtractorFields, ExtractorResult } from './types';
+
+/**
+ * Coerce the heterogeneous return type of `xpath.select` into a Node array.
+ */
 function toNodeArray(result: SelectReturnType): Node[] {
   if (Array.isArray(result)) return result;
-  if (result != null && typeof result === 'object' && 'nodeType' in (result as object)) return [result as Node];
+  if (result != null && typeof result === 'object' && 'nodeType' in (result as object)) {
+    return [result as Node];
+  }
   return [];
 }
-import { getContext } from './api';
-import { camelCase } from './utility';
 
-interface ExtractorField {
-  key: string;
-  localPath: string[] | string[][];
-  attributes: string[];
-  index?: string[];
-  attributePath?: string[];
-  context?: boolean;
-}
-
-export type ExtractorFields = ExtractorField[];
-
-function buildAbsoluteXPath(paths) {
-  return paths.reduce((currentPath, name) => {
-    let appendedPath = currentPath;
+/**
+ * Build an absolute XPath expression from a list of local-name segments.
+ * A segment prefixed with `~` matches any element whose local-name contains
+ * the remaining text (case-sensitive substring).
+ */
+function buildAbsoluteXPath(paths: string[]): string {
+  return paths.reduce<string>((currentPath, name) => {
     const isWildcard = name.startsWith('~');
     if (isWildcard) {
       const pathName = name.replace('~', '');
-      appendedPath = currentPath + `/*[contains(local-name(), ${escapeXPathValue(pathName)})]`;
+      return currentPath + `/*[contains(local-name(), ${escapeXPathValue(pathName)})]`;
     }
-    if (!isWildcard) {
-      appendedPath = currentPath + `/*[local-name(.)=${escapeXPathValue(name)}]`;
-    }
-    return appendedPath;
+    return currentPath + `/*[local-name(.)=${escapeXPathValue(name)}]`;
   }, '');
 }
 
-function buildAttributeXPath(attributes) {
+/**
+ * Append an attribute selector to an XPath. Zero attributes select text
+ * content; one attribute selects that attribute; multiple attributes use an
+ * `or` filter.
+ */
+function buildAttributeXPath(attributes: string[]): string {
   if (attributes.length === 0) {
     return '/text()';
   }
@@ -46,37 +55,38 @@ function buildAttributeXPath(attributes) {
   return `/@*[${filters}]`;
 }
 
+/** Default extractor fields for an inbound `AuthnRequest` (login request). */
 export const loginRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['AuthnRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL']
+    attributes: ['ID', 'IssueInstant', 'Destination', 'AssertionConsumerServiceURL'],
   },
   {
     key: 'issuer',
     localPath: ['AuthnRequest', 'Issuer'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'nameIDPolicy',
     localPath: ['AuthnRequest', 'NameIDPolicy'],
-    attributes: ['Format', 'AllowCreate']
+    attributes: ['Format', 'AllowCreate'],
   },
   {
     key: 'authnContextClassRef',
     localPath: ['AuthnRequest', 'AuthnContextClassRef'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'signature',
     localPath: ['AuthnRequest', 'Signature'],
     attributes: [],
-    context: true
-  }
+    context: true,
+  },
 ];
 
-// support two-tiers status code
-export const loginResponseStatusFields = [
+/** Two-tier status code extractor for login responses. */
+export const loginResponseStatusFields: ExtractorFields = [
   {
     key: 'top',
     localPath: ['Response', 'Status', 'StatusCode'],
@@ -86,29 +96,37 @@ export const loginResponseStatusFields = [
     key: 'second',
     localPath: ['Response', 'Status', 'StatusCode', 'StatusCode'],
     attributes: ['Value'],
-  }
+  },
 ];
 
-// support two-tiers status code
-export const logoutResponseStatusFields = [
+/** Two-tier status code extractor for logout responses. */
+export const logoutResponseStatusFields: ExtractorFields = [
   {
     key: 'top',
     localPath: ['LogoutResponse', 'Status', 'StatusCode'],
-    attributes: ['Value']
+    attributes: ['Value'],
   },
   {
     key: 'second',
     localPath: ['LogoutResponse', 'Status', 'StatusCode', 'StatusCode'],
     attributes: ['Value'],
-  }
+  },
 ];
 
-export const loginResponseFields: ((assertion: any) => ExtractorFields) = assertion => [
+/**
+ * Build the login-response extractor bound to a particular assertion XML.
+ * Assertion-scoped fields are re-rooted at the assertion fragment via the
+ * `shortcut` mechanism so that wrapping attacks can't redirect extraction.
+ *
+ * @param assertion XML string of the (verified) assertion node
+ * @returns extractor fields ready for `extract`
+ */
+export const loginResponseFields: (assertion: string) => ExtractorFields = assertion => [
   {
     key: 'conditions',
     localPath: ['Assertion', 'Conditions'],
     attributes: ['NotBefore', 'NotOnOrAfter'],
-    shortcut: assertion
+    shortcut: assertion,
   },
   {
     key: 'response',
@@ -119,30 +137,25 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
     key: 'audience',
     localPath: ['Assertion', 'Conditions', 'AudienceRestriction', 'Audience'],
     attributes: [],
-    shortcut: assertion
+    shortcut: assertion,
   },
-  // {
-  //   key: 'issuer',
-  //   localPath: ['Response', 'Issuer'],
-  //   attributes: []
-  // },
   {
     key: 'issuer',
     localPath: ['Assertion', 'Issuer'],
     attributes: [],
-    shortcut: assertion
+    shortcut: assertion,
   },
   {
     key: 'nameID',
     localPath: ['Assertion', 'Subject', 'NameID'],
     attributes: [],
-    shortcut: assertion
+    shortcut: assertion,
   },
   {
     key: 'sessionIndex',
     localPath: ['Assertion', 'AuthnStatement'],
     attributes: ['AuthnInstant', 'SessionNotOnOrAfter', 'SessionIndex'],
-    shortcut: assertion
+    shortcut: assertion,
   },
   {
     key: 'attributes',
@@ -150,250 +163,190 @@ export const loginResponseFields: ((assertion: any) => ExtractorFields) = assert
     index: ['Name'],
     attributePath: ['AttributeValue'],
     attributes: [],
-    shortcut: assertion
-  }
+    shortcut: assertion,
+  },
 ];
 
+/** Default extractor fields for an inbound `LogoutRequest`. */
 export const logoutRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['LogoutRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination']
+    attributes: ['ID', 'IssueInstant', 'Destination'],
   },
   {
     key: 'issuer',
     localPath: ['LogoutRequest', 'Issuer'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'nameID',
     localPath: ['LogoutRequest', 'NameID'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'sessionIndex',
     localPath: ['LogoutRequest', 'SessionIndex'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'signature',
     localPath: ['LogoutRequest', 'Signature'],
     attributes: [],
-    context: true
-  }
+    context: true,
+  },
 ];
 
+/** Default extractor fields for an inbound `LogoutResponse`. */
 export const logoutResponseFields: ExtractorFields = [
   {
     key: 'response',
     localPath: ['LogoutResponse'],
-    attributes: ['ID', 'Destination', 'InResponseTo']
+    attributes: ['ID', 'Destination', 'InResponseTo'],
   },
   {
     key: 'issuer',
     localPath: ['LogoutResponse', 'Issuer'],
-    attributes: []
+    attributes: [],
   },
   {
     key: 'signature',
     localPath: ['LogoutResponse', 'Signature'],
     attributes: [],
-    context: true
-  }
+    context: true,
+  },
 ];
 
-export function extract(context: string, fields) {
+/**
+ * Evaluate the given extractor fields against an XML document and return
+ * a flat object keyed by `field.key`. Handles:
+ *   - multi-path localPaths (`string[][]`) collected with `|`
+ *   - parent/child attribute aggregation (`index` + `attributePath`)
+ *   - whole-subtree extraction (`context: true`)
+ *   - single/multiple/zero-attribute text extraction
+ *
+ * @param context XML string to parse
+ * @param fields extractor field definitions
+ * @returns extracted SAML values keyed by field name
+ */
+export function extract(context: string, fields: ExtractorField[]): ExtractorResult {
   const { dom } = getContext();
   const rootDoc = dom.parseFromString(context);
 
-  return fields.reduce((result: any, field) => {
-    // get essential fields
-    const key = field.key;
-    const localPath = field.localPath;
-    const attributes = field.attributes;
-    const isEntire = field.context;
-    const shortcut = field.shortcut;
-    // get optional fields
-    const index = field.index;
-    const attributePath = field.attributePath;
+  return fields.reduce<ExtractorResult>((result, field) => {
+    const { key, localPath, attributes, context: isEntire, shortcut, index, attributePath } = field;
 
-    // set allowing overriding if there is a shortcut injected
     let targetDoc = rootDoc;
-
-    // if shortcut is used, then replace the doc
-    // it's a design for overriding the doc used during runtime
     if (shortcut) {
       targetDoc = dom.parseFromString(shortcut);
     }
 
-    // special case: multiple path
-    /*
-      {
-        key: 'issuer',
-        localPath: [
-          ['Response', 'Issuer'],
-          ['Response', 'Assertion', 'Issuer']
-        ],
-        attributes: []
-      }
-     */
+    // Multi-path union: each entry is a separate localPath whose text()
+    // values are merged.
     if (localPath.every(path => Array.isArray(path))) {
-      const multiXPaths = localPath
-        .map(path => {
-          // not support attribute yet, so ignore it
-          return `${buildAbsoluteXPath(path)}/text()`;
-        })
+      const multiXPaths = (localPath as string[][])
+        .map(path => `${buildAbsoluteXPath(path)}/text()`)
         .join(' | ');
 
-      return {
-        ...result,
-        [key]: uniq(toNodeArray(select(multiXPaths, targetDoc)).map((n: Node) => n.nodeValue).filter(notEmpty))
-      };
+      result[key] = uniq(
+        toNodeArray(select(multiXPaths, targetDoc))
+          .map((n: Node) => n.nodeValue)
+          .filter(notEmpty),
+      );
+      return result;
     }
-    // eo special case: multiple path
 
-    const baseXPath = buildAbsoluteXPath(localPath);
+    const baseXPath = buildAbsoluteXPath(localPath as string[]);
     const attributeXPath = buildAttributeXPath(attributes);
 
-    // special case: get attributes where some are in child, some are in parent
-    /*
-      {
-        key: 'attributes',
-        localPath: ['Response', 'Assertion', 'AttributeStatement', 'Attribute'],
-        index: ['Name'],
-        attributePath: ['AttributeValue'],
-        attributes: []
-      }
-    */
+    // Parent/child aggregation (e.g. SAML Attribute → AttributeValue).
     if (index && attributePath) {
-      // find the index in localpath
       const indexPath = buildAttributeXPath(index);
       const fullLocalXPath = `${baseXPath}${indexPath}`;
       const parentNodes = toNodeArray(select(baseXPath, targetDoc));
-      // [uid, mail, edupersonaffiliation], ready for aggregate
       const parentAttributes = toNodeArray(select(fullLocalXPath, targetDoc)).map((n: Attr) => n.value);
-      // [attribute, attributevalue]
-      const childXPath = buildAbsoluteXPath([last(localPath)].concat(attributePath));
+      const childXPath = buildAbsoluteXPath([last(localPath as string[])].concat(attributePath));
       const childAttributeXPath = buildAttributeXPath(attributes);
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
-      // [ 'test', 'test@example.com', [ 'users', 'examplerole1' ] ]
+
       const childAttributes = parentNodes.map(node => {
         const nodeDoc = dom.parseFromString(node.toString());
         if (attributes.length === 0) {
           const childValues = toNodeArray(select(fullChildXPath, nodeDoc)).map((n: Node) => n.nodeValue);
-          if (childValues.length === 1) {
-            return childValues[0];
-          }
-          return childValues;
+          return childValues.length === 1 ? childValues[0] : childValues;
         }
         if (attributes.length > 0) {
           const childValues = toNodeArray(select(fullChildXPath, nodeDoc)).map((n: Attr) => n.value);
-          if (childValues.length === 1) {
-            return childValues[0];
-          }
-          return childValues;
+          return childValues.length === 1 ? childValues[0] : childValues;
         }
         return null;
       });
-      // aggregation
-      const obj = zipObject(parentAttributes, childAttributes, false);
-      return {
-        ...result,
-        [key]: obj
-      };
 
+      result[key] = zipObject(parentAttributes, childAttributes as (string | string[] | null)[], false) as ExtractorValue;
+      return result;
     }
-    // case: fetch entire content, only allow one existence
-    /*
-      {
-        key: 'signature',
-        localPath: ['AuthnRequest', 'Signature'],
-        attributes: [],
-        context: true
-      }
-    */
+
+    // Whole-subtree capture.
     if (isEntire) {
       const nodes = toNodeArray(select(baseXPath, targetDoc));
-      let value: string | string[] | null = null;
+      let value: ExtractorValue = null;
       if (nodes.length === 1) {
         value = nodes[0].toString();
-      }
-      if (nodes.length > 1) {
+      } else if (nodes.length > 1) {
         value = nodes.map(n => n.toString());
       }
-      return {
-        ...result,
-        [key]: value
-      };
+      result[key] = value;
+      return result;
     }
 
-    // case: multiple attribute
-    /*
-      {
-        key: 'nameIDPolicy',
-        localPath: ['AuthnRequest', 'NameIDPolicy'],
-        attributes: ['Format', 'AllowCreate']
-      }
-    */
+    // Multi-attribute capture: produce one record per parent node.
     if (attributes.length > 1) {
       const baseNode = toNodeArray(select(baseXPath, targetDoc)).map(n => n.toString());
-      const childXPath = `${buildAbsoluteXPath([last(localPath)])}${attributeXPath}`;
+      const childXPath = `${buildAbsoluteXPath([last(localPath as string[])])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
         const nodeDoc = dom.parseFromString(node);
-        const values = toNodeArray(select(childXPath, nodeDoc)).reduce((r: any, n: Attr) => {
+        return toNodeArray(select(childXPath, nodeDoc)).reduce<Record<string, string>>((r, n: Attr) => {
           r[camelCase(n.name)] = n.value;
           return r;
         }, {});
-        return values;
       });
-      return {
-        ...result,
-        [key]: attributeValues.length === 1 ? attributeValues[0] : attributeValues
-      };
+      result[key] = (attributeValues.length === 1 ? attributeValues[0] : attributeValues) as ExtractorValue;
+      return result;
     }
-    // case: single attribute
-    /*
-      {
-        key: 'statusCode',
-        localPath: ['Response', 'Status', 'StatusCode'],
-        attributes: ['Value'],
-      }
-    */
+
+    // Single-attribute capture.
     if (attributes.length === 1) {
       const fullPath = `${baseXPath}${attributeXPath}`;
       const attributeValues = toNodeArray(select(fullPath, targetDoc)).map((n: Attr) => n.value);
-      return {
-        ...result,
-        [key]: attributeValues[0]
-      };
+      result[key] = attributeValues[0];
+      return result;
     }
-    // case: zero attribute
-    /*
-      {
-        key: 'issuer',
-        localPath: ['AuthnRequest', 'Issuer'],
-        attributes: []
-      }
-    */
+
+    // Zero-attribute capture: element text content.
     if (attributes.length === 0) {
       let attributeValue: SelectedValue[] | (string | null)[] | string | null = null;
       const nodes = toNodeArray(select(baseXPath, targetDoc));
       if (nodes.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
         const strResult = select(fullPath, targetDoc);
-        attributeValue = typeof strResult === 'string' ? strResult : strResult === null ? null : Array.isArray(strResult) ? strResult : null;
+        attributeValue =
+          typeof strResult === 'string'
+            ? strResult
+            : strResult === null
+              ? null
+              : Array.isArray(strResult)
+                ? strResult
+                : null;
       }
       if (nodes.length > 1) {
-        attributeValue = nodes.filter((n: Node) => n.firstChild)
+        attributeValue = nodes
+          .filter((n: Node) => n.firstChild)
           .map((n: Node) => n.firstChild!.nodeValue);
       }
-      return {
-        ...result,
-        [key]: attributeValue
-      };
+      result[key] = attributeValue as ExtractorValue;
+      return result;
     }
 
     return result;
-  }, {});
-
+  }, {} as ExtractorResult);
 }

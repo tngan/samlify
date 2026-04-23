@@ -1,51 +1,63 @@
 /**
-* @file metadata-sp.ts
-* @author tngan
-* @desc  Metadata of service provider
-*/
+ * @file metadata-sp.ts
+ * @author tngan
+ * @desc Metadata of a service provider (SP). Accepts either a raw XML
+ * document or a structured options object and presents a normalised API.
+ */
 import Metadata, { MetadataInterface } from './metadata';
-import { MetadataSpConstructor, MetadataSpOptions } from './types';
+import {
+  MetadataSpConstructor,
+  MetadataSpOptions,
+  XmlElementArray,
+  XmlAttributeMap,
+} from './types';
 import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
 
+/** Public interface exposed by SP metadata instances. */
 export interface SpMetadataInterface extends MetadataInterface {
-
 }
 
-// https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
-interface MetaElement {
-  KeyDescriptor?: any[];
-  NameIDFormat?: any[];
-  SingleLogoutService?: any[];
-  AssertionConsumerService?: any[];
-  AttributeConsumingService?: any[];
-}
-
-/*
- * @desc interface function
+/**
+ * Element slots used to enforce the SP descriptor ordering permitted by
+ * the SAML metadata schema.
+ * @see https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf (P.16, 18)
  */
-export default function(meta: MetadataSpConstructor) {
+interface MetaElement {
+  KeyDescriptor: XmlElementArray;
+  NameIDFormat: XmlElementArray;
+  SingleLogoutService: XmlElementArray;
+  AssertionConsumerService: XmlElementArray;
+  AttributeConsumingService: XmlElementArray;
+}
+
+/**
+ * Factory returning a new {@link SpMetadata} instance.
+ *
+ * @param meta XML metadata document or structured options
+ * @returns fresh SpMetadata
+ */
+export default function (meta: MetadataSpConstructor): SpMetadata {
   return new SpMetadata(meta);
 }
 
 /**
-* @desc SP Metadata is for creating Service Provider, provides a set of API to manage the actions in SP.
-*/
+ * SP metadata abstraction — constructs a valid EntityDescriptor/SPSSODescriptor
+ * from options, and exposes inspection helpers used by the flow layer.
+ */
 export class SpMetadata extends Metadata {
 
   /**
-  * @param  {object/string} meta (either xml string or configuration in object)
-  * @return {object} prototypes including public functions
-  */
+   * Build SP metadata from XML or programmatic options.
+   *
+   * @param meta XML string/Buffer or {@link MetadataSpOptions}
+   */
   constructor(meta: MetadataSpConstructor) {
-
     const isFile = isString(meta) || meta instanceof Buffer;
 
-    // use object configuration instead of importing metadata file directly
     if (!isFile) {
-
       const {
         elementsOrder = order.default,
         entityID,
@@ -68,7 +80,7 @@ export class SpMetadata extends Metadata {
         AttributeConsumingService: [],
       };
 
-      const SPSSODescriptor: any[] = [{
+      const SPSSODescriptor: XmlElementArray = [{
         _attr: {
           AuthnRequestsSigned: String(authnRequestsSigned),
           WantAssertionsSigned: String(wantAssertionsSigned),
@@ -80,38 +92,39 @@ export class SpMetadata extends Metadata {
         console.warn('Construct service provider - missing signatureConfig');
       }
 
-      for(const cert of castArrayOpt(signingCert)) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('signing', cert).KeyDescriptor);
+      for (const cert of castArrayOpt(signingCert)) {
+        const section = libsaml.createKeySection('signing', cert) as { KeyDescriptor: XmlElementArray };
+        descriptors.KeyDescriptor.push(section.KeyDescriptor);
       }
 
-      for(const cert of castArrayOpt(encryptCert)) {
-        descriptors.KeyDescriptor!.push(libsaml.createKeySection('encryption', cert).KeyDescriptor);
+      for (const cert of castArrayOpt(encryptCert)) {
+        const section = libsaml.createKeySection('encryption', cert) as { KeyDescriptor: XmlElementArray };
+        descriptors.KeyDescriptor.push(section.KeyDescriptor);
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => descriptors.NameIDFormat!.push(f));
+        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
       } else {
-        // default value
-        descriptors.NameIDFormat!.push(namespace.format.emailAddress);
+        descriptors.NameIDFormat.push(namespace.format.emailAddress);
       }
 
       if (isNonEmptyArray(singleLogoutService)) {
         singleLogoutService.forEach(a => {
-          const attr: any = {
+          const attr: XmlAttributeMap = {
             Binding: a.Binding,
             Location: a.Location,
           };
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.SingleLogoutService!.push([{ _attr: attr }]);
+          descriptors.SingleLogoutService.push([{ _attr: attr }]);
         });
       }
 
       if (isNonEmptyArray(assertionConsumerService)) {
         let indexCount = 0;
         assertionConsumerService.forEach(a => {
-          const attr: any = {
+          const attr: XmlAttributeMap = {
             index: String(indexCount++),
             Binding: a.Binding,
             Location: a.Location,
@@ -119,19 +132,17 @@ export class SpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          descriptors.AssertionConsumerService!.push([{ _attr: attr }]);
+          descriptors.AssertionConsumerService.push([{ _attr: attr }]);
         });
-      } else {
-        // console.warn('Missing endpoint of AssertionConsumerService');
       }
 
-      // handle element order
-      const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name]));
+      const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name as keyof MetaElement]));
       existedElements.forEach(name => {
-        descriptors[name].forEach(e => SPSSODescriptor.push({ [name]: e }));
+        (descriptors[name as keyof MetaElement] as XmlElementArray).forEach(e =>
+          SPSSODescriptor.push({ [name]: e }),
+        );
       });
 
-      // Re-assign the meta reference as a XML string|Buffer for use with the parent constructor
       meta = xml([{
         EntityDescriptor: [{
           _attr: {
@@ -142,10 +153,8 @@ export class SpMetadata extends Metadata {
           },
         }, { SPSSODescriptor }],
       }]);
-
     }
 
-    // Use the re-assigned meta object reference here
     super(meta as string | Buffer, [
       {
         key: 'spSSODescriptor',
@@ -156,48 +165,49 @@ export class SpMetadata extends Metadata {
         key: 'assertionConsumerService',
         localPath: ['EntityDescriptor', 'SPSSODescriptor', 'AssertionConsumerService'],
         attributes: ['Binding', 'Location', 'isDefault', 'index'],
-      }
+      },
     ]);
-
   }
 
   /**
-  * @desc Get the preference whether it wants a signed assertion response
-  * @return {boolean} Wantassertionssigned
-  */
+   * Return whether the SP requires signed assertions.
+   */
   public isWantAssertionsSigned(): boolean {
-    return this.meta.spSSODescriptor.wantAssertionsSigned === 'true';
+    return (this.meta as Record<string, Record<string, string>>).spSSODescriptor.wantAssertionsSigned === 'true';
   }
+
   /**
-  * @desc Get the preference whether it signs request
-  * @return {boolean} Authnrequestssigned
-  */
+   * Return whether the SP signs its `AuthnRequest` messages.
+   */
   public isAuthnRequestSigned(): boolean {
-    return this.meta.spSSODescriptor.authnRequestsSigned === 'true';
+    return (this.meta as Record<string, Record<string, string>>).spSSODescriptor.authnRequestsSigned === 'true';
   }
+
   /**
-  * @desc Get the entity endpoint for assertion consumer service
-  * @param  {string} binding         protocol binding (e.g. redirect, post)
-  * @return {string/[string]} URL of endpoint(s)
-  */
+   * Return the AssertionConsumerService endpoint URL(s) for the requested
+   * binding.
+   *
+   * @param binding protocol binding key (`redirect`, `post`, etc.)
+   * @returns endpoint URL, list of URLs, or raw service list
+   */
   public getAssertionConsumerService(binding: string): string | string[] {
     if (isString(binding)) {
-      let location;
+      let location: string | undefined;
       const bindName = namespace.binding[binding];
-      if (isNonEmptyArray(this.meta.assertionConsumerService)) {
-        this.meta.assertionConsumerService.forEach(obj => {
+      const acs = (this.meta as Record<string, unknown>).assertionConsumerService as
+        | Array<{ binding: string; location: string }>
+        | { binding: string; location: string };
+      if (isNonEmptyArray(acs)) {
+        (acs as Array<{ binding: string; location: string }>).forEach(obj => {
           if (obj.binding === bindName) {
             location = obj.location;
-            return;
           }
         });
-      } else {
-        if (this.meta.assertionConsumerService.binding === bindName) {
-          location = this.meta.assertionConsumerService.location;
-        }
+      } else if ((acs as { binding: string }).binding === bindName) {
+        location = (acs as { binding: string; location: string }).location;
       }
-      return location;
+      return location as string;
     }
-    return this.meta.assertionConsumerService;
+    return (this.meta as Record<string, unknown>).assertionConsumerService as string[];
   }
 }

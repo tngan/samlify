@@ -1,48 +1,77 @@
 /**
-* @file binding-post.ts
-* @author tngan
-* @desc Binding-level API, declare the functions using POST binding
-*/
+ * @file binding-post.ts
+ * @author tngan
+ * @desc Binding-level API for SAML HTTP-POST. Builds base64 login/logout
+ * request and response payloads that callers embed in an auto-submitting
+ * HTML form.
+ */
 
-import { wording, namespace, StatusCode } from './urn';
-import { BindingContext } from './entity';
+import { wording, StatusCode } from './urn';
+import type {
+  BindingContext,
+  RequestInfo,
+  SAMLUser,
+  TagReplacementMap,
+} from './types';
+import type { IdentityProvider as Idp } from './entity-idp';
+import type { ServiceProvider as Sp } from './entity-sp';
+import type Entity from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
 
 const binding = wording.binding;
 
+/** Shape passed to builder functions that need both IdP and SP handles. */
+interface PostIdpSpPair {
+  idp: Idp;
+  sp: Sp;
+}
+
+/** Shape passed to builder functions for logout (initiator + target). */
+interface PostInitTargetPair {
+  init: Entity;
+  target: Entity;
+}
+
 /**
-* @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-function base64LoginRequest(referenceTagXPath: string, entity: any, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+ * Generate a base64-encoded AuthnRequest for the HTTP-POST binding.
+ *
+ * @param referenceTagXPath XPath used when signing the request
+ * @param entity `{ idp, sp }` handles
+ * @param customTagReplacement optional custom template transformer
+ * @returns id / base64-XML pair
+ */
+function base64LoginRequest(
+  referenceTagXPath: string,
+  entity: PostIdpSpPair,
+  customTagReplacement?: (template: string) => BindingContext,
+): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
-  let id: string = '';
+  let id = '';
 
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.post);
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate && customTagReplacement) {
-      const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-      id = get(info, 'id', null);
-      rawSamlRequest = get(info, 'context', null);
+      const info = customTagReplacement(spSetting.loginRequestTemplate.context!);
+      id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
+      rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
     } else {
       const nameIDFormat = spSetting.nameIDFormat;
       const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-      id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      id = spSetting.generateID!();
+      const tags: TagReplacementMap = {
         ID: id,
-        Destination: base,
+        Destination: base as string,
         Issuer: metadata.sp.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post),
+        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
-        NameIDFormat: selectedNameIDFormat
-      } as any);
+        NameIDFormat: selectedNameIDFormat,
+      };
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
     }
     if (metadata.idp.isWantAuthnRequestsSigned()) {
       const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = spSetting;
@@ -50,20 +79,19 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
         id,
         context: libsaml.constructSAMLSignature({
           referenceTagXPath,
-          privateKey,
+          privateKey: privateKey as string,
           privateKeyPass,
-          signatureAlgorithm,
+          signatureAlgorithm: signatureAlgorithm!,
           transformationAlgorithms,
           rawSamlMessage: rawSamlRequest,
-          signingCert: metadata.sp.getX509Certificate('signing'),
+          signingCert: metadata.sp.getX509Certificate('signing') as string,
           signatureConfig: spSetting.signatureConfig || {
             prefix: 'ds',
             location: { reference: "/*[local-name(.)='AuthnRequest']/*[local-name(.)='Issuer']", action: 'after' },
-          }
+          },
         }),
       };
     }
-    // No need to embeded XML signature
     return {
       id,
       context: utility.base64Encode(rawSamlRequest),
@@ -71,18 +99,29 @@ function base64LoginRequest(referenceTagXPath: string, entity: any, customTagRep
   }
   throw new Error('ERR_GENERATE_POST_LOGIN_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded login response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {function} customTagReplacement     used when developers have their own login response template
-* @param  {boolean}  encryptThenSign           whether or not to encrypt then sign first (if signing). Defaults to sign-then-encrypt
-*/
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, customTagReplacement?: (template: string) => BindingContext, encryptThenSign: boolean = false): Promise<BindingContext> {
+ * Generate a base64-encoded login response for the HTTP-POST binding.
+ * Supports the sign-then-encrypt and encrypt-then-sign pipelines based on
+ * `encryptThenSign`.
+ *
+ * @param requestInfo parsed login request used to link `InResponseTo`
+ * @param entity `{ idp, sp }` handles
+ * @param user authenticated user
+ * @param customTagReplacement optional custom template transformer
+ * @param encryptThenSign when true, encrypt the assertion first then sign
+ * @returns id / base64-XML pair
+ */
+async function base64LoginResponse(
+  requestInfo: RequestInfo | { extract?: { request?: { id?: string } } } = {} as RequestInfo,
+  entity: PostIdpSpPair,
+  user: SAMLUser = {},
+  customTagReplacement?: (template: string) => BindingContext,
+  encryptThenSign = false,
+): Promise<BindingContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
-  const id = idpSetting.generateID();
+  const id = idpSetting.generateID!();
   const metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
@@ -99,47 +138,45 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     const fiveMinutesLater = fiveMinutesLaterTime.toISOString();
     const now = nowTime.toISOString();
     const acl = metadata.sp.getAssertionConsumerService(binding.post);
-    const tvalue: any = {
+    const tvalue: TagReplacementMap = {
       ID: id,
-      AssertionID: idpSetting.generateID(),
-      Destination: base,
+      AssertionID: idpSetting.generateID!(),
+      Destination: base as string,
       Audience: spEntityID,
       EntityID: spEntityID,
-      SubjectRecipient: acl,
+      SubjectRecipient: acl as string,
       Issuer: metadata.idp.getEntityID(),
       IssueInstant: now,
-      AssertionConsumerServiceURL: acl,
+      AssertionConsumerServiceURL: acl as string,
       StatusCode: StatusCode.Success,
-      // can be customized
       ConditionsNotBefore: now,
       ConditionsNotOnOrAfter: fiveMinutesLater,
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater,
       NameIDFormat: selectedNameIDFormat,
       NameID: user.email || '',
-      InResponseTo: get(requestInfo, 'extract.request.id', ''),
+      InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
       AuthnStatement: '',
       AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-      rawSamlResponse = get(template, 'context', null);
+      const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+      rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
     } else {
-      if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+      if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
+        tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
     const config = {
-      privateKey,
+      privateKey: privateKey as string,
       privateKeyPass,
-      signatureAlgorithm,
-      signingCert: metadata.idp.getX509Certificate('signing'),
+      signatureAlgorithm: signatureAlgorithm!,
+      signingCert: metadata.idp.getX509Certificate('signing') as string,
       isBase64Output: false,
     };
-    // step: sign assertion ? -> encrypted ? -> sign message ?
+    // Order: sign assertion (if SP wants) → encrypt (if IdP wants) → sign message (if needed).
     if (metadata.sp.isWantAssertionsSigned()) {
-      // console.debug('sp wants assertion signed');
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -152,11 +189,7 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       });
     }
 
-    // console.debug('after assertion signed', rawSamlResponse);
-
-    // SAML response must be signed sign message first, then encrypt
     if (!encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
-      // console.debug('sign then encrypt and sign entire message');
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
         rawSamlMessage: rawSamlResponse,
@@ -169,20 +202,15 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       });
     }
 
-    // console.debug('after message signed', rawSamlResponse);
-
     if (idpSetting.isAssertionEncrypted) {
-      // console.debug('idp is configured to do encryption');
       const context = await libsaml.encryptAssertion(entity.idp, entity.sp, rawSamlResponse);
       if (encryptThenSign) {
-        //need to decode it
         rawSamlResponse = utility.base64Decode(context) as string;
       } else {
         return Promise.resolve({ id, context });
       }
     }
 
-    //sign after encrypting
     if (encryptThenSign && (spSetting.wantMessageSigned || !metadata.sp.isWantAssertionsSigned())) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
@@ -200,34 +228,41 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       id,
       context: utility.base64Encode(rawSamlResponse),
     });
-
   }
   throw new Error('ERR_GENERATE_POST_LOGIN_RESPONSE_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded logout request
-* @param  {object} user                         current logged user (e.g. req.user)
-* @param  {string} referenceTagXPath            reference uri
-* @param  {object} entity                       object includes both idp and sp
-* @param  {function} customTagReplacement      used when developers have their own login response template
-* @return {string} base64 encoded request
-*/
-function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplacement?: (template: string) => BindingContext): BindingContext {
+ * Generate a base64-encoded LogoutRequest for the HTTP-POST binding.
+ *
+ * @param user currently authenticated user
+ * @param referenceTagXPath XPath used when signing the request
+ * @param entity `{ init, target }` handles
+ * @param customTagReplacement optional custom template transformer
+ * @returns id / base64-XML pair
+ */
+function base64LogoutRequest(
+  user: SAMLUser,
+  referenceTagXPath: string,
+  entity: PostInitTargetPair,
+  customTagReplacement?: (template: string) => BindingContext,
+): BindingContext {
   const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
   const initSetting = entity.init.entitySetting;
   const nameIDFormat = initSetting.nameIDFormat;
-  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;  let id: string = '';
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  let id = '';
   if (metadata && metadata.init && metadata.target) {
     let rawSamlRequest: string;
     if (initSetting.logoutRequestTemplate && customTagReplacement) {
-      const template = customTagReplacement(initSetting.logoutRequestTemplate.context);
-      id = get(template, 'id', null);
-      rawSamlRequest = get(template, 'context', null);
+      const template = customTagReplacement(initSetting.logoutRequestTemplate.context!);
+      id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
+      rawSamlRequest = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
     } else {
-      id = initSetting.generateID();
-      const tvalue: any = {
+      id = initSetting.generateID!();
+      const tvalue: TagReplacementMap = {
         ID: id,
-        Destination: metadata.target.getSingleLogoutService(binding.post),
+        Destination: metadata.target.getSingleLogoutService(binding.post) as string,
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         EntityID: metadata.init.getEntityID(),
@@ -237,22 +272,21 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
       rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
     }
     if (entity.target.entitySetting.wantLogoutRequestSigned) {
-      // Need to embeded XML signature
-      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms  } = initSetting;
+      const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;
       return {
         id,
         context: libsaml.constructSAMLSignature({
           referenceTagXPath,
-          privateKey,
+          privateKey: privateKey as string,
           privateKeyPass,
-          signatureAlgorithm,
+          signatureAlgorithm: signatureAlgorithm!,
           transformationAlgorithms,
           rawSamlMessage: rawSamlRequest,
-          signingCert: metadata.init.getX509Certificate('signing'),
+          signingCert: metadata.init.getX509Certificate('signing') as string,
           signatureConfig: initSetting.signatureConfig || {
             prefix: 'ds',
             location: { reference: "/*[local-name(.)='LogoutRequest']/*[local-name(.)='Issuer']", action: 'after' },
-          }
+          },
         }),
       };
     }
@@ -263,36 +297,42 @@ function base64LogoutRequest(user, referenceTagXPath, entity, customTagReplaceme
   }
   throw new Error('ERR_GENERATE_POST_LOGOUT_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded logout response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacement: (template: string) => BindingContext): BindingContext {
+ * Generate a base64-encoded LogoutResponse for the HTTP-POST binding.
+ *
+ * @param requestInfo parsed request used to link `InResponseTo`
+ * @param entity `{ init, target }` handles
+ * @param customTagReplacement optional custom template transformer
+ * @returns id / base64-XML pair
+ */
+function base64LogoutResponse(
+  requestInfo: RequestInfo,
+  entity: PostInitTargetPair,
+  customTagReplacement?: (template: string) => BindingContext,
+): BindingContext {
   const metadata = {
     init: entity.init.entityMeta,
     target: entity.target.entityMeta,
   };
-  let id: string = '';
+  let id = '';
   const initSetting = entity.init.entitySetting;
   if (metadata && metadata.init && metadata.target) {
-    let rawSamlResponse;
-    if (initSetting.logoutResponseTemplate) {
-      const template = customTagReplacement(initSetting.logoutResponseTemplate.context);
+    let rawSamlResponse: string;
+    if (initSetting.logoutResponseTemplate && customTagReplacement) {
+      const template = customTagReplacement(initSetting.logoutResponseTemplate.context!);
       id = template.id;
       rawSamlResponse = template.context;
     } else {
-      id = initSetting.generateID();
-      const tvalue: any = {
+      id = initSetting.generateID!();
+      const tvalue: TagReplacementMap = {
         ID: id,
-        Destination: metadata.target.getSingleLogoutService(binding.post),
+        Destination: metadata.target.getSingleLogoutService(binding.post) as string,
         EntityID: metadata.init.getEntityID(),
         Issuer: metadata.init.getEntityID(),
         IssueInstant: new Date().toISOString(),
         StatusCode: StatusCode.Success,
-        InResponseTo: get(requestInfo, 'extract.request.id', null)
+        InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id') as string,
       };
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
     }
@@ -302,19 +342,19 @@ function base64LogoutResponse(requestInfo: any, entity: any, customTagReplacemen
         id,
         context: libsaml.constructSAMLSignature({
           isMessageSigned: true,
-          transformationAlgorithms: transformationAlgorithms,
-          privateKey,
+          transformationAlgorithms,
+          privateKey: privateKey as string,
           privateKeyPass,
-          signatureAlgorithm,
+          signatureAlgorithm: signatureAlgorithm!,
           rawSamlMessage: rawSamlResponse,
-          signingCert: metadata.init.getX509Certificate('signing'),
+          signingCert: metadata.init.getX509Certificate('signing') as string,
           signatureConfig: {
             prefix: 'ds',
             location: {
               reference: "/*[local-name(.)='LogoutResponse']/*[local-name(.)='Issuer']",
-              action: 'after'
-            }
-          }
+              action: 'after',
+            },
+          },
         }),
       };
     }

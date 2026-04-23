@@ -1,56 +1,67 @@
 /**
-* @file binding-simplesign.ts
-* @author Orange
-* @desc Binding-level API, declare the functions using POST SimpleSign binding
-*/
+ * @file binding-simplesign.ts
+ * @author Orange
+ * @desc Binding-level API for SAML HTTP-POST-SimpleSign. Produces base64
+ * payloads alongside a detached signature over the canonical octet string.
+ */
 
 import { wording, StatusCode } from './urn';
-import { BindingContext, SimpleSignComputedContext } from './entity';
+import type {
+  BindingContext,
+  SimpleSignComputedContext,
+  RequestInfo,
+  SAMLUser,
+  TagReplacementMap,
+} from './types';
+import type { IdentityProvider as Idp } from './entity-idp';
+import type { ServiceProvider as Sp } from './entity-sp';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
 
+/** Options consumed by {@link buildSimpleSignature}. */
 export interface BuildSimpleSignConfig {
   type: string;
   context: string;
-  entitySetting: any;
+  entitySetting: {
+    requestSignatureAlgorithm?: string;
+    privateKey?: string | Buffer;
+    privateKeyPass?: string;
+  };
   relayState?: string;
 }
 
+/** Return value for login-response building with simple signatures. */
 export interface BindingSimpleSignContext {
   id: string;
   context: string;
-  signature: any;
+  signature: string | Buffer;
   sigAlg: string;
 }
 
+/** `{ idp, sp }` handle used by simple-sign builders. */
+interface SimpleSignIdpSpPair {
+  idp: Idp;
+  sp: Sp;
+}
+
 /**
-* @private
-* @desc Helper of generating URL param/value pair
-* @param  {string} param     key
-* @param  {string} value     value of key
-* @param  {boolean} first    determine whether the param is the starting one in order to add query header '?'
-* @return {string}
-*/
+ * Build a `key=value` URL fragment prefixed with the correct separator.
+ */
 function pvPair(param: string, value: string, first?: boolean): string {
   return (first === true ? '?' : '&') + param + '=' + value;
 }
+
 /**
-* @private
-* @desc Refactored part of simple signature generation for login/logout request
-* @param  {string} type
-* @param  {string} rawSamlRequest
-* @param  {object} entitySetting
-* @return {string}
-*/
-function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
-  const {
-    type,
-    context,
-    entitySetting,
-  } = opts;
+ * Compute a detached RSA signature over a SimpleSign canonical octet string.
+ *
+ * @param opts signing inputs
+ * @returns base64-encoded signature
+ */
+function buildSimpleSignature(opts: BuildSimpleSignConfig): string {
+  const { type, context, entitySetting } = opts;
   let { relayState = '' } = opts;
   const queryParam = libsaml.getQueryParamByType(type);
 
@@ -58,86 +69,98 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig) : string {
     relayState = pvPair(urlParams.relayState, relayState);
   }
 
-  const sigAlg = pvPair(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm);
+  const sigAlg = pvPair(urlParams.sigAlg, entitySetting.requestSignatureAlgorithm!);
   const octetString = context + relayState + sigAlg;
   return libsaml.constructMessageSignature(
     queryParam + '=' + octetString,
-    entitySetting.privateKey,
+    entitySetting.privateKey as string,
     entitySetting.privateKeyPass,
     undefined,
-    entitySetting.requestSignatureAlgorithm
+    entitySetting.requestSignatureAlgorithm,
   ).toString();
 }
 
 /**
-* @desc Generate a base64 encoded login request
-* @param  {string} referenceTagXPath           reference uri
-* @param  {object} entity                      object includes both idp and sp
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-function base64LoginRequest(entity: any, customTagReplacement?: (template: string) => BindingContext): SimpleSignComputedContext {
+ * Generate a base64-encoded AuthnRequest together with a detached simple
+ * signature when the IdP advertises `WantAuthnRequestsSigned`.
+ *
+ * @param entity `{ idp, sp }` handles
+ * @param customTagReplacement optional custom template transformer
+ */
+function base64LoginRequest(
+  entity: SimpleSignIdpSpPair,
+  customTagReplacement?: (template: string) => BindingContext,
+): SimpleSignComputedContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
-  let id: string = '';
+  let id = '';
 
   if (metadata && metadata.idp && metadata.sp) {
     const base = metadata.idp.getSingleSignOnService(binding.simpleSign);
     let rawSamlRequest: string;
     if (spSetting.loginRequestTemplate && customTagReplacement) {
-      const info = customTagReplacement(spSetting.loginRequestTemplate.context);
-      id = get(info, 'id', null);
-      rawSamlRequest = get(info, 'context', null);
+      const info = customTagReplacement(spSetting.loginRequestTemplate.context!);
+      id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
+      rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
     } else {
       const nameIDFormat = spSetting.nameIDFormat;
       const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-      id = spSetting.generateID();
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      id = spSetting.generateID!();
+      const tags: TagReplacementMap = {
         ID: id,
-        Destination: base,
+        Destination: base as string,
         Issuer: metadata.sp.getEntityID(),
         IssueInstant: new Date().toISOString(),
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.simpleSign),
+        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.simpleSign) as string,
         EntityID: metadata.sp.getEntityID(),
         AllowCreate: spSetting.allowCreate,
-        NameIDFormat: selectedNameIDFormat
-      } as any);
+        NameIDFormat: selectedNameIDFormat,
+      };
+      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
     }
 
-    let simpleSignatureContext : any = null;
+    let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
     if (metadata.idp.isWantAuthnRequestsSigned()) {
-        const simpleSignature = buildSimpleSignature({
-            type: urlParams.samlRequest,
-            context: rawSamlRequest,
-            entitySetting: spSetting,
-            relayState: spSetting.relayState,
-        });
-
-        simpleSignatureContext = {
-          signature: simpleSignature,
-          sigAlg: spSetting.requestSignatureAlgorithm,
-        };
+      const simpleSignature = buildSimpleSignature({
+        type: urlParams.samlRequest,
+        context: rawSamlRequest,
+        entitySetting: spSetting,
+        relayState: spSetting.relayState,
+      });
+      simpleSignatureContext = {
+        signature: simpleSignature,
+        sigAlg: spSetting.requestSignatureAlgorithm!,
+      };
     }
-    // No need to embeded XML signature
     return {
       id,
       context: utility.base64Encode(rawSamlRequest),
-      ...simpleSignatureContext,
+      ...(simpleSignatureContext ?? {}),
     };
   }
   throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_REQUEST_MISSING_METADATA');
 }
+
 /**
-* @desc Generate a base64 encoded login response
-* @param  {object} requestInfo                 corresponding request, used to obtain the id
-* @param  {object} entity                      object includes both idp and sp
-* @param  {object} user                        current logged user (e.g. req.user)
-* @param  {string}  relayState               the relay state
-* @param  {function} customTagReplacement     used when developers have their own login response template
-*/
-async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any = {}, relayState?: string, customTagReplacement?: (template: string) => BindingContext): Promise<BindingSimpleSignContext> {
+ * Generate a base64-encoded login response together with a detached simple
+ * signature. Login responses are always signed under this binding.
+ *
+ * @param requestInfo parsed request used to link `InResponseTo`
+ * @param entity `{ idp, sp }` handles
+ * @param user authenticated user
+ * @param relayState caller-supplied redirect URL
+ * @param customTagReplacement optional custom template transformer
+ */
+async function base64LoginResponse(
+  requestInfo: RequestInfo | { extract?: { request?: { id?: string } } } = {} as RequestInfo,
+  entity: SimpleSignIdpSpPair,
+  user: SAMLUser = {},
+  relayState?: string,
+  customTagReplacement?: (template: string) => BindingContext,
+): Promise<BindingSimpleSignContext> {
   const idpSetting = entity.idp.entitySetting;
   const spSetting = entity.sp.entitySetting;
-  const id = idpSetting.generateID();
+  const id = idpSetting.generateID!();
   const metadata = {
     idp: entity.idp.entityMeta,
     sp: entity.sp.entityMeta,
@@ -148,47 +171,44 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
     const base = metadata.sp.getAssertionConsumerService(binding.simpleSign);
     let rawSamlResponse: string;
     const nowTime = new Date();
-    // Five minutes later : nowtime  + 5 * 60 * 1000 (in milliseconds)
-    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000 );
-    const tvalue: any = {
+    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+    const tvalue: TagReplacementMap = {
       ID: id,
-      AssertionID: idpSetting.generateID(),
-      Destination: base,
+      AssertionID: idpSetting.generateID!(),
+      Destination: base as string,
       Audience: metadata.sp.getEntityID(),
       EntityID: metadata.sp.getEntityID(),
-      SubjectRecipient: base,
+      SubjectRecipient: base as string,
       Issuer: metadata.idp.getEntityID(),
       IssueInstant: nowTime.toISOString(),
-      AssertionConsumerServiceURL: base,
+      AssertionConsumerServiceURL: base as string,
       StatusCode: StatusCode.Success,
-      // can be customized
       ConditionsNotBefore: nowTime.toISOString(),
       ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
       NameIDFormat: selectedNameIDFormat,
       NameID: user.email || '',
-      InResponseTo: get(requestInfo, 'extract.request.id', ''),
+      InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
       AuthnStatement: '',
       AttributeStatement: '',
     };
     if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context);
-      rawSamlResponse = get(template, 'context', null);
+      const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+      rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
     } else {
-      if (requestInfo !== null) {
-        tvalue.InResponseTo = requestInfo.extract.request.id;
+      if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
+        tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
       }
       rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
     }
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
     const config = {
-      privateKey,
+      privateKey: privateKey as string,
       privateKeyPass,
-      signatureAlgorithm,
-      signingCert: metadata.idp.getX509Certificate('signing'),
+      signatureAlgorithm: signatureAlgorithm!,
+      signingCert: metadata.idp.getX509Certificate('signing') as string,
       isBase64Output: false,
     };
-    // step: sign assertion ? -> encrypted ? -> sign message ?
     if (metadata.sp.isWantAssertionsSigned()) {
       rawSamlResponse = libsaml.constructSAMLSignature({
         ...config,
@@ -202,30 +222,27 @@ async function base64LoginResponse(requestInfo: any = {}, entity: any, user: any
       });
     }
 
-    // SAML response must be signed sign message first, then encrypt
-    let simpleSignature: string = '';
-    // like in post and redirect bindings, login response is always signed.
-    simpleSignature = buildSimpleSignature({
-        type: urlParams.samlResponse,
-        context: rawSamlResponse,
-        entitySetting: idpSetting,
-        relayState: relayState,
-    } );
+    // Login response is always signed in the simple-sign binding.
+    const simpleSignature = buildSimpleSignature({
+      type: urlParams.samlResponse,
+      context: rawSamlResponse,
+      entitySetting: idpSetting,
+      relayState,
+    });
 
     return Promise.resolve({
       id,
       context: utility.base64Encode(rawSamlResponse),
       signature: simpleSignature,
-      sigAlg: idpSetting.requestSignatureAlgorithm,
+      sigAlg: idpSetting.requestSignatureAlgorithm!,
     });
-
   }
   throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_RESPONSE_MISSING_METADATA');
 }
 
 const simpleSignBinding = {
-    base64LoginRequest,
-    base64LoginResponse,
-  };
+  base64LoginRequest,
+  base64LoginResponse,
+};
 
 export default simpleSignBinding;
