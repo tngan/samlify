@@ -18,13 +18,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "yarn audit;make rebuild",
+    "clean": "rm -rf build types",
+    "build": "yarn audit && rm -rf build && tsc",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "pretest": "make pretest",
+    "pretest": "mkdir -p build/test && cp -a test/key test/misc build/test",
     "test": "NODE_ENV=test vitest run",
     "test:watch": "NODE_ENV=test vitest",
     "coverage": "vitest run --coverage",
