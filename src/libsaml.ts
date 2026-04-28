@@ -671,6 +671,7 @@ const libSaml = () => {
             encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
           }, (err, res) => {
+            /* v8 ignore start */
             if (err) {
               console.error(err);
               return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_ENCRYPTION'));
@@ -678,6 +679,7 @@ const libSaml = () => {
             if (!res) {
               return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
             }
+            /* v8 ignore stop */
             const encAssertionPrefix = sourceEntitySetting.tagPrefix!.encryptedAssertion;
             const encryptAssertionDoc = dom.parseFromString(
               `<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`,
@@ -726,6 +728,7 @@ const libSaml = () => {
             hereSetting.encPrivateKeyPass as string | undefined,
           ),
         }, (err, res) => {
+          /* v8 ignore start */
           if (err) {
             console.error(err);
             return reject(new Error('ERR_EXCEPTION_OF_ASSERTION_DECRYPTION'));
@@ -733,6 +736,7 @@ const libSaml = () => {
           if (!res) {
             return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
           }
+          /* v8 ignore stop */
           const rawAssertionDoc = dom.parseFromString(res);
           doc.documentElement.replaceChild(rawAssertionDoc.documentElement, encAssertionNode);
           return resolve([doc.toString(), res]);

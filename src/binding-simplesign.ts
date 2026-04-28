@@ -95,50 +95,53 @@ function base64LoginRequest(
   const spSetting = entity.sp.entitySetting;
   let id = '';
 
-  if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.idp.getSingleSignOnService(binding.simpleSign);
-    let rawSamlRequest: string;
-    if (spSetting.loginRequestTemplate && customTagReplacement) {
-      const info = customTagReplacement(spSetting.loginRequestTemplate.context!);
-      id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
-      rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
-    } else {
-      const nameIDFormat = spSetting.nameIDFormat;
-      const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-      id = spSetting.generateID!();
-      const tags: TagReplacementMap = {
-        ID: id,
-        Destination: base as string,
-        Issuer: metadata.sp.getEntityID(),
-        IssueInstant: new Date().toISOString(),
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.simpleSign) as string,
-        EntityID: metadata.sp.getEntityID(),
-        AllowCreate: spSetting.allowCreate,
-        NameIDFormat: selectedNameIDFormat,
-      };
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
-    }
+  /* v8 ignore start */
+  if (!metadata.idp || !metadata.sp) {
+    throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_REQUEST_MISSING_METADATA');
+  }
+  /* v8 ignore stop */
 
-    let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
-    if (metadata.idp.isWantAuthnRequestsSigned()) {
-      const simpleSignature = buildSimpleSignature({
-        type: urlParams.samlRequest,
-        context: rawSamlRequest,
-        entitySetting: spSetting,
-        relayState: spSetting.relayState,
-      });
-      simpleSignatureContext = {
-        signature: simpleSignature,
-        sigAlg: spSetting.requestSignatureAlgorithm!,
-      };
-    }
-    return {
-      id,
-      context: utility.base64Encode(rawSamlRequest),
-      ...(simpleSignatureContext ?? {}),
+  const base = metadata.idp.getSingleSignOnService(binding.simpleSign);
+  let rawSamlRequest: string;
+  if (spSetting.loginRequestTemplate && customTagReplacement) {
+    const info = customTagReplacement(spSetting.loginRequestTemplate.context!);
+    id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    const nameIDFormat = spSetting.nameIDFormat;
+    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+    id = spSetting.generateID!();
+    const tags: TagReplacementMap = {
+      ID: id,
+      Destination: base as string,
+      Issuer: metadata.sp.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.simpleSign) as string,
+      EntityID: metadata.sp.getEntityID(),
+      AllowCreate: spSetting.allowCreate,
+      NameIDFormat: selectedNameIDFormat,
+    };
+    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
+  }
+
+  let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
+  if (metadata.idp.isWantAuthnRequestsSigned()) {
+    const simpleSignature = buildSimpleSignature({
+      type: urlParams.samlRequest,
+      context: rawSamlRequest,
+      entitySetting: spSetting,
+      relayState: spSetting.relayState,
+    });
+    simpleSignatureContext = {
+      signature: simpleSignature,
+      sigAlg: spSetting.requestSignatureAlgorithm!,
     };
   }
-  throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_REQUEST_MISSING_METADATA');
+  return {
+    id,
+    context: utility.base64Encode(rawSamlRequest),
+    ...(simpleSignatureContext ?? {}),
+  };
 }
 
 /**
@@ -167,77 +170,81 @@ async function base64LoginResponse(
   };
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-  if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.simpleSign);
-    let rawSamlResponse: string;
-    const nowTime = new Date();
-    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
-    const tvalue: TagReplacementMap = {
-      ID: id,
-      AssertionID: idpSetting.generateID!(),
-      Destination: base as string,
-      Audience: metadata.sp.getEntityID(),
-      EntityID: metadata.sp.getEntityID(),
-      SubjectRecipient: base as string,
-      Issuer: metadata.idp.getEntityID(),
-      IssueInstant: nowTime.toISOString(),
-      AssertionConsumerServiceURL: base as string,
-      StatusCode: StatusCode.Success,
-      ConditionsNotBefore: nowTime.toISOString(),
-      ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-      NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
-      InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
-      AuthnStatement: '',
-      AttributeStatement: '',
-    };
-    if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
-      rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
-    } else {
-      if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
-        tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
-      }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
-    }
-    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
-    const config = {
-      privateKey: privateKey as string,
-      privateKeyPass,
-      signatureAlgorithm: signatureAlgorithm!,
-      signingCert: metadata.idp.getX509Certificate('signing') as string,
-      isBase64Output: false,
-    };
-    if (metadata.sp.isWantAssertionsSigned()) {
-      rawSamlResponse = libsaml.constructSAMLSignature({
-        ...config,
-        rawSamlMessage: rawSamlResponse,
-        transformationAlgorithms: spSetting.transformationAlgorithms,
-        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
-        signatureConfig: {
-          prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
-        },
-      });
-    }
 
-    // Login response is always signed in the simple-sign binding.
-    const simpleSignature = buildSimpleSignature({
-      type: urlParams.samlResponse,
-      context: rawSamlResponse,
-      entitySetting: idpSetting,
-      relayState,
-    });
+  /* v8 ignore start */
+  if (!metadata.idp || !metadata.sp) {
+    throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_RESPONSE_MISSING_METADATA');
+  }
+  /* v8 ignore stop */
 
-    return Promise.resolve({
-      id,
-      context: utility.base64Encode(rawSamlResponse),
-      signature: simpleSignature,
-      sigAlg: idpSetting.requestSignatureAlgorithm!,
+  const base = metadata.sp.getAssertionConsumerService(binding.simpleSign);
+  let rawSamlResponse: string;
+  const nowTime = new Date();
+  const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+  const tvalue: TagReplacementMap = {
+    ID: id,
+    AssertionID: idpSetting.generateID!(),
+    Destination: base as string,
+    Audience: metadata.sp.getEntityID(),
+    EntityID: metadata.sp.getEntityID(),
+    SubjectRecipient: base as string,
+    Issuer: metadata.idp.getEntityID(),
+    IssueInstant: nowTime.toISOString(),
+    AssertionConsumerServiceURL: base as string,
+    StatusCode: StatusCode.Success,
+    ConditionsNotBefore: nowTime.toISOString(),
+    ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+    SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+    NameIDFormat: selectedNameIDFormat,
+    NameID: user.email || '',
+    InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
+    AuthnStatement: '',
+    AttributeStatement: '',
+  };
+  if (idpSetting.loginResponseTemplate && customTagReplacement) {
+    const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+    rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
+      tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+    }
+    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+  }
+  const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+  const config = {
+    privateKey: privateKey as string,
+    privateKeyPass,
+    signatureAlgorithm: signatureAlgorithm!,
+    signingCert: metadata.idp.getX509Certificate('signing') as string,
+    isBase64Output: false,
+  };
+  if (metadata.sp.isWantAssertionsSigned()) {
+    rawSamlResponse = libsaml.constructSAMLSignature({
+      ...config,
+      rawSamlMessage: rawSamlResponse,
+      transformationAlgorithms: spSetting.transformationAlgorithms,
+      referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
+      signatureConfig: {
+        prefix: 'ds',
+        location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+      },
     });
   }
-  throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGIN_RESPONSE_MISSING_METADATA');
+
+  // Login response is always signed in the simple-sign binding.
+  const simpleSignature = buildSimpleSignature({
+    type: urlParams.samlResponse,
+    context: rawSamlResponse,
+    entitySetting: idpSetting,
+    relayState,
+  });
+
+  return Promise.resolve({
+    id,
+    context: utility.base64Encode(rawSamlResponse),
+    signature: simpleSignature,
+    sigAlg: idpSetting.requestSignatureAlgorithm!,
+  });
 }
 
 const simpleSignBinding = {

@@ -329,6 +329,9 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       if (nodes.length === 1) {
         const fullPath = `string(${baseXPath}${attributeXPath})`;
         const strResult = select(fullPath, targetDoc);
+        // `string(...)` always evaluates to a string in XPath 1.0, but the
+        // type signature is wider — the alternative branches are defensive.
+        /* v8 ignore next 7 */
         attributeValue =
           typeof strResult === 'string'
             ? strResult
@@ -347,6 +350,7 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       return result;
     }
 
+    /* v8 ignore next */
     return result;
   }, {} as ExtractorResult);
 }

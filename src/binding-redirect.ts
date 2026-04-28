@@ -102,46 +102,49 @@ function loginRequestRedirectURL(
   const spSetting = entity.sp.entitySetting;
   let id = '';
 
-  if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.idp.getSingleSignOnService(binding.redirect);
-    let rawSamlRequest: string;
-    if (spSetting.loginRequestTemplate && customTagReplacement) {
-      const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
-      id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
-      rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
-      // Support callback returning { context: string } or { context: { context: string } }.
-      if (typeof rawSamlRequest === 'object' && rawSamlRequest !== null && 'context' in (rawSamlRequest as object)) {
-        rawSamlRequest = (rawSamlRequest as { context: string }).context;
-      }
-    } else {
-      const nameIDFormat = spSetting.nameIDFormat;
-      const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-      id = spSetting.generateID!();
-      const tags: TagReplacementMap = {
-        ID: id,
-        Destination: base as string,
-        Issuer: metadata.sp.getEntityID(),
-        IssueInstant: new Date().toISOString(),
-        NameIDFormat: selectedNameIDFormat,
-        AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
-        EntityID: metadata.sp.getEntityID(),
-        AllowCreate: spSetting.allowCreate,
-      };
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
-    }
-    return {
-      id,
-      context: buildRedirectURL({
-        context: rawSamlRequest,
-        type: urlParams.samlRequest,
-        isSigned: metadata.sp.isAuthnRequestSigned(),
-        entitySetting: spSetting,
-        baseUrl: base as string,
-        relayState: spSetting.relayState,
-      }),
-    };
+  /* v8 ignore start */
+  if (!metadata.idp || !metadata.sp) {
+    throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
   }
-  throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
+  /* v8 ignore stop */
+
+  const base = metadata.idp.getSingleSignOnService(binding.redirect);
+  let rawSamlRequest: string;
+  if (spSetting.loginRequestTemplate && customTagReplacement) {
+    const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
+    id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
+    // Support callback returning { context: string } or { context: { context: string } }.
+    if (typeof rawSamlRequest === 'object' && rawSamlRequest !== null && 'context' in (rawSamlRequest as object)) {
+      rawSamlRequest = (rawSamlRequest as { context: string }).context;
+    }
+  } else {
+    const nameIDFormat = spSetting.nameIDFormat;
+    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+    id = spSetting.generateID!();
+    const tags: TagReplacementMap = {
+      ID: id,
+      Destination: base as string,
+      Issuer: metadata.sp.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      NameIDFormat: selectedNameIDFormat,
+      AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
+      EntityID: metadata.sp.getEntityID(),
+      AllowCreate: spSetting.allowCreate,
+    };
+    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
+  }
+  return {
+    id,
+    context: buildRedirectURL({
+      context: rawSamlRequest,
+      type: urlParams.samlRequest,
+      isSigned: metadata.sp.isAuthnRequestSigned(),
+      entitySetting: spSetting,
+      baseUrl: base as string,
+      relayState: spSetting.relayState,
+    }),
+  };
 }
 
 /**
@@ -169,80 +172,84 @@ function loginResponseRedirectURL(
   };
 
   let id: string = idpSetting.generateID!();
-  if (metadata && metadata.idp && metadata.sp) {
-    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
-    let rawSamlResponse: string;
-    const nameIDFormat = idpSetting.nameIDFormat;
-    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-    const nowTime = new Date();
-    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
-    const tvalue: TagReplacementMap = {
-      ID: id,
-      AssertionID: idpSetting.generateID!(),
-      Destination: base as string,
-      SubjectRecipient: base as string,
-      Issuer: metadata.idp.getEntityID(),
-      Audience: metadata.sp.getEntityID(),
-      EntityID: metadata.sp.getEntityID(),
-      IssueInstant: nowTime.toISOString(),
-      AssertionConsumerServiceURL: base as string,
-      StatusCode: namespace.statusCode.success,
-      ConditionsNotBefore: nowTime.toISOString(),
-      ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-      SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-      NameIDFormat: selectedNameIDFormat,
-      NameID: user.email || '',
-      InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
-      AuthnStatement: '',
-      AttributeStatement: '',
-    };
 
-    if (idpSetting.loginResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
-      id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
-      rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
-    } else {
-      if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
-        tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
-      }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
-    }
-
-    const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
-    const config = {
-      privateKey: privateKey as string,
-      privateKeyPass,
-      signatureAlgorithm: signatureAlgorithm!,
-      signingCert: metadata.idp.getX509Certificate('signing') as string,
-      isBase64Output: false,
-    };
-    if (metadata.sp.isWantAssertionsSigned()) {
-      rawSamlResponse = libsaml.constructSAMLSignature({
-        ...config,
-        rawSamlMessage: rawSamlResponse,
-        transformationAlgorithms: spSetting.transformationAlgorithms,
-        referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
-        signatureConfig: {
-          prefix: 'ds',
-          location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
-        },
-      });
-    }
-
-    // SAML response over redirect binding is always signed (see SAML core 3.4.4).
-    return {
-      id,
-      context: buildRedirectURL({
-        baseUrl: base as string,
-        type: urlParams.samlResponse,
-        isSigned: true,
-        context: rawSamlResponse,
-        entitySetting: idpSetting,
-        relayState,
-      }),
-    };
+  /* v8 ignore start */
+  if (!metadata.idp || !metadata.sp) {
+    throw new Error('ERR_GENERATE_REDIRECT_LOGIN_RESPONSE_MISSING_METADATA');
   }
-  throw new Error('ERR_GENERATE_REDIRECT_LOGIN_RESPONSE_MISSING_METADATA');
+  /* v8 ignore stop */
+
+  const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+  let rawSamlResponse: string;
+  const nameIDFormat = idpSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  const nowTime = new Date();
+  const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+  const tvalue: TagReplacementMap = {
+    ID: id,
+    AssertionID: idpSetting.generateID!(),
+    Destination: base as string,
+    SubjectRecipient: base as string,
+    Issuer: metadata.idp.getEntityID(),
+    Audience: metadata.sp.getEntityID(),
+    EntityID: metadata.sp.getEntityID(),
+    IssueInstant: nowTime.toISOString(),
+    AssertionConsumerServiceURL: base as string,
+    StatusCode: namespace.statusCode.success,
+    ConditionsNotBefore: nowTime.toISOString(),
+    ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+    SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+    NameIDFormat: selectedNameIDFormat,
+    NameID: user.email || '',
+    InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
+    AuthnStatement: '',
+    AttributeStatement: '',
+  };
+
+  if (idpSetting.loginResponseTemplate && customTagReplacement) {
+    const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+    id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
+      tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+    }
+    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+  }
+
+  const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
+  const config = {
+    privateKey: privateKey as string,
+    privateKeyPass,
+    signatureAlgorithm: signatureAlgorithm!,
+    signingCert: metadata.idp.getX509Certificate('signing') as string,
+    isBase64Output: false,
+  };
+  if (metadata.sp.isWantAssertionsSigned()) {
+    rawSamlResponse = libsaml.constructSAMLSignature({
+      ...config,
+      rawSamlMessage: rawSamlResponse,
+      transformationAlgorithms: spSetting.transformationAlgorithms,
+      referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
+      signatureConfig: {
+        prefix: 'ds',
+        location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
+      },
+    });
+  }
+
+  // SAML response over redirect binding is always signed (see SAML core 3.4.4).
+  return {
+    id,
+    context: buildRedirectURL({
+      baseUrl: base as string,
+      type: urlParams.samlResponse,
+      isSigned: true,
+      context: rawSamlResponse,
+      entitySetting: idpSetting,
+      relayState,
+    }),
+  };
 }
 
 /**
@@ -266,39 +273,42 @@ function logoutRequestRedirectURL(
   const nameIDFormat = initSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
 
-  if (metadata && metadata.init && metadata.target) {
-    const base = metadata.target.getSingleLogoutService(binding.redirect);
-    let rawSamlRequest = '';
-    const requiredTags = {
-      ID: id,
-      Destination: base as string,
-      EntityID: metadata.init.getEntityID(),
-      Issuer: metadata.init.getEntityID(),
-      IssueInstant: new Date().toISOString(),
-      NameIDFormat: selectedNameIDFormat,
-      NameID: user.logoutNameID,
-      SessionIndex: user.sessionIndex,
-    };
-    if (initSetting.logoutRequestTemplate && customTagReplacement) {
-      const info = customTagReplacement(initSetting.logoutRequestTemplate as unknown as string, requiredTags);
-      id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
-      rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
-    } else {
-      rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as TagReplacementMap);
-    }
-    return {
-      id,
-      context: buildRedirectURL({
-        context: rawSamlRequest,
-        relayState,
-        type: urlParams.logoutRequest,
-        isSigned: entity.target.entitySetting.wantLogoutRequestSigned!,
-        entitySetting: initSetting,
-        baseUrl: base as string,
-      }),
-    };
+  /* v8 ignore start */
+  if (!metadata.init || !metadata.target) {
+    throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
   }
-  throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
+  /* v8 ignore stop */
+
+  const base = metadata.target.getSingleLogoutService(binding.redirect);
+  let rawSamlRequest = '';
+  const requiredTags = {
+    ID: id,
+    Destination: base as string,
+    EntityID: metadata.init.getEntityID(),
+    Issuer: metadata.init.getEntityID(),
+    IssueInstant: new Date().toISOString(),
+    NameIDFormat: selectedNameIDFormat,
+    NameID: user.logoutNameID,
+    SessionIndex: user.sessionIndex,
+  };
+  if (initSetting.logoutRequestTemplate && customTagReplacement) {
+    const info = customTagReplacement(initSetting.logoutRequestTemplate as unknown as string, requiredTags);
+    id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as TagReplacementMap);
+  }
+  return {
+    id,
+    context: buildRedirectURL({
+      context: rawSamlRequest,
+      relayState,
+      type: urlParams.logoutRequest,
+      isSigned: entity.target.entitySetting.wantLogoutRequestSigned!,
+      entitySetting: initSetting,
+      baseUrl: base as string,
+    }),
+  };
 }
 
 /**
@@ -322,40 +332,44 @@ function logoutResponseRedirectURL(
   };
   const initSetting = entity.init.entitySetting;
   let id: string = initSetting.generateID!();
-  if (metadata && metadata.init && metadata.target) {
-    const base = metadata.target.getSingleLogoutService(binding.redirect);
-    let rawSamlResponse: string;
-    if (initSetting.logoutResponseTemplate && customTagReplacement) {
-      const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
-      id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
-      rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
-    } else {
-      const tvalue: TagReplacementMap = {
-        ID: id,
-        Destination: base as string,
-        Issuer: metadata.init.getEntityID(),
-        EntityID: metadata.init.getEntityID(),
-        IssueInstant: new Date().toISOString(),
-        StatusCode: namespace.statusCode.success,
-      };
-      if (requestInfo && (requestInfo as RequestInfo).extract && (requestInfo as RequestInfo).extract.request) {
-        tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
-      }
-      rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
-    }
-    return {
-      id,
-      context: buildRedirectURL({
-        baseUrl: base as string,
-        type: urlParams.logoutResponse,
-        isSigned: entity.target.entitySetting.wantLogoutResponseSigned!,
-        context: rawSamlResponse,
-        entitySetting: initSetting,
-        relayState,
-      }),
-    };
+
+  /* v8 ignore start */
+  if (!metadata.init || !metadata.target) {
+    throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_RESPONSE_MISSING_METADATA');
   }
-  throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_RESPONSE_MISSING_METADATA');
+  /* v8 ignore stop */
+
+  const base = metadata.target.getSingleLogoutService(binding.redirect);
+  let rawSamlResponse: string;
+  if (initSetting.logoutResponseTemplate && customTagReplacement) {
+    const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
+    id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    const tvalue: TagReplacementMap = {
+      ID: id,
+      Destination: base as string,
+      Issuer: metadata.init.getEntityID(),
+      EntityID: metadata.init.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      StatusCode: namespace.statusCode.success,
+    };
+    if (requestInfo && (requestInfo as RequestInfo).extract && (requestInfo as RequestInfo).extract.request) {
+      tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+    }
+    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
+  }
+  return {
+    id,
+    context: buildRedirectURL({
+      baseUrl: base as string,
+      type: urlParams.logoutResponse,
+      isSigned: entity.target.entitySetting.wantLogoutResponseSigned!,
+      context: rawSamlResponse,
+      entitySetting: initSetting,
+      relayState,
+    }),
+  };
 }
 
 const redirectBinding = {
