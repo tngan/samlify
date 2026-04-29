@@ -76,31 +76,45 @@ Signature verification performed inside `sp.parseLoginResponse`:
 - XML signature
 - Issuer name
 
-The promise resolves to a `parseResult` object:
+The promise resolves to a `parseResult` object. The `extract` member is
+keyed by the field names declared in `src/extractor.ts:loginResponseFields`,
+and inner attribute keys are camelCased (so `NotBefore` becomes `notBefore`).
 
 ```javascript
 {
   samlContent: "<samlp:Response ...",
   extract: {
+    response: {
+      id: "_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6",
+      issueInstant: "2015-10-26T11:41:43.500Z",
+      destination: "https://sp.example.org/sso/acs",
+      inResponseTo: "_4fee3b046395c4e751011e97f8900b5273d56685"
+    },
+    issuer: "https://idp.example.org/sso/metadata",
+    nameID: "user@esaml2.com",
     audience: "https://sp.example.org/sso/metadata",
-    attribute: {
+    conditions: {
+      notBefore: "2015-10-26T11:41:43.500Z",
+      notOnOrAfter: "2015-10-26T11:46:43.500Z"
+    },
+    sessionIndex: {
+      authnInstant: "2015-10-26T11:41:43.500Z",
+      sessionNotOnOrAfter: "2015-10-26T19:41:43.500Z",
+      sessionIndex: "_be9967abd904ddcae3c0eb4189adbe3f71e327cf93"
+    },
+    attributes: {
       email: "user@esaml2.com",
       lastName: "Samuel",
       firstName: "E"
-    },
-    conditions: {
-      notbefore: "2015-10-26T11:41:43.500Z",
-      notonorafter: "2015-10-26T11:46:43.500Z"
-    },
-    issuer: ['https://sp.example.org/sso/metadata'],
-    nameID: "user@esaml2.com",
-    signature: "<Signature ... </Signature>",
-    statuscode: {
-      value: "urn:oasis:names:tc:SAML:2.0:status:Success"
     }
   }
 }
 ```
+
+Status code validation runs inside `parseLoginResponse`. A non-success
+top-level code rejects the promise with
+`ERR_FAILED_STATUS with top tier code: ..., second tier code: ...`,
+so the status code is not surfaced on the resolved `extract` object.
 
 samlify performs baseline validation and leaves application-specific checks (time conditions, status codes, etc.) to the caller. See the [Advanced](/advanced) tutorial for more detail. The full set of SAML status codes is:
 
