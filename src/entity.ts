@@ -12,6 +12,7 @@ import IdpMetadata, { IdpMetadata as IdpMetadataConstructor } from './metadata-i
 import SpMetadata, { SpMetadata as SpMetadataConstructor } from './metadata-sp';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
+import simpleSignBinding from './binding-simplesign';
 import type {
   MetadataIdpConstructor,
   MetadataSpConstructor,
@@ -143,10 +144,11 @@ export default class Entity {
 
   /**
    * Build a logout request targeting `targetEntity`. The return type depends
-   * on the binding (redirect ⇒ URL; post ⇒ post-binding envelope).
+   * on the binding: `redirect` produces a URL; `post` and `simpleSign`
+   * produce a base64 envelope (the latter with a detached signature).
    *
    * @param targetEntity peer to receive the logout request
-   * @param binding `redirect` or `post`
+   * @param binding `redirect`, `post`, or `simpleSign`
    * @param user currently authenticated user
    * @param relayState caller-supplied redirect URL returned in the response
    * @param customTagReplacement optional custom template transformer
@@ -157,7 +159,7 @@ export default class Entity {
     user: SAMLUser,
     relayState = '',
     customTagReplacement?: (template: string) => BindingContext,
-  ): BindingContext | PostBindingContext {
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
@@ -174,6 +176,21 @@ export default class Entity {
         type: 'SAMLRequest',
       };
     }
+    if (binding === wording.binding.simpleSign) {
+      const entityEndpoint = targetEntity.entityMeta.getSingleLogoutService(binding) as string;
+      const context = simpleSignBinding.base64LogoutRequest(
+        user,
+        { init: this, target: targetEntity },
+        relayState,
+        customTagReplacement,
+      );
+      return {
+        ...context,
+        relayState,
+        entityEndpoint,
+        type: 'SAMLRequest',
+      };
+    }
     // Artifact binding is not yet implemented.
     throw new Error('ERR_UNDEFINED_BINDING');
   }
@@ -183,7 +200,7 @@ export default class Entity {
    *
    * @param target peer that sent the corresponding logout request
    * @param requestInfo parsed request used to link `InResponseTo`
-   * @param binding `redirect` or `post`
+   * @param binding `redirect`, `post`, or `simpleSign`
    * @param relayState caller-supplied redirect URL
    * @param customTagReplacement optional custom template transformer
    */
@@ -193,7 +210,7 @@ export default class Entity {
     binding: string,
     relayState = '',
     customTagReplacement?: (template: string) => BindingContext,
-  ): BindingContext | PostBindingContext {
+  ): BindingContext | PostBindingContext | SimpleSignBindingContext {
     const protocol = namespace.binding[binding];
     if (protocol === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {
@@ -206,6 +223,20 @@ export default class Entity {
         init: this,
         target,
       }, customTagReplacement);
+      return {
+        ...context,
+        relayState,
+        entityEndpoint: target.entityMeta.getSingleLogoutService(binding) as string,
+        type: 'SAMLResponse',
+      };
+    }
+    if (protocol === namespace.binding.simpleSign) {
+      const context = simpleSignBinding.base64LogoutResponse(
+        requestInfo,
+        { init: this, target },
+        relayState,
+        customTagReplacement,
+      );
       return {
         ...context,
         relayState,

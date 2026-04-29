@@ -516,6 +516,77 @@ describe('Binding logout flows', () => {
     expect(result.id).toBe('_custom-resp');
   });
 
+  test('createLogoutRequest — simpleSign binding produces a base64 envelope (#584)', () => {
+    const result = idp.createLogoutRequest(sp, 'simpleSign', { logoutNameID: 'user@example.com' });
+    expect(result.id).toMatch(/^_/);
+    expect((result as { type?: string }).type).toBe('SAMLRequest');
+    expect((result as { context: string }).context.length).toBeGreaterThan(0);
+  });
+
+  test('createLogoutRequest — simpleSign binding includes signature when target wants signed logout requests', () => {
+    const idpSigned = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const spWantSigned = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+      wantLogoutRequestSigned: true,
+    });
+    const result = idpSigned.createLogoutRequest(spWantSigned, 'simpleSign', { logoutNameID: 'user@example.com' }, 'state');
+    expect((result as { signature?: unknown }).signature).toBeDefined();
+    expect((result as { sigAlg?: string }).sigAlg).toContain('xmldsig');
+  });
+
+  test('createLogoutResponse — simpleSign binding produces a base64 envelope (#584)', () => {
+    const requestInfo = { extract: { request: { id: '_abc' } } } as any;
+    const result = idp.createLogoutResponse(sp, requestInfo, 'simpleSign', 'state');
+    expect((result as { type?: string }).type).toBe('SAMLResponse');
+  });
+
+  test('createLogoutRequest — simpleSign with a custom logoutRequestTemplate', () => {
+    const idpCustom = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+      logoutRequestTemplate: { context: '<LogoutRequest>{NameID}</LogoutRequest>' },
+    });
+    const cb = (template: string) => ({ id: '_custom-ss-logout', context: template });
+    const result = idpCustom.createLogoutRequest(sp, 'simpleSign', { logoutNameID: 'u@x' }, '', cb as any);
+    expect(result.id).toBe('_custom-ss-logout');
+  });
+
+  test('createLogoutResponse — simpleSign with a custom logoutResponseTemplate', () => {
+    const idpCustom = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+      logoutResponseTemplate: { context: '<LogoutResponse/>' },
+    });
+    const cb = (template: string) => ({ id: '_custom-ss-resp', context: template });
+    const result = idpCustom.createLogoutResponse(sp, { extract: { request: { id: '_a' } } } as any, 'simpleSign', '', cb as any);
+    expect(result.id).toBe('_custom-ss-resp');
+  });
+
+  test('createLogoutResponse — simpleSign signs when target wants signed logout responses', () => {
+    const idpSigned = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const spWantSigned = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+      wantLogoutResponseSigned: true,
+    });
+    const requestInfo = { extract: { request: { id: '_abc' } } } as any;
+    const result = idpSigned.createLogoutResponse(spWantSigned, requestInfo, 'simpleSign', 'state');
+    expect((result as { signature?: unknown }).signature).toBeDefined();
+  });
+
   test('createLogoutResponse — redirect with a custom logoutResponseTemplate', () => {
     const idpCustom = identityProvider({
       privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
