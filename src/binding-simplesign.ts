@@ -15,6 +15,7 @@ import type {
 } from './types';
 import type { IdentityProvider as Idp } from './entity-idp';
 import type { ServiceProvider as Sp } from './entity-sp';
+import type Entity from './entity';
 import libsaml from './libsaml';
 import utility, { get } from './utility';
 
@@ -45,6 +46,12 @@ export interface BindingSimpleSignContext {
 interface SimpleSignIdpSpPair {
   idp: Idp;
   sp: Sp;
+}
+
+/** `{ init, target }` handle used by simple-sign logout builders. */
+interface SimpleSignInitTargetPair {
+  init: Entity;
+  target: Entity;
 }
 
 /**
@@ -247,9 +254,141 @@ async function base64LoginResponse(
   });
 }
 
+/**
+ * Generate a base64-encoded LogoutRequest together with a detached simple
+ * signature when the receiving entity requires signed logout requests.
+ *
+ * @param user currently authenticated user
+ * @param entity `{ init, target }` handles
+ * @param relayState caller-supplied redirect URL
+ * @param customTagReplacement optional custom template transformer
+ */
+function base64LogoutRequest(
+  user: SAMLUser,
+  entity: SimpleSignInitTargetPair,
+  relayState?: string,
+  customTagReplacement?: (template: string) => BindingContext,
+): SimpleSignComputedContext {
+  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const initSetting = entity.init.entitySetting;
+  const nameIDFormat = initSetting.nameIDFormat;
+  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+  let id = '';
+
+  /* v8 ignore start */
+  if (!metadata.init || !metadata.target) {
+    throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGOUT_REQUEST_MISSING_METADATA');
+  }
+  /* v8 ignore stop */
+
+  let rawSamlRequest: string;
+  if (initSetting.logoutRequestTemplate && customTagReplacement) {
+    const template = customTagReplacement(initSetting.logoutRequestTemplate.context!);
+    id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
+    rawSamlRequest = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
+  } else {
+    id = initSetting.generateID!();
+    const tvalue: TagReplacementMap = {
+      ID: id,
+      Destination: metadata.target.getSingleLogoutService(binding.simpleSign) as string,
+      Issuer: metadata.init.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      EntityID: metadata.init.getEntityID(),
+      NameIDFormat: selectedNameIDFormat,
+      NameID: user.logoutNameID,
+    };
+    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
+  }
+
+  let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
+  if (entity.target.entitySetting.wantLogoutRequestSigned) {
+    const simpleSignature = buildSimpleSignature({
+      type: urlParams.logoutRequest,
+      context: rawSamlRequest,
+      entitySetting: initSetting,
+      relayState,
+    });
+    simpleSignatureContext = {
+      signature: simpleSignature,
+      sigAlg: initSetting.requestSignatureAlgorithm!,
+    };
+  }
+  return {
+    id,
+    context: utility.base64Encode(rawSamlRequest),
+    ...(simpleSignatureContext ?? {}),
+  };
+}
+
+/**
+ * Generate a base64-encoded LogoutResponse together with a detached simple
+ * signature when the receiving entity requires signed logout responses.
+ *
+ * @param requestInfo parsed request used to link `InResponseTo`
+ * @param entity `{ init, target }` handles
+ * @param relayState caller-supplied redirect URL
+ * @param customTagReplacement optional custom template transformer
+ */
+function base64LogoutResponse(
+  requestInfo: RequestInfo,
+  entity: SimpleSignInitTargetPair,
+  relayState?: string,
+  customTagReplacement?: (template: string) => BindingContext,
+): SimpleSignComputedContext {
+  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
+  const initSetting = entity.init.entitySetting;
+  let id = '';
+
+  /* v8 ignore start */
+  if (!metadata.init || !metadata.target) {
+    throw new Error('ERR_GENERATE_POST_SIMPLESIGN_LOGOUT_RESPONSE_MISSING_METADATA');
+  }
+  /* v8 ignore stop */
+
+  let rawSamlResponse: string;
+  if (initSetting.logoutResponseTemplate && customTagReplacement) {
+    const template = customTagReplacement(initSetting.logoutResponseTemplate.context!);
+    id = template.id;
+    rawSamlResponse = template.context;
+  } else {
+    id = initSetting.generateID!();
+    const tvalue: TagReplacementMap = {
+      ID: id,
+      Destination: metadata.target.getSingleLogoutService(binding.simpleSign) as string,
+      EntityID: metadata.init.getEntityID(),
+      Issuer: metadata.init.getEntityID(),
+      IssueInstant: new Date().toISOString(),
+      StatusCode: StatusCode.Success,
+      InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id') as string,
+    };
+    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
+  }
+
+  let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
+  if (entity.target.entitySetting.wantLogoutResponseSigned) {
+    const simpleSignature = buildSimpleSignature({
+      type: urlParams.logoutResponse,
+      context: rawSamlResponse,
+      entitySetting: initSetting,
+      relayState,
+    });
+    simpleSignatureContext = {
+      signature: simpleSignature,
+      sigAlg: initSetting.requestSignatureAlgorithm!,
+    };
+  }
+  return {
+    id,
+    context: utility.base64Encode(rawSamlResponse),
+    ...(simpleSignatureContext ?? {}),
+  };
+}
+
 const simpleSignBinding = {
   base64LoginRequest,
   base64LoginResponse,
+  base64LogoutRequest,
+  base64LogoutResponse,
 };
 
 export default simpleSignBinding;
