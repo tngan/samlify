@@ -1269,7 +1269,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }
@@ -1292,7 +1292,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }
@@ -1314,7 +1314,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }
