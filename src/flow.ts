@@ -95,7 +95,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
   const content = (query as Record<string, string | undefined>)[direction];
 
   if (content === undefined) {
-    return Promise.reject('ERR_REDIRECT_FLOW_BAD_ARGS');
+    return Promise.reject(new Error('ERR_REDIRECT_FLOW_BAD_ARGS'));
   }
 
   const xmlString = inflateString(decodeURIComponent(content));
@@ -103,7 +103,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
   try {
     await libsaml.isValidXml(xmlString);
   } catch {
-    return Promise.reject('ERR_INVALID_XML');
+    return Promise.reject(new Error('ERR_INVALID_XML'));
   }
 
   await checkStatus(xmlString, parserType as string);
@@ -132,7 +132,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
 
   if (checkSignature) {
     if (!signature || !sigAlg) {
-      return Promise.reject('ERR_MISSING_SIG_ALG');
+      return Promise.reject(new Error('ERR_MISSING_SIG_ALG'));
     }
 
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
@@ -146,7 +146,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     );
 
     if (!verified) {
-      return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+      return Promise.reject(new Error('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION'));
     }
 
     parseResult.sigAlg = decodeSigAlg;
@@ -160,7 +160,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
-    return Promise.reject('ERR_UNMATCH_ISSUER');
+    return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
   }
 
   // Session expiration — only enforced when SessionNotOnOrAfter is present.
@@ -173,7 +173,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_EXPIRED_SESSION');
+    return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
   // Assertion validity window. SAML core 2.4.1.2.
@@ -186,7 +186,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+    return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
   }
 
   return Promise.resolve(parseResult);
@@ -246,12 +246,12 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
       if (decryptedDocVerified) {
         extractorFields = getDefaultExtractorFields(parserType, verifiedDecryptedAssertion);
       } else {
-        return Promise.reject('FAILED_TO_VERIFY_SIGNATURE');
+        return Promise.reject(new Error('FAILED_TO_VERIFY_SIGNATURE'));
       }
     } else if (verified) {
       extractorFields = getDefaultExtractorFields(parserType, verifiedAssertionNode);
     } else {
-      return Promise.reject('FAILED_TO_VERIFY_SIGNATURE');
+      return Promise.reject(new Error('FAILED_TO_VERIFY_SIGNATURE'));
     }
   }
 
@@ -269,7 +269,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
-    return Promise.reject('ERR_UNMATCH_ISSUER');
+    return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
   }
 
   if (
@@ -281,7 +281,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_EXPIRED_SESSION');
+    return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
   if (
@@ -293,7 +293,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+    return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
   }
 
   return Promise.resolve(parseResult);
@@ -316,7 +316,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
   const signature: string = (body as Record<string, string>)['Signature'];
 
   if (encodedRequest === undefined) {
-    return Promise.reject('ERR_SIMPLESIGN_FLOW_BAD_ARGS');
+    return Promise.reject(new Error('ERR_SIMPLESIGN_FLOW_BAD_ARGS'));
   }
 
   const xmlString = String(base64Decode(encodedRequest));
@@ -324,7 +324,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
   try {
     await libsaml.isValidXml(xmlString);
   } catch {
-    return Promise.reject('ERR_INVALID_XML');
+    return Promise.reject(new Error('ERR_INVALID_XML'));
   }
 
   await checkStatus(xmlString, parserType as string);
@@ -353,7 +353,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
 
   if (checkSignature) {
     if (!signature || !sigAlg) {
-      return Promise.reject('ERR_MISSING_SIG_ALG');
+      return Promise.reject(new Error('ERR_MISSING_SIG_ALG'));
     }
 
     const base64Signature = Buffer.from(signature, 'base64');
@@ -366,7 +366,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     );
 
     if (!verified) {
-      return Promise.reject('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION');
+      return Promise.reject(new Error('ERR_FAILED_MESSAGE_SIGNATURE_VERIFICATION'));
     }
 
     parseResult.sigAlg = sigAlg;
@@ -380,7 +380,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
-    return Promise.reject('ERR_UNMATCH_ISSUER');
+    return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
   }
 
   if (
@@ -392,7 +392,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_EXPIRED_SESSION');
+    return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
   if (
@@ -404,7 +404,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
       self.entitySetting.clockDrifts,
     )
   ) {
-    return Promise.reject('ERR_SUBJECT_UNCONFIRMED');
+    return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
   }
 
   return Promise.resolve(parseResult);
@@ -468,5 +468,5 @@ export function flow(options: FlowOptions): Promise<FlowResult> {
     return postSimpleSignFlow(options);
   }
 
-  return Promise.reject('ERR_UNEXPECTED_FLOW');
+  return Promise.reject(new Error('ERR_UNEXPECTED_FLOW'));
 }

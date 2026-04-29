@@ -755,9 +755,9 @@ const libSaml = () => {
       const { validate } = getContext();
 
       if (!validate) {
-        return Promise.reject(
+        return Promise.reject(new Error(
           'Your application is potentially vulnerable because no validation function found. Please read the documentation on how to setup the validator. (https://github.com/tngan/samlify#installation)',
-        );
+        ));
       }
 
       return await validate(input);

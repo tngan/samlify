@@ -422,7 +422,21 @@ describe('flow — checkStatus and dispatch errors', () => {
       request: { query: {}, body: {} },
       self: {} as any,
       from: {} as any,
-    })).rejects.toBe('ERR_UNEXPECTED_FLOW');
+    })).rejects.toThrow('ERR_UNEXPECTED_FLOW');
+  });
+
+  test('flow rejects with an Error instance, not a raw string (#581)', async () => {
+    const { flow } = await import('../src/flow');
+    const err = await flow({
+      binding: 'artifact',
+      parserType: 'SAMLRequest',
+      type: 'login',
+      request: { query: {}, body: {} },
+      self: {} as any,
+      from: {} as any,
+    }).catch(e => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe('ERR_UNEXPECTED_FLOW');
   });
 });
 
@@ -632,7 +646,7 @@ describe('libsaml — encrypt/decrypt error paths', () => {
     const before = getContext().validate;
     getContext().validate = undefined;
     try {
-      await expect(libsaml.isValidXml('<x/>')).rejects.toContain('no validation function found');
+      await expect(libsaml.isValidXml('<x/>')).rejects.toThrow('no validation function found');
     } finally {
       getContext().validate = before;
     }
