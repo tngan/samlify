@@ -104,10 +104,14 @@ const idp = IdentityProvider({
 
 ### Signed message, unsigned assertion (with or without encryption)
 
-Starting from v2, two additional IdP options extend the signing scheme: `wantMessageSigned` and `signatureConfig`. `signatureConfig` accepts the same options as [xml-crypto](https://github.com/yaronn/xml-crypto#examples).
+Starting from v2, the **service provider** can opt into a signed
+top-level `<Response>` via `wantMessageSigned` together with
+`signatureConfig`. `signatureConfig` accepts the same options as
+[xml-crypto](https://github.com/yaronn/xml-crypto#examples). The IdP
+honours these SP-side preferences when it builds the response.
 
 ```javascript
-const idp = IdentityProvider({
+const sp = ServiceProvider({
   // ...
   wantMessageSigned: true,
   signatureConfig: {
@@ -117,6 +121,12 @@ const idp = IdentityProvider({
       action: 'after'
     }
   }
+});
+
+const idp = IdentityProvider({
+  // ...
+  // No additional flags required: the IdP signs the message because
+  // the SP requested it.
 });
 ```
 
