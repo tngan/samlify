@@ -93,10 +93,12 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig): string {
  *
  * @param entity `{ idp, sp }` handles
  * @param customTagReplacement optional custom template transformer
+ * @param relayState per-request RelayState; falls back to `entitySetting.relayState`
  */
 function base64LoginRequest(
   entity: SimpleSignIdpSpPair,
   customTagReplacement?: (template: string) => BindingContext,
+  relayState?: string,
 ): SimpleSignComputedContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -137,7 +139,7 @@ function base64LoginRequest(
       type: urlParams.samlRequest,
       context: rawSamlRequest,
       entitySetting: spSetting,
-      relayState: spSetting.relayState,
+      relayState: relayState ?? spSetting.relayState,
     });
     simpleSignatureContext = {
       signature: simpleSignature,

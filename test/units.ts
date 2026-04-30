@@ -832,3 +832,203 @@ describe('Metadata helpers', () => {
     expect(result).toEqual(['post', 'redirect']);
   });
 });
+
+describe('Per-request relayState (#163)', () => {
+  // saml-bindings §3.4.3 / §3.5.3: RelayState is request-scoped. The
+  // tests below pin the contract that callers can override the entity-
+  // level setting on a per-call basis, including under concurrency.
+
+  const idpDefault = identityProvider({
+    privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+    metadata: idpMetaXml,
+    relayState: 'idp-default-state',
+  });
+  const spDefault = serviceProvider({
+    privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    metadata: spMetaXml,
+    relayState: 'sp-default-state',
+  });
+
+  describe('createLoginRequest (#583, saml-bindings §3.4.3)', () => {
+    test('redirect: per-request relayState surfaces in the URL', () => {
+      const result = spDefault.createLoginRequest(idpDefault, 'redirect', {
+        relayState: 'per-request-deep-link',
+      });
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('per-request-deep-link')}`);
+    });
+
+    test('redirect: empty per-request relayState falls back to entity setting', () => {
+      const result = spDefault.createLoginRequest(idpDefault, 'redirect');
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('sp-default-state')}`);
+    });
+
+    test('redirect: per-request override beats entity setting', () => {
+      const result = spDefault.createLoginRequest(idpDefault, 'redirect', {
+        relayState: 'override',
+      });
+      expect(result.context).toContain('RelayState=override');
+      expect(result.context).not.toContain('sp-default-state');
+    });
+
+    test('redirect: backwards-compatible callback shape still works', () => {
+      const cb = (template: string) => ({ id: '_legacy', context: template });
+      const result = spDefault.createLoginRequest(idpDefault, 'redirect', cb);
+      expect(result.id).toBeDefined();
+    });
+
+    test('binding parameter omitted defaults to redirect', () => {
+      const result = spDefault.createLoginRequest(idpDefault);
+      expect(result.context).toContain('SAMLRequest=');
+    });
+
+    test('redirect: per-request relayState wins even when entity setting is unset', () => {
+      const spNoEntityState = serviceProvider({
+        privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+        privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+        metadata: spMetaXml,
+      });
+      const result = spNoEntityState.createLoginRequest(idpDefault, 'redirect', {
+        relayState: 'only-per-request',
+      });
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('only-per-request')}`);
+    });
+
+    test('post: per-request relayState surfaces in the binding context', () => {
+      const result = spDefault.createLoginRequest(idpDefault, 'post', {
+        relayState: 'post-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('post-state');
+    });
+
+    test('simpleSign: per-request relayState surfaces in the binding context', () => {
+      const result = spDefault.createLoginRequest(idpDefault, 'simpleSign', {
+        relayState: 'ss-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('ss-state');
+    });
+
+    test('concurrency: two interleaved calls produce different relayStates', () => {
+      const a = spDefault.createLoginRequest(idpDefault, 'redirect', { relayState: 'state-A' });
+      const b = spDefault.createLoginRequest(idpDefault, 'redirect', { relayState: 'state-B' });
+      expect(a.context).toContain('state-A');
+      expect(a.context).not.toContain('state-B');
+      expect(b.context).toContain('state-B');
+      expect(b.context).not.toContain('state-A');
+    });
+  });
+
+  describe('createLogoutRequest (saml-profiles §4.4)', () => {
+    test('options bag: per-request relayState surfaces on the result', () => {
+      const result = idpDefault.createLogoutRequest(spDefault, 'redirect', { logoutNameID: 'u@x' }, {
+        relayState: 'logout-deep-link',
+      });
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('logout-deep-link')}`);
+    });
+
+    test('legacy positional: string in 4th param still works', () => {
+      const result = idpDefault.createLogoutRequest(spDefault, 'redirect', { logoutNameID: 'u@x' }, 'legacy-state');
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('legacy-state')}`);
+    });
+
+    test('post binding: per-request relayState propagates', () => {
+      const result = idpDefault.createLogoutRequest(spDefault, 'post', { logoutNameID: 'u@x' }, {
+        relayState: 'post-logout-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('post-logout-state');
+    });
+
+    test('simpleSign binding: per-request relayState propagates', () => {
+      const result = idpDefault.createLogoutRequest(spDefault, 'simpleSign', { logoutNameID: 'u@x' }, {
+        relayState: 'ss-logout-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('ss-logout-state');
+    });
+
+    test('options bag: customTagReplacement co-exists with relayState', () => {
+      const cb = (template: string) => ({ id: '_custom-logout', context: template });
+      const idpWithTpl = identityProvider({
+        privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+        privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+        metadata: idpMetaXml,
+        logoutRequestTemplate: { context: '<LogoutRequest/>' },
+      });
+      const result = idpWithTpl.createLogoutRequest(spDefault, 'post', { logoutNameID: 'u@x' }, {
+        relayState: 'tagged-state',
+        customTagReplacement: cb,
+      });
+      expect(result.id).toBe('_custom-logout');
+      expect((result as { relayState?: string }).relayState).toBe('tagged-state');
+    });
+  });
+
+  describe('createLogoutResponse (saml-profiles §4.4)', () => {
+    const requestInfo = { extract: { request: { id: '_abc' } } } as any;
+
+    test('options bag: per-request relayState surfaces on the result', () => {
+      const result = idpDefault.createLogoutResponse(spDefault, requestInfo, 'redirect', {
+        relayState: 'resp-deep-link',
+      });
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('resp-deep-link')}`);
+    });
+
+    test('legacy positional: string in 4th param still works', () => {
+      const result = idpDefault.createLogoutResponse(spDefault, requestInfo, 'redirect', 'legacy-resp');
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('legacy-resp')}`);
+    });
+
+    test('post binding: per-request relayState propagates', () => {
+      const result = idpDefault.createLogoutResponse(spDefault, requestInfo, 'post', {
+        relayState: 'post-resp-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('post-resp-state');
+    });
+
+    test('simpleSign binding: per-request relayState propagates', () => {
+      const result = idpDefault.createLogoutResponse(spDefault, requestInfo, 'simpleSign', {
+        relayState: 'ss-resp-state',
+      });
+      expect((result as { relayState?: string }).relayState).toBe('ss-resp-state');
+    });
+  });
+
+  describe('createLoginResponse (saml-profiles §4.1.6)', () => {
+    test('options bag: relayState propagates through redirect binding', async () => {
+      const result = await idpDefault.createLoginResponse(
+        spDefault,
+        { extract: { request: { id: '_x' } } } as any,
+        'redirect',
+        { email: 'u@x' },
+        { relayState: 'resp-redirect' },
+      );
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('resp-redirect')}`);
+    });
+
+    test('options bag: relayState propagates through simpleSign binding', async () => {
+      const result = await idpDefault.createLoginResponse(
+        spDefault,
+        { extract: { request: { id: '_x' } } } as any,
+        'simpleSign',
+        { email: 'u@x' },
+        { relayState: 'resp-ss' },
+      );
+      expect((result as { relayState?: string }).relayState).toBe('resp-ss');
+    });
+
+    test('legacy positional shape still wires relayState through', async () => {
+      const cb = undefined;
+      const encryptThenSign = false;
+      const result = await idpDefault.createLoginResponse(
+        spDefault,
+        { extract: { request: { id: '_x' } } } as any,
+        'redirect',
+        { email: 'u@x' },
+        cb,
+        encryptThenSign,
+        'legacy-resp-state',
+      );
+      expect(result.context).toContain(`RelayState=${encodeURIComponent('legacy-resp-state')}`);
+    });
+  });
+});

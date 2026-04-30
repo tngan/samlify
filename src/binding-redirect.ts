@@ -92,11 +92,13 @@ function buildRedirectURL(opts: BuildRedirectConfig): string {
  *
  * @param entity `{ idp, sp }` handles
  * @param customTagReplacement optional custom template transformer
+ * @param relayState per-request RelayState; falls back to `entitySetting.relayState`
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function loginRequestRedirectURL(
   entity: { idp: Idp; sp: Sp },
   customTagReplacement?: (template: string) => BindingContext,
+  relayState?: string,
 ): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -142,7 +144,7 @@ function loginRequestRedirectURL(
       isSigned: metadata.sp.isAuthnRequestSigned(),
       entitySetting: spSetting,
       baseUrl: base as string,
-      relayState: spSetting.relayState,
+      relayState: relayState ?? spSetting.relayState,
     }),
   };
 }

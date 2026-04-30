@@ -25,7 +25,14 @@ import type {
   ParseResult,
   RequestInfo,
   SAMLUser,
+  CreateLogoutRequestOptions,
+  CreateLogoutResponseOptions,
+  CustomTagReplacement,
 } from './types';
+import {
+  normalizeCreateLogoutRequestOptions,
+  normalizeCreateLogoutResponseOptions,
+} from './options';
 import { flow } from './flow';
 
 export type {
@@ -147,19 +154,28 @@ export default class Entity {
    * on the binding: `redirect` produces a URL; `post` and `simpleSign`
    * produce a base64 envelope (the latter with a detached signature).
    *
+   * The fourth parameter accepts either a string (legacy `relayState`
+   * positional shape) or an options bag `{ relayState?, customTagReplacement? }`.
+   * Per `saml-bindings §3.4.3 / §3.5.3`, RelayState is request-scoped — pass
+   * it via the options bag instead of `entitySetting.relayState`.
+   *
    * @param targetEntity peer to receive the logout request
    * @param binding `redirect`, `post`, or `simpleSign`
    * @param user currently authenticated user
-   * @param relayState caller-supplied redirect URL returned in the response
-   * @param customTagReplacement optional custom template transformer
+   * @param optionsOrRelayState per-request options or legacy RelayState string
+   * @param legacyCustomTagReplacement optional custom template transformer (legacy positional form)
    */
   createLogoutRequest(
     targetEntity: Entity,
     binding: string,
     user: SAMLUser,
-    relayState = '',
-    customTagReplacement?: (template: string) => BindingContext,
+    optionsOrRelayState?: CreateLogoutRequestOptions | string,
+    legacyCustomTagReplacement?: CustomTagReplacement,
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
+    const opts = normalizeCreateLogoutRequestOptions(optionsOrRelayState, legacyCustomTagReplacement);
+    const relayState = opts.relayState ?? this.entitySetting.relayState ?? '';
+    const customTagReplacement = opts.customTagReplacement;
+
     if (binding === wording.binding.redirect) {
       return redirectBinding.logoutRequestRedirectURL(user, {
         init: this,
@@ -198,19 +214,27 @@ export default class Entity {
   /**
    * Build a logout response to the peer that initiated logout.
    *
+   * The fourth parameter accepts either a string (legacy `relayState`
+   * positional shape) or an options bag `{ relayState?, customTagReplacement? }`.
+   * Per `saml-bindings §3.4.3 / §3.5.3`, RelayState is request-scoped — pass
+   * it via the options bag instead of `entitySetting.relayState`.
+   *
    * @param target peer that sent the corresponding logout request
    * @param requestInfo parsed request used to link `InResponseTo`
    * @param binding `redirect`, `post`, or `simpleSign`
-   * @param relayState caller-supplied redirect URL
-   * @param customTagReplacement optional custom template transformer
+   * @param optionsOrRelayState per-request options or legacy RelayState string
+   * @param legacyCustomTagReplacement optional custom template transformer (legacy positional form)
    */
   createLogoutResponse(
     target: Entity,
     requestInfo: RequestInfo,
     binding: string,
-    relayState = '',
-    customTagReplacement?: (template: string) => BindingContext,
+    optionsOrRelayState?: CreateLogoutResponseOptions | string,
+    legacyCustomTagReplacement?: CustomTagReplacement,
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
+    const opts = normalizeCreateLogoutResponseOptions(optionsOrRelayState, legacyCustomTagReplacement);
+    const relayState = opts.relayState ?? this.entitySetting.relayState ?? '';
+    const customTagReplacement = opts.customTagReplacement;
     const protocol = namespace.binding[binding];
     if (protocol === namespace.binding.redirect) {
       return redirectBinding.logoutResponseRedirectURL(requestInfo, {
