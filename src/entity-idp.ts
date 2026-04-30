@@ -16,7 +16,10 @@ import type {
   ServiceProviderMetadata,
   IdentityProviderMetadata,
   ServiceProviderConstructor as ServiceProvider,
+  CreateLoginResponseOptions,
+  CustomTagReplacement,
 } from './types';
+import { normalizeCreateLoginResponseOptions } from './options';
 import libsaml from './libsaml';
 import { namespace } from './urn';
 import postBinding from './binding-post';
@@ -87,23 +90,39 @@ export class IdentityProvider extends Entity {
   /**
    * Build a login response for delivery to the supplied service provider.
    *
+   * The fifth parameter accepts either a callback (legacy positional shape)
+   * or an options bag `{ relayState?, customTagReplacement?, encryptThenSign? }`.
+   * When the legacy shape is used, the trailing `legacyEncryptThenSign` and
+   * `legacyRelayState` positional arguments are honoured. Per
+   * `saml-bindings §3.4.3 / §3.5.3`, RelayState is request-scoped — pass it
+   * via the options bag instead of `entitySetting.relayState`.
+   *
    * @param sp target service provider
    * @param requestInfo parsed request used to set `InResponseTo`
    * @param binding `post`, `simpleSign`, or `redirect`
    * @param user authenticated user
-   * @param customTagReplacement optional custom template transformer
-   * @param encryptThenSign when true, encrypt the assertion first then sign
-   * @param relayState caller-supplied redirect URL
+   * @param optionsOrCallback per-request options or legacy custom-template callback
+   * @param legacyEncryptThenSign legacy positional `encryptThenSign`; ignored when options bag is used
+   * @param legacyRelayState legacy positional `relayState`; ignored when options bag is used
    */
   public async createLoginResponse(
     sp: ServiceProvider,
     requestInfo: RequestInfo,
     binding: string,
     user: SAMLUser,
-    customTagReplacement?: (template: string) => BindingContext,
-    encryptThenSign?: boolean,
-    relayState?: string,
+    optionsOrCallback?: CreateLoginResponseOptions | CustomTagReplacement,
+    legacyEncryptThenSign?: boolean,
+    legacyRelayState?: string,
   ): Promise<BindingContext | PostBindingContext | SimpleSignBindingContext> {
+    const opts = normalizeCreateLoginResponseOptions(
+      optionsOrCallback,
+      legacyEncryptThenSign,
+      legacyRelayState,
+    );
+    const customTagReplacement = opts.customTagReplacement;
+    const encryptThenSign = opts.encryptThenSign;
+    const relayState = opts.relayState;
+
     const protocol = namespace.binding[binding];
     let context: BindingContext | SimpleSignBindingContext | null = null;
     switch (protocol) {

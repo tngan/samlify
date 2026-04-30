@@ -13,7 +13,10 @@ import type {
   IdentityProviderConstructor as IdentityProvider,
   ServiceProviderMetadata,
   ServiceProviderSettings,
+  CreateLoginRequestOptions,
+  CustomTagReplacement,
 } from './types';
+import { normalizeCreateLoginRequestOptions } from './options';
 import { namespace } from './urn';
 import redirectBinding from './binding-redirect';
 import postBinding from './binding-post';
@@ -51,17 +54,27 @@ export class ServiceProvider extends Entity {
   /**
    * Build a login request targeting the supplied identity provider.
    *
+   * The third parameter accepts either a callback (legacy shape) or an
+   * options bag `{ relayState?, customTagReplacement? }`. Per
+   * `saml-bindings §3.4.3 / §3.5.3`, RelayState is request-scoped — pass
+   * it via the options bag instead of `entitySetting.relayState`.
+   *
    * @param idp target identity provider
    * @param binding `redirect` (default), `post`, or `simpleSign`
-   * @param customTagReplacement optional custom template transformer
+   * @param optionsOrCallback per-request options or a custom-template callback
    */
   public createLoginRequest(
     idp: IdentityProvider,
-    binding = 'redirect',
-    customTagReplacement?: (template: string) => BindingContext,
+    binding?: string,
+    optionsOrCallback?: CreateLoginRequestOptions | CustomTagReplacement,
   ): BindingContext | PostBindingContext | SimpleSignBindingContext {
+    const opts = normalizeCreateLoginRequestOptions(optionsOrCallback);
+    const customTagReplacement = opts.customTagReplacement;
+    const requestRelayState = opts.relayState ?? this.entitySetting.relayState;
+    const selectedBinding = binding ?? 'redirect';
+
     const nsBinding = namespace.binding;
-    const protocol = nsBinding[binding];
+    const protocol = nsBinding[selectedBinding];
     if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
       throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
     }
@@ -69,7 +82,11 @@ export class ServiceProvider extends Entity {
     let context: BindingContext | SimpleSignBindingContext | null = null;
     switch (protocol) {
       case nsBinding.redirect:
-        return redirectBinding.loginRequestRedirectURL({ idp, sp: this }, customTagReplacement);
+        return redirectBinding.loginRequestRedirectURL(
+          { idp, sp: this },
+          customTagReplacement,
+          requestRelayState,
+        );
 
       case nsBinding.post:
         context = postBinding.base64LoginRequest(
@@ -80,7 +97,11 @@ export class ServiceProvider extends Entity {
         break;
 
       case nsBinding.simpleSign:
-        context = simpleSignBinding.base64LoginRequest({ idp, sp: this }, customTagReplacement) as SimpleSignBindingContext;
+        context = simpleSignBinding.base64LoginRequest(
+          { idp, sp: this },
+          customTagReplacement,
+          requestRelayState,
+        ) as SimpleSignBindingContext;
         break;
 
       default:
@@ -89,8 +110,8 @@ export class ServiceProvider extends Entity {
 
     return {
       ...context,
-      relayState: this.entitySetting.relayState,
-      entityEndpoint: idp.entityMeta.getSingleSignOnService(binding) as string,
+      relayState: requestRelayState,
+      entityEndpoint: idp.entityMeta.getSingleSignOnService(selectedBinding) as string,
       type: 'SAMLRequest',
     };
   }

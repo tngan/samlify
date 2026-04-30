@@ -64,6 +64,26 @@ The `SigAlg` and `Signature` parameters are included only when the IdP requires 
 
 All parameter values are URL-encoded. `Signature` is base64-encoded, and the deflated `SAMLRequest` is also base64-encoded.
 
+### Per-request RelayState
+
+Per [`saml-bindings §3.4.3`](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf), RelayState is a per-request value: the SP captures a deep link, encodes it, and recovers it when the IdP returns. Pass it through the options bag on `createLoginRequest`:
+
+```javascript
+router.get('/spinitsso-redirect', (req, res) => {
+  const deepLink = req.query.next ?? '/';
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', {
+    relayState: deepLink,
+  });
+  return res.redirect(context);
+});
+```
+
+The same options bag accepts a `customTagReplacement` callback (see [Templates](/template)).
+
+::: warning Deprecated
+`entitySetting.relayState` (passed to the `ServiceProvider` constructor) is deprecated. It applies process-wide and is unsafe under concurrent requests with different deep links. It will be removed in v3.
+:::
+
 ## HTTP-POST binding
 
 The request XML is delivered via an auto-submitting HTML form instead of URL parameters. The same helper is used, with `'post'` as the binding:

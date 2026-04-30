@@ -117,6 +117,45 @@ export interface SAMLUser {
   [key: string]: unknown;
 }
 
+/**
+ * Caller-supplied template transformer used by the create* methods.
+ * Receives the raw template string and returns the substituted result
+ * along with the SAML message ID.
+ */
+export type CustomTagReplacement = (template: string) => BindingContext;
+
+/**
+ * Per-request options accepted by `ServiceProvider#createLoginRequest`.
+ *
+ * `relayState` here takes precedence over `entitySetting.relayState`,
+ * which is deprecated for v3 — see `saml-bindings §3.4.3` and §3.5.3
+ * (RelayState is request-scoped, not entity-scoped).
+ */
+export interface CreateLoginRequestOptions {
+  relayState?: string;
+  customTagReplacement?: CustomTagReplacement;
+}
+
+/** Per-request options accepted by `IdentityProvider#createLoginResponse`. */
+export interface CreateLoginResponseOptions {
+  relayState?: string;
+  customTagReplacement?: CustomTagReplacement;
+  /** When true, encrypt the assertion before signing the message. */
+  encryptThenSign?: boolean;
+}
+
+/** Per-request options accepted by `Entity#createLogoutRequest`. */
+export interface CreateLogoutRequestOptions {
+  relayState?: string;
+  customTagReplacement?: CustomTagReplacement;
+}
+
+/** Per-request options accepted by `Entity#createLogoutResponse`. */
+export interface CreateLogoutResponseOptions {
+  relayState?: string;
+  customTagReplacement?: CustomTagReplacement;
+}
+
 /** Output of an XML-signature binding step (base64 SAML + request id). */
 export interface BindingContext {
   context: string;
@@ -233,7 +272,14 @@ export interface ServiceProviderSettings {
   transformationAlgorithms?: string[];
   nameIDFormat?: string[];
   allowCreate?: boolean;
-  /** @deprecated will be removed in a future release */
+  /**
+   * @deprecated Pass `relayState` per request via the options bag on
+   * `createLoginRequest` / `createLogoutRequest` / `createLogoutResponse`
+   * instead. RelayState is request-scoped per `saml-bindings §3.4.3, §3.5.3`;
+   * keeping it on the entity makes a single SP/IdP instance unsafe for
+   * concurrent requests with different relay state values. Will be removed
+   * in v3.
+   */
   relayState?: string;
   /** Clock drift tolerance in ms for notBefore / notOnOrAfter checks. */
   clockDrifts?: [number, number];

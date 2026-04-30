@@ -62,10 +62,19 @@ const sp = new ServiceProvider({
 
 - **`wantLogoutRequestSigned: boolean`** — Whether the SP requires the IdP's logout request to be signed.
 
-- **`relayState: string`** — RelayState for the outgoing request.
+- **`relayState: string`** — RelayState for outgoing requests.
 
-  ::: warning Deprecation
-  This option is entity-level and will be deprecated. Relay state should be provided at the request level instead.
+  ::: warning Deprecated
+  Entity-level RelayState is unsafe under concurrent requests because RelayState is request-scoped per [`saml-bindings §3.4.3 / §3.5.3`](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf). Pass it via the per-request options bag instead:
+
+  ```javascript
+  sp.createLoginRequest(idp, 'redirect', { relayState: '/deep/link' });
+  idp.createLogoutRequest(sp, 'redirect', user, { relayState: '/return' });
+  idp.createLogoutResponse(sp, requestInfo, 'redirect', { relayState: '/return' });
+  idp.createLoginResponse(sp, requestInfo, 'redirect', user, { relayState: '/deep/link' });
+  ```
+
+  This option will be removed in v3.
   :::
 
 - **`generateID: () => string`** — A function that generates the root-element identifier of each SAML document. Defaults to `_${UUID_V4}`.
