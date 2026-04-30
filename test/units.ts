@@ -833,6 +833,48 @@ describe('Metadata helpers', () => {
   });
 });
 
+describe('Security audit (2026-04)', () => {
+  // saml-sec-consider §6.3.1 — the DOM parser must reject DOCTYPE / entity
+  // declarations to defend against XXE.
+  test('setDOMParserOptions: caller-supplied options preserve XXE protection', () => {
+    setDOMParserOptions({ /* deliberately empty — caller did not opt out */ });
+    const dom = getContext().dom;
+    // Restore default parser for subsequent tests in the file.
+    setDOMParserOptions();
+    // Attempt to parse a DOCTYPE-laden document; the safe error handler
+    // throws on the entity declaration.
+    expect(() => dom.parseFromString(`<!DOCTYPE r [<!ENTITY xxe "secret">]><r>&xxe;</r>`)).toThrow();
+  });
+
+  // saml-sec-consider §6.5 / xmldsig-core §6.4 — verifying with an
+  // attacker-supplied unknown SigAlg must not silently downgrade to SHA-1.
+  test('libsaml.verifyMessageSignature rejects unknown signature algorithms', () => {
+    const fakeMetadata = {
+      getX509Certificate: () => 'irrelevant',
+    } as any;
+    expect(() =>
+      libsaml.verifyMessageSignature(
+        fakeMetadata,
+        'octets',
+        Buffer.from('signature'),
+        'http://attacker.example.com/madeup-alg',
+      ),
+    ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+
+  test('libsaml.constructMessageSignature rejects unknown signature algorithms', () => {
+    expect(() =>
+      libsaml.constructMessageSignature(
+        'octets',
+        '-----BEGIN RSA PRIVATE KEY-----\n-----END RSA PRIVATE KEY-----',
+        undefined,
+        true,
+        'http://attacker.example.com/madeup-alg',
+      ),
+    ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+});
+
 describe('Per-request relayState (#163)', () => {
   // saml-bindings §3.4.3 / §3.5.3: RelayState is request-scoped. The
   // tests below pin the contract that callers can override the entity-

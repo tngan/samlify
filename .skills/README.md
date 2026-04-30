@@ -13,6 +13,7 @@ PRs.
 | [`spec-citation-workflow.md`](./spec-citation-workflow.md) | Every PR that touches `src/` (feature, bug fix, refactor) — cite the SAML 2.0 / W3C section the change implements or fixes. |
 | [`saml-spec-references.md`](./saml-spec-references.md) | Reference: canonical URLs for all OASIS SAML 2.0 documents, W3C XML-DSig / XML-Enc / canonicalization, plus a module → spec map for samlify itself. |
 | [`RFC-0001-spec-citation.md`](./RFC-0001-spec-citation.md) | The proposal that introduced these skills. |
+| [`audits/`](./audits/) | Dated security-audit reports. The most recent is [`audits/2026-04-security-audit.md`](./audits/2026-04-security-audit.md). |
 
 ## How to add a skill
 

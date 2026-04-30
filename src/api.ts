@@ -60,8 +60,18 @@ export function setSchemaValidator(params: ValidatorContext): void {
 /**
  * Replace the module-wide DOM parser with one configured by the caller.
  *
+ * The XXE-safe error handlers are merged into the supplied options as a
+ * baseline so callers can override unrelated settings without
+ * accidentally disabling XXE protection (`saml-core §6.4`,
+ * `saml-sec-consider §6.3.1`). A caller can still opt out by passing
+ * its own `errorHandler`, but it must do so explicitly.
+ *
  * @param options xmldom parser options
  */
 export function setDOMParserOptions(options: DOMParserOptions = {}): void {
-  context.dom = new Dom(options);
+  context.dom = new Dom({
+    ...XXE_SAFE_OPTIONS,
+    ...options,
+    errorHandler: options.errorHandler ?? XXE_SAFE_OPTIONS.errorHandler,
+  });
 }

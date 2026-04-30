@@ -237,19 +237,29 @@ const libSaml = () => {
 
   /**
    * Map a SAML signature algorithm URI to its node-rsa signing scheme.
-   * Falls back to RSA-SHA1 when the alias is unknown.
+   *
+   * - When `sigAlg` is omitted, the default RSA-SHA256 scheme is used
+   *   (per `saml-bindings §3.4.4.1` recommendation).
+   * - When `sigAlg` is supplied but does not match a known URI, the
+   *   function throws. Silently downgrading to RSA-SHA1 (the previous
+   *   behaviour) was a verification-time vulnerability: an attacker
+   *   could supply an unknown `SigAlg` query parameter to coerce
+   *   verification onto SHA-1, which is collision-broken
+   *   (`saml-sec-consider §6.5`, `xmldsig-core §6.4`).
    *
    * @param sigAlg signature algorithm URI
    * @returns node-rsa signing scheme string
+   * @throws when `sigAlg` is supplied and does not match a supported URI
    */
   function getSigningScheme(sigAlg?: string): SigningSchemeHash {
-    if (sigAlg) {
-      const algAlias = nrsaAliasMapping[sigAlg];
-      if (!(algAlias === undefined)) {
-        return algAlias;
-      }
+    if (sigAlg === undefined) {
+      return nrsaAliasMapping[signatureAlgorithms.RSA_SHA256];
     }
-    return nrsaAliasMapping[signatureAlgorithms.RSA_SHA1];
+    const algAlias = nrsaAliasMapping[sigAlg];
+    if (algAlias === undefined) {
+      throw new Error('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+    }
+    return algAlias;
   }
 
   /**

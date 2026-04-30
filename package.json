@@ -51,7 +51,11 @@
   },
   "resolutions": {
     "diff": ">=4.0.4",
-    "esbuild": ">=0.25.0"
+    "esbuild": ">=0.25.0",
+    "vitest/vite": "^6.4.2",
+    "vitest/vite-node/vite": "^6.4.2",
+    "vitepress/vite": "^6.4.2",
+    "vitepress/@vitejs/plugin-vue/vite": "^6.4.2"
   },
   "devDependencies": {
     "@authenio/samlify-xsd-schema-validator": "^1.0.5",
