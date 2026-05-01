@@ -1263,3 +1263,81 @@ describe('Per-request relayState (#163)', () => {
     });
   });
 });
+
+describe('Redirect binding endpoint discovery (closes #308 #405, saml-bindings §3.4 / saml-metadata §2.4.3)', () => {
+  // Both issues report a TypeError thrown deep inside url.parse when the
+  // peer's metadata declares no HTTP-Redirect endpoint. The fix is a
+  // type-guard at the top of each redirect builder: when
+  // getSingleSignOnService / getSingleLogoutService falls through to the
+  // raw service map (an object), throw a clear named error instead.
+
+  test('SP createLoginRequest(redirect) throws ERR_NO_REDIRECT_SSO_ENDPOINT when IdP advertises no HTTP-Redirect SSO', () => {
+    // IdP built from options with only an HTTP-POST SingleSignOnService —
+    // no HTTP-Redirect entry, mirroring the metadata reported in #308.
+    // The SP's spmeta.xml has AuthnRequestsSigned="true", so the IdP must
+    // set wantAuthnRequestsSigned to avoid the unrelated signed-flag conflict.
+    const idpPostOnly = identityProvider({
+      wantAuthnRequestsSigned: true,
+      isAssertionEncrypted: false,
+      singleSignOnService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        Location: 'https://idp.example.org/sso/post',
+      }],
+    });
+    const sp = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+    });
+    expect(() => sp.createLoginRequest(idpPostOnly, 'redirect')).toThrow('ERR_NO_REDIRECT_SSO_ENDPOINT');
+  });
+
+  test('IdP createLogoutRequest(redirect) throws ERR_NO_REDIRECT_SLO_ENDPOINT when SP advertises no HTTP-Redirect SLO', () => {
+    // SP built from options with only an HTTP-POST SingleLogoutService —
+    // mirrors the logout-side variant of the same root cause (#405).
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const spPostOnlySlo = serviceProvider({
+      entityID: 'https://sp.example.org/metadata',
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      assertionConsumerService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        Location: 'https://sp.example.org/sp/sso',
+      }],
+      singleLogoutService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        Location: 'https://sp.example.org/sp/slo',
+      }],
+    });
+    expect(() => idp.createLogoutRequest(spPostOnlySlo, 'redirect', { logoutNameID: 'u@x' }))
+      .toThrow('ERR_NO_REDIRECT_SLO_ENDPOINT');
+  });
+
+  test('IdP createLogoutResponse(redirect) throws ERR_NO_REDIRECT_SLO_ENDPOINT when SP advertises no HTTP-Redirect SLO', () => {
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const spPostOnlySlo = serviceProvider({
+      entityID: 'https://sp.example.org/metadata',
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      assertionConsumerService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        Location: 'https://sp.example.org/sp/sso',
+      }],
+      singleLogoutService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        Location: 'https://sp.example.org/sp/slo',
+      }],
+    });
+    const requestInfo = { extract: { request: { id: '_abc' } } } as any;
+    expect(() => idp.createLogoutResponse(spPostOnlySlo, requestInfo, 'redirect', 'state'))
+      .toThrow('ERR_NO_REDIRECT_SLO_ENDPOINT');
+  });
+});
