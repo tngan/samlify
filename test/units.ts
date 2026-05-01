@@ -241,13 +241,32 @@ describe('libsaml — pure helpers', () => {
   });
 
   test('replaceTagsByValue omits attributes whose value is null or undefined (#455, saml-core §3.4.1)', () => {
-    // null/undefined in attribute position drop the whole attribute; in
-    // element-text position they collapse to the empty string.
+    // null/undefined in attribute position drop the whole attribute. When
+    // the body of the element is also a placeholder that resolves to
+    // null/undefined, the entire element is dropped (saml-core §3.7.1
+    // covers the same rule for `<samlp:SessionIndex>`).
     const xml = libsaml.replaceTagsByValue(
       '<a id="{Id}">{Body}</a>',
       { Id: null, Body: undefined },
     );
-    expect(xml).toBe('<a></a>');
+    // Both the attribute and the body are absent → entire element drops.
+    expect(xml).toBe('');
+  });
+
+  test('replaceTagsByValue keeps the element when only the attribute is absent', () => {
+    const xml = libsaml.replaceTagsByValue(
+      '<a id="{Id}">visible</a>',
+      { Id: null },
+    );
+    expect(xml).toBe('<a>visible</a>');
+  });
+
+  test('replaceTagsByValue drops only the placeholder in mixed-text content', () => {
+    const xml = libsaml.replaceTagsByValue(
+      '<a>before-{Tag}-after</a>',
+      { Tag: undefined },
+    );
+    expect(xml).toBe('<a>before--after</a>');
   });
 
   test('replaceTagsByValue keeps explicit empty-string attributes', () => {
@@ -891,6 +910,119 @@ describe('Security audit (2026-04)', () => {
         'http://attacker.example.com/madeup-alg',
       ),
     ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+});
+
+describe('LogoutRequest SessionIndex (#470, saml-core §3.7.1)', () => {
+  // saml-core §3.7.1 — `<samlp:SessionIndex>` is `minOccurs="0"`, so it
+  // must appear when the SP knows the session index, and must be absent
+  // otherwise. Previously the bindings either dropped the field entirely
+  // or omitted it from the template.
+
+  test('default LogoutRequest template includes SessionIndex when supplied', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/slo',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      NameID: 'user@example.com',
+      SessionIndex: '_session-abc',
+    });
+    expect(xml).toContain('<samlp:SessionIndex>_session-abc</samlp:SessionIndex>');
+  });
+
+  test('default LogoutRequest template drops SessionIndex when not supplied', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/slo',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      NameID: 'user@example.com',
+      SessionIndex: undefined,
+    });
+    expect(xml).not.toContain('SessionIndex');
+    expect(xml).not.toContain('<samlp:SessionIndex');
+  });
+
+  test('createLogoutRequest (post): user.sessionIndex surfaces in the rendered XML', () => {
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const sp = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+    });
+    const result = idp.createLogoutRequest(sp, 'post', {
+      logoutNameID: 'u@x',
+      sessionIndex: '_session-post-1',
+    });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('<samlp:SessionIndex>_session-post-1</samlp:SessionIndex>');
+  });
+
+  test('createLogoutRequest (redirect): user.sessionIndex surfaces in the rendered XML', () => {
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const sp = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+    });
+    const result = idp.createLogoutRequest(sp, 'redirect', {
+      logoutNameID: 'u@x',
+      sessionIndex: '_session-redirect-1',
+    });
+    const url = new URL(result.context, 'http://example.test');
+    const inflated = require('zlib').inflateRawSync(
+      Buffer.from(decodeURIComponent(url.searchParams.get('SAMLRequest')!), 'base64'),
+    ).toString('utf8');
+    expect(inflated).toContain('<samlp:SessionIndex>_session-redirect-1</samlp:SessionIndex>');
+  });
+
+  test('createLogoutRequest (simpleSign): user.sessionIndex surfaces in the rendered XML', () => {
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const sp = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+    });
+    const result = idp.createLogoutRequest(sp, 'simpleSign', {
+      logoutNameID: 'u@x',
+      sessionIndex: '_session-ss-1',
+    });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('<samlp:SessionIndex>_session-ss-1</samlp:SessionIndex>');
+  });
+
+  test('createLogoutRequest (post): no SessionIndex element when sessionIndex is omitted', () => {
+    const idp = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: idpMetaXml,
+    });
+    const sp = serviceProvider({
+      privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+      privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+      metadata: spMetaXml,
+    });
+    const result = idp.createLogoutRequest(sp, 'post', {
+      logoutNameID: 'u@x',
+      // sessionIndex intentionally omitted
+    });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).not.toContain('<samlp:SessionIndex');
   });
 });
 

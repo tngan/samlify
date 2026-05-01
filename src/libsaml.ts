@@ -205,9 +205,17 @@ const libSaml = () => {
     context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
   };
 
-  /** Default LogoutRequest XML template. */
+  /**
+   * Default LogoutRequest XML template.
+   *
+   * The optional `<samlp:SessionIndex>` element (saml-core §3.7.1) is
+   * included with a placeholder body. When the caller leaves
+   * `user.sessionIndex` undefined, `replaceTagsByValue` drops the whole
+   * element from the rendered XML, matching the schema's
+   * `minOccurs="0"` declaration.
+   */
   const defaultLogoutRequestTemplate: LogoutRequestTemplate = {
-    context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID></samlp:LogoutRequest>',
+    context: '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" IssueInstant="{IssueInstant}" Destination="{Destination}"><saml:Issuer>{Issuer}</saml:Issuer><saml:NameID Format="{NameIDFormat}">{NameID}</saml:NameID><samlp:SessionIndex>{SessionIndex}</samlp:SessionIndex></samlp:LogoutRequest>',
   };
 
   /** Default AttributeStatement XML fragment template. */
@@ -335,8 +343,12 @@ const libSaml = () => {
      *     emitted `name=""` or the literal `name="undefined"`, which is
      *     invalid for typed attributes (e.g. `AssertionConsumerServiceURL`
      *     declared as `xs:anyURI`).
-     *   - in **element-text position** (`<X>{Tag}</X>`) the placeholder is
-     *     replaced with the empty string (legacy behaviour preserved).
+     *   - in **element-only-body position** (`<X>{Tag}</X>` or
+     *     `<X attr="...">{Tag}</X>`) the entire element is dropped — per
+     *     `saml-core §3.7.1` for `<samlp:SessionIndex>` and any other
+     *     `minOccurs="0"` element where the body is solely a placeholder.
+     *   - in **mixed-text position** (`<X>prefix{Tag}suffix</X>`) the
+     *     placeholder is replaced with the empty string (legacy behaviour).
      *
      * @param rawXML template with `{Tag}` placeholders
      * @param tagValues replacement map keyed by tag name
@@ -351,7 +363,14 @@ const libSaml = () => {
             new RegExp(`\\s+[A-Za-z_:][\\w:.-]*=("|')\\{${t}\\}\\1`, 'g'),
             '',
           );
-          // Replace any element-text occurrence with empty string.
+          // Drop the entire `<X ...>{Tag}</X>` element when the placeholder
+          // is the only body content (allows optional elements to be omitted
+          // rather than rendered empty).
+          rawXML = rawXML.replace(
+            new RegExp(`<([A-Za-z_:][\\w:.-]*)((?:\\s+[^>]*)?)>\\{${t}\\}</\\1>`, 'g'),
+            '',
+          );
+          // Replace any remaining `{Tag}` occurrences with empty string.
           rawXML = rawXML.replace(new RegExp(`\\{${t}\\}`, 'g'), '');
           return;
         }

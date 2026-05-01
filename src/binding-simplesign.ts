@@ -298,6 +298,9 @@ function base64LogoutRequest(
       EntityID: metadata.init.getEntityID(),
       NameIDFormat: selectedNameIDFormat,
       NameID: user.logoutNameID,
+      // saml-core §3.7.1 — SessionIndex is optional; replaceTagsByValue
+      // drops the element when undefined (closes #470).
+      SessionIndex: user.sessionIndex,
     };
     rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
   }
