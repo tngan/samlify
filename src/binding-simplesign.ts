@@ -94,11 +94,13 @@ function buildSimpleSignature(opts: BuildSimpleSignConfig): string {
  * @param entity `{ idp, sp }` handles
  * @param customTagReplacement optional custom template transformer
  * @param relayState per-request RelayState; falls back to `entitySetting.relayState`
+ * @param forceAuthn per-request `ForceAuthn` flag (saml-core §3.4.1)
  */
 function base64LoginRequest(
   entity: SimpleSignIdpSpPair,
   customTagReplacement?: (template: string) => BindingContext,
   relayState?: string,
+  forceAuthn?: boolean,
 ): SimpleSignComputedContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -129,6 +131,9 @@ function base64LoginRequest(
       EntityID: metadata.sp.getEntityID(),
       AllowCreate: spSetting.allowCreate,
       NameIDFormat: selectedNameIDFormat,
+      // saml-core §3.4.1 — `replaceTagsByValue` drops the attribute when
+      // `forceAuthn` is undefined, matching `use="optional"`.
+      ForceAuthn: forceAuthn,
     };
     rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
   }

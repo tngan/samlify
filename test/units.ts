@@ -1401,3 +1401,102 @@ describe('Redirect binding endpoint discovery (closes #308 #405, saml-bindings �
       .toThrow('ERR_NO_REDIRECT_SLO_ENDPOINT');
   });
 });
+
+describe('ForceAuthn (#359, saml-core §3.4.1)', () => {
+  // saml-core §3.4.1 declares `ForceAuthn` as `xs:boolean` with
+  // `use="optional"` on `<samlp:AuthnRequest>`. saml-profiles §4.1.4.1
+  // pins the semantics: when "true", the IdP MUST authenticate the
+  // presenter directly rather than rely on a previous security context.
+
+  const idp = identityProvider({
+    privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+    metadata: idpMetaXml,
+  });
+  const sp = serviceProvider({
+    privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    metadata: spMetaXml,
+  });
+
+  test('default AuthnRequest template renders ForceAuthn when set', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      AssertionConsumerServiceURL: 'https://sp/acs',
+      NameIDFormat: 'fmt',
+      AllowCreate: true,
+      ForceAuthn: true,
+    });
+    expect(xml).toContain('ForceAuthn="true"');
+  });
+
+  test('default AuthnRequest template omits ForceAuthn when undefined', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      AssertionConsumerServiceURL: 'https://sp/acs',
+      NameIDFormat: 'fmt',
+      AllowCreate: true,
+      ForceAuthn: undefined,
+    });
+    expect(xml).not.toContain('ForceAuthn=');
+  });
+
+  test('createLoginRequest (redirect): forceAuthn surfaces in the rendered XML', () => {
+    const result = sp.createLoginRequest(idp, 'redirect', { forceAuthn: true });
+    const url = new URL(result.context, 'http://example.test');
+    const inflated = require('zlib').inflateRawSync(
+      Buffer.from(decodeURIComponent(url.searchParams.get('SAMLRequest')!), 'base64'),
+    ).toString('utf8');
+    expect(inflated).toContain('ForceAuthn="true"');
+  });
+
+  test('createLoginRequest (post): forceAuthn surfaces in the rendered XML', () => {
+    const result = sp.createLoginRequest(idp, 'post', { forceAuthn: true });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('ForceAuthn="true"');
+  });
+
+  test('createLoginRequest (simpleSign): forceAuthn surfaces in the rendered XML', () => {
+    const result = sp.createLoginRequest(idp, 'simpleSign', { forceAuthn: true });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('ForceAuthn="true"');
+  });
+
+  test('backwards-compat: no options bag, no ForceAuthn attribute in the XML', () => {
+    const result = sp.createLoginRequest(idp, 'redirect');
+    const url = new URL(result.context, 'http://example.test');
+    const inflated = require('zlib').inflateRawSync(
+      Buffer.from(decodeURIComponent(url.searchParams.get('SAMLRequest')!), 'base64'),
+    ).toString('utf8');
+    expect(inflated).not.toContain('ForceAuthn=');
+  });
+
+  test('createLoginRequest (redirect): forceAuthn=false renders ForceAuthn="false"', () => {
+    // saml-core §3.4.1 — explicit `false` is still a valid xs:boolean and
+    // the IdP MAY rely on a previous security context. We render it verbatim.
+    const result = sp.createLoginRequest(idp, 'redirect', { forceAuthn: false });
+    const url = new URL(result.context, 'http://example.test');
+    const inflated = require('zlib').inflateRawSync(
+      Buffer.from(decodeURIComponent(url.searchParams.get('SAMLRequest')!), 'base64'),
+    ).toString('utf8');
+    expect(inflated).toContain('ForceAuthn="false"');
+  });
+
+  test('createLoginRequest (post): no options bag, no ForceAuthn attribute in the XML', () => {
+    const result = sp.createLoginRequest(idp, 'post');
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).not.toContain('ForceAuthn=');
+  });
+
+  test('createLoginRequest (simpleSign): no options bag, no ForceAuthn attribute in the XML', () => {
+    const result = sp.createLoginRequest(idp, 'simpleSign');
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).not.toContain('ForceAuthn=');
+  });
+});
