@@ -328,15 +328,36 @@ const libSaml = () => {
      * Substitute `{Tag}` placeholders inside an XML template with the given
      * replacement map. Attribute values are XML-escaped; element text is not.
      *
+     * When a tag's value is `null` or `undefined`:
+     *   - in **attribute position** (`name="{Tag}"`) the entire attribute is
+     *     omitted from the rendered XML, per `saml-core §3.4.1` (every
+     *     `<AuthnRequest>` attribute is `use="optional"`); previously samlify
+     *     emitted `name=""` or the literal `name="undefined"`, which is
+     *     invalid for typed attributes (e.g. `AssertionConsumerServiceURL`
+     *     declared as `xs:anyURI`).
+     *   - in **element-text position** (`<X>{Tag}</X>`) the placeholder is
+     *     replaced with the empty string (legacy behaviour preserved).
+     *
      * @param rawXML template with `{Tag}` placeholders
      * @param tagValues replacement map keyed by tag name
      * @returns XML with placeholders resolved
      */
     replaceTagsByValue(rawXML: string, tagValues: TagReplacementMap): string {
       Object.keys(tagValues).forEach(t => {
+        const value = tagValues[t];
+        if (value === null || value === undefined) {
+          // Drop the entire `\s+name="{Tag}"` (or single-quoted) attribute.
+          rawXML = rawXML.replace(
+            new RegExp(`\\s+[A-Za-z_:][\\w:.-]*=("|')\\{${t}\\}\\1`, 'g'),
+            '',
+          );
+          // Replace any element-text occurrence with empty string.
+          rawXML = rawXML.replace(new RegExp(`\\{${t}\\}`, 'g'), '');
+          return;
+        }
         rawXML = rawXML.replace(
           new RegExp(`("?)\\{${t}\\}`, 'g'),
-          escapeTag(tagValues[t]),
+          escapeTag(value),
         );
       });
       return rawXML;
