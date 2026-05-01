@@ -66,11 +66,11 @@ export class SpMetadata extends Metadata {
         authnRequestsSigned = false,
         wantAssertionsSigned = false,
         wantMessageSigned = false,
-        signatureConfig,
         nameIDFormat = [],
         singleLogoutService = [],
         assertionConsumerService = [],
       } = meta as MetadataSpOptions;
+      let { signatureConfig } = meta as MetadataSpOptions;
 
       const descriptors: MetaElement = {
         KeyDescriptor: [],
@@ -89,7 +89,18 @@ export class SpMetadata extends Metadata {
       }];
 
       if (wantMessageSigned && signatureConfig === undefined) {
-        console.warn('Construct service provider - missing signatureConfig');
+        // saml-bindings §3.5 — default signature placement when the SP wants
+        // a signed message but didn't declare where. Matches the fallback the
+        // binding builders already use at sign time, so this is observably
+        // a no-op for already-working configurations.
+        signatureConfig = {
+          prefix: 'ds',
+          location: {
+            reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']",
+            action: 'after',
+          },
+        };
+        (meta as MetadataSpOptions).signatureConfig = signatureConfig;
       }
 
       for (const cert of castArrayOpt(signingCert)) {
