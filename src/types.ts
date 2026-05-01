@@ -134,6 +134,8 @@ export type CustomTagReplacement = (template: string) => BindingContext;
 export interface CreateLoginRequestOptions {
   relayState?: string;
   customTagReplacement?: CustomTagReplacement;
+  /** saml-core §3.4.1 — when true, the IdP MUST re-authenticate the user. */
+  forceAuthn?: boolean;
 }
 
 /** Per-request options accepted by `IdentityProvider#createLoginResponse`. */

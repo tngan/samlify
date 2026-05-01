@@ -85,6 +85,10 @@ export class ServiceProvider extends Entity {
     const opts = normalizeCreateLoginRequestOptions(optionsOrCallback);
     const customTagReplacement = opts.customTagReplacement;
     const requestRelayState = opts.relayState ?? this.entitySetting.relayState;
+    // saml-core §3.4.1 — `ForceAuthn` is a per-request boolean flag; when
+    // true the IdP MUST re-authenticate the user instead of relying on a
+    // previous security context (saml-profiles §4.1.4.1).
+    const forceAuthn = opts.forceAuthn;
     const selectedBinding = binding ?? 'redirect';
 
     const nsBinding = namespace.binding;
@@ -109,6 +113,7 @@ export class ServiceProvider extends Entity {
           { idp, sp: this },
           customTagReplacement,
           requestRelayState,
+          forceAuthn,
         );
 
       case nsBinding.post:
@@ -116,6 +121,7 @@ export class ServiceProvider extends Entity {
           "/*[local-name(.)='AuthnRequest']",
           { idp, sp: this },
           customTagReplacement,
+          forceAuthn,
         );
         break;
 
@@ -124,6 +130,7 @@ export class ServiceProvider extends Entity {
           { idp, sp: this },
           customTagReplacement,
           requestRelayState,
+          forceAuthn,
         ) as SimpleSignBindingContext;
         break;
 
