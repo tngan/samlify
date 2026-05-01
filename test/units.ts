@@ -820,7 +820,7 @@ describe('Metadata builders from options', () => {
     expect(meta.getMetadata()).toContain('emailAddress');
   });
 
-  test('SP metadata from options — warns when wantMessageSigned without signatureConfig', () => {
+  test('SP metadata from options — does not warn when wantMessageSigned without signatureConfig (#454)', () => {
     const warn = console.warn;
     const messages: string[] = [];
     console.warn = (msg: string) => { messages.push(msg); };
@@ -835,7 +835,67 @@ describe('Metadata builders from options', () => {
     } finally {
       console.warn = warn;
     }
-    expect(messages.some(m => m.includes('missing signatureConfig'))).toBe(true);
+    expect(messages.some(m => m.includes('missing signatureConfig'))).toBe(false);
+  });
+});
+
+describe('SP metadata default signatureConfig (#454)', () => {
+  // saml-bindings §3.5 — when an SP declares `wantMessageSigned: true` without
+  // a `signatureConfig`, the SP should fall back to the same signature placement
+  // the binding builders already use internally (Issuer-after, ds prefix). The
+  // previous warning made working configurations appear broken; this suite pins
+  // the new behaviour: silent default, populated entitySetting, caller value
+  // preserved.
+  const acs = [
+    { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', Location: 'https://example.org/acs' },
+  ];
+
+  const expectedDefault = {
+    prefix: 'ds',
+    location: {
+      reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']",
+      action: 'after',
+    },
+  };
+
+  test('does not emit a warning when wantMessageSigned is set without signatureConfig', () => {
+    const warn = console.warn;
+    const messages: string[] = [];
+    console.warn = (msg: string) => { messages.push(msg); };
+    try {
+      serviceProvider({
+        entityID: 'https://example.org/sp',
+        wantMessageSigned: true,
+        assertionConsumerService: acs,
+      });
+    } finally {
+      console.warn = warn;
+    }
+    expect(messages.some(m => m.includes('missing signatureConfig'))).toBe(false);
+    expect(messages.length).toBe(0);
+  });
+
+  test('populates entitySetting.signatureConfig with the binding default (saml-bindings §3.5)', () => {
+    const sp = serviceProvider({
+      entityID: 'https://example.org/sp',
+      wantMessageSigned: true,
+      assertionConsumerService: acs,
+    });
+    expect(sp.getEntitySetting().signatureConfig).toEqual(expectedDefault);
+  });
+
+  test('preserves caller-supplied signatureConfig instead of overwriting it', () => {
+    const callerConfig = {
+      prefix: 'foo',
+      location: { reference: '/x', action: 'before' as const },
+    };
+    const sp = serviceProvider({
+      entityID: 'https://example.org/sp',
+      wantMessageSigned: true,
+      signatureConfig: callerConfig,
+      assertionConsumerService: acs,
+    });
+    expect(sp.getEntitySetting().signatureConfig).toEqual(callerConfig);
   });
 });
 

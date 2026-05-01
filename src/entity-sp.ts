@@ -48,6 +48,20 @@ export class ServiceProvider extends Entity {
       wantAssertionsSigned: false,
       wantMessageSigned: false,
     }, spSetting);
+    if (entitySetting.wantMessageSigned && entitySetting.signatureConfig === undefined) {
+      // saml-bindings §3.5 — default signature placement when the SP wants
+      // a signed message but didn't declare where. Matches the fallback the
+      // binding builders already use at sign time, so downstream consumers
+      // (e.g. `getEntitySetting().signatureConfig`) see a populated value
+      // for already-working configurations instead of `undefined`.
+      entitySetting.signatureConfig = {
+        prefix: 'ds',
+        location: {
+          reference: "/*[local-name(.)='Response']/*[local-name(.)='Issuer']",
+          action: 'after',
+        },
+      };
+    }
     super(entitySetting, 'sp');
   }
 
