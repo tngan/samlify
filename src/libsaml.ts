@@ -117,7 +117,12 @@ export interface EntityLike {
     isAssertionEncrypted?: boolean;
     dataEncryptionAlgorithm?: string;
     keyEncryptionAlgorithm?: string;
-    tagPrefix?: Record<string, string>;
+    tagPrefix?: {
+      protocol?: string;
+      assertion?: string;
+      encryptedAssertion?: string;
+      [key: string]: string | undefined;
+    };
     encPrivateKey?: string | Buffer;
     encPrivateKeyPass?: string | Buffer;
   };

@@ -38,6 +38,35 @@ export default function (props: IdentityProviderSettings): IdentityProvider {
   return new IdentityProvider(props);
 }
 
+/**
+ * Swap the default `samlp:` / `saml:` prefixes inside an XML template
+ * with caller-supplied prefixes. Both the prefix occurrences and the
+ * `xmlns:` namespace bindings are rewritten so the resulting XML
+ * remains well-formed and namespace-correct (saml-core §1.4 — prefix
+ * choice is not normative).
+ */
+function applyTagPrefixes(
+  xml: string,
+  prefixes: { protocol?: string; assertion?: string },
+): string {
+  let out = xml;
+  if (prefixes.protocol && prefixes.protocol !== 'samlp') {
+    const p = prefixes.protocol;
+    out = out
+      .replace(/<samlp:/g, `<${p}:`)
+      .replace(/<\/samlp:/g, `</${p}:`)
+      .replace(/xmlns:samlp="/g, `xmlns:${p}="`);
+  }
+  if (prefixes.assertion && prefixes.assertion !== 'saml') {
+    const a = prefixes.assertion;
+    out = out
+      .replace(/<saml:/g, `<${a}:`)
+      .replace(/<\/saml:/g, `</${a}:`)
+      .replace(/xmlns:saml="/g, `xmlns:${a}="`);
+  }
+  return out;
+}
+
 /** Identity-provider entity. */
 export class IdentityProvider extends Entity {
 
@@ -55,6 +84,13 @@ export class IdentityProvider extends Entity {
       },
     };
     const entitySetting = Object.assign({}, defaultIdpEntitySetting, idpSetting) as IdentityProviderSettings;
+    // Deep-merge tagPrefix so callers can override `protocol` / `assertion`
+    // without dropping the `encryptedAssertion: 'saml'` default that
+    // libsaml.encryptAssertion depends on (#388, saml-core §1.4).
+    entitySetting.tagPrefix = {
+      ...defaultIdpEntitySetting.tagPrefix,
+      ...idpSetting.tagPrefix,
+    };
 
     if (idpSetting.loginResponseTemplate) {
       const template = idpSetting.loginResponseTemplate as typeof idpSetting.loginResponseTemplate & {
@@ -84,6 +120,60 @@ export class IdentityProvider extends Entity {
         console.warn('Invalid login response template');
       }
     }
+
+    // saml-core §1.4 — XML namespace prefixes are not normative; only the
+    // URI bindings are. When the caller overrides `tagPrefix.protocol` or
+    // `tagPrefix.assertion`, rewrite both the caller's templates and the
+    // built-in defaults so the bindings emit the rebound prefixes
+    // downstream (closes #388). The rewritten defaults land on a separate
+    // `tagPrefixedDefaults` slot so users that only set
+    // `loginResponseTemplate` (without `tagPrefix`) continue to follow the
+    // legacy binding fallback path.
+    const tp = entitySetting.tagPrefix;
+    const protocolPrefix = tp?.protocol;
+    const assertionPrefix = tp?.assertion;
+    const overridesProtocol = !!protocolPrefix && protocolPrefix !== 'samlp';
+    const overridesAssertion = !!assertionPrefix && assertionPrefix !== 'saml';
+    if (overridesProtocol || overridesAssertion) {
+      const prefixes = { protocol: protocolPrefix, assertion: assertionPrefix };
+      // Rewrite any caller-supplied templates in place so customTagReplacement
+      // consumers see the rebound prefixes too.
+      const callerLoginCtx = entitySetting.loginResponseTemplate?.context;
+      if (isString(callerLoginCtx)) {
+        entitySetting.loginResponseTemplate = {
+          ...entitySetting.loginResponseTemplate,
+          context: applyTagPrefixes(callerLoginCtx, prefixes),
+        };
+      }
+      const callerLogoutReqCtx = entitySetting.logoutRequestTemplate?.context;
+      if (isString(callerLogoutReqCtx)) {
+        entitySetting.logoutRequestTemplate = {
+          ...entitySetting.logoutRequestTemplate,
+          context: applyTagPrefixes(callerLogoutReqCtx, prefixes),
+        };
+      }
+      const callerLogoutRespCtx = entitySetting.logoutResponseTemplate?.context;
+      if (isString(callerLogoutRespCtx)) {
+        entitySetting.logoutResponseTemplate = {
+          ...entitySetting.logoutResponseTemplate,
+          context: applyTagPrefixes(callerLogoutRespCtx, prefixes),
+        };
+      }
+      // Pre-rewrite copies of the default templates so the bindings emit
+      // rebound prefixes when no caller template is supplied.
+      entitySetting.tagPrefixedDefaults = {
+        loginResponseTemplate: {
+          context: applyTagPrefixes(libsaml.defaultLoginResponseTemplate.context, prefixes),
+        },
+        logoutRequestTemplate: {
+          context: applyTagPrefixes(libsaml.defaultLogoutRequestTemplate.context, prefixes),
+        },
+        logoutResponseTemplate: {
+          context: applyTagPrefixes(libsaml.defaultLogoutResponseTemplate.context, prefixes),
+        },
+      };
+    }
+
     super(entitySetting, 'idp');
   }
 

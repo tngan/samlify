@@ -1500,3 +1500,229 @@ describe('ForceAuthn (#359, saml-core §3.4.1)', () => {
     expect(decoded).not.toContain('ForceAuthn=');
   });
 });
+
+describe('IdP tagPrefix override (#388, saml-core §1.4)', () => {
+  // saml-core §1.4 — XML namespace prefixes are not normative; only the
+  // namespace URIs are. Callers can rebind them as long as the URI
+  // bindings remain correct. Some peers (legacy ADFS, custom integrations)
+  // require non-standard prefixes; this lets us swap `samlp:` ↔ `samlp2:`
+  // and `saml:` ↔ `saml2:` without supplying a fully custom template.
+
+  const idpKey = fs.readFileSync('./test/key/idp/privkey.pem');
+  const idpKeyPass = 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW';
+  const spKey = fs.readFileSync('./test/key/sp/privkey.pem');
+  const spKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
+
+  const sp = serviceProvider({ privateKey: spKey, privateKeyPass: spKeyPass, metadata: spMetaXml });
+  const requestInfo = { extract: { request: { id: '_req-id' } } } as any;
+
+  const decode = (b64: string) => Buffer.from(b64, 'base64').toString('utf8');
+
+  test('login response template uses overridden protocol prefix', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'samlp2' },
+    });
+    const result = await idp.createLoginResponse(sp, requestInfo, 'post', { email: 'u@x' });
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toContain('<samlp2:Response');
+    expect(xml).toContain('xmlns:samlp2="urn:oasis:names:tc:SAML:2.0:protocol"');
+    expect(xml).not.toContain('<samlp:Response');
+  });
+
+  test('login response template uses overridden assertion prefix', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { assertion: 'saml2' },
+    });
+    const result = await idp.createLoginResponse(sp, requestInfo, 'post', { email: 'u@x' });
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toContain('<saml2:Issuer');
+    expect(xml).toContain('<saml2:Assertion');
+    expect(xml).toContain('xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"');
+    expect(xml).not.toMatch(/<saml:Issuer/);
+  });
+
+  test('both prefixes overridden simultaneously land on the rendered XML', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+    });
+    const result = await idp.createLoginResponse(sp, requestInfo, 'post', { email: 'u@x' });
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toContain('<p2:Response');
+    expect(xml).toContain('<a2:Issuer');
+    expect(xml).toContain('<a2:Assertion');
+    expect(xml).toContain('xmlns:p2="urn:oasis:names:tc:SAML:2.0:protocol"');
+    expect(xml).toContain('xmlns:a2="urn:oasis:names:tc:SAML:2.0:assertion"');
+    expect(xml).not.toContain('<samlp:Response');
+    expect(xml).not.toMatch(/<saml:Issuer/);
+  });
+
+  test('default behaviour preserved when no tagPrefix overrides are supplied', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+    });
+    const result = await idp.createLoginResponse(sp, requestInfo, 'post', { email: 'u@x' });
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toContain('<samlp:Response');
+    expect(xml).toContain('<saml:Issuer');
+    expect(xml).toContain('xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"');
+    expect(xml).toContain('xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"');
+  });
+
+  test('caller-supplied loginResponseTemplate is rewritten too', () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2' },
+      // The IdP constructor rewrites the caller's template in place so
+      // customTagReplacement consumers see the rebound prefix too.
+      loginResponseTemplate: {
+        context: '<samlp:Response>{ID}</samlp:Response>',
+        attributes: [],
+      } as any,
+    });
+    const ctx = (idp.entitySetting.loginResponseTemplate as { context: string }).context;
+    expect(ctx).toContain('<p2:Response>');
+    expect(ctx).not.toContain('<samlp:Response>');
+  });
+
+  test('rewrite also applies to logoutRequest and logoutResponse default templates', () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'samlp2', assertion: 'saml2' },
+    });
+    const logoutReqResult = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'u@x' }) as { context: string };
+    const reqXml = decode(logoutReqResult.context);
+    expect(reqXml).toContain('<samlp2:LogoutRequest');
+    expect(reqXml).toContain('<saml2:Issuer');
+    expect(reqXml).toContain('xmlns:samlp2="urn:oasis:names:tc:SAML:2.0:protocol"');
+
+    const logoutRespResult = idp.createLogoutResponse(
+      sp,
+      { extract: { request: { id: '_lr' } } } as any,
+      'post',
+      'state',
+    ) as { context: string };
+    const respXml = decode(logoutRespResult.context);
+    expect(respXml).toContain('<samlp2:LogoutResponse');
+    expect(respXml).toContain('<saml2:Issuer');
+  });
+
+  test('caller-supplied logoutRequestTemplate is rewritten too', () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+      logoutRequestTemplate: {
+        context: '<samlp:LogoutRequest><saml:Issuer>{Issuer}</saml:Issuer></samlp:LogoutRequest>',
+      },
+    });
+    const ctx = (idp.entitySetting.logoutRequestTemplate as { context: string }).context;
+    expect(ctx).toContain('<p2:LogoutRequest>');
+    expect(ctx).toContain('<a2:Issuer>');
+    expect(ctx).not.toContain('<samlp:');
+    expect(ctx).not.toContain('<saml:');
+  });
+
+  test('caller-supplied logoutResponseTemplate is rewritten too', () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+      logoutResponseTemplate: {
+        context: '<samlp:LogoutResponse><saml:Issuer>{Issuer}</saml:Issuer></samlp:LogoutResponse>',
+      },
+    });
+    const ctx = (idp.entitySetting.logoutResponseTemplate as { context: string }).context;
+    expect(ctx).toContain('<p2:LogoutResponse>');
+    expect(ctx).toContain('<a2:Issuer>');
+    expect(ctx).not.toContain('<samlp:');
+    expect(ctx).not.toContain('<saml:');
+  });
+
+  test('redirect binding picks up the rewritten default templates', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+    });
+    // login response over redirect
+    const loginResp = await idp.createLoginResponse(sp, requestInfo, 'redirect', { email: 'u@x' });
+    const loginResponseQuery = (loginResp.context as string).split('SAMLResponse=')[1].split('&')[0];
+    const loginXml = require('zlib')
+      .inflateRawSync(Buffer.from(decodeURIComponent(loginResponseQuery), 'base64'))
+      .toString('utf8');
+    expect(loginXml).toContain('<p2:Response');
+    expect(loginXml).toContain('<a2:Assertion');
+
+    // logout request over redirect
+    const logoutReq = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'u@x' });
+    const reqQuery = (logoutReq.context as string).split('SAMLRequest=')[1].split('&')[0];
+    const reqXml = require('zlib')
+      .inflateRawSync(Buffer.from(decodeURIComponent(reqQuery), 'base64'))
+      .toString('utf8');
+    expect(reqXml).toContain('<p2:LogoutRequest');
+    expect(reqXml).toContain('<a2:Issuer');
+
+    // logout response over redirect
+    const logoutResp = idp.createLogoutResponse(sp, { extract: { request: { id: '_lr' } } } as any, 'redirect', '');
+    const respQuery = (logoutResp.context as string).split('SAMLResponse=')[1].split('&')[0];
+    const respXml = require('zlib')
+      .inflateRawSync(Buffer.from(decodeURIComponent(respQuery), 'base64'))
+      .toString('utf8');
+    expect(respXml).toContain('<p2:LogoutResponse');
+    expect(respXml).toContain('<a2:Issuer');
+  });
+
+  test('simpleSign binding picks up the rewritten default templates', async () => {
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+    });
+    const loginResp = await idp.createLoginResponse(sp, requestInfo, 'simpleSign', { email: 'u@x' });
+    const loginXml = decode((loginResp as { context: string }).context);
+    expect(loginXml).toContain('<p2:Response');
+    expect(loginXml).toContain('<a2:Assertion');
+
+    const logoutReq = idp.createLogoutRequest(sp, 'simpleSign', { logoutNameID: 'u@x' });
+    const reqXml = decode((logoutReq as { context: string }).context);
+    expect(reqXml).toContain('<p2:LogoutRequest');
+    expect(reqXml).toContain('<a2:Issuer');
+
+    const logoutResp = idp.createLogoutResponse(sp, { extract: { request: { id: '_lr' } } } as any, 'simpleSign', '');
+    const respXml = decode((logoutResp as { context: string }).context);
+    expect(respXml).toContain('<p2:LogoutResponse');
+    expect(respXml).toContain('<a2:Issuer');
+  });
+
+  test('encryptedAssertion prefix continues to be honoured independently', () => {
+    // Defaults to 'saml' on every IdP — preserved when the new
+    // protocol/assertion overrides are introduced.
+    const idp = identityProvider({
+      privateKey: idpKey,
+      privateKeyPass: idpKeyPass,
+      metadata: idpMetaXml,
+      tagPrefix: { protocol: 'samlp2', encryptedAssertion: 'saml' },
+    });
+    expect(idp.entitySetting.tagPrefix?.encryptedAssertion).toBe('saml');
+    expect(idp.entitySetting.tagPrefix?.protocol).toBe('samlp2');
+  });
+});

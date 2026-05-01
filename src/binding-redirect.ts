@@ -237,7 +237,11 @@ function loginResponseRedirectURL(
     if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
       tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
     }
-    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+    // saml-core §1.4: prefer the IdP-rewritten default when tagPrefix is
+    // overridden (closes #388); otherwise fall back to the library default.
+    const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
+      ?? libsaml.defaultLoginResponseTemplate.context;
+    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
   }
 
   const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
@@ -325,7 +329,9 @@ function logoutRequestRedirectURL(
     id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
     rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
   } else {
-    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, requiredTags as TagReplacementMap);
+    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
+      ?? libsaml.defaultLogoutRequestTemplate.context;
+    rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, requiredTags as TagReplacementMap);
   }
   return {
     id,
@@ -392,7 +398,9 @@ function logoutResponseRedirectURL(
     if (requestInfo && (requestInfo as RequestInfo).extract && (requestInfo as RequestInfo).extract.request) {
       tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
     }
-    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
+    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
+      ?? libsaml.defaultLogoutResponseTemplate.context;
+    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
   }
   return {
     id,
