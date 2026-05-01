@@ -322,5 +322,42 @@ export interface IdentityProviderSettings {
   wantLogoutResponseSigned?: boolean;
   wantAuthnRequestsSigned?: boolean;
   wantLogoutRequestSignedResponseSigned?: boolean;
-  tagPrefix?: Record<string, string>;
+  /**
+   * Override the XML namespace prefixes used when rendering the IdP's
+   * default request/response templates.
+   *
+   * - `protocol` rebinds the SAML protocol namespace
+   *   (`urn:oasis:names:tc:SAML:2.0:protocol`, default prefix `samlp`).
+   * - `assertion` rebinds the SAML assertion namespace
+   *   (`urn:oasis:names:tc:SAML:2.0:assertion`, default prefix `saml`).
+   * - `encryptedAssertion` is the prefix wrapped around
+   *   `<EncryptedAssertion>` inside `libsaml.encryptAssertion`.
+   *
+   * Per saml-core §1.4 the prefix choice is not normative — only the
+   * namespace URI bindings are. Some peers (legacy ADFS quirks, custom
+   * integrations) require non-standard prefixes; this lets callers swap
+   * `samlp:` ↔ `samlp2:` and `saml:` ↔ `saml2:` without supplying a fully
+   * custom template (closes #388).
+   */
+  tagPrefix?: {
+    /** Prefix bound to the SAML protocol namespace (default: 'samlp'). */
+    protocol?: string;
+    /** Prefix bound to the SAML assertion namespace (default: 'saml'). */
+    assertion?: string;
+    /** Prefix used when wrapping `<EncryptedAssertion>`. */
+    encryptedAssertion?: string;
+    [key: string]: string | undefined;
+  };
+  /**
+   * @internal Populated by the IdP constructor when `tagPrefix.protocol`
+   * or `tagPrefix.assertion` is overridden — pre-rewritten copies of the
+   * built-in default request/response templates that the bindings consume
+   * in place of the library-internal defaults. Not part of the public
+   * configuration surface.
+   */
+  tagPrefixedDefaults?: {
+    loginResponseTemplate?: SAMLDocumentTemplate;
+    logoutRequestTemplate?: SAMLDocumentTemplate;
+    logoutResponseTemplate?: SAMLDocumentTemplate;
+  };
 }

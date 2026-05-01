@@ -222,7 +222,11 @@ async function base64LoginResponse(
     if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
       tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
     }
-    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLoginResponseTemplate.context, tvalue);
+    // saml-core §1.4: prefer the IdP-rewritten default when tagPrefix is
+    // overridden (closes #388); otherwise fall back to the library default.
+    const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
+      ?? libsaml.defaultLoginResponseTemplate.context;
+    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
   }
   const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
   const config = {
@@ -307,7 +311,9 @@ function base64LogoutRequest(
       // drops the element when undefined (closes #470).
       SessionIndex: user.sessionIndex,
     };
-    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLogoutRequestTemplate.context, tvalue);
+    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
+      ?? libsaml.defaultLogoutRequestTemplate.context;
+    rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, tvalue);
   }
 
   let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
@@ -371,7 +377,9 @@ function base64LogoutResponse(
       StatusCode: StatusCode.Success,
       InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id') as string,
     };
-    rawSamlResponse = libsaml.replaceTagsByValue(libsaml.defaultLogoutResponseTemplate.context, tvalue);
+    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
+      ?? libsaml.defaultLogoutResponseTemplate.context;
+    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
   }
 
   let simpleSignatureContext: { signature: string; sigAlg: string } | null = null;
