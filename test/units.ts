@@ -240,12 +240,31 @@ describe('libsaml — pure helpers', () => {
     expect(xml).toBe('<a id="a&amp;b"><x/></a>');
   });
 
-  test('replaceTagsByValue treats null and undefined as empty strings', () => {
+  test('replaceTagsByValue omits attributes whose value is null or undefined (#455, saml-core §3.4.1)', () => {
+    // null/undefined in attribute position drop the whole attribute; in
+    // element-text position they collapse to the empty string.
     const xml = libsaml.replaceTagsByValue(
       '<a id="{Id}">{Body}</a>',
       { Id: null, Body: undefined },
     );
-    expect(xml).toBe('<a id=""></a>');
+    expect(xml).toBe('<a></a>');
+  });
+
+  test('replaceTagsByValue keeps explicit empty-string attributes', () => {
+    // Empty string is a legitimate value and should NOT trigger omission.
+    const xml = libsaml.replaceTagsByValue(
+      '<a id="{Id}"/>',
+      { Id: '' },
+    );
+    expect(xml).toBe('<a id=""/>');
+  });
+
+  test('replaceTagsByValue omits only the attribute whose tag is missing', () => {
+    const xml = libsaml.replaceTagsByValue(
+      '<a foo="x" bar="{Y}" baz="z"/>',
+      { Y: undefined },
+    );
+    expect(xml).toBe('<a foo="x" baz="z"/>');
   });
 
   test('attributeStatementBuilder renders attributes with defaults', () => {
@@ -872,6 +891,44 @@ describe('Security audit (2026-04)', () => {
         'http://attacker.example.com/madeup-alg',
       ),
     ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+});
+
+describe('AuthnRequest attribute omission (#455, saml-core §3.4.1)', () => {
+  // saml-core §3.4.1 declares ACS URL, NameIDPolicy/Format, AllowCreate
+  // (and friends) as `use="optional"`. If samlify can't fill them in, it
+  // must omit the attribute rather than emit `name=""` or `name="undefined"`.
+
+  test('default AuthnRequest template drops AssertionConsumerServiceURL when value is undefined', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      AssertionConsumerServiceURL: undefined,
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      AllowCreate: false,
+    });
+    expect(xml).not.toContain('AssertionConsumerServiceURL=""');
+    expect(xml).not.toContain('AssertionConsumerServiceURL="undefined"');
+    expect(xml).not.toContain('AssertionConsumerServiceURL=');
+  });
+
+  test('default AuthnRequest template drops NameIDFormat and AllowCreate when both are undefined', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      AssertionConsumerServiceURL: 'https://sp/acs',
+      NameIDFormat: undefined,
+      AllowCreate: undefined,
+    });
+    expect(xml).not.toContain('Format=');
+    expect(xml).not.toContain('AllowCreate=');
+    // The NameIDPolicy element itself remains (saml-core §3.4.1 allows it
+    // with no attributes).
+    expect(xml).toContain('<samlp:NameIDPolicy');
   });
 });
 
