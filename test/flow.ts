@@ -213,7 +213,7 @@ test('signed in sp is not matched with the signed notation in idp with post requ
     const { id, context } = sp.createLoginRequest(_idp, 'post');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
@@ -223,7 +223,7 @@ test('signed in sp is not matched with the signed notation in idp with redirect 
     const { id, context } = sp.createLoginRequest(_idp, 'redirect');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
@@ -233,7 +233,19 @@ test('signed in sp is not matched with the signed notation in idp with post simp
     const { id, context } = sp.createLoginRequest(_idp, 'simpleSign');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+  }
+});
+
+test('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG embeds both observed flags (saml-core §3.4.1 / saml-metadata §2.4.4)', () => {
+  const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
+  try {
+    sp.createLoginRequest(_idp, 'redirect');
+    expect(true).toBe(false);
+  } catch (e: any) {
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('AuthnRequestsSigned=');
+    expect(e.message).toContain('WantAuthnRequestsSigned=');
   }
 });
 

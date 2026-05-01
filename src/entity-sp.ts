@@ -75,8 +75,17 @@ export class ServiceProvider extends Entity {
 
     const nsBinding = namespace.binding;
     const protocol = nsBinding[selectedBinding];
-    if (this.entityMeta.isAuthnRequestSigned() !== idp.entityMeta.isWantAuthnRequestsSigned()) {
-      throw new Error('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    // saml-core §3.4.1 / saml-metadata §2.4.4: the SP's `AuthnRequestsSigned`
+    // attribute and the IdP's `WantAuthnRequestsSigned` attribute must agree;
+    // surface both observed values so the operator can tell which side is
+    // misconfigured. The error code stays first so prefix-based handlers
+    // (per saml-conformance §3) keep working.
+    const spSigned = this.entityMeta.isAuthnRequestSigned();
+    const idpWants = idp.entityMeta.isWantAuthnRequestsSigned();
+    if (spSigned !== idpWants) {
+      throw new Error(
+        `ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG: SP AuthnRequestsSigned=${spSigned} but IdP WantAuthnRequestsSigned=${idpWants}`,
+      );
     }
 
     let context: BindingContext | SimpleSignBindingContext | null = null;
