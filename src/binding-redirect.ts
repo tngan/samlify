@@ -111,6 +111,14 @@ function loginRequestRedirectURL(
   /* v8 ignore stop */
 
   const base = metadata.idp.getSingleSignOnService(binding.redirect);
+  // saml-bindings §3.4 / saml-metadata §2.4.3: the IdP must declare a
+  // <SingleSignOnService> entry with the HTTP-Redirect Binding URI.
+  // When that endpoint is absent, getSingleSignOnService returns the raw
+  // service map (an object) rather than a URL string — surface a clear
+  // error instead of letting it crash inside url.parse downstream.
+  if (typeof base !== 'string') {
+    throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
+  }
   let rawSamlRequest: string;
   if (spSetting.loginRequestTemplate && customTagReplacement) {
     const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
@@ -182,6 +190,14 @@ function loginResponseRedirectURL(
   /* v8 ignore stop */
 
   const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+  // saml-bindings §3.4 / saml-metadata §2.4.3: the SP must declare an
+  // <AssertionConsumerService> entry with the HTTP-Redirect Binding URI.
+  // When that endpoint is absent, getAssertionConsumerService returns
+  // undefined or the raw service list — reject with a clear error rather
+  // than crashing in url.parse.
+  if (typeof base !== 'string') {
+    throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
+  }
   let rawSamlResponse: string;
   const nameIDFormat = idpSetting.nameIDFormat;
   const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
@@ -282,6 +298,12 @@ function logoutRequestRedirectURL(
   /* v8 ignore stop */
 
   const base = metadata.target.getSingleLogoutService(binding.redirect);
+  // saml-bindings §3.4 / saml-metadata §2.4.3: the target entity must declare
+  // a <SingleLogoutService> with the HTTP-Redirect Binding URI. Otherwise the
+  // service map leaks through and crashes inside url.parse downstream.
+  if (typeof base !== 'string') {
+    throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
+  }
   let rawSamlRequest = '';
   const requiredTags = {
     ID: id,
@@ -342,6 +364,12 @@ function logoutResponseRedirectURL(
   /* v8 ignore stop */
 
   const base = metadata.target.getSingleLogoutService(binding.redirect);
+  // saml-bindings §3.4 / saml-metadata §2.4.3: same constraint as the
+  // logout request path — the target must advertise a HTTP-Redirect SLO
+  // endpoint before we can build a URL.
+  if (typeof base !== 'string') {
+    throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
+  }
   let rawSamlResponse: string;
   if (initSetting.logoutResponseTemplate && customTagReplacement) {
     const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
