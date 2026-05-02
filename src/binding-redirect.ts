@@ -122,8 +122,14 @@ function loginRequestRedirectURL(
     throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
   }
   let rawSamlRequest: string;
-  if (spSetting.loginRequestTemplate && customTagReplacement) {
-    const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
+  if (customTagReplacement) {
+    // saml-bindings §3.4 — the AuthnRequest template is informative, not
+    // normative. Honour the callback regardless of whether the caller
+    // supplied a custom template (closes #549). Pass the user-supplied
+    // template when present; otherwise the library default.
+    const templateContext = spSetting.loginRequestTemplate?.context
+      ?? libsaml.defaultLoginRequestTemplate.context;
+    const info = customTagReplacement(templateContext);
     id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
     rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
     // Support callback returning { context: string } or { context: { context: string } }.
@@ -229,8 +235,15 @@ function loginResponseRedirectURL(
     AttributeStatement: '',
   };
 
-  if (idpSetting.loginResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+  if (customTagReplacement) {
+    // saml-bindings §3.4 — honour the callback even when the caller did
+    // not override `loginResponseTemplate` (closes #549). Prefer the
+    // user-supplied template, then the tag-prefixed default (closes #388),
+    // and finally the library default.
+    const templateContext = idpSetting.loginResponseTemplate?.context
+      ?? idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
+      ?? libsaml.defaultLoginResponseTemplate.context;
+    const template = customTagReplacement(templateContext);
     id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
     rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
   } else {
@@ -324,8 +337,15 @@ function logoutRequestRedirectURL(
     NameID: user.logoutNameID,
     SessionIndex: user.sessionIndex,
   };
-  if (initSetting.logoutRequestTemplate && customTagReplacement) {
-    const info = customTagReplacement(initSetting.logoutRequestTemplate as unknown as string, requiredTags);
+  if (customTagReplacement) {
+    // saml-bindings §3.4 — honour the callback even when the caller did
+    // not override `logoutRequestTemplate` (closes #549). Prefer the
+    // user-supplied template, then the tag-prefixed default (closes #388),
+    // and finally the library default.
+    const templateContext = initSetting.logoutRequestTemplate?.context
+      ?? initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
+      ?? libsaml.defaultLogoutRequestTemplate.context;
+    const info = customTagReplacement(templateContext, requiredTags);
     id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
     rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
   } else {
@@ -382,8 +402,15 @@ function logoutResponseRedirectURL(
     throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
   }
   let rawSamlResponse: string;
-  if (initSetting.logoutResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
+  if (customTagReplacement) {
+    // saml-bindings §3.4 — honour the callback even when the caller did
+    // not override `logoutResponseTemplate` (closes #549). Prefer the
+    // user-supplied template, then the tag-prefixed default (closes #388),
+    // and finally the library default.
+    const templateContext = initSetting.logoutResponseTemplate?.context
+      ?? initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
+      ?? libsaml.defaultLogoutResponseTemplate.context;
+    const template = customTagReplacement(templateContext);
     id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
     rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
   } else {

@@ -1726,3 +1726,384 @@ describe('IdP tagPrefix override (#388, saml-core §1.4)', () => {
     expect(idp.entitySetting.tagPrefix?.protocol).toBe('samlp2');
   });
 });
+
+describe('customTagReplacement without explicit template (#549)', () => {
+  // saml-bindings §3.4 / §3.5 — neither binding mandates a particular
+  // <samlp:AuthnRequest> template; the library default is informative,
+  // not normative. A supplied callback should fire even when the caller
+  // didn't override the template.
+  //
+  // Use the unsigned IdP and an inline SP that mirrors the IdP's
+  // unsigned posture so the binding builders skip the XPath-targeted
+  // signing path (the focus here is callback invocation, not signature
+  // placement).
+  const idp = identityProvider({
+    privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+    metadata: fs.readFileSync('./test/misc/idpmeta_nosign.xml'),
+  });
+  const sp = serviceProvider({
+    entityID: 'https://sp-cb.example.org/metadata',
+    authnRequestsSigned: false,
+    wantAssertionsSigned: false,
+    nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
+    assertionConsumerService: [
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', Location: 'https://sp-cb.example.org/acs' },
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', Location: 'https://sp-cb.example.org/acs' },
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign', Location: 'https://sp-cb.example.org/acs' },
+    ],
+    singleLogoutService: [
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', Location: 'https://sp-cb.example.org/slo' },
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', Location: 'https://sp-cb.example.org/slo' },
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign', Location: 'https://sp-cb.example.org/slo' },
+    ],
+  });
+
+  const decode = (b64: string) => Buffer.from(b64, 'base64').toString('utf8');
+  const inflateRedirectParam = (urlContext: string, key: 'SAMLRequest' | 'SAMLResponse') => {
+    const value = urlContext.split(`${key}=`)[1].split('&')[0];
+    return require('zlib')
+      .inflateRawSync(Buffer.from(decodeURIComponent(value), 'base64'))
+      .toString('utf8');
+  };
+
+  test('redirect login request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-req', context: '<samlp:AuthnRequest>custom</samlp:AuthnRequest>' };
+    };
+    const result = sp.createLoginRequest(idp, 'redirect', { customTagReplacement: cb });
+    expect(received).toContain('<samlp:AuthnRequest');
+    expect(result.id).toBe('_custom-req');
+    const xml = inflateRedirectParam(result.context as string, 'SAMLRequest');
+    expect(xml).toBe('<samlp:AuthnRequest>custom</samlp:AuthnRequest>');
+  });
+
+  test('post login request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-post-req', context: '<samlp:AuthnRequest>post-custom</samlp:AuthnRequest>' };
+    };
+    const result = sp.createLoginRequest(idp, 'post', { customTagReplacement: cb });
+    expect(received).toContain('<samlp:AuthnRequest');
+    expect(result.id).toBe('_custom-post-req');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:AuthnRequest>post-custom</samlp:AuthnRequest>');
+  });
+
+  test('simpleSign login request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-ss-req', context: '<samlp:AuthnRequest>ss-custom</samlp:AuthnRequest>' };
+    };
+    const result = sp.createLoginRequest(idp, 'simpleSign', { customTagReplacement: cb });
+    expect(received).toContain('<samlp:AuthnRequest');
+    expect(result.id).toBe('_custom-ss-req');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:AuthnRequest>ss-custom</samlp:AuthnRequest>');
+  });
+
+  test('post logout request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-logout', context: '<samlp:LogoutRequest>x</samlp:LogoutRequest>' };
+    };
+    const result = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'u@x' }, { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutRequest');
+    expect(result.id).toBe('_custom-logout');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:LogoutRequest>x</samlp:LogoutRequest>');
+  });
+
+  test('redirect logout request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-redir-logout', context: '<samlp:LogoutRequest>r</samlp:LogoutRequest>' };
+    };
+    const result = idp.createLogoutRequest(sp, 'redirect', { logoutNameID: 'u@x' }, { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutRequest');
+    expect(result.id).toBe('_custom-redir-logout');
+    const xml = inflateRedirectParam(result.context as string, 'SAMLRequest');
+    expect(xml).toBe('<samlp:LogoutRequest>r</samlp:LogoutRequest>');
+  });
+
+  test('simpleSign logout request invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-ss-logout', context: '<samlp:LogoutRequest>s</samlp:LogoutRequest>' };
+    };
+    const result = idp.createLogoutRequest(sp, 'simpleSign', { logoutNameID: 'u@x' }, { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutRequest');
+    expect(result.id).toBe('_custom-ss-logout');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:LogoutRequest>s</samlp:LogoutRequest>');
+  });
+
+  test('post logout response invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-resp-post', context: '<samlp:LogoutResponse>p</samlp:LogoutResponse>' };
+    };
+    const result = idp.createLogoutResponse(sp, { extract: { request: { id: '_abc' } } } as any, 'post', { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutResponse');
+    expect(result.id).toBe('_custom-resp-post');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:LogoutResponse>p</samlp:LogoutResponse>');
+  });
+
+  test('simpleSign logout response invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-resp-ss', context: '<samlp:LogoutResponse>q</samlp:LogoutResponse>' };
+    };
+    const result = idp.createLogoutResponse(sp, { extract: { request: { id: '_abc' } } } as any, 'simpleSign', { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutResponse');
+    expect(result.id).toBe('_custom-resp-ss');
+    const xml = decode((result as { context: string }).context);
+    expect(xml).toBe('<samlp:LogoutResponse>q</samlp:LogoutResponse>');
+  });
+
+  test('redirect logout response invokes callback with library default template', () => {
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_custom-logout-resp', context: '<samlp:LogoutResponse>y</samlp:LogoutResponse>' };
+    };
+    const requestInfo = { extract: { request: { id: '_abc' } } } as any;
+    const result = idp.createLogoutResponse(sp, requestInfo, 'redirect', { customTagReplacement: cb } as any);
+    expect(received).toContain('<samlp:LogoutResponse');
+    expect(result.context).toContain('SAMLResponse=');
+    const xml = inflateRedirectParam(result.context as string, 'SAMLResponse');
+    expect(xml).toBe('<samlp:LogoutResponse>y</samlp:LogoutResponse>');
+  });
+
+  test('callback receives user-supplied template when both are supplied (backwards-compat)', () => {
+    const customTemplate = '<samlp:AuthnRequest data-source="user">{ID}</samlp:AuthnRequest>';
+    const spCustom = serviceProvider({
+      entityID: 'https://sp-cb-custom.example.org/metadata',
+      authnRequestsSigned: false,
+      wantAssertionsSigned: false,
+      nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
+      assertionConsumerService: [
+        { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', Location: 'https://sp-cb-custom.example.org/acs' },
+      ],
+      loginRequestTemplate: { context: customTemplate },
+    });
+    let received: string | undefined;
+    const cb = (template: string) => {
+      received = template;
+      return { id: '_user-template', context: '<samlp:AuthnRequest>user-template-result</samlp:AuthnRequest>' };
+    };
+    spCustom.createLoginRequest(idp, 'post', { customTagReplacement: cb });
+    expect(received).toBe(customTemplate);
+    expect(received).not.toContain('AssertionConsumerServiceURL');
+  });
+
+  test('no callback and no custom template falls back to default-template path (backwards-compat)', () => {
+    const result = sp.createLoginRequest(idp, 'post');
+    const xml = decode((result as { context: string }).context);
+    // Library default contains the full AuthnRequest skeleton with the
+    // standard attributes — confirming the no-callback branch ran and
+    // executed `replaceTagsByValue` against the library default.
+    expect(xml).toContain('<samlp:AuthnRequest');
+    expect(xml).toContain('AssertionConsumerServiceURL=');
+    expect(xml).toContain('<saml:Issuer>');
+    expect(xml).toContain('<samlp:NameIDPolicy');
+  });
+
+  // Cover the middle branch of the new
+  //   user-supplied  ??  tagPrefixedDefaults  ??  library default
+  // chain — closes #388 + #549. With `tagPrefix.protocol` overridden the
+  // IdP populates `tagPrefixedDefaults`, and a supplied callback should
+  // receive that pre-rewritten template (not the library default).
+  describe('tag-prefixed defaults reach the callback (#388 ∩ #549)', () => {
+    const idpPrefixed = identityProvider({
+      privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+      privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+      metadata: fs.readFileSync('./test/misc/idpmeta_nosign.xml'),
+      tagPrefix: { protocol: 'p2', assertion: 'a2' },
+    });
+
+    test('post loginResponse callback receives tag-prefixed default template', async () => {
+      // Inline SP without wantAssertionsSigned/wantMessageSigned so the
+      // post-binding builder skips signing and the XPath that targets
+      // Response/Issuer never runs against our minimal stub XML.
+      const spReceiveOnly = serviceProvider({
+        entityID: 'https://sp-cb-prefix.example.org/metadata',
+        authnRequestsSigned: false,
+        wantAssertionsSigned: true,
+        nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
+        assertionConsumerService: [
+          { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', Location: 'https://sp-cb-prefix.example.org/acs' },
+        ],
+      });
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        // Return a stub that includes Response > Assertion > Issuer so the
+        // signing XPath (saml-bindings §3.5) can resolve.
+        return {
+          id: '_p2-resp',
+          context: '<p2:Response xmlns:p2="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:a2="urn:oasis:names:tc:SAML:2.0:assertion"><a2:Assertion><a2:Issuer>x</a2:Issuer></a2:Assertion></p2:Response>',
+        };
+      };
+      await idpPrefixed.createLoginResponse(
+        spReceiveOnly,
+        { extract: { request: { id: '_req' } } } as any,
+        'post',
+        { email: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:Response');
+      expect(received).toContain('<a2:Assertion');
+      expect(received).not.toContain('<samlp:Response');
+    });
+
+    test('redirect logoutResponse callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lresp', context: '<p2:LogoutResponse/>' };
+      };
+      idpPrefixed.createLogoutResponse(
+        sp,
+        { extract: { request: { id: '_req' } } } as any,
+        'redirect',
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutResponse');
+      expect(received).toContain('<a2:Issuer');
+    });
+
+    test('simpleSign logoutRequest callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lreq', context: '<p2:LogoutRequest/>' };
+      };
+      idpPrefixed.createLogoutRequest(
+        sp,
+        'simpleSign',
+        { logoutNameID: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutRequest');
+      expect(received).toContain('<a2:Issuer');
+    });
+
+    test('redirect loginResponse callback receives tag-prefixed default template', async () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lresp-r', context: '<p2:Response>x</p2:Response>' };
+      };
+      await idpPrefixed.createLoginResponse(
+        sp,
+        { extract: { request: { id: '_req' } } } as any,
+        'redirect',
+        { email: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:Response');
+      expect(received).toContain('<a2:Assertion');
+    });
+
+    test('post logoutResponse callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lresp-p', context: '<p2:LogoutResponse/>' };
+      };
+      idpPrefixed.createLogoutResponse(
+        sp,
+        { extract: { request: { id: '_req' } } } as any,
+        'post',
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutResponse');
+      expect(received).toContain('<a2:Issuer');
+    });
+
+    test('simpleSign loginResponse callback receives tag-prefixed default template', async () => {
+      const spReceiveOnly = serviceProvider({
+        entityID: 'https://sp-cb-prefix-ss.example.org/metadata',
+        authnRequestsSigned: false,
+        wantAssertionsSigned: false,
+        nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
+        assertionConsumerService: [
+          { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign', Location: 'https://sp-cb-prefix-ss.example.org/acs' },
+        ],
+      });
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-resp-ss', context: '<p2:Response/>' };
+      };
+      await idpPrefixed.createLoginResponse(
+        spReceiveOnly,
+        { extract: { request: { id: '_req' } } } as any,
+        'simpleSign',
+        { email: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:Response');
+      expect(received).toContain('<a2:Assertion');
+    });
+
+    test('post logoutRequest callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lreq-p', context: '<p2:LogoutRequest/>' };
+      };
+      idpPrefixed.createLogoutRequest(
+        sp,
+        'post',
+        { logoutNameID: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutRequest');
+      expect(received).toContain('<a2:Issuer');
+    });
+
+    test('redirect logoutRequest callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lreq-r', context: '<p2:LogoutRequest/>' };
+      };
+      idpPrefixed.createLogoutRequest(
+        sp,
+        'redirect',
+        { logoutNameID: 'u@x' },
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutRequest');
+      expect(received).toContain('<a2:Issuer');
+    });
+
+    test('simpleSign logoutResponse callback receives tag-prefixed default template', () => {
+      let received: string | undefined;
+      const cb = (template: string) => {
+        received = template;
+        return { id: '_p2-lresp-ss', context: '<p2:LogoutResponse/>' };
+      };
+      idpPrefixed.createLogoutResponse(
+        sp,
+        { extract: { request: { id: '_req' } } } as any,
+        'simpleSign',
+        { customTagReplacement: cb } as any,
+      );
+      expect(received).toContain('<p2:LogoutResponse');
+      expect(received).toContain('<a2:Issuer');
+    });
+  });
+});

@@ -114,8 +114,13 @@ function base64LoginRequest(
 
   const base = metadata.idp.getSingleSignOnService(binding.simpleSign);
   let rawSamlRequest: string;
-  if (spSetting.loginRequestTemplate && customTagReplacement) {
-    const info = customTagReplacement(spSetting.loginRequestTemplate.context!);
+  if (customTagReplacement) {
+    // saml-binding-simplesign §2 — the AuthnRequest template is informative,
+    // not normative. Honour the callback regardless of whether the caller
+    // supplied a custom template (closes #549).
+    const templateContext = spSetting.loginRequestTemplate?.context
+      ?? libsaml.defaultLoginRequestTemplate.context;
+    const info = customTagReplacement(templateContext);
     id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
     rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
   } else {
@@ -215,8 +220,15 @@ async function base64LoginResponse(
     AuthnStatement: '',
     AttributeStatement: '',
   };
-  if (idpSetting.loginResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+  if (customTagReplacement) {
+    // saml-binding-simplesign §2 — honour the callback even when the
+    // caller did not override `loginResponseTemplate` (closes #549).
+    // Prefer the user-supplied template, then the tag-prefixed default
+    // (closes #388), and finally the library default.
+    const templateContext = idpSetting.loginResponseTemplate?.context
+      ?? idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
+      ?? libsaml.defaultLoginResponseTemplate.context;
+    const template = customTagReplacement(templateContext);
     rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
   } else {
     if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
@@ -293,8 +305,15 @@ function base64LogoutRequest(
   /* v8 ignore stop */
 
   let rawSamlRequest: string;
-  if (initSetting.logoutRequestTemplate && customTagReplacement) {
-    const template = customTagReplacement(initSetting.logoutRequestTemplate.context!);
+  if (customTagReplacement) {
+    // saml-binding-simplesign §2 — honour the callback even when the
+    // caller did not override `logoutRequestTemplate` (closes #549).
+    // Prefer the user-supplied template, then the tag-prefixed default
+    // (closes #388), and finally the library default.
+    const templateContext = initSetting.logoutRequestTemplate?.context
+      ?? initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
+      ?? libsaml.defaultLogoutRequestTemplate.context;
+    const template = customTagReplacement(templateContext);
     id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
     rawSamlRequest = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
   } else {
@@ -362,8 +381,15 @@ function base64LogoutResponse(
   /* v8 ignore stop */
 
   let rawSamlResponse: string;
-  if (initSetting.logoutResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(initSetting.logoutResponseTemplate.context!);
+  if (customTagReplacement) {
+    // saml-binding-simplesign §2 — honour the callback even when the
+    // caller did not override `logoutResponseTemplate` (closes #549).
+    // Prefer the user-supplied template, then the tag-prefixed default
+    // (closes #388), and finally the library default.
+    const templateContext = initSetting.logoutResponseTemplate?.context
+      ?? initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
+      ?? libsaml.defaultLogoutResponseTemplate.context;
+    const template = customTagReplacement(templateContext);
     id = template.id;
     rawSamlResponse = template.context;
   } else {
