@@ -4,41 +4,55 @@
  * @desc Binding-level API for SAML HTTP-Redirect. Builds signed/unsigned
  * redirect URLs for login/logout requests and responses.
  */
-import utility, { get } from './utility';
+import utility, {
+    get
+}
+from './utility';
 import libsaml from './libsaml';
 import type {
-  BindingContext,
-  RequestInfo,
-  SAMLUser,
-  TagReplacementMap,
-} from './types';
-import type { IdentityProvider as Idp } from './entity-idp';
-import type { ServiceProvider as Sp } from './entity-sp';
+    BindingContext,
+    RequestInfo,
+    SAMLUser,
+    TagReplacementMap,
+}
+from './types';
+import type {
+    IdentityProvider as Idp
+}
+from './entity-idp';
+import type {
+    ServiceProvider as Sp
+}
+from './entity-sp';
 import type Entity from './entity';
 import * as url from 'url';
-import { wording, namespace } from './urn';
+import {
+    wording,
+    namespace
+}
+from './urn';
 
 const binding = wording.binding;
 const urlParams = wording.urlParams;
 
 /** Options consumed by {@link buildRedirectURL}. */
 export interface BuildRedirectConfig {
-  baseUrl: string;
-  type: string;
-  isSigned: boolean;
-  context: string;
-  entitySetting: {
-    requestSignatureAlgorithm?: string;
-    privateKey?: string | Buffer;
-    privateKeyPass?: string;
-  };
-  relayState?: string;
+    baseUrl: string;
+    type: string;
+    isSigned: boolean;
+    context: string;
+    entitySetting: {
+        requestSignatureAlgorithm ?  : string;
+        privateKey ?  : string | Buffer;
+        privateKeyPass ?  : string;
+    };
+    relayState ?  : string;
 }
 
 /** Initiator/target entity pair used for logout redirects. */
 interface RedirectInitTargetPair {
-  init: Entity;
-  target: Entity;
+    init: Entity;
+    target: Entity;
 }
 
 /**
@@ -48,8 +62,8 @@ interface RedirectInitTargetPair {
  * @param value key value
  * @param first when true, use `?` instead of `&`
  */
-function pvPair(param: string, value: string, first?: boolean): string {
-  return (first === true ? '?' : '&') + param + '=' + value;
+function pvPair(param: string, value: string, first ?  : boolean): string {
+    return (first === true ? '?' : '&') + param + '=' + value;
 }
 
 /**
@@ -60,31 +74,47 @@ function pvPair(param: string, value: string, first?: boolean): string {
  * @returns absolute redirect URL
  */
 function buildRedirectURL(opts: BuildRedirectConfig): string {
-  const { baseUrl, type, isSigned, context, entitySetting } = opts;
-  let { relayState = '' } = opts;
-  const noParams = (url.parse(baseUrl).query || []).length === 0;
-  const queryParam = libsaml.getQueryParamByType(type);
-  // SAML redirect binding: deflate → base64 → URL-encode.
-  const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
-  if (relayState !== '') {
-    relayState = pvPair(urlParams.relayState, encodeURIComponent(relayState));
-  }
-  if (isSigned) {
-    const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm!));
-    const octetString = samlRequest + relayState + sigAlg;
-    return baseUrl
-      + pvPair(queryParam, octetString, noParams)
-      + pvPair(urlParams.signature, encodeURIComponent(
-        libsaml.constructMessageSignature(
-          queryParam + '=' + octetString,
-          entitySetting.privateKey as string,
-          entitySetting.privateKeyPass,
-          undefined,
-          entitySetting.requestSignatureAlgorithm,
-        ).toString(),
-      ));
-  }
-  return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
+    const {
+        type,
+        isSigned,
+        context,
+        entitySetting
+    } = opts;
+    let {
+        baseUrl
+    } = opts;
+    if (typeof baseUrl === 'object' && baseUrl !== null) {
+        const baseUrlKeys = Object.keys(baseUrl);
+        if (baseUrlKeys.length > 0) {
+            baseUrl = baseUrl['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'] || baseUrl[baseUrlKeys[0]];
+        }
+    } else if (Array.isArray(baseUrl) && baseUrl.length > 0) {
+        baseUrl = baseUrl[0];
+    }
+    let {
+        relayState = ''
+    } = opts;
+    const noParams = (url.parse(baseUrl).query || []).length === 0;
+    const queryParam = libsaml.getQueryParamByType(type);
+    // SAML redirect binding: deflate → base64 → URL-encode.
+    const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
+    if (relayState !== '') {
+        relayState = pvPair(urlParams.relayState, encodeURIComponent(relayState));
+    }
+    if (isSigned) {
+        const sigAlg = pvPair(urlParams.sigAlg, encodeURIComponent(entitySetting.requestSignatureAlgorithm!));
+        const octetString = samlRequest + relayState + sigAlg;
+        return baseUrl
+         + pvPair(queryParam, octetString, noParams)
+         + pvPair(urlParams.signature, encodeURIComponent(
+                libsaml.constructMessageSignature(
+                    queryParam + '=' + octetString,
+                    entitySetting.privateKey as string,
+                    entitySetting.privateKeyPass,
+                    undefined,
+                    entitySetting.requestSignatureAlgorithm, ).toString(), ));
+    }
+    return baseUrl + pvPair(queryParam, samlRequest + relayState, noParams);
 }
 
 /**
@@ -97,69 +127,76 @@ function buildRedirectURL(opts: BuildRedirectConfig): string {
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function loginRequestRedirectURL(
-  entity: { idp: Idp; sp: Sp },
-  customTagReplacement?: (template: string) => BindingContext,
-  relayState?: string,
-  forceAuthn?: boolean,
-): BindingContext {
-  const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
-  const spSetting = entity.sp.entitySetting;
-  let id = '';
-
-  /* v8 ignore start */
-  if (!metadata.idp || !metadata.sp) {
-    throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
-  }
-  /* v8 ignore stop */
-
-  const base = metadata.idp.getSingleSignOnService(binding.redirect);
-  // saml-bindings §3.4 / saml-metadata §2.4.3: the IdP must declare a
-  // <SingleSignOnService> entry with the HTTP-Redirect Binding URI.
-  // When that endpoint is absent, getSingleSignOnService returns the raw
-  // service map (an object) rather than a URL string — surface a clear
-  // error instead of letting it crash inside url.parse downstream.
-  if (typeof base !== 'string') {
-    throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
-  }
-  let rawSamlRequest: string;
-  if (spSetting.loginRequestTemplate && customTagReplacement) {
-    const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
-    id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
-    rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
-    // Support callback returning { context: string } or { context: { context: string } }.
-    if (typeof rawSamlRequest === 'object' && rawSamlRequest !== null && 'context' in (rawSamlRequest as object)) {
-      rawSamlRequest = (rawSamlRequest as { context: string }).context;
-    }
-  } else {
-    const nameIDFormat = spSetting.nameIDFormat;
-    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-    id = spSetting.generateID!();
-    const tags: TagReplacementMap = {
-      ID: id,
-      Destination: base as string,
-      Issuer: metadata.sp.getEntityID(),
-      IssueInstant: new Date().toISOString(),
-      NameIDFormat: selectedNameIDFormat,
-      AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
-      EntityID: metadata.sp.getEntityID(),
-      AllowCreate: spSetting.allowCreate,
-      // saml-core §3.4.1 — `replaceTagsByValue` drops the attribute when
-      // `forceAuthn` is undefined, matching `use="optional"`.
-      ForceAuthn: forceAuthn,
+    entity: {
+    idp: Idp;
+    sp: Sp
+},
+    customTagReplacement ?  : (template: string) => BindingContext,
+    relayState ?  : string,
+    forceAuthn ?  : boolean, ): BindingContext {
+    const metadata = {
+        idp: entity.idp.entityMeta,
+        sp: entity.sp.entityMeta
     };
-    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
-  }
-  return {
-    id,
-    context: buildRedirectURL({
-      context: rawSamlRequest,
-      type: urlParams.samlRequest,
-      isSigned: metadata.sp.isAuthnRequestSigned(),
-      entitySetting: spSetting,
-      baseUrl: base as string,
-      relayState: relayState ?? spSetting.relayState,
-    }),
-  };
+    const spSetting = entity.sp.entitySetting;
+    let id = '';
+
+    /* v8 ignore start */
+    if (!metadata.idp || !metadata.sp) {
+        throw new Error('ERR_GENERATE_REDIRECT_LOGIN_REQUEST_MISSING_METADATA');
+    }
+    /* v8 ignore stop */
+
+    const base = metadata.idp.getSingleSignOnService(binding.redirect);
+    // saml-bindings §3.4 / saml-metadata §2.4.3: the IdP must declare a
+    // <SingleSignOnService> entry with the HTTP-Redirect Binding URI.
+    // When that endpoint is absent, getSingleSignOnService returns the raw
+    // service map (an object) rather than a URL string — surface a clear
+    // error instead of letting it crash inside url.parse downstream.
+    if (typeof base !== 'string') {
+        throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
+    }
+    let rawSamlRequest: string;
+    if (spSetting.loginRequestTemplate && customTagReplacement) {
+        const info = customTagReplacement(spSetting.loginRequestTemplate as unknown as string);
+        id = get < string > (info as unknown as Record < string, unknown > , 'id')as string;
+        rawSamlRequest = get < string > (info as unknown as Record < string, unknown > , 'context')as string;
+        // Support callback returning { context: string } or { context: { context: string } }.
+        if (typeof rawSamlRequest === 'object' && rawSamlRequest !== null && 'context' in(rawSamlRequest as object)) {
+            rawSamlRequest = (rawSamlRequest as {
+                context: string
+            }).context;
+        }
+    } else {
+        const nameIDFormat = spSetting.nameIDFormat;
+        const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+        id = spSetting.generateID!();
+        const tags: TagReplacementMap = {
+            ID: id,
+            Destination: base as string,
+            Issuer: metadata.sp.getEntityID(),
+            IssueInstant: new Date().toISOString(),
+            NameIDFormat: selectedNameIDFormat,
+            AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post)as string,
+            EntityID: metadata.sp.getEntityID(),
+            AllowCreate: spSetting.allowCreate,
+            // saml-core §3.4.1 — `replaceTagsByValue` drops the attribute when
+            // `forceAuthn` is undefined, matching `use="optional"`.
+            ForceAuthn: forceAuthn,
+        };
+        rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
+    }
+    return {
+        id,
+        context: buildRedirectURL({
+            context: rawSamlRequest,
+            type: urlParams.samlRequest,
+            isSigned: metadata.sp.isAuthnRequestSigned(),
+            entitySetting: spSetting,
+            baseUrl: base as string,
+            relayState: relayState ?? spSetting.relayState,
+        }),
+    };
 }
 
 /**
@@ -173,110 +210,119 @@ function loginRequestRedirectURL(
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function loginResponseRedirectURL(
-  requestInfo: RequestInfo,
-  entity: { idp: Idp; sp: Sp },
-  user: SAMLUser = {},
-  relayState?: string,
-  customTagReplacement?: (template: string) => BindingContext,
-): BindingContext {
-  const idpSetting = entity.idp.entitySetting;
-  const spSetting = entity.sp.entitySetting;
-  const metadata = {
-    idp: entity.idp.entityMeta,
-    sp: entity.sp.entityMeta,
-  };
+    requestInfo: RequestInfo,
+    entity: {
+    idp: Idp;
+    sp: Sp
+},
+    user: SAMLUser = {},
+    relayState ?  : string,
+    customTagReplacement ?  : (template: string) => BindingContext, ): BindingContext {
+    const idpSetting = entity.idp.entitySetting;
+    const spSetting = entity.sp.entitySetting;
+    const metadata = {
+        idp: entity.idp.entityMeta,
+        sp: entity.sp.entityMeta,
+    };
 
-  let id: string = idpSetting.generateID!();
+    let id: string = idpSetting.generateID!();
 
-  /* v8 ignore start */
-  if (!metadata.idp || !metadata.sp) {
-    throw new Error('ERR_GENERATE_REDIRECT_LOGIN_RESPONSE_MISSING_METADATA');
-  }
-  /* v8 ignore stop */
-
-  const base = metadata.sp.getAssertionConsumerService(binding.redirect);
-  // saml-bindings §3.4 / saml-metadata §2.4.3: the SP must declare an
-  // <AssertionConsumerService> entry with the HTTP-Redirect Binding URI.
-  // When that endpoint is absent, getAssertionConsumerService returns
-  // undefined or the raw service list — reject with a clear error rather
-  // than crashing in url.parse.
-  if (typeof base !== 'string') {
-    throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
-  }
-  let rawSamlResponse: string;
-  const nameIDFormat = idpSetting.nameIDFormat;
-  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
-  const nowTime = new Date();
-  const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
-  const tvalue: TagReplacementMap = {
-    ID: id,
-    AssertionID: idpSetting.generateID!(),
-    Destination: base as string,
-    SubjectRecipient: base as string,
-    Issuer: metadata.idp.getEntityID(),
-    Audience: metadata.sp.getEntityID(),
-    EntityID: metadata.sp.getEntityID(),
-    IssueInstant: nowTime.toISOString(),
-    AssertionConsumerServiceURL: base as string,
-    StatusCode: namespace.statusCode.success,
-    ConditionsNotBefore: nowTime.toISOString(),
-    ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-    SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
-    NameIDFormat: selectedNameIDFormat,
-    NameID: user.email || '',
-    InResponseTo: get<string>(requestInfo as Record<string, unknown>, 'extract.request.id', '') as string,
-    AuthnStatement: '',
-    AttributeStatement: '',
-  };
-
-  if (idpSetting.loginResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
-    id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
-    rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
-  } else {
-    if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
-      tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+    /* v8 ignore start */
+    if (!metadata.idp || !metadata.sp) {
+        throw new Error('ERR_GENERATE_REDIRECT_LOGIN_RESPONSE_MISSING_METADATA');
     }
-    // saml-core §1.4: prefer the IdP-rewritten default when tagPrefix is
-    // overridden (closes #388); otherwise fall back to the library default.
-    const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
-      ?? libsaml.defaultLoginResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
-  }
+    /* v8 ignore stop */
 
-  const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
-  const config = {
-    privateKey: privateKey as string,
-    privateKeyPass,
-    signatureAlgorithm: signatureAlgorithm!,
-    signingCert: metadata.idp.getX509Certificate('signing') as string,
-    isBase64Output: false,
-  };
-  if (metadata.sp.isWantAssertionsSigned()) {
-    rawSamlResponse = libsaml.constructSAMLSignature({
-      ...config,
-      rawSamlMessage: rawSamlResponse,
-      transformationAlgorithms: spSetting.transformationAlgorithms,
-      referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
-      signatureConfig: {
-        prefix: 'ds',
-        location: { reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']", action: 'after' },
-      },
-    });
-  }
+    const base = metadata.sp.getAssertionConsumerService(binding.redirect);
+    // saml-bindings §3.4 / saml-metadata §2.4.3: the SP must declare an
+    // <AssertionConsumerService> entry with the HTTP-Redirect Binding URI.
+    // When that endpoint is absent, getAssertionConsumerService returns
+    // undefined or the raw service list — reject with a clear error rather
+    // than crashing in url.parse.
+    if (typeof base !== 'string') {
+        throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
+    }
+    let rawSamlResponse: string;
+    const nameIDFormat = idpSetting.nameIDFormat;
+    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+    const nowTime = new Date();
+    const fiveMinutesLaterTime = new Date(nowTime.getTime() + 300_000);
+    const tvalue: TagReplacementMap = {
+        ID: id,
+        AssertionID: idpSetting.generateID!(),
+        Destination: base as string,
+        SubjectRecipient: base as string,
+        Issuer: metadata.idp.getEntityID(),
+        Audience: metadata.sp.getEntityID(),
+        EntityID: metadata.sp.getEntityID(),
+        IssueInstant: nowTime.toISOString(),
+        AssertionConsumerServiceURL: base as string,
+        StatusCode: namespace.statusCode.success,
+        ConditionsNotBefore: nowTime.toISOString(),
+        ConditionsNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+        SubjectConfirmationDataNotOnOrAfter: fiveMinutesLaterTime.toISOString(),
+        NameIDFormat: selectedNameIDFormat,
+        NameID: user.email || '',
+        InResponseTo: get < string > (requestInfo as Record < string, unknown > , 'extract.request.id', '')as string,
+        AuthnStatement: '',
+        AttributeStatement: '',
+    };
 
-  // SAML response over redirect binding is always signed (see SAML core 3.4.4).
-  return {
-    id,
-    context: buildRedirectURL({
-      baseUrl: base as string,
-      type: urlParams.samlResponse,
-      isSigned: true,
-      context: rawSamlResponse,
-      entitySetting: idpSetting,
-      relayState,
-    }),
-  };
+    if (idpSetting.loginResponseTemplate && customTagReplacement) {
+        const template = customTagReplacement(idpSetting.loginResponseTemplate.context!);
+        id = get < string > (template as unknown as Record < string, unknown > , 'id')as string;
+        rawSamlResponse = get < string > (template as unknown as Record < string, unknown > , 'context')as string;
+    } else {
+        if (requestInfo !== null && (requestInfo as RequestInfo).extract?.request) {
+            tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+        }
+        // saml-core §1.4: prefer the IdP-rewritten default when tagPrefix is
+        // overridden (closes #388); otherwise fall back to the library default.
+        const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
+             ?? libsaml.defaultLoginResponseTemplate.context;
+        rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    }
+
+    const {
+        privateKey,
+        privateKeyPass,
+        requestSignatureAlgorithm: signatureAlgorithm
+    } = idpSetting;
+    const config = {
+        privateKey: privateKey as string,
+        privateKeyPass,
+        signatureAlgorithm: signatureAlgorithm!,
+        signingCert: metadata.idp.getX509Certificate('signing')as string,
+        isBase64Output: false,
+    };
+    if (metadata.sp.isWantAssertionsSigned()) {
+        rawSamlResponse = libsaml.constructSAMLSignature({
+            ...config,
+            rawSamlMessage: rawSamlResponse,
+            transformationAlgorithms: spSetting.transformationAlgorithms,
+            referenceTagXPath: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']",
+            signatureConfig: {
+                prefix: 'ds',
+                location: {
+                    reference: "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Issuer']",
+                    action: 'after'
+                },
+            },
+        });
+    }
+
+    // SAML response over redirect binding is always signed (see SAML core 3.4.4).
+    return {
+        id,
+        context: buildRedirectURL({
+            baseUrl: base as string,
+            type: urlParams.samlResponse,
+            isSigned: true,
+            context: rawSamlResponse,
+            entitySetting: idpSetting,
+            relayState,
+        }),
+    };
 }
 
 /**
@@ -289,61 +335,63 @@ function loginResponseRedirectURL(
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function logoutRequestRedirectURL(
-  user: SAMLUser,
-  entity: RedirectInitTargetPair,
-  relayState?: string,
-  customTagReplacement?: (template: string, tags: object) => BindingContext,
-): BindingContext {
-  const metadata = { init: entity.init.entityMeta, target: entity.target.entityMeta };
-  const initSetting = entity.init.entitySetting;
-  let id: string = initSetting.generateID!();
-  const nameIDFormat = initSetting.nameIDFormat;
-  const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
+    user: SAMLUser,
+    entity: RedirectInitTargetPair,
+    relayState ?  : string,
+    customTagReplacement ?  : (template: string, tags: object) => BindingContext, ): BindingContext {
+    const metadata = {
+        init: entity.init.entityMeta,
+        target: entity.target.entityMeta
+    };
+    const initSetting = entity.init.entitySetting;
+    let id: string = initSetting.generateID!();
+    const nameIDFormat = initSetting.nameIDFormat;
+    const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
 
-  /* v8 ignore start */
-  if (!metadata.init || !metadata.target) {
-    throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
-  }
-  /* v8 ignore stop */
+    /* v8 ignore start */
+    if (!metadata.init || !metadata.target) {
+        throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_REQUEST_MISSING_METADATA');
+    }
+    /* v8 ignore stop */
 
-  const base = metadata.target.getSingleLogoutService(binding.redirect);
-  // saml-bindings §3.4 / saml-metadata §2.4.3: the target entity must declare
-  // a <SingleLogoutService> with the HTTP-Redirect Binding URI. Otherwise the
-  // service map leaks through and crashes inside url.parse downstream.
-  if (typeof base !== 'string') {
-    throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
-  }
-  let rawSamlRequest = '';
-  const requiredTags = {
-    ID: id,
-    Destination: base as string,
-    EntityID: metadata.init.getEntityID(),
-    Issuer: metadata.init.getEntityID(),
-    IssueInstant: new Date().toISOString(),
-    NameIDFormat: selectedNameIDFormat,
-    NameID: user.logoutNameID,
-    SessionIndex: user.sessionIndex,
-  };
-  if (initSetting.logoutRequestTemplate && customTagReplacement) {
-    const info = customTagReplacement(initSetting.logoutRequestTemplate as unknown as string, requiredTags);
-    id = get<string>(info as unknown as Record<string, unknown>, 'id') as string;
-    rawSamlRequest = get<string>(info as unknown as Record<string, unknown>, 'context') as string;
-  } else {
-    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
-      ?? libsaml.defaultLogoutRequestTemplate.context;
-    rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, requiredTags as TagReplacementMap);
-  }
-  return {
-    id,
-    context: buildRedirectURL({
-      context: rawSamlRequest,
-      relayState,
-      type: urlParams.logoutRequest,
-      isSigned: entity.target.entitySetting.wantLogoutRequestSigned!,
-      entitySetting: initSetting,
-      baseUrl: base as string,
-    }),
-  };
+    const base = metadata.target.getSingleLogoutService(binding.redirect);
+    // saml-bindings §3.4 / saml-metadata §2.4.3: the target entity must declare
+    // a <SingleLogoutService> with the HTTP-Redirect Binding URI. Otherwise the
+    // service map leaks through and crashes inside url.parse downstream.
+    if (typeof base !== 'string') {
+        throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
+    }
+    let rawSamlRequest = '';
+    const requiredTags = {
+        ID: id,
+        Destination: base as string,
+        EntityID: metadata.init.getEntityID(),
+        Issuer: metadata.init.getEntityID(),
+        IssueInstant: new Date().toISOString(),
+        NameIDFormat: selectedNameIDFormat,
+        NameID: user.logoutNameID,
+        SessionIndex: user.sessionIndex,
+    };
+    if (initSetting.logoutRequestTemplate && customTagReplacement) {
+        const info = customTagReplacement(initSetting.logoutRequestTemplate as unknown as string, requiredTags);
+        id = get < string > (info as unknown as Record < string, unknown > , 'id')as string;
+        rawSamlRequest = get < string > (info as unknown as Record < string, unknown > , 'context')as string;
+    } else {
+        const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
+             ?? libsaml.defaultLogoutRequestTemplate.context;
+        rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, requiredTags as TagReplacementMap);
+    }
+    return {
+        id,
+        context: buildRedirectURL({
+            context: rawSamlRequest,
+            relayState,
+            type: urlParams.logoutRequest,
+            isSigned: entity.target.entitySetting.wantLogoutRequestSigned!,
+            entitySetting: initSetting,
+            baseUrl: base as string,
+        }),
+    };
 }
 
 /**
@@ -356,70 +404,69 @@ function logoutRequestRedirectURL(
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function logoutResponseRedirectURL(
-  requestInfo: RequestInfo,
-  entity: RedirectInitTargetPair,
-  relayState?: string,
-  customTagReplacement?: (template: string) => BindingContext,
-): BindingContext {
-  const metadata = {
-    init: entity.init.entityMeta,
-    target: entity.target.entityMeta,
-  };
-  const initSetting = entity.init.entitySetting;
-  let id: string = initSetting.generateID!();
-
-  /* v8 ignore start */
-  if (!metadata.init || !metadata.target) {
-    throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_RESPONSE_MISSING_METADATA');
-  }
-  /* v8 ignore stop */
-
-  const base = metadata.target.getSingleLogoutService(binding.redirect);
-  // saml-bindings §3.4 / saml-metadata §2.4.3: same constraint as the
-  // logout request path — the target must advertise a HTTP-Redirect SLO
-  // endpoint before we can build a URL.
-  if (typeof base !== 'string') {
-    throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
-  }
-  let rawSamlResponse: string;
-  if (initSetting.logoutResponseTemplate && customTagReplacement) {
-    const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
-    id = get<string>(template as unknown as Record<string, unknown>, 'id') as string;
-    rawSamlResponse = get<string>(template as unknown as Record<string, unknown>, 'context') as string;
-  } else {
-    const tvalue: TagReplacementMap = {
-      ID: id,
-      Destination: base as string,
-      Issuer: metadata.init.getEntityID(),
-      EntityID: metadata.init.getEntityID(),
-      IssueInstant: new Date().toISOString(),
-      StatusCode: namespace.statusCode.success,
+    requestInfo: RequestInfo,
+    entity: RedirectInitTargetPair,
+    relayState ?  : string,
+    customTagReplacement ?  : (template: string) => BindingContext, ): BindingContext {
+    const metadata = {
+        init: entity.init.entityMeta,
+        target: entity.target.entityMeta,
     };
-    if (requestInfo && (requestInfo as RequestInfo).extract && (requestInfo as RequestInfo).extract.request) {
-      tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+    const initSetting = entity.init.entitySetting;
+    let id: string = initSetting.generateID!();
+
+    /* v8 ignore start */
+    if (!metadata.init || !metadata.target) {
+        throw new Error('ERR_GENERATE_REDIRECT_LOGOUT_RESPONSE_MISSING_METADATA');
     }
-    const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
-      ?? libsaml.defaultLogoutResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
-  }
-  return {
-    id,
-    context: buildRedirectURL({
-      baseUrl: base as string,
-      type: urlParams.logoutResponse,
-      isSigned: entity.target.entitySetting.wantLogoutResponseSigned!,
-      context: rawSamlResponse,
-      entitySetting: initSetting,
-      relayState,
-    }),
-  };
+    /* v8 ignore stop */
+
+    const base = metadata.target.getSingleLogoutService(binding.redirect);
+    // saml-bindings §3.4 / saml-metadata §2.4.3: same constraint as the
+    // logout request path — the target must advertise a HTTP-Redirect SLO
+    // endpoint before we can build a URL.
+    if (typeof base !== 'string') {
+        throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
+    }
+    let rawSamlResponse: string;
+    if (initSetting.logoutResponseTemplate && customTagReplacement) {
+        const template = customTagReplacement(initSetting.logoutResponseTemplate as unknown as string);
+        id = get < string > (template as unknown as Record < string, unknown > , 'id')as string;
+        rawSamlResponse = get < string > (template as unknown as Record < string, unknown > , 'context')as string;
+    } else {
+        const tvalue: TagReplacementMap = {
+            ID: id,
+            Destination: base as string,
+            Issuer: metadata.init.getEntityID(),
+            EntityID: metadata.init.getEntityID(),
+            IssueInstant: new Date().toISOString(),
+            StatusCode: namespace.statusCode.success,
+        };
+        if (requestInfo && (requestInfo as RequestInfo).extract && (requestInfo as RequestInfo).extract.request) {
+            tvalue.InResponseTo = (requestInfo as RequestInfo).extract.request!.id as string;
+        }
+        const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
+             ?? libsaml.defaultLogoutResponseTemplate.context;
+        rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    }
+    return {
+        id,
+        context: buildRedirectURL({
+            baseUrl: base as string,
+            type: urlParams.logoutResponse,
+            isSigned: entity.target.entitySetting.wantLogoutResponseSigned!,
+            context: rawSamlResponse,
+            entitySetting: initSetting,
+            relayState,
+        }),
+    };
 }
 
 const redirectBinding = {
-  loginRequestRedirectURL,
-  loginResponseRedirectURL,
-  logoutRequestRedirectURL,
-  logoutResponseRedirectURL,
+    loginRequestRedirectURL,
+    loginResponseRedirectURL,
+    logoutRequestRedirectURL,
+    logoutResponseRedirectURL,
 };
 
 export default redirectBinding;
