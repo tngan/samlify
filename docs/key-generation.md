@@ -1,8 +1,8 @@
-# Key generation
+# Key Generation
 
-We use openssl to generate the keys and certificate for testing purpose. It is optional to use password protection for private key. The following is the commands to generate private key and self-signed certificate.
+The commands below use OpenSSL to generate a private key and a self-signed certificate for testing. Passphrase protection on the private key is optional but recommended.
 
 ```console
-> openssl genrsa -passout pass:foobar -out encryptKey.pem 4096
-> openssl req -new -x509 -key encryptKey.pem -out encryptionCert.cer -days 3650
+$ openssl genrsa -passout pass:foobar -out encryptKey.pem 4096
+$ openssl req -new -x509 -key encryptKey.pem -out encryptionCert.cer -days 3650
 ```

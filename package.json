@@ -1,7 +1,7 @@
 {
   "name": "samlify",
-  "version": "2.9.1",
-  "description": "High-level API for Single Sign On (SAML 2.0)",
+  "version": "2.12.0",
+  "description": "Node.js library for SAML SSO",
   "main": "build/index.js",
   "keywords": [
     "nodejs",
@@ -11,14 +11,24 @@
     "metadata"
   ],
   "typings": "types/index.d.ts",
+  "files": [
+    "build",
+    "types",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "build": "yarn audit;make rebuild",
-    "docs": "docsify serve -o docs",
+    "clean": "rm -rf build types",
+    "build": "yarn audit && rm -rf build && tsc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
-    "pretest": "make pretest",
-    "test": "NODE_ENV=test nyc ava",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "pretest": "mkdir -p build/test && cp -a test/key test/misc build/test",
+    "test": "NODE_ENV=test vitest run",
+    "test:watch": "NODE_ENV=test vitest",
+    "coverage": "vitest run --coverage",
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
   },
   "contributors": [
@@ -32,42 +42,32 @@
   "license": "MIT",
   "dependencies": {
     "@authenio/xml-encryption": "^2.0.2",
-    "@xmldom/xmldom": "^0.8.6",
-    "camelcase": "^6.2.0",
-    "node-forge": "^1.3.0",
+    "@xmldom/xmldom": "^0.8.11",
     "node-rsa": "^1.1.1",
-    "pako": "^1.0.10",
-    "uuid": "^8.3.2",
     "xml": "^1.0.1",
-    "xml-crypto": "^3.2.1",
+    "xml-crypto": "^6.1.2",
     "xml-escape": "^1.1.0",
-    "xpath": "^0.0.32"
+    "xpath": "^0.0.34"
+  },
+  "resolutions": {
+    "diff": ">=4.0.4",
+    "esbuild": ">=0.25.0",
+    "vitest/vite": "^6.4.2",
+    "vitest/vite-node/vite": "^6.4.2",
+    "vitepress/vite": "^6.4.2",
+    "vitepress/@vitejs/plugin-vue/vite": "^6.4.2"
   },
   "devDependencies": {
-    "@ava/typescript": "^1.1.1",
-    "@types/node": "^11.11.3",
-    "@types/node-forge": "^1.0.1",
-    "@types/node-rsa": "^1.1.1",
-    "@types/pako": "^1.0.1",
-    "@types/uuid": "^8.3.4",
-    "@types/xmldom": "^0.1.31",
-    "ava": "^4.1.0",
-    "coveralls": "^3.1.1",
-    "nyc": "^15.1.0",
-    "timekeeper": "^2.2.0",
-    "ts-node": "^10.7.0",
+    "@authenio/samlify-xsd-schema-validator": "^1.0.5",
+    "@types/node": "^25.4.0",
+    "@types/node-rsa": "^1.1.4",
+    "@types/xmldom": "^0.1.34",
+    "@vitest/coverage-v8": "^3.2.0",
+    "timekeeper": "^2.3.1",
+    "ts-node": "^10.9.2",
     "tslint": "^6.1.3",
-    "typescript": "^4.4.2"
-  },
-  "ava": {
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ],
-    "files": [
-      "!**/*.d.ts"
-    ]
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.4",
+    "vitest": "^3.2.4"
   }
 }

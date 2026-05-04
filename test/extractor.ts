@@ -1,5 +1,5 @@
 // This test file includes all the units related to the extractor
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { extract } from '../src/extractor';
 
@@ -8,7 +8,7 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
 
 (() => {
 
-  test('fetch multiple attributes', t => {
+  test('fetch multiple attributes', () => {
     const result = extract(_decodedResponse, [
       {
         key: 'response',
@@ -16,11 +16,11 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: ['ID', 'Destination']
       }
     ]);
-    t.is(result.response.id, '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6');
-    t.is(result.response.destination, 'http://sp.example.com/demo1/index.php?acs');
+    expect(result.response.id).toBe('_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6');
+    expect(result.response.destination).toBe('http://sp.example.com/demo1/index.php?acs');
   });
 
-  test('fetch single attributes', t => {
+  test('fetch single attributes', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'statusCode',
@@ -28,10 +28,10 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: ['Value'],
       }
     ]);
-    t.is(result.statusCode, 'urn:oasis:names:tc:SAML:2.0:status:Success');
+    expect(result.statusCode).toBe('urn:oasis:names:tc:SAML:2.0:status:Success');
   });
 
-  test('fetch the inner context of leaf node', t => {
+  test('fetch the inner context of leaf node', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'audience',
@@ -39,10 +39,10 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: []
       }
     ]);
-    t.is(result.audience, 'https://sp.example.com/metadata');
+    expect(result.audience).toBe('https://sp.example.com/metadata');
   });
 
-  test('fetch the entire context of a non-existing node ', t => {
+  test('fetch the entire context of a non-existing node ', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'assertionSignature',
@@ -51,10 +51,10 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         context: true
       }
     ]);
-    t.is(result.assertionSignature, null);
+    expect(result.assertionSignature).toBe(null);
   });
 
-  test('fetch the entire context of an existed node', t => {
+  test('fetch the entire context of an existed node', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'messageSignature',
@@ -63,10 +63,10 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         context: true
       }
     ]);
-    t.not(result.messageSignature, null);
+    expect(result.messageSignature).not.toBe(null);
   });
 
-  test('fetch the unique inner context of multiple nodes', t => {
+  test('fetch the unique inner context of multiple nodes', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'issuer',
@@ -77,11 +77,11 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: []
       }
     ]);
-    t.is(result.issuer.length, 1);
-    t.is(result.issuer.every(i => i === 'https://idp.example.com/metadata'), true);
+    expect(result.issuer.length).toBe(1);
+    expect(result.issuer.every(i => i === 'https://idp.example.com/metadata')).toBe(true);
   });
 
-  test('fetch the attribute with wildcard local path', t => {
+  test('fetch the attribute with wildcard local path', () => {
     const result =  extract(_spmeta, [
       {
         key: 'certificate',
@@ -91,11 +91,11 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: []
       }
     ]);
-    t.not(result.certificate.signing, null);
-    t.not(result.certificate.encryption, null);
+    expect(result.certificate.signing).not.toBe(null);
+    expect(result.certificate.encryption).not.toBe(null);
   });
 
-  test('fetch the attribute with non-wildcard local path', t => {
+  test('fetch the attribute with non-wildcard local path', () => {
     const result =  extract(_decodedResponse, [
       {
         key: 'attributes',
@@ -105,12 +105,12 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
         attributes: []
       }
     ]);
-    t.is(result.attributes.uid, 'test');
-    t.is(result.attributes.mail, 'test@example.com');
-    t.is(result.attributes.eduPersonAffiliation.length, 2);
+    expect(result.attributes.uid).toBe('test');
+    expect(result.attributes.mail).toBe('test@example.com');
+    expect(result.attributes.eduPersonAffiliation.length).toBe(2);
   });
 
-  test('fetch with one attribute as key, another as value', t => {
+  test('fetch with one attribute as key, another as value', () => {
     const result =  extract(_spmeta, [
       {
         key: 'singleSignOnService',
@@ -123,8 +123,8 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
     const postEndpoint = result.singleSignOnService['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'];
     const artifactEndpoint = result.singleSignOnService['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact'];
 
-    t.is(postEndpoint, 'https://sp.example.org/sp/sso');
-    t.is(artifactEndpoint, 'https://sp.example.org/sp/sso');
+    expect(postEndpoint).toBe('https://sp.example.org/sp/sso');
+    expect(artifactEndpoint).toBe('https://sp.example.org/sp/sso');
   });
 
 })();

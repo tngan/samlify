@@ -1,10 +1,12 @@
-# Metadata distribution
+# Metadata Distribution
 
-?> Metadata is used to exchange information between Identity Provider and Service Provider. Simply there are two major ways to exchange Metadata.
+::: tip
+Metadata is the contract used to exchange SSO configuration between identity and service providers. There are two common distribution patterns.
+:::
 
-**Release in public **
+## Publishing publicly
 
-Display the Metadata in a specific URL. Everyone has the URL can watch the Metadata. Therefore, the Metadata is distributed publicly. We provide an API to do it once you've configure your SP.
+Expose the metadata document at a stable URL so that any party can retrieve it. samlify provides a helper that returns the current metadata for a configured entity.
 
 ```javascript
 const saml = require('samlify');
@@ -16,7 +18,7 @@ router.get('/metadata', (req, res) => {
 });
 ```
 
-If you use our IdP solution, you can also release the Metadata same as above.
+The same pattern applies when samlify serves as the identity provider:
 
 ```javascript
 const idp = saml.IdentityProvider({
@@ -27,17 +29,16 @@ router.get('/metadata', (req, res) => {
 });
 ```
 
-**Export and distribute it privately**
+## Exporting for private distribution
 
-Some properties may not want their metadata to release publicly. If IdP or SP is configured explicitly, a helper method is provided to export the auto-generated metadata.
+When an organization does not wish to publish metadata publicly, and when the IdP or SP has been configured programmatically, the generated metadata can be written to disk and shared through a private channel.
 
 ```javascript
-// Configure the entities without metadata
+// Configure the entities without a metadata document.
 const sp = saml.ServiceProvider(spSetting);
 const idp = saml.IdentityProvider(idpSetting);
-// Export the auto-generated Metadata to a specific file
+
+// Export the auto-generated metadata to files.
 sp.exportMetadata('./distributed_sp_md.xml');
 idp.exportMetadata('./distributed_idp_md.xml');
 ```
-
-

@@ -14,6 +14,7 @@
     "removeComments": false,
     "strictNullChecks": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "paths": {},
     "lib": [
       "dom",
@@ -24,10 +25,16 @@
     ]
   },
   "atom": { "rewriteTsconfig": false },
+  "include": [
+    "src/**/*.ts",
+    "index.ts"
+  ],
   "exclude": [
     "node_modules",
     "types/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "build",
+    "docs"
   ],
   "compileOnSave": false,
   "buildOnSave": false

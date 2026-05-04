@@ -1,65 +1,68 @@
 ## samlify
 
-> High-level API library for Single Sign On with SAML 2.0
+> High-level API library for Single Sign-On with SAML 2.0.
 
-This module provides a library for scaling Single Sign On implementation. Developers can easily configure the entities by importing the metadata. 
-
-We provide a simple interface that's highly configurable.
-
-### Thanks
-
-<div>Icons made by <a href="http://www.flaticon.com/authors/madebyoliver" title="Madebyoliver">Madebyoliver</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
-
+This module provides a scalable implementation of Single Sign-On (SSO) with SAML 2.0. Entities are configured by importing a metadata document, and the library exposes a simple, highly configurable interface.
 
 ### Installation
-To install the stable version
+
+Install the stable release via npm:
 
 ```console
 $ npm install samlify
 ```
 
-or
+Or via yarn:
 
 ```console
 $ yarn add samlify
 ```
 
-### Use cases
+### Supported use cases
 
-+ IdP-initiated Single Sign On
-+ IdP-initiated Single Log-out
-+ SP-initiated Single Sign On
-+ SP-initiated Single Log-out (in development)
+- IdP-initiated Single Sign-On
+- IdP-initiated Single Logout
+- SP-initiated Single Sign-On
+- SP-initiated Single Logout (in development)
 
-Simple solution of Identity Provider is provided in this module for test and educational use. Work with other 3rd party Identity Provider is also supported.
+A minimal identity provider implementation is included for testing and educational purposes. Integration with third-party identity providers is also supported.
 
-### Glimpse of code
+### Quick start
 
-!> **API is changed since v2. All file attributes like metadata and keyFile, it's expected to be normalized as string. It allows easy integration with database storage and import from local file system.**
+::: warning Breaking changes since v2
+File attributes such as `metadata` and `keyFile` must now be passed as strings (or buffers). This enables integration with database storage, in-memory sources, and the local filesystem through a single interface.
 
-!> **The constructor of entity is also modified to accept a single configuration object instead of putting metadata and advanced configurations in separate arguments.**
+The entity constructor now accepts a single configuration object rather than separate metadata and configuration arguments.
+:::
 
 ```javascript
 const saml = require('samlify');
-// configure a service provider
+
+// Configure a service provider.
 const sp = saml.ServiceProvider({
   metadata: fs.readFileSync('./metadata_sp.xml')
 });
-// configure the corresponding identity provider
+
+// Configure the corresponding identity provider.
 const idp = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata_idp.xml')
 });
-// parse when receive a SAML Response from IdP
+
+// Parse an inbound SAML Response sent by the IdP.
 router.post('/acs', (req, res) => {
   sp.parseLoginResponse(idp, 'post', req)
-  .then(parseResult => {
-    // Write your own validation and render function here
-  })
-  .catch(console.error);
+    .then(parseResult => {
+      // Apply your own validation and rendering logic here.
+    })
+    .catch(console.error);
 });
 ```
 
-Our default validation is to validate signature and the issuer name of Identity Provider. The code base is self explained. More use cases are provided in this documentation to fit in the real world application.
+By default, the library verifies the XML signature and the issuer name of the identity provider. The code base is self-documenting; additional use cases are covered throughout this documentation.
+
+### Credits
+
+<div>Icons created by <a href="http://www.flaticon.com/authors/madebyoliver" title="Madebyoliver">Madebyoliver</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>, licensed under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>.</div>
 
 ### License
 
