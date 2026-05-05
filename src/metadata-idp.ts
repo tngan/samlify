@@ -6,13 +6,25 @@
  */
 import Metadata, { MetadataInterface } from './metadata';
 import { MetadataIdpOptions, MetadataIdpConstructor, XmlElementArray, XmlAttributeMap } from './types';
-import { namespace } from './urn';
+import { namespace, elementsOrder as order } from './urn';
 import libsaml from './libsaml';
 import { castArrayOpt, isNonEmptyArray, isString } from './utility';
 import xml from 'xml';
 
 /** Public interface exposed by IdP metadata instances. */
 export interface IdpMetadataInterface extends MetadataInterface {
+}
+
+/**
+ * Element slots used to enforce the IdP descriptor ordering permitted by
+ * the SAML metadata schema.
+ * @see saml-metadata §2.4.3 — `<IDPSSODescriptor>` child element sequence.
+ */
+interface MetaElement {
+  KeyDescriptor: XmlElementArray;
+  NameIDFormat: XmlElementArray;
+  SingleSignOnService: XmlElementArray;
+  SingleLogoutService: XmlElementArray;
 }
 
 /**
@@ -37,6 +49,7 @@ export class IdpMetadata extends Metadata {
 
     if (!isFile) {
       const {
+        elementsOrder = order.idp.default,
         entityID,
         signingCert,
         encryptCert,
@@ -46,6 +59,13 @@ export class IdpMetadata extends Metadata {
         singleLogoutService = [],
       } = meta as MetadataIdpOptions;
 
+      const descriptors: MetaElement = {
+        KeyDescriptor: [],
+        NameIDFormat: [],
+        SingleSignOnService: [],
+        SingleLogoutService: [],
+      };
+
       const IDPSSODescriptor: XmlElementArray = [{
         _attr: {
           WantAuthnRequestsSigned: String(wantAuthnRequestsSigned),
@@ -54,15 +74,17 @@ export class IdpMetadata extends Metadata {
       }];
 
       for (const cert of castArrayOpt(signingCert)) {
-        IDPSSODescriptor.push(libsaml.createKeySection('signing', cert));
+        const section = libsaml.createKeySection('signing', cert) as { KeyDescriptor: XmlElementArray };
+        descriptors.KeyDescriptor.push(section.KeyDescriptor);
       }
 
       for (const cert of castArrayOpt(encryptCert)) {
-        IDPSSODescriptor.push(libsaml.createKeySection('encryption', cert));
+        const section = libsaml.createKeySection('encryption', cert) as { KeyDescriptor: XmlElementArray };
+        descriptors.KeyDescriptor.push(section.KeyDescriptor);
       }
 
       if (isNonEmptyArray(nameIDFormat)) {
-        nameIDFormat.forEach(f => IDPSSODescriptor.push({ NameIDFormat: f }));
+        nameIDFormat.forEach(f => descriptors.NameIDFormat.push(f));
       }
 
       if (isNonEmptyArray(singleSignOnService)) {
@@ -74,7 +96,7 @@ export class IdpMetadata extends Metadata {
           if (a.isDefault) {
             attr.isDefault = true;
           }
-          IDPSSODescriptor.push({ SingleSignOnService: [{ _attr: attr }] });
+          descriptors.SingleSignOnService.push([{ _attr: attr }]);
         });
       } else {
         throw new Error('ERR_IDP_METADATA_MISSING_SINGLE_SIGN_ON_SERVICE');
@@ -88,11 +110,21 @@ export class IdpMetadata extends Metadata {
           }
           attr.Binding = a.Binding;
           attr.Location = a.Location;
-          IDPSSODescriptor.push({ SingleLogoutService: [{ _attr: attr }] });
+          descriptors.SingleLogoutService.push([{ _attr: attr }]);
         });
       } else {
         console.warn('Construct identity  provider - missing endpoint of SingleLogoutService');
       }
+
+      // saml-metadata §2.4.3 — emit IDPSSODescriptor children in the
+      // caller-supplied order (default mirrors the historical sequence so
+      // existing metadata is byte-identical). Closes #429.
+      const existedElements = elementsOrder.filter(name => isNonEmptyArray(descriptors[name as keyof MetaElement]));
+      existedElements.forEach(name => {
+        (descriptors[name as keyof MetaElement] as XmlElementArray).forEach(e =>
+          IDPSSODescriptor.push({ [name]: e }),
+        );
+      });
 
       meta = xml([{
         EntityDescriptor: [{

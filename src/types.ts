@@ -217,6 +217,15 @@ export interface MetadataIdpOptions {
   singleSignOnService?: SSOService[];
   singleLogoutService?: SSOService[];
   requestSignatureAlgorithm?: string;
+  /**
+   * Override the order of child elements rendered inside
+   * `<IDPSSODescriptor>`. Each entry names a child element; the constructor
+   * emits the populated children in the order given. Mirrors the SP-side
+   * `MetadataSpOptions.elementsOrder`. Pre-baked variants are exposed via
+   * `Constants.elementsOrder.idp` (`default`, `onelogin`, `shibboleth`).
+   * See `saml-metadata §2.4.3` for the schema-declared sequence (#429).
+   */
+  elementsOrder?: string[];
 }
 
 /** Constructor argument for IdP metadata: options or raw XML. */
