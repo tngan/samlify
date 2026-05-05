@@ -205,9 +205,18 @@ const libSaml = () => {
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'pkcs1-sha512',
   };
 
-  /** Default AuthnRequest XML template. */
+  /**
+   * Default AuthnRequest XML template.
+   *
+   * Per saml-core §3.4.1, `ProtocolBinding`, `AssertionConsumerServiceURL`,
+   * and `AssertionConsumerServiceIndex` are all `use="optional"` and
+   * mutually exclusive — when the index is set, neither URL nor
+   * ProtocolBinding may be present. All three are placeholders here so
+   * that `replaceTagsByValue` drops whichever the caller leaves
+   * undefined (closes #437).
+   */
   const defaultLoginRequestTemplate: LoginRequestTemplate = {
-    context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" ForceAuthn="{ForceAuthn}" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
+    context: '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="{ID}" Version="2.0" ForceAuthn="{ForceAuthn}" IssueInstant="{IssueInstant}" Destination="{Destination}" ProtocolBinding="{ProtocolBinding}" AssertionConsumerServiceURL="{AssertionConsumerServiceURL}" AssertionConsumerServiceIndex="{AssertionConsumerServiceIndex}"><saml:Issuer>{Issuer}</saml:Issuer><samlp:NameIDPolicy Format="{NameIDFormat}" AllowCreate="{AllowCreate}"/></samlp:AuthnRequest>',
   };
 
   /**

@@ -1726,3 +1726,150 @@ describe('IdP tagPrefix override (#388, saml-core §1.4)', () => {
     expect(idp.entitySetting.tagPrefix?.protocol).toBe('samlp2');
   });
 });
+
+describe('AssertionConsumerServiceIndex (#437, saml-core §3.4.1)', () => {
+  // saml-core §3.4.1 declares `AssertionConsumerServiceIndex`,
+  // `AssertionConsumerServiceURL`, and `ProtocolBinding` as `use="optional"`
+  // and mutually exclusive: "If the `<AssertionConsumerServiceIndex>`
+  // attribute is present, neither `<AssertionConsumerServiceURL>` nor
+  // `<ProtocolBinding>` may be set." saml-profiles §4.1.4.1 permits the
+  // index form so the IdP can resolve the ACS endpoint from SP metadata.
+
+  const idp = identityProvider({
+    privateKey: fs.readFileSync('./test/key/idp/privkey.pem'),
+    privateKeyPass: 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW',
+    metadata: idpMetaXml,
+  });
+  const sp = serviceProvider({
+    privateKey: fs.readFileSync('./test/key/sp/privkey.pem'),
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    metadata: spMetaXml,
+  });
+
+  const inflateRedirect = (urlString: string): string => {
+    const u = new URL(urlString, 'http://example.test');
+    const samlRequest = decodeURIComponent(u.searchParams.get('SAMLRequest')!);
+    return require('zlib')
+      .inflateRawSync(Buffer.from(samlRequest, 'base64'))
+      .toString('utf8');
+  };
+
+  test('default template renders AssertionConsumerServiceIndex and drops URL+ProtocolBinding when index is set', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      NameIDFormat: 'fmt',
+      AllowCreate: true,
+      ProtocolBinding: undefined,
+      AssertionConsumerServiceURL: undefined,
+      AssertionConsumerServiceIndex: 0,
+    });
+    expect(xml).toContain('AssertionConsumerServiceIndex="0"');
+    expect(xml).not.toContain('ProtocolBinding=');
+    expect(xml).not.toContain('AssertionConsumerServiceURL=');
+  });
+
+  test('default template renders URL+ProtocolBinding when index is undefined (legacy behaviour)', () => {
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_x',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      NameIDFormat: 'fmt',
+      AllowCreate: true,
+      ProtocolBinding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+      AssertionConsumerServiceURL: 'https://sp/acs',
+      AssertionConsumerServiceIndex: undefined,
+    });
+    expect(xml).toContain('ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"');
+    expect(xml).toContain('AssertionConsumerServiceURL="https://sp/acs"');
+    expect(xml).not.toContain('AssertionConsumerServiceIndex=');
+  });
+
+  test('default template legacy snapshot is byte-identical to master (modulo ID/IssueInstant)', () => {
+    // Pin the default-rendered XML so backwards-compatible callers
+    // produce exactly the same bytes they did before #437.
+    const xml = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, {
+      ID: '_pinned',
+      Destination: 'https://idp/sso',
+      Issuer: 'https://sp/meta',
+      IssueInstant: '2026-05-01T00:00:00Z',
+      NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      AllowCreate: true,
+      ProtocolBinding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+      AssertionConsumerServiceURL: 'https://sp/acs',
+      AssertionConsumerServiceIndex: undefined,
+      ForceAuthn: undefined,
+    });
+    expect(xml).toBe(
+      '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"' +
+        ' xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_pinned"' +
+        ' Version="2.0" IssueInstant="2026-05-01T00:00:00Z"' +
+        ' Destination="https://idp/sso"' +
+        ' ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"' +
+        ' AssertionConsumerServiceURL="https://sp/acs">' +
+        '<saml:Issuer>https://sp/meta</saml:Issuer>' +
+        '<samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"' +
+        ' AllowCreate="true"/>' +
+        '</samlp:AuthnRequest>',
+    );
+  });
+
+  test('createLoginRequest (redirect): index renders, URL and ProtocolBinding omitted', () => {
+    const result = sp.createLoginRequest(idp, 'redirect', { assertionConsumerServiceIndex: 1 });
+    const inflated = inflateRedirect(result.context);
+    expect(inflated).toContain('AssertionConsumerServiceIndex="1"');
+    expect(inflated).not.toContain('AssertionConsumerServiceURL=');
+    expect(inflated).not.toContain('ProtocolBinding=');
+  });
+
+  test('createLoginRequest (post): index renders, URL and ProtocolBinding omitted', () => {
+    const result = sp.createLoginRequest(idp, 'post', { assertionConsumerServiceIndex: 2 });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('AssertionConsumerServiceIndex="2"');
+    expect(decoded).not.toContain('AssertionConsumerServiceURL=');
+    expect(decoded).not.toContain('ProtocolBinding=');
+  });
+
+  test('createLoginRequest (simpleSign): index renders, URL and ProtocolBinding omitted', () => {
+    const result = sp.createLoginRequest(idp, 'simpleSign', { assertionConsumerServiceIndex: 3 });
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('AssertionConsumerServiceIndex="3"');
+    expect(decoded).not.toContain('AssertionConsumerServiceURL=');
+    expect(decoded).not.toContain('ProtocolBinding=');
+  });
+
+  test('createLoginRequest (redirect): index=0 still renders the attribute (truthy/falsy edge)', () => {
+    const result = sp.createLoginRequest(idp, 'redirect', { assertionConsumerServiceIndex: 0 });
+    const inflated = inflateRedirect(result.context);
+    expect(inflated).toContain('AssertionConsumerServiceIndex="0"');
+    expect(inflated).not.toContain('AssertionConsumerServiceURL=');
+    expect(inflated).not.toContain('ProtocolBinding=');
+  });
+
+  test('backwards-compat: redirect with no options keeps URL and ProtocolBinding', () => {
+    const result = sp.createLoginRequest(idp, 'redirect');
+    const inflated = inflateRedirect(result.context);
+    expect(inflated).toContain('ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"');
+    expect(inflated).toContain('AssertionConsumerServiceURL=');
+    expect(inflated).not.toContain('AssertionConsumerServiceIndex=');
+  });
+
+  test('backwards-compat: post with no options keeps URL and ProtocolBinding', () => {
+    const result = sp.createLoginRequest(idp, 'post');
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"');
+    expect(decoded).toContain('AssertionConsumerServiceURL=');
+    expect(decoded).not.toContain('AssertionConsumerServiceIndex=');
+  });
+
+  test('backwards-compat: simpleSign with no options keeps URL and ProtocolBinding', () => {
+    const result = sp.createLoginRequest(idp, 'simpleSign');
+    const decoded = Buffer.from(result.context, 'base64').toString('utf8');
+    expect(decoded).toContain('ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"');
+    expect(decoded).toContain('AssertionConsumerServiceURL=');
+    expect(decoded).not.toContain('AssertionConsumerServiceIndex=');
+  });
+});

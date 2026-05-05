@@ -40,6 +40,9 @@ interface PostInitTargetPair {
  * @param entity `{ idp, sp }` handles
  * @param customTagReplacement optional custom template transformer
  * @param forceAuthn per-request `ForceAuthn` flag (saml-core §3.4.1)
+ * @param assertionConsumerServiceIndex per-request ACS index (saml-core §3.4.1).
+ *   Mutually exclusive with `AssertionConsumerServiceURL` / `ProtocolBinding`;
+ *   when supplied, both of those attributes are dropped from the rendered XML.
  * @returns id / base64-XML pair
  */
 function base64LoginRequest(
@@ -47,6 +50,7 @@ function base64LoginRequest(
   entity: PostIdpSpPair,
   customTagReplacement?: (template: string) => BindingContext,
   forceAuthn?: boolean,
+  assertionConsumerServiceIndex?: number,
 ): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -68,12 +72,24 @@ function base64LoginRequest(
     const nameIDFormat = spSetting.nameIDFormat;
     const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
     id = spSetting.generateID!();
+    // saml-core §3.4.1 — `AssertionConsumerServiceIndex` is mutually
+    // exclusive with `AssertionConsumerServiceURL` / `ProtocolBinding`.
+    // When the caller supplies the index we set the URL+ProtocolBinding
+    // tags to undefined so `replaceTagsByValue` drops both attributes
+    // from the rendered XML (closes #437).
+    const useAcsIndex = assertionConsumerServiceIndex !== undefined;
     const tags: TagReplacementMap = {
       ID: id,
       Destination: base as string,
       Issuer: metadata.sp.getEntityID(),
       IssueInstant: new Date().toISOString(),
-      AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
+      ProtocolBinding: useAcsIndex
+        ? undefined
+        : 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+      AssertionConsumerServiceURL: useAcsIndex
+        ? undefined
+        : metadata.sp.getAssertionConsumerService(binding.post) as string,
+      AssertionConsumerServiceIndex: assertionConsumerServiceIndex,
       EntityID: metadata.sp.getEntityID(),
       AllowCreate: spSetting.allowCreate,
       NameIDFormat: selectedNameIDFormat,

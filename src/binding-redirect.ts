@@ -94,6 +94,9 @@ function buildRedirectURL(opts: BuildRedirectConfig): string {
  * @param customTagReplacement optional custom template transformer
  * @param relayState per-request RelayState; falls back to `entitySetting.relayState`
  * @param forceAuthn per-request `ForceAuthn` flag (saml-core §3.4.1)
+ * @param assertionConsumerServiceIndex per-request ACS index (saml-core §3.4.1).
+ *   Mutually exclusive with `AssertionConsumerServiceURL` / `ProtocolBinding`;
+ *   when supplied, both of those attributes are dropped from the rendered XML.
  * @returns id + redirect URL wrapped in a {@link BindingContext}
  */
 function loginRequestRedirectURL(
@@ -101,6 +104,7 @@ function loginRequestRedirectURL(
   customTagReplacement?: (template: string) => BindingContext,
   relayState?: string,
   forceAuthn?: boolean,
+  assertionConsumerServiceIndex?: number,
 ): BindingContext {
   const metadata = { idp: entity.idp.entityMeta, sp: entity.sp.entityMeta };
   const spSetting = entity.sp.entitySetting;
@@ -134,13 +138,25 @@ function loginRequestRedirectURL(
     const nameIDFormat = spSetting.nameIDFormat;
     const selectedNameIDFormat = Array.isArray(nameIDFormat) ? nameIDFormat[0] : nameIDFormat;
     id = spSetting.generateID!();
+    // saml-core §3.4.1 — `AssertionConsumerServiceIndex` is mutually
+    // exclusive with `AssertionConsumerServiceURL` / `ProtocolBinding`.
+    // When the caller supplies the index we set the URL+ProtocolBinding
+    // tags to undefined so `replaceTagsByValue` drops both attributes
+    // from the rendered XML (closes #437).
+    const useAcsIndex = assertionConsumerServiceIndex !== undefined;
     const tags: TagReplacementMap = {
       ID: id,
       Destination: base as string,
       Issuer: metadata.sp.getEntityID(),
       IssueInstant: new Date().toISOString(),
       NameIDFormat: selectedNameIDFormat,
-      AssertionConsumerServiceURL: metadata.sp.getAssertionConsumerService(binding.post) as string,
+      ProtocolBinding: useAcsIndex
+        ? undefined
+        : 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+      AssertionConsumerServiceURL: useAcsIndex
+        ? undefined
+        : metadata.sp.getAssertionConsumerService(binding.post) as string,
+      AssertionConsumerServiceIndex: assertionConsumerServiceIndex,
       EntityID: metadata.sp.getEntityID(),
       AllowCreate: spSetting.allowCreate,
       // saml-core §3.4.1 — `replaceTagsByValue` drops the attribute when
