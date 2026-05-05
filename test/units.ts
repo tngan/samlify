@@ -839,6 +839,106 @@ describe('Metadata builders from options', () => {
   });
 });
 
+describe('IdP metadata elementsOrder (#429, saml-metadata §2.4.3)', () => {
+  // saml-metadata §2.4.3 — `<IDPSSODescriptor>` declares a fixed sequence
+  // for its child elements; some interop profiles (Shibboleth, OneLogin)
+  // require non-default orderings. The IdP factory now mirrors the SP
+  // factory's `elementsOrder` option so callers can pick a sequence
+  // without having to hand-write metadata XML.
+  const baseIdpOptions = {
+    entityID: 'https://example.org/idp',
+    signingCert: '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----',
+    encryptCert: '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----',
+    wantAuthnRequestsSigned: true,
+    nameIDFormat: ['urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'],
+    singleSignOnService: [
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', Location: 'https://example.org/sso' },
+    ],
+    singleLogoutService: [
+      { Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', Location: 'https://example.org/slo' },
+    ],
+  };
+
+  // Indices of each top-level child element in the rendered XML. We assert
+  // on relative ordering rather than exact byte output to keep the tests
+  // resilient to certificate / formatting changes elsewhere.
+  const indexOf = (xmlStr: string, tag: string) => xmlStr.indexOf(`<${tag}`);
+
+  test('default order matches the historical IdP emission sequence', () => {
+    const xmlStr = IdpMetadata(baseIdpOptions).getMetadata();
+    // KeyDescriptor → NameIDFormat → SingleSignOnService → SingleLogoutService
+    expect(indexOf(xmlStr, 'KeyDescriptor')).toBeGreaterThan(-1);
+    expect(indexOf(xmlStr, 'KeyDescriptor')).toBeLessThan(indexOf(xmlStr, 'NameIDFormat'));
+    expect(indexOf(xmlStr, 'NameIDFormat')).toBeLessThan(indexOf(xmlStr, 'SingleSignOnService'));
+    expect(indexOf(xmlStr, 'SingleSignOnService')).toBeLessThan(indexOf(xmlStr, 'SingleLogoutService'));
+  });
+
+  test('default IdP metadata XML is byte-identical when elementsOrder is omitted (regression pin)', () => {
+    // Regression pin: callers that don't supply `elementsOrder` MUST receive
+    // exactly the same metadata XML as before #429 was implemented.
+    const opts = {
+      ...baseIdpOptions,
+      // Strip certs so the expected string stays manageable.
+      signingCert: undefined,
+      encryptCert: undefined,
+    };
+    const xmlStr = IdpMetadata(opts).getMetadata();
+    expect(xmlStr).toBe(
+      '<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"' +
+      ' xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion"' +
+      ' xmlns:ds="http://www.w3.org/2000/09/xmldsig#"' +
+      ' entityID="https://example.org/idp">' +
+      '<IDPSSODescriptor WantAuthnRequestsSigned="true"' +
+      ' protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">' +
+      '<NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>' +
+      '<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"' +
+      ' Location="https://example.org/sso"></SingleSignOnService>' +
+      '<SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"' +
+      ' Location="https://example.org/slo"></SingleLogoutService>' +
+      '</IDPSSODescriptor></EntityDescriptor>'
+    );
+  });
+
+  test('custom elementsOrder is honoured — SingleSignOnService can precede KeyDescriptor', () => {
+    const xmlStr = IdpMetadata({
+      ...baseIdpOptions,
+      elementsOrder: ['SingleSignOnService', 'KeyDescriptor', 'NameIDFormat', 'SingleLogoutService'],
+    }).getMetadata();
+    // `<SingleSignOnService>` now appears before `<KeyDescriptor>`.
+    expect(indexOf(xmlStr, 'SingleSignOnService')).toBeGreaterThan(-1);
+    expect(indexOf(xmlStr, 'KeyDescriptor')).toBeGreaterThan(-1);
+    expect(indexOf(xmlStr, 'SingleSignOnService')).toBeLessThan(indexOf(xmlStr, 'KeyDescriptor'));
+    // The remaining tail order from the supplied array is also preserved.
+    expect(indexOf(xmlStr, 'KeyDescriptor')).toBeLessThan(indexOf(xmlStr, 'NameIDFormat'));
+    expect(indexOf(xmlStr, 'NameIDFormat')).toBeLessThan(indexOf(xmlStr, 'SingleLogoutService'));
+  });
+
+  test('elementsOrder filters elements that are not populated', () => {
+    // NameIDFormat omitted from options — even if it appears in the order
+    // array, no `<NameIDFormat>` should be emitted.
+    const xmlStr = IdpMetadata({
+      ...baseIdpOptions,
+      nameIDFormat: undefined as unknown as string[],
+      elementsOrder: ['KeyDescriptor', 'NameIDFormat', 'SingleSignOnService', 'SingleLogoutService'],
+    }).getMetadata();
+    expect(xmlStr).not.toContain('<NameIDFormat');
+    expect(xmlStr).toContain('<SingleSignOnService');
+    expect(xmlStr).toContain('<SingleLogoutService');
+  });
+
+  test('Constants.elementsOrder.idp exposes default/onelogin/shibboleth profiles', () => {
+    // The pre-baked profiles ride on the same `elementsOrder` constant the
+    // SP side already exports, namespaced under `idp` to avoid colliding
+    // with the existing SP-side keys.
+    const idp = (esaml2.Constants as unknown as {
+      elementsOrder: { idp: { default: string[]; onelogin: string[]; shibboleth: string[] } };
+    }).elementsOrder.idp;
+    expect(idp.default).toEqual(['KeyDescriptor', 'NameIDFormat', 'SingleSignOnService', 'SingleLogoutService']);
+    expect(idp.onelogin).toContain('SingleSignOnService');
+    expect(idp.shibboleth).toContain('SingleLogoutService');
+  });
+});
+
 describe('SP metadata default signatureConfig (#454)', () => {
   // saml-bindings §3.5 — when an SP declares `wantMessageSigned: true` without
   // a `signatureConfig`, the SP should fall back to the same signature placement

@@ -200,11 +200,29 @@ const wording = {
 };
 
 // https://wiki.shibboleth.net/confluence/display/CONCEPT/MetadataForSP
-// some idps restrict the order of elements in entity descriptors
+// some idps restrict the order of elements in entity descriptors.
+//
+// Top-level keys (default / onelogin / shibboleth) describe SP-side
+// orderings and are kept at the root for backwards compatibility with
+// callers that read `Constants.elementsOrder.shibboleth` directly.
+//
+// IdP-side orderings live under the `idp` sub-key. The default sequence
+// matches `saml-metadata §2.4.3` (the schema-declared `<IDPSSODescriptor>`
+// child sequence) restricted to the elements samlify currently emits.
 const elementsOrder = {
   default: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
   onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'AssertionConsumerService'],
   shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'AssertionConsumerService', 'AttributeConsumingService'],
+  idp: {
+    // Default mirrors the historical (pre-#429) emission order so callers
+    // that don't supply `elementsOrder` continue to receive byte-identical
+    // metadata XML. saml-metadata §2.4.3 permits this subset.
+    default: ['KeyDescriptor', 'NameIDFormat', 'SingleSignOnService', 'SingleLogoutService'],
+    // OneLogin-style: NameIDFormat ahead of the service endpoints.
+    onelogin: ['KeyDescriptor', 'NameIDFormat', 'SingleLogoutService', 'SingleSignOnService'],
+    // Shibboleth IdP convention puts SLO ahead of NameIDFormat.
+    shibboleth: ['KeyDescriptor', 'SingleLogoutService', 'NameIDFormat', 'SingleSignOnService'],
+  },
 };
 
 export { namespace, tags, algorithms, wording, elementsOrder, messageConfigurations };
