@@ -14,6 +14,7 @@ import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { getContext } from './api';
 import xmlEscape from 'xml-escape';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import type {
   EntitySetting,
@@ -198,12 +199,75 @@ const libSaml = () => {
     throw new Error('ERR_UNDEFINED_QUERY_PARAMS');
   }
 
-  /** Mapping from XML-DSig signature algorithm URIs to node-rsa schemes. */
+  /**
+   * Mapping from XML-DSig signature algorithm URIs to node-rsa schemes.
+   *
+   * The PSS entry covers the redirect-binding detached signature path:
+   * `node-rsa` accepts `pss-sha256` directly as a `signingScheme` value.
+   * The `xmldsig-more#sha256-rsa-MGF1` URI (W3C Note, 2007-05) is listed
+   * in `xmldsig-core §6.4.2` as the recommended successor to PKCS#1 v1.5
+   * RSA-SHA256 (`saml-sec-consider §6.5`).
+   */
   const nrsaAliasMapping: Record<string, SigningSchemeHash> = {
     'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'pkcs1-sha1',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'pkcs1-sha256',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'pkcs1-sha512',
+    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': 'pss-sha256',
   };
+
+  /**
+   * RSASSA-PSS plugin class for `xml-crypto`'s `SignedXml.SignatureAlgorithms`
+   * registry (`xmldsig-core §6.4.2`).
+   *
+   * **Temporary shim.** xml-crypto already implements PSS-SHA256 on its
+   * master branch (PR node-saml/xml-crypto#488, merged 2025-10-17), but
+   * the latest published npm version (6.1.2, 2024-08) predates that
+   * commit. Once xml-crypto cuts a release containing #488, delete this
+   * class and the `registerPssAlgorithms` helper below — the URI alone
+   * in `algorithms.signature` is sufficient and the constructor will
+   * seed `SignatureAlgorithms` with the upstream implementation.
+   *
+   * `RSA_PKCS1_PSS_PADDING` with `RSA_PSS_SALTLEN_DIGEST` matches the
+   * MGF1+SHA-256 convention referenced by the `sha256-rsa-MGF1` URI
+   * (xmldsig-more, W3C Note 2007-05).
+   */
+  const pssPaddingOptions = {
+    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+    saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
+  } as const;
+
+  class RsaSha256Mgf1 {
+    getSignature = (signedInfo: crypto.BinaryLike, privateKey: crypto.KeyLike): string => {
+      const signOpts: crypto.SignPrivateKeyInput = {
+        key: privateKey as crypto.SignPrivateKeyInput['key'],
+        padding: pssPaddingOptions.padding,
+        saltLength: pssPaddingOptions.saltLength,
+      };
+      return crypto.sign('RSA-SHA256', Buffer.from(signedInfo as string), signOpts).toString('base64');
+    };
+    verifySignature = (material: string, key: crypto.KeyLike, signatureValue: string): boolean => {
+      const verifyOpts: crypto.VerifyPublicKeyInput = {
+        key: key as crypto.VerifyPublicKeyInput['key'],
+        padding: pssPaddingOptions.padding,
+        saltLength: pssPaddingOptions.saltLength,
+      };
+      return crypto.verify('RSA-SHA256', Buffer.from(material), verifyOpts, Buffer.from(signatureValue, 'base64'));
+    };
+    getAlgorithmName = (): string => 'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1';
+  }
+
+  /**
+   * Register the RSASSA-PSS SHA-256 signature class on a fresh `SignedXml`
+   * instance so the algorithm-agility surface from `xmldsig-core §6.4` is
+   * available for both signing and verification. PKCS#1 v1.5 entries are
+   * preserved untouched.
+   */
+  function registerPssAlgorithms(sig: SignedXml): void {
+    sig.SignatureAlgorithms = {
+      ...sig.SignatureAlgorithms,
+      'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': RsaSha256Mgf1,
+    };
+  }
 
   /** Default AuthnRequest XML template. */
   const defaultLoginRequestTemplate: LoginRequestTemplate = {
@@ -441,6 +505,11 @@ const libSaml = () => {
         isMessageSigned = false,
       } = opts;
       const sig = new SignedXml();
+      // xmldsig-core §6.4.2 — make PSS variants available alongside the
+      // PKCS#1 v1.5 set built into xml-crypto v6.x. No-op for callers
+      // staying on RSA-SHA*; required when `signatureAlgorithm` is one of
+      // the `xmldsig-more 2007-05` PSS URIs.
+      registerPssAlgorithms(sig);
       const digestAlgorithm = getDigestMethod(signatureAlgorithm);
       if (referenceTagXPath) {
         sig.addReference({
@@ -512,6 +581,10 @@ const libSaml = () => {
 
       for (const signatureNode of selection) {
         const sig = new SignedXml();
+        // Register PSS plugins on the verifier instance so the algorithm
+        // declared inside the signed XML can resolve to a SignatureAlgorithm
+        // class (xmldsig-core §6.4.2; see `registerPssAlgorithms`).
+        registerPssAlgorithms(sig);
         let verified = false;
 
         sig.signatureAlgorithm = opts.signatureAlgorithm!;

@@ -146,6 +146,12 @@ const algorithms = {
     RSA_SHA1: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
     RSA_SHA256: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
     RSA_SHA512: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
+    // RSASSA-PSS with MGF1 — `xmldsig-core §6.4.2`, `xmldsig-more` (W3C
+    // Note, 2007-05). Recommended over PKCS#1 v1.5 for new deployments
+    // per `saml-sec-consider §6.5` and the audit follow-up F-7
+    // (`.skills/audits/2026-04-security-audit.md`). The default signing
+    // algorithm remains RSA-SHA256 (PKCS#1 v1.5); PSS is opt-in.
+    RSA_SHA256_MGF1: 'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1',
   },
   encryption: {
     data: {
@@ -163,6 +169,9 @@ const algorithms = {
     'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'http://www.w3.org/2000/09/xmldsig#sha1',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'http://www.w3.org/2001/04/xmlenc#sha256',
     'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'http://www.w3.org/2001/04/xmlenc#sha512', // support hashing algorithm sha512 in xml-crypto after 0.8.0
+    // PSS variant — `xmldsig-more` (2007-05) — pairs with the SHA-256
+    // digest URI per the OASIS-published mapping.
+    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': 'http://www.w3.org/2001/04/xmlenc#sha256',
   },
 };
 

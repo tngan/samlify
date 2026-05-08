@@ -13,15 +13,22 @@ Supported algorithms:
 
 **Signature algorithms**
 
-- `http://www.w3.org/2000/09/xmldsig#rsa-sha1` *(default)*
-- `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`
+PKCS#1 v1.5 (`xmldsig-core §6.4.2`):
+
+- `http://www.w3.org/2000/09/xmldsig#rsa-sha1`
+- `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256` *(default)*
 - `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`
-- `http://www.w3.org/2000/09/xmldsig#hmac-sha1`
+
+RSASSA-PSS with MGF1 (`xmldsig-more`, W3C Note 2007-05). Recommended over
+PKCS#1 v1.5 for new deployments per `saml-sec-consider §6.5`. Opt-in via
+`requestSignatureAlgorithm`:
+
+- `http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1`
 
 **Hashing algorithms**
 
-- `http://www.w3.org/2000/09/xmldsig#sha1` *(default)*
-- `http://www.w3.org/2001/04/xmlenc#sha256`
+- `http://www.w3.org/2000/09/xmldsig#sha1`
+- `http://www.w3.org/2001/04/xmlenc#sha256` *(default — pairs with RSA-SHA256)*
 - `http://www.w3.org/2001/04/xmlenc#sha512`
 
 **Canonicalization and transformation algorithms**
