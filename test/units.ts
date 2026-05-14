@@ -26,6 +26,7 @@ import { getContext, setSchemaValidator, setDOMParserOptions } from '../src/api'
 import libsaml from '../src/libsaml';
 import IdpMetadata from '../src/metadata-idp';
 import SpMetadata from '../src/metadata-sp';
+import { algorithms as samlAlgorithms } from '../src/urn';
 
 const { IdentityProvider: identityProvider, ServiceProvider: serviceProvider } = esaml2;
 
@@ -1070,6 +1071,99 @@ describe('Security audit (2026-04)', () => {
         'http://attacker.example.com/madeup-alg',
       ),
     ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+});
+
+describe('RSASSA-PSS signature algorithms (#624, xmldsig-more 2007-05)', () => {
+  // xmldsig-core §6.4.2 / saml-sec-consider §6.5 — RSASSA-PSS with MGF1 is
+  // the recommended successor to PKCS#1 v1.5 and is registered under the
+  // xmldsig-more (W3C Note, 2007-05) URI:
+  //   http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1
+  // PSS remains opt-in: the default signing algorithm is unchanged
+  // (RSA-SHA256, PKCS#1 v1.5) per the 2026-04 audit (F-3).
+
+  const pssAlgorithms = samlAlgorithms;
+  const sigAlgs = pssAlgorithms.signature;
+
+  const _spKeyFolder = './test/key/sp/';
+  const _spPrivPem = String(fs.readFileSync(_spKeyFolder + 'privkey.pem'));
+  const _spPrivKeyPass = 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px';
+  const SPMetadata = SpMetadata(fs.readFileSync('./test/misc/spmeta.xml'));
+
+  const RSA_SHA256_MGF1 = sigAlgs.RSA_SHA256_MGF1;
+
+  const pssOctetString =
+    'SAMLRequest=fakerequest&RelayState=state&SigAlg=' +
+    encodeURIComponent('http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1');
+
+  test('algorithm registry — PSS URI resolves and pairs with the SHA-256 digest', () => {
+    expect(RSA_SHA256_MGF1).toBe('http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1');
+
+    // xmldsig-core §6.4.2 — every signature URI in the registry must
+    // resolve to its companion digest URI.
+    expect(pssAlgorithms.digest[RSA_SHA256_MGF1]).toBe('http://www.w3.org/2001/04/xmlenc#sha256');
+  });
+
+  // saml-bindings §3.4.4.1 — redirect-binding detached signature.
+  test('redirect binding — sign and verify with PSS-SHA256', () => {
+    const sig = libsaml.constructMessageSignature(
+      pssOctetString, _spPrivPem, _spPrivKeyPass, false, RSA_SHA256_MGF1,
+    );
+    expect(libsaml.verifyMessageSignature(SPMetadata, pssOctetString, sig as Buffer, RSA_SHA256_MGF1)).toBe(true);
+  });
+
+  // saml-bindings §3.5 + xmldsig-core §6.4.2 — XML signature for the
+  // HTTP-POST binding using the registered PSS plugin class.
+  const _originRequest = String(fs.readFileSync('./test/misc/request.xml'));
+
+  test('post binding — round-trip with PSS-SHA256', () => {
+    const signedB64 = libsaml.constructSAMLSignature({
+      rawSamlMessage: _originRequest,
+      referenceTagXPath: libsaml.createXPath('Issuer'),
+      signingCert: SPMetadata.getX509Certificate('signing') as string,
+      privateKey: _spPrivPem,
+      privateKeyPass: _spPrivKeyPass,
+      signatureAlgorithm: RSA_SHA256_MGF1,
+    });
+    const signedXml = Buffer.from(signedB64, 'base64').toString();
+    const [verified] = libsaml.verifySignature(signedXml, { metadata: SPMetadata, signatureAlgorithm: RSA_SHA256_MGF1 });
+    expect(verified).toBe(true);
+  });
+
+  // 2026-04 audit F-3 regression: adding PSS URIs must not reopen the
+  // unknown-algorithm downgrade path. saml-sec-consider §6.5.
+  test('audit F-3 regression — unknown algorithm still throws after PSS additions', () => {
+    expect(() =>
+      libsaml.verifyMessageSignature(
+        { getX509Certificate: () => 'irrelevant' } as any,
+        'octets',
+        Buffer.from('signature'),
+        'http://attacker.example.com/madeup',
+      ),
+    ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+    expect(() =>
+      libsaml.constructMessageSignature(
+        'octets',
+        '-----BEGIN RSA PRIVATE KEY-----\n-----END RSA PRIVATE KEY-----',
+        undefined,
+        true,
+        'http://attacker.example.com/madeup',
+      ),
+    ).toThrow('ERR_UNSUPPORTED_SIGNATURE_ALGORITHM');
+  });
+
+  // F-7 default-stability pin (audit follow-up): the 2026-04 audit fixed
+  // the SHA-1 downgrade (F-3) by defaulting to RSA-SHA256 PKCS#1 v1.5
+  // when no algorithm is supplied. Adding PSS variants must not move the
+  // default — PSS stays opt-in. We pin the default by signing with no
+  // algorithm and verifying with explicit RSA-SHA256 (PKCS#1 v1.5).
+  test('default signing algorithm is unchanged (RSA-SHA256, PKCS#1 v1.5)', () => {
+    const octets = 'SAMLRequest=default&RelayState=x';
+    const sig = libsaml.constructMessageSignature(octets, _spPrivPem, _spPrivKeyPass, false);
+    expect(libsaml.verifyMessageSignature(SPMetadata, octets, sig as Buffer, sigAlgs.RSA_SHA256)).toBe(true);
+    // And, critically, *not* recognized as a PSS signature even though
+    // the URI is now in the registry.
+    expect(libsaml.verifyMessageSignature(SPMetadata, octets, sig as Buffer, sigAlgs.RSA_SHA256_MGF1)).toBe(false);
   });
 });
 

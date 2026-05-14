@@ -63,10 +63,18 @@ const sp = saml.ServiceProvider(setting);
 Supported signature algorithms:
 
 ```javascript
+// PKCS#1 v1.5 (xmldsig-core §6.4.2)
 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
-'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'
+'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
+
+// RSASSA-PSS with MGF1 (xmldsig-more, W3C Note 2007-05)
+'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1'
 ```
+
+`saml-sec-consider §6.5` recommends RSASSA-PSS over PKCS#1 v1.5 for new
+deployments. PSS is opt-in; the default remains RSA-SHA256 (PKCS#1 v1.5)
+for backwards compatibility.
 
 Once the SP is configured, sending a signed SAML request uses the same entry point as the unsigned case:
 

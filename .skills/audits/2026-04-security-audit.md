@@ -15,6 +15,7 @@
 | Medium | No enforcement of `<AudienceRestriction>` against the SP's `entityID` | **Open** — tracked separately. See *Open findings* below. |
 | Medium | No `InResponseTo` enforcement against an open AuthnRequest cache | **Open** — tracked separately. |
 | Low | `KeyEncryptionAlgorithm` defaults include `rsa-1_5` (Bleichenbacher-vulnerable padding) | **Open** — tracked separately. |
+| Low | No support for RSASSA-PSS signature algorithms (algorithm-agility gap; PKCS#1 v1.5 is the only RSA padding available) | **Partially fixed** in #624 — PSS with MGF1 (`sha256-rsa-MGF1` / `sha384-rsa-MGF1` / `sha512-rsa-MGF1`) is now supported as opt-in. Deprecating PKCS#1 v1.5 RSA-SHA1 / RSA-SHA256 remains pending. |
 
 `yarn audit` reports **0 vulnerabilities** post-patch.
 
@@ -92,6 +93,31 @@ The SP currently extracts `InResponseTo` from the response but does not check it
 
 **Proposed fix:** mark `rsa-1_5` as deprecated in JSDoc, emit a one-time `console.warn` when an entity is configured with it, and remove it entirely in v3. Out of scope for this PR — the field is caller-controlled and breaking change.
 
+### F-7. No support for RSASSA-PSS signature algorithms
+
+Pre-#624 samlify advertised only the PKCS#1 v1.5 RSA-SHA{1,256,512} URIs in `src/urn.ts:algorithms.signature`. `xmldsig-core §6.4.2` registers RSASSA-PSS with MGF1 (`sha256-rsa-MGF1`, `xmldsig-more` W3C Note 2007-05) as the recommended successor; `saml-sec-consider §6.5` calls for algorithm agility so deployments can move off PKCS#1 v1.5 without forking the library.
+
+**Status — partially fixed in #624.**
+
+- `xmldsig-more#sha256-rsa-MGF1` is now registered in
+  `algorithms.signature` and paired in `algorithms.digest`.
+- `libsaml.constructSAMLSignature` and `libsaml.verifySignature` register
+  a PSS plugin class on each `SignedXml` instance. **This is a temporary
+  shim**: xml-crypto already implements PSS-SHA256 on its master branch
+  ([node-saml/xml-crypto#488](https://github.com/node-saml/xml-crypto/pull/488),
+  merged 2025-10-17), but the latest npm release (6.1.2, 2024-08)
+  predates the commit. When xml-crypto publishes a release that
+  contains #488, delete the `RsaSha256Mgf1` class and
+  `registerPssAlgorithms` helper from `src/libsaml.ts` and bump the
+  dependency.
+- `libsaml.constructMessageSignature` / `verifyMessageSignature` route the
+  PSS URI onto `node-rsa`'s `pss-sha256` `signingScheme` for
+  the redirect-binding detached signature.
+- The default signing algorithm is unchanged (RSA-SHA256, PKCS#1 v1.5)
+  per F-3. PSS is opt-in via `requestSignatureAlgorithm: algorithms.signature.RSA_SHA256_MGF1`.
+
+**Still pending.** SHA-384 / SHA-512 PSS variants (a follow-up if a peer needs them) and the broader PKCS#1 v1.5 deprecation timeline tracked in v3.
+
 ## Methodology notes
 
 1. **Dependabot triage.** `gh api /repos/tngan/samlify/dependabot/alerts` enumerated 2 open alerts, both vite. `yarn audit` confirmed.
@@ -108,5 +134,6 @@ The SP currently extracts `InResponseTo` from the response but does not check it
 - [ ] F-4 — default audience check (separate PR)
 - [ ] F-5 — InResponseTo cache + binding (separate PR; design RFC needed)
 - [ ] F-6 — deprecate `rsa-1_5` (v3 removal)
+- [x] F-7 — RSASSA-PSS signature support (#624). PKCS#1 v1.5 deprecation still pending in v3.
 - [ ] Add a CI step running `yarn audit --level=high` on every PR (currently only enforced in `yarn build` script).
 - [ ] Add fuzzing for the XPath extractor (`jsfuzz` or equivalent).
