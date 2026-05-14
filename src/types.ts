@@ -136,6 +136,23 @@ export interface CreateLoginRequestOptions {
   customTagReplacement?: CustomTagReplacement;
   /** saml-core §3.4.1 — when true, the IdP MUST re-authenticate the user. */
   forceAuthn?: boolean;
+  /**
+   * saml-core §3.4.1 — `<samlp:AuthnRequest>` may identify the desired ACS
+   * endpoint either by URL+ProtocolBinding *or* by an index into the SP's
+   * metadata. The three attributes are mutually exclusive: "If the
+   * `<AssertionConsumerServiceIndex>` attribute is present, neither
+   * `<AssertionConsumerServiceURL>` nor `<ProtocolBinding>` may be set."
+   *
+   * When this option is set, samlify omits both `AssertionConsumerServiceURL`
+   * and `ProtocolBinding` from the rendered request — including any
+   * metadata-derived ACS URL the SP would otherwise inject. In other words,
+   * if the caller sets `assertionConsumerServiceIndex`, the index wins;
+   * mutual exclusion enforcement is the caller's responsibility.
+   *
+   * Useful for IdPs (legacy Shibboleth, certain ADFS configurations) that
+   * prefer the metadata-indexed form per saml-profiles §4.1.4.1.
+   */
+  assertionConsumerServiceIndex?: number;
 }
 
 /** Per-request options accepted by `IdentityProvider#createLoginResponse`. */

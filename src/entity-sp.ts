@@ -89,6 +89,12 @@ export class ServiceProvider extends Entity {
     // true the IdP MUST re-authenticate the user instead of relying on a
     // previous security context (saml-profiles §4.1.4.1).
     const forceAuthn = opts.forceAuthn;
+    // saml-core §3.4.1 — `AssertionConsumerServiceIndex` is mutually
+    // exclusive with `AssertionConsumerServiceURL` / `ProtocolBinding`.
+    // When set, the binding builders omit both of those attributes so the
+    // request only references the metadata-declared endpoint by index
+    // (saml-profiles §4.1.4.1).
+    const assertionConsumerServiceIndex = opts.assertionConsumerServiceIndex;
     const selectedBinding = binding ?? 'redirect';
 
     const nsBinding = namespace.binding;
@@ -114,6 +120,7 @@ export class ServiceProvider extends Entity {
           customTagReplacement,
           requestRelayState,
           forceAuthn,
+          assertionConsumerServiceIndex,
         );
 
       case nsBinding.post:
@@ -122,6 +129,7 @@ export class ServiceProvider extends Entity {
           { idp, sp: this },
           customTagReplacement,
           forceAuthn,
+          assertionConsumerServiceIndex,
         );
         break;
 
@@ -131,6 +139,7 @@ export class ServiceProvider extends Entity {
           customTagReplacement,
           requestRelayState,
           forceAuthn,
+          assertionConsumerServiceIndex,
         ) as SimpleSignBindingContext;
         break;
 
