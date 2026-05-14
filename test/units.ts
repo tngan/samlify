@@ -232,13 +232,13 @@ describe('libsaml — pure helpers', () => {
     expect(libsaml.createXPath({ name: 'Response', attr: 'ID' })).toContain('/@ID');
   });
 
-  test('replaceTagsByValue interpolates element text and escapes attributes', () => {
+  test('replaceTagsByValue escapes both element text and attribute values', () => {
     const xml = libsaml.replaceTagsByValue(
       '<a id="{Id}">{Body}</a>',
       { Id: 'a&b', Body: '<x/>' },
     );
-    // Attribute value escaped, element text not escaped.
-    expect(xml).toBe('<a id="a&amp;b"><x/></a>');
+    // Both attribute value and element text are escaped to prevent injection.
+    expect(xml).toBe('<a id="a&amp;b">&lt;x/&gt;</a>');
   });
 
   test('replaceTagsByValue omits attributes whose value is null or undefined (#455, saml-core §3.4.1)', () => {

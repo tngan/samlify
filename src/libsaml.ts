@@ -389,13 +389,15 @@ const libSaml = () => {
   }
 
   /**
-   * Replacer for {@link replaceTagsByValue}. XML-escapes attribute values
-   * but leaves element text untouched so the caller can inject nested XML.
+   * Replacer for {@link replaceTagsByValue}. Always XML-escapes the
+   * replacement text, in both attribute and element-text contexts, to
+   * prevent SAML attribute/element injection through user-controlled
+   * template values.
    */
   function escapeTag(replacement: unknown): (...args: string[]) => string {
     return (_match: string, quote?: string) => {
       const text: string = replacement === null || replacement === undefined ? '' : String(replacement);
-      return quote ? `${quote}${xmlEscape(text)}` : text;
+      return quote ? `${quote}${xmlEscape(text)}` : xmlEscape(text);
     };
   }
 
@@ -412,7 +414,8 @@ const libSaml = () => {
 
     /**
      * Substitute `{Tag}` placeholders inside an XML template with the given
-     * replacement map. Attribute values are XML-escaped; element text is not.
+     * replacement map. Replacement text is XML-escaped in both attribute and
+     * element-text positions to prevent SAML element/attribute injection.
      *
      * When a tag's value is `null` or `undefined`:
      *   - in **attribute position** (`name="{Tag}"`) the entire attribute is
