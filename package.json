@@ -26,7 +26,8 @@
     "lint": "tslint -p .",
     "lint:fix": "tslint -p . --fix",
     "pretest": "mkdir -p build/test && cp -a test/key test/misc build/test",
-    "test": "NODE_ENV=test vitest run",
+    "test:types": "tsc -p tsconfig.typecheck.json",
+    "test": "NODE_ENV=test vitest run && yarn test:types",
     "test:watch": "NODE_ENV=test vitest",
     "coverage": "vitest run --coverage",
     "hooks:postinstall": "ln -sf $PWD/.pre-commit.sh $PWD/.git/hooks/pre-commit"
