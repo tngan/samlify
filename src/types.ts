@@ -90,10 +90,20 @@ export type ExtractorFields = ExtractorField[];
 /**
  * Minimal HTTP request shape the library consumes from the caller's web
  * framework. Only the fields SAML needs are typed.
+ *
+ * `query` / `body` are intentionally typed as `Record<string, unknown>`
+ * rather than `Record<string, string | undefined>`. The latter is *not*
+ * structurally assignable from Express's `Request` (`req.query` is
+ * `qs.ParsedQs`, whose values may be `string[]` or nested objects), which
+ * would force every Express/Koa/Fastify caller to cast — a breaking change
+ * for TypeScript consumers relative to the pre-2.13 `any` typing. `unknown`
+ * keeps the surface stricter than `any` while remaining backward compatible
+ * with every web framework's request object. The binding/flow code narrows
+ * these values at the point of use.
  */
 export interface ESamlHttpRequest {
-  query?: Record<string, string | undefined>;
-  body?: Record<string, string | undefined>;
+  query?: Record<string, unknown>;
+  body?: Record<string, unknown>;
   octetString?: string;
 }
 
