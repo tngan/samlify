@@ -60,7 +60,7 @@ See full documentation [here](https://samlify.js.org/)
 
 ### Example
 
-[react-samlify](https://github.com/passify/react-samlify) SP example powered by React, TypeScript and Webpack
+[samlify-starter](https://github.com/tngan/samlify-starter) — starter example for getting up and running with samlify
 
 ### Talks
 
