@@ -1,0 +1,6 @@
+# Local-only cache of OASIS SAML 2.0 / W3C normative PDFs and XSDs.
+# These are large, copyrighted-but-redistributable documents.
+# Track only this .gitignore; do not commit downloaded artefacts.
+*
+!.gitignore
+!README.md

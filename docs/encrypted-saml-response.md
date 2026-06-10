@@ -1,19 +1,19 @@
 # Encrypted Assertion
 
-According to the guideline of SAML, our module leaves some security options for developers. If the assertion contains some sensitive information, Identity Provider may want to do encryption. In IdP's construction, add the following settings as follow:
+The SAML specification leaves encryption up to the deployment. When the assertion carries sensitive information, the identity provider may encrypt it. Enable encryption on the IdP as follows:
 
 ```javascript
 const idp = IdentityProvider({
   isAssertionEncrypted: true,
   metadata: fs.readFileSync('./metadata_idp.xml'),
   dataEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
-  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5' 
+  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5'
 });
 ```
 
-If you remember SP configuration for signing a request, there are two parameters in the setting object. They are `privateKey` and `privateKeyPass`. **Warning:** If you are applying our solution instead of another 3rd party IdP, it's suggested not to use same key for both signing and encryption.
+As with request signing, the SP configuration supplies `privateKey` and `privateKeyPass`. **Important:** when samlify is used as the identity provider, do not reuse the same key pair for both signing and encryption.
 
-In SP's metadata, the certificate must be included in order to allow idp to encrypt the assertion.
+The SP metadata must include an encryption certificate so that the IdP can encrypt the assertion:
 
 ```xml
 <KeyDescriptor use="encryption">
@@ -25,28 +25,30 @@ In SP's metadata, the certificate must be included in order to allow idp to encr
 </KeyDescriptor>
 ```
 
-Now all you need to do is to use `sp.parseLoginResponse` again to parse and verify the response.
+Parsing and verifying the encrypted response uses the same `sp.parseLoginResponse` helper — decryption is transparent to the caller:
 
 ```javascript
 router.post('/acs', (req, res) => {
   sp.parseLoginResponse(idp, 'post', req)
-  .then(parseResult => {
-    // Use the parseResult to do customized action
-  })
-  .catch(console.error);
+    .then(parseResult => {
+      // Use parseResult to run your business logic.
+    })
+    .catch(console.error);
 });
 ```
 
-Currently, we support the following encrpytion algorithms:
+Supported algorithms:
 
 **Data encryption algorithms**
-* http://www.w3.org/2001/04/xmlenc#tripledes-cbc
-* http://www.w3.org/2001/04/xmlenc#aes128-cbc
-* http://www.w3.org/2001/04/xmlenc#aes256-cbc
-* http://www.w3.org/2009/xmlenc11#aes128-gcm
+
+- `http://www.w3.org/2001/04/xmlenc#tripledes-cbc`
+- `http://www.w3.org/2001/04/xmlenc#aes128-cbc`
+- `http://www.w3.org/2001/04/xmlenc#aes256-cbc`
+- `http://www.w3.org/2009/xmlenc11#aes128-gcm`
 
 **Key encryption algorithms**
-* http://www.w3.org/2001/04/xmlenc#rsa-1_5
-* http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p
 
-Credits to [auth0/node-xml-encryption](https://github.com/auth0/node-xml-encryption)
+- `http://www.w3.org/2001/04/xmlenc#rsa-1_5`
+- `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`
+
+XML encryption is provided by [auth0/node-xml-encryption](https://github.com/auth0/node-xml-encryption).

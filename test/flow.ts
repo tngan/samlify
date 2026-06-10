@@ -2,7 +2,7 @@ import * as esaml2 from '../index';
 import { readFileSync, writeFileSync } from 'fs';
 import { test, expect } from 'vitest';
 import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
-import * as uuid from 'uuid';
+import { randomUUID } from 'crypto';
 import * as url from 'url';
 import util from '../src/utility';
 import * as tk from 'timekeeper';
@@ -51,7 +51,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
   const tvalue = {
     ID: _id,
-    AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${uuid.v4()}`,
+    AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${randomUUID()}`,
     Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
     Audience: spEntityID,
     SubjectRecipient: spEntityID,
@@ -64,8 +64,21 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
     SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
     AssertionConsumerServiceURL: _sp.entityMeta.getAssertionConsumerService(_binding),
     EntityID: spEntityID,
-    InResponseTo: '_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4',
+    // sampleRequestInfo is hoisted via `const`; the inner `template => ...`
+    // function only dereferences it at runtime, by which time the binding
+    // has invoked the callback. After the #549 fix the callback fires even
+    // when the IdP did not supply a custom loginResponseTemplate, so the
+    // request id has to come from the request info rather than a hard-
+    // coded literal — otherwise non-custom-template tests would observe
+    // the literal in extract.response.inResponseTo.
+    InResponseTo: (sampleRequestInfo as { extract: { request: { id: string } } }).extract.request.id,
     StatusCode: 'urn:oasis:names:tc:SAML:2.0:status:Success',
+    // Library-default loginResponseTemplate (now also fed to the callback
+    // when no custom template is supplied — see #549) leaves these as
+    // optional placeholder tags. Populate them as empty strings so the
+    // resulting XML stays schema-valid.
+    AuthnStatement: '',
+    AttributeStatement: '',
     attrUserEmail: 'myemailassociatedwithsp@sp.com',
     attrUserName: 'mynameinsp',
   };
@@ -213,7 +226,7 @@ test('signed in sp is not matched with the signed notation in idp with post requ
     const { id, context } = sp.createLoginRequest(_idp, 'post');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
@@ -223,7 +236,7 @@ test('signed in sp is not matched with the signed notation in idp with redirect 
     const { id, context } = sp.createLoginRequest(_idp, 'redirect');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
   }
 });
 
@@ -233,7 +246,19 @@ test('signed in sp is not matched with the signed notation in idp with post simp
     const { id, context } = sp.createLoginRequest(_idp, 'simpleSign');
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e.message).toBe('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+  }
+});
+
+test('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG embeds both observed flags (saml-core §3.4.1 / saml-metadata §2.4.4)', () => {
+  const _idp = identityProvider({ ...defaultIdpConfig, metadata: noSignedIdpMetadata });
+  try {
+    sp.createLoginRequest(_idp, 'redirect');
+    expect(true).toBe(false);
+  } catch (e: any) {
+    expect(e.message).toContain('ERR_METADATA_CONFLICT_REQUEST_SIGNED_FLAG');
+    expect(e.message).toContain('AuthnRequestsSigned=');
+    expect(e.message).toContain('WantAuthnRequestsSigned=');
   }
 });
 
@@ -571,7 +596,7 @@ test('send response with [custom template] signed assertion and parse it', async
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with [custom template] signed assertion by redirect and parse it', async () => {
@@ -601,7 +626,7 @@ test('send response with [custom template] signed assertion by redirect and pars
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with [custom template] signed assertion by post simpleSign and parse it', async () => {
@@ -628,7 +653,7 @@ test('send response with [custom template] signed assertion by post simpleSign a
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with signed message and parse it', async () => {
@@ -712,7 +737,7 @@ test('send response with [custom template] and signed message and parse it', asy
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with [custom template] and signed message by redirect and parse it', async () => {
@@ -742,7 +767,7 @@ test('send response with [custom template] and signed message by redirect and pa
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with [custom template] and signed message by post simplesign and parse it', async () => {
@@ -766,7 +791,7 @@ test('send response with [custom template] and signed message by post simplesign
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send login response with signed assertion + signed message and parse it', async () => {
@@ -859,7 +884,7 @@ test('send login response with [custom template] and signed assertion + signed m
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send response with [custom template] and signed assertion + signed message by redirect and parse it', async () => {
@@ -893,7 +918,7 @@ test('send response with [custom template] and signed assertion + signed message
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send login response with [custom template] and signed assertion + signed message by post simplesign and parse it', async () => {
@@ -920,7 +945,7 @@ test('send login response with [custom template] and signed assertion + signed m
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send login response with encrypted non-signed assertion and parse it', async () => {
@@ -964,7 +989,7 @@ test('send login response with [custom template] and encrypted signed assertion 
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 test('send login response with encrypted signed assertion + signed message and parse it', async () => {
@@ -1005,7 +1030,7 @@ test('send login response with [custom template] encrypted signed assertion + si
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.attributes.name).toBe('mynameinsp');
   expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
-  expect(extract.response.inResponseTo).toBe('_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4');
+  expect(extract.response.inResponseTo).toBe('request_id');
 });
 
 // simulate idp-init slo
@@ -1080,7 +1105,12 @@ test('idp sends a post logout request with signature and sp parses it', async ()
 
 // simulate init-slo
 test('sp sends a post logout response without signature and parse', async () => {
-  const { context: SAMLResponse } = sp.createLogoutResponse(idp, sampleRequestInfo, 'post', '', createTemplateCallback(idp, sp, binding.post, {})) as PostBindingContext;
+  // saml-bindings §3.5 — no callback supplied so the binding builder uses
+  // its built-in default template (with the SP as Issuer). Previously this
+  // test passed a login-response callback that the binding silently
+  // ignored; after #549 such a callback would actually fire and fill
+  // Issuer with the IdP's entity ID, breaking the issuer match.
+  const { context: SAMLResponse } = sp.createLogoutResponse(idp, sampleRequestInfo, 'post', '') as PostBindingContext;
   const { extract } = await idp.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   expect(extract.signature).toBe(null);
   expect(extract.issuer).toBe('https://sp.example.org/metadata');
@@ -1089,7 +1119,8 @@ test('sp sends a post logout response without signature and parse', async () => 
 });
 
 test('sp sends a post logout response with signature and parse', async () => {
-  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, sampleRequestInfo, 'post', '', createTemplateCallback(idpWantLogoutResSign, sp, binding.post, {})) as PostBindingContext;
+  // See note above (#549).
+  const { relayState, type, entityEndpoint, id, context: SAMLResponse } = sp.createLogoutResponse(idpWantLogoutResSign, sampleRequestInfo, 'post', '') as PostBindingContext;
   const { samlContent, extract } = await idpWantLogoutResSign.parseLogoutResponse(sp, 'post', { body: { SAMLResponse }});
   expect(typeof extract.signature).toBe('string');
   expect(extract.issuer).toBe('https://sp.example.org/metadata');
@@ -1272,7 +1303,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }
@@ -1295,7 +1326,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }
@@ -1317,7 +1348,7 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
-    expect(e).toBe('ERR_SUBJECT_UNCONFIRMED');
+    expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
     tk.reset();
   }

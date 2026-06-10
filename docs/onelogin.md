@@ -1,16 +1,19 @@
-# Work with OneLogin
+# OneLogin integration
 
-?> In this chapter, we will make an sample application that implements IdP-initiated and SP-initiated SSO.
+::: tip
+This chapter walks through a sample application that supports both IdP-initiated and SP-initiated SSO with OneLogin.
+:::
 
-Express.js is our default web framework in development. In fact, you can use other web framworks (e.g. koa, Sails.js, Kraken.js ... etc) if you don't care the prefix of module is`express-`.
+Express.js is used in the example. Any other Node.js web framework (Koa, Sails.js, Kraken.js, etc.) works as well.
 
-**1. Generate your express application**
+## 1. Create an Express application
 
-See the official documentation [here](http://expressjs.com/starter/installing.html)
+See the official Express guide: <http://expressjs.com/starter/installing.html>.
 
-**2. Prepare the metadata from OneLogin and the self one**
+## 2. Prepare the IdP and SP metadata
 
-This is the metadata published by OneLogin
+This is the metadata published by OneLogin:
+
 ```xml
 <?xml version="1.0"?>
 <EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://app.onelogin.com/saml/metadata/487043">
@@ -33,7 +36,9 @@ This is the metadata published by OneLogin
   </ContactPerson>
 </EntityDescriptor>
 ```
-This is our application metadata:
+
+This is the application's SP metadata:
+
 ```xml
 <EntityDescriptor
  xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
@@ -46,25 +51,28 @@ This is our application metadata:
     </SPSSODescriptor>
 </EntityDescriptor>
 ```
-The above two metadata files are saved in the same directory as `sso.js`.
 
-**3. Add a route for SSO implementation**
+Save both metadata files in the same directory as `sso.js`.
 
-Make sure all dependencies are installed first:
+## 3. Add an SSO route
+
+Install dependencies:
+
 ```console
 $ yarn
 ```
 
-Add a file `sso.js` under `/routes` folder
+Create `routes/sso.js`:
+
 ```javascript
-// This is /routes/sso.js
+// routes/sso.js
 const saml = require('samlify');
 const express = require('express');
 const router = express.Router();
 const ServiceProvider = saml.ServiceProvider;
 const IdentityProvider = saml.IdentityProvider;
 
-// Configure your endpoint for IdP-initiated / SP-initiated SSO
+// Configure the endpoint for IdP-initiated and SP-initiated SSO.
 const sp = ServiceProvider({
   metadata: fs.readFileSync('../metadata_sp.xml')
 });
@@ -72,55 +80,52 @@ const idp = IdentityProvider({
   metadata: fs.readFileSync('../onelogin_metadata_487043.xml')
 });
 
-// Release the metadata publicly
-router.get('/metadata', (req, res) => res.header('Content-Type','text/xml').send(sp.getMetadata()));
+// Publish the SP metadata.
+router.get('/metadata', (req, res) =>
+  res.header('Content-Type', 'text/xml').send(sp.getMetadata())
+);
 
-// Access URL for implementing SP-init SSO
+// SP-initiated SSO entry point.
 router.get('/spinitsso-redirect', (req, res) => {
-	const { id, context } = sp.createLoginRequest(idp, 'redirect');
-	return res.redirect(context);
+  const { id, context } = sp.createLoginRequest(idp, 'redirect');
+  return res.redirect(context);
 });
 
-// If your application only supports IdP-initiated SSO, just make this route is enough
-// This is the assertion service url where SAML Response is sent to
+// Assertion Consumer Service endpoint. Required for both IdP-initiated
+// and SP-initiated flows.
 router.post('/acs', (req, res) => {
-	sp.parseLoginResponse(idp, 'post', req)
-  .then(parseResult => {
-    // ...
-	})
-  .catch(console.error);
+  sp.parseLoginResponse(idp, 'post', req)
+    .then(parseResult => {
+      // ...
+    })
+    .catch(console.error);
 });
 ```
-By applying the above defined route,
-users access **/spinitsso-redirect** to start SSO in SP side. The initiation uses Redirect-binding. Users can also login OneLogin first and start SSO in IdP side.
 
-**4. Modify the app.js to include the path `/sso/*`**
+The route above starts SP-initiated SSO via `/spinitsso-redirect` using the HTTP-Redirect binding. Users can also start from the OneLogin dashboard to trigger IdP-initiated SSO.
+
+## 4. Mount the routes under `/sso`
 
 ```javascript
-// This is app.js
-// ...
+// app.js
 const routes = require('./routes/index');
 const sso = require('./routes/sso');
 // ...
 app.use('/', routes);
 app.use('/sso', sso);
-// ...
 ```
 
-**5. Start the server**
+## 5. Start the server
+
 ```console
 $ npm start
 ```
-and also access http://localhost:3000/spinitsso-redirect or login [OneLogin](https://esaml2.onelogin.com/login) first and click the app `esaml2-example-3000`.
 
-The credential for OneLogin testing is:
+Either visit <http://localhost:3000/spinitsso-redirect>, or sign in to [OneLogin](https://esaml2.onelogin.com/login) and launch the `esaml2-example-3000` app.
 
-Account Name: **user@esaml2.com**<br/>
-Password: **Tk2eQc%9**
+Test credentials for OneLogin:
 
-You will see the message `Validate the SAML Response successfully !` when you are successfully log-in OneLogin app through SP-initiated SSO. 
+- **Account Name:** `user@esaml2.com`
+- **Password:** `Tk2eQc%9`
 
-OR
-
-You click the app icon of `esaml2-example-3000` after you have logged into OneLogin.
-
+A successful SP-initiated sign-in displays *"Validate the SAML Response successfully!"*. Alternatively, launch the `esaml2-example-3000` app from the OneLogin dashboard after signing in.

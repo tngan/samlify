@@ -1,13 +1,13 @@
 # Basics
 
-Don't be scared off. Even through SAML leaves a lot of options to developers, and this documentation will go through step by step on:
+SAML exposes a large number of options. This documentation walks through them one step at a time:
 
-+ Basic knowledge on SSO for newbie
-+ Default environment settings
-+ How to configure a service provider
-+ How to configure a identity provider
-+ How to send a SAML Request
-+ How to parse a SAML Response
-+ How to integrate with different idp and sp (Examples)
+- SSO fundamentals for newcomers
+- Default environment settings
+- Configuring a service provider
+- Configuring an identity provider
+- Sending a SAML request
+- Parsing a SAML response
+- Integrating with common identity providers and service providers (examples)
 
-In this basic tutorial, we provide the simplest solution (without signature and encryption). The real world application is complicated, those topics are covered in the advanced part.
+This basic tutorial covers the simplest configuration — no signature, no encryption. Real-world deployments are more involved; those topics are covered in the [Advanced](/advanced) section.

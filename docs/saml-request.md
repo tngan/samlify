@@ -1,18 +1,18 @@
 # SAML Request
 
-When we apply SP-initiated SSO, our Service Provider have to send a SAML Request to Identity Provider.
+Under SP-initiated SSO, the service provider sends a SAML request to the identity provider.
 
-SAML Request is in XML format, asking if identity provider can authenticate this user. The following is a sample request without signature.
+A SAML request is an XML document that asks the IdP to authenticate a user. Below is an example AuthnRequest without a signature:
 
 ```xml
-<samlp:AuthnRequest 
-        xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" 
-        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" 
-        ID="_809707f0030a5d00620c9d9df97f627afe9dcc24" 
-        Version="2.0" ProviderName="SP test" 
-        IssueInstant="2014-07-16T23:52:45Z" 
-        Destination="http://idp.example.com/SSOService.php" 
-        ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+<samlp:AuthnRequest
+        xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+        ID="_809707f0030a5d00620c9d9df97f627afe9dcc24"
+        Version="2.0" ProviderName="SP test"
+        IssueInstant="2014-07-16T23:52:45Z"
+        Destination="http://idp.example.com/SSOService.php"
+        ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
         AssertionConsumerServiceURL="https://sp.example.org/sp/sso">
     <saml:Issuer>https://sp.example.org/metadata</saml:Issuer>
     <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" AllowCreate="true"/>
@@ -22,11 +22,11 @@ SAML Request is in XML format, asking if identity provider can authenticate this
 </samlp:AuthnRequest>
 ```
 
-Different bindings can be used to send this request, we support Redirect-Binding and Post-Binding. 
+Two bindings are supported for the outbound request: HTTP-Redirect and HTTP-POST.
 
-**Redirect-Binding**
+## HTTP-Redirect binding
 
-It means that the XML is embedded as an URL parameter and redirect to the SSO endpoint of IdP. Because of different length limitation in different browsers, it's required to deflate Request.
+The XML is encoded into a query parameter that redirects the user to the IdP's SSO endpoint. Because browsers impose varying URL length limits, the request must be deflated before encoding.
 
 ```javascript
 const saml = require('samlify');
@@ -38,14 +38,14 @@ const idp = saml.IdentityProvider({
 });
 ```
 
-The SSO endpoint of IdP is specified in their metadata. For example:
+The IdP's SSO endpoint is declared in its metadata, for example:
 
 ```xml
 <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp.example.org/sso/SingleSignOnService"/>
 <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://idp.example.org/sso/SingleSignOnService"/>
 ```
 
-There may be more than one SSO endpoint, to support different bindings. By using our entity level API, you can just write your initiation point in any route you want as follow:
+An IdP may declare multiple endpoints to support different bindings. Using the entity-level API, the SP's initiation route can be implemented as follows:
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
@@ -53,17 +53,40 @@ router.get('/spinitsso-redirect', (req, res) => {
   return res.redirect(context);
 });
 ```
-By applying the preference of SP and IdP, `sp.createLoginRequest`returns an URL which is in following general format:
 
+`sp.createLoginRequest` resolves the SP and IdP preferences and returns a URL of the following shape:
+
+```
 https://idp.example.org/sso/SingleSignOnService?SAMLRequest=www&SigAlg=xxx&RelayState=yyy&Signature=zzz
+```
 
-The parameters **SigAlg** and **Signature** is optional in case IdP requests your SAML Request should be signed. **relayState** is also optional if the application needs a deep link to access.
+The `SigAlg` and `Signature` parameters are included only when the IdP requires a signed request. `RelayState` is optional and is typically used to preserve a deep link across the authentication round-trip.
 
-All the corresponding values are URL-encoded. **Signature** is already Base64-encoded and the deflated **SAMLRequest** should be Base64-encoded.
+All parameter values are URL-encoded. `Signature` is base64-encoded, and the deflated `SAMLRequest` is also base64-encoded.
 
-**Post-Binding**
+### Per-request RelayState
 
-The Request XML is sent via a form post instead of embedding in URL parameters. By using the same method as in Redirect-Binding:
+Per [`saml-bindings §3.4.3`](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf), RelayState is a per-request value: the SP captures a deep link, encodes it, and recovers it when the IdP returns. Pass it through the options bag on `createLoginRequest`:
+
+```javascript
+router.get('/spinitsso-redirect', (req, res) => {
+  const deepLink = req.query.next ?? '/';
+  const { id, context } = sp.createLoginRequest(idp, 'redirect', {
+    relayState: deepLink,
+  });
+  return res.redirect(context);
+});
+```
+
+The same options bag accepts a `customTagReplacement` callback (see [Templates](/template)).
+
+::: warning Deprecated
+`entitySetting.relayState` (passed to the `ServiceProvider` constructor) is deprecated. It applies process-wide and is unsafe under concurrent requests with different deep links. It will be removed in v3.
+:::
+
+## HTTP-POST binding
+
+The request XML is delivered via an auto-submitting HTML form instead of URL parameters. The same helper is used, with `'post'` as the binding:
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {
@@ -71,7 +94,7 @@ router.get('/spinitsso-redirect', (req, res) => {
 });
 ```
 
-You can simply change the second argument from 'redirect' to 'post'. This time the callback function returns an object instead of a string. It is then fed to a generic form post template as follow:
+The callback returns an object that can be rendered with a generic form-post template:
 
 ```html
 <form id="saml-form" method="post" action="{{entityEndpoint}}" autocomplete="off">
@@ -81,21 +104,22 @@ You can simply change the second argument from 'redirect' to 'post'. This time t
     {{/if}}
 </form>
 <script type="text/javascript">
-    // Automatic form submission
-    (function(){
+    // Auto-submit the form.
+    (function () {
         document.forms[0].submit();
     })();
 </script>
 ```
 
-Handlebar view engine is used in this example, you may choose your own and configure in your `app.js`.
+This example uses the Handlebars view engine. Configure your preferred engine in `app.js`:
 
 ```javascript
-app.engine('handlebars', exphbs({defaultLayout: 'main'}));
+app.engine('handlebars', exphbs({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 ```
 
-After those values are filled into the tags, the form will be automatically submit.
+Once the template is rendered with the supplied values, the form auto-submits to the IdP.
 
-?> **What's the next ?** <br/><br/>
-Identity Provider parses SP's request, then a SAML Response is sent back to SP. The response includes the authentication result. SP can then take action to create session for authenticated user if the result is successful.
+::: tip What happens next?
+The IdP parses the SP's request and returns a SAML response containing the authentication result. On success, the SP creates a session for the authenticated user.
+:::

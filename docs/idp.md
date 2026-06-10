@@ -1,11 +1,12 @@
 # Identity Provider
 
-Let's get started with entry point:
+Import the library entry point:
+
 ```javascript
 const saml = require('samlify');
 ```
 
-The following metadata is provided by the target identity provider.
+The metadata document below is typical of what an identity provider publishes:
 
 ```xml
 <EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://app.onelogin.com/saml/metadata/486670">
@@ -29,15 +30,18 @@ The following metadata is provided by the target identity provider.
 </EntityDescriptor>
 ```
 
-Import the above metadata and get the identity provider ready. Previously, we only allow user to enter path to file and the module will read for users. Starting from v2, we have relaxed the configuration to accept string, it allows user importing their metadata, key and certificate files from different sources. For examples, read from database, file systems, online resources (public url for metadata) and even in-memory storage.
+Import the metadata to construct the identity provider. Starting from v2, configuration accepts a string (or buffer), which allows metadata, keys, and certificates to be loaded from any source — a database, the filesystem, a public URL, or in-memory storage.
 
-!> **API is changed since v2**
+::: warning Breaking changes since v2
+The API has changed. See the example below.
+:::
 
 ```javascript
-// after v2
+// v2 and later.
 const idp = saml.IdentityProvider({
   metadata: fs.readFileSync('./metadata/onelogin_metadata_486670.xml')
 });
-// before v2 (deprecated)
+
+// Before v2 (deprecated).
 // const idp = saml.IdentityProvider('./metadata/onelogin_metadata_486670.xml');
 ```
