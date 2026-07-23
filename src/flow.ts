@@ -241,8 +241,8 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     } else if (decryptRequired && !verified) {
       // Encrypted assertion, signature is on the assertion itself.
       const result = await libsaml.decryptAssertion(self, samlContent);
-      const decryptedDoc = result[0];
-      const [decryptedDocVerified, verifiedDecryptedAssertion] = libsaml.verifySignature(decryptedDoc, verificationOptions);
+      samlContent = result[0];
+      const [decryptedDocVerified, verifiedDecryptedAssertion] = libsaml.verifySignature(samlContent, verificationOptions);
       if (decryptedDocVerified) {
         extractorFields = getDefaultExtractorFields(parserType, verifiedDecryptedAssertion);
       } else {

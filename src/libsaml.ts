@@ -642,8 +642,7 @@ const libSaml = () => {
         }
 
         sig.loadSignature(signatureNode);
-
-        verified = sig.checkSignature(doc.toString());
+        verified = sig.checkSignature(xml);
 
         if (!verified) {
           continue;
