@@ -194,6 +194,12 @@ test('create login request with redirect binding using default template and pars
   expect(extract.nameIDPolicy.allowCreate).toBe('false');
 });
 
+test('redirect binding rejects a message whose inflated size exceeds the cap', async () => {
+  const SAMLRequest = util.base64Encode(util.deflateString(`<samlp:AuthnRequest>${' '.repeat(4 * 1024 * 1024)}</samlp:AuthnRequest>`));
+  await expect(idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest } }))
+    .rejects.toThrow('ERR_INFLATED_MESSAGE_TOO_LARGE');
+});
+
 test('create login request with post simpleSign binding using default template and parse it', async () => {
   const { relayState, id, context: SAMLRequest, type, sigAlg, signature } = sp.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
   expect(typeof id).toBe('string');

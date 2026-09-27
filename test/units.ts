@@ -138,6 +138,18 @@ describe('utility helpers', () => {
     expect(typeof utility.inflateString(utility.base64Encode(compressed))).toBe('string');
   });
 
+  test('utility default — inflateString rejects output above the size cap', () => {
+    const oversized = utility.base64Encode(utility.deflateString('a'.repeat(2 * 1024 * 1024)));
+    expect(() => utility.inflateString(oversized)).toThrow('ERR_INFLATED_MESSAGE_TOO_LARGE');
+    expect(() => utility.inflateString(utility.base64Encode(utility.deflateString('a'.repeat(2048))), 1024))
+      .toThrow('ERR_INFLATED_MESSAGE_TOO_LARGE');
+    expect(utility.inflateString(utility.base64Encode(utility.deflateString('a'.repeat(1024))), 1024)).toHaveLength(1024);
+  });
+
+  test('utility default — inflateString rethrows non-size errors', () => {
+    expect(() => utility.inflateString(utility.base64Encode('not deflate data'))).toThrow(/invalid|incorrect/i);
+  });
+
   test('utility default — applyDefault merges right onto left', () => {
     expect(utility.applyDefault({ a: 1, b: 2 }, { b: 3, c: 4 })).toEqual({ a: 1, b: 3, c: 4 });
   });

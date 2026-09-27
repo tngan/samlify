@@ -9,6 +9,13 @@ import { deflateRawSync, inflateRawSync } from 'zlib';
 const BASE64_STR = 'base64';
 
 /**
+ * Upper bound on the inflated size of a redirect-binding message. Legitimate
+ * SAML messages are a few KB; the cap stops decompression bombs before the
+ * whole output is allocated.
+ */
+export const MAX_INFLATED_MESSAGE_SIZE = 1024 * 1024;
+
+/**
  * Build an object by zipping two parallel arrays of keys and values.
  * When `skipDuplicated` is false, colliding keys are aggregated into arrays
  * so duplicate keys do not clobber earlier values.
@@ -145,11 +152,20 @@ function deflateString(message: string): number[] {
  * Raw-inflate a base64 string that was produced by {@link deflateString}.
  *
  * @param compressedString base64-encoded raw-deflate payload
+ * @param maxOutputLength maximum inflated size in bytes
  * @returns decompressed UTF-8 string
+ * @throws `ERR_INFLATED_MESSAGE_TOO_LARGE` when the output exceeds `maxOutputLength`
  */
-export function inflateString(compressedString: string): string {
+export function inflateString(compressedString: string, maxOutputLength: number = MAX_INFLATED_MESSAGE_SIZE): string {
   const inputBuffer = Buffer.from(compressedString, BASE64_STR);
-  return inflateRawSync(inputBuffer).toString('utf8');
+  try {
+    return inflateRawSync(inputBuffer, { maxOutputLength }).toString('utf8');
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ERR_BUFFER_TOO_LARGE') {
+      throw new Error('ERR_INFLATED_MESSAGE_TOO_LARGE');
+    }
+    throw e;
+  }
 }
 
 /**
