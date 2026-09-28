@@ -75,6 +75,7 @@ Signature verification performed inside `sp.parseLoginResponse`:
 
 - XML signature
 - Issuer name
+- Audience, `Destination` and `Recipient` match this SP (see `wantAudienceCheck` in [SP configuration](/sp-configuration))
 
 The promise resolves to a `parseResult` object. The `extract` member is
 keyed by the field names declared in `src/extractor.ts:loginResponseFields`,

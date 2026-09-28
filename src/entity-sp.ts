@@ -47,6 +47,7 @@ export class ServiceProvider extends Entity {
       authnRequestsSigned: false,
       wantAssertionsSigned: false,
       wantMessageSigned: false,
+      wantAudienceCheck: true,
     }, spSetting);
     if (entitySetting.wantMessageSigned && entitySetting.signatureConfig === undefined) {
       // saml-bindings §3.5 — default signature placement when the SP wants

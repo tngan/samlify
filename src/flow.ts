@@ -80,6 +80,52 @@ function getDefaultExtractorFields(
 }
 
 /**
+ * Check that the verified assertion is addressed to this SP. Every
+ * `<AudienceRestriction>` must list the SP entityID in one of its
+ * `<Audience>` elements (saml-core §2.5.1.4), and at least one restriction
+ * must be present (saml-profiles §4.1.4.2). Disabled only when the SP sets
+ * `wantAudienceCheck: false`.
+ *
+ * @param self receiving entity (the SP)
+ * @param extracted login-response extractor result
+ */
+function isIntendedAudience(self: Entity, extracted: ExtractorResult): boolean {
+  if (self.entitySetting.wantAudienceCheck === false) {
+    return true;
+  }
+  const restriction = extracted.audienceRestriction as string | string[] | null | undefined;
+  const restrictions = ([] as string[]).concat(restriction ?? []);
+  const entityID = self.entityMeta.getEntityID();
+  return restrictions.length > 0 && restrictions.every(xml => {
+    const { audience } = extract(xml, [{ key: 'audience', localPath: ['AudienceRestriction', 'Audience'], attributes: [] }]);
+    return ([] as unknown[]).concat(audience ?? []).includes(entityID);
+  });
+}
+
+/**
+ * Check that the response targets one of this SP's AssertionConsumerService
+ * endpoints: `Response@Destination` (saml-bindings §3.4.5.2, §3.5.5.2) and the
+ * bearer `SubjectConfirmationData@Recipient` (saml-profiles §4.1.4.3) must
+ * each match an ACS location when present. Shares the `wantAudienceCheck`
+ * opt-out.
+ *
+ * @param self receiving entity (the SP)
+ * @param extracted login-response extractor result
+ */
+function isIntendedRecipient(self: Entity, extracted: ExtractorResult): boolean {
+  if (self.entitySetting.wantAudienceCheck === false) {
+    return true;
+  }
+  const acs = (self.entityMeta as unknown as { meta: { assertionConsumerService?: unknown } }).meta.assertionConsumerService;
+  const locations = ([] as { location?: string }[])
+    .concat((acs ?? []) as { location?: string }[])
+    .map(service => service.location);
+  const destination = (extracted.response as Record<string, string> | undefined)?.destination;
+  const recipient = (extracted.subjectConfirmation as Record<string, string> | undefined)?.recipient;
+  return [destination, recipient].every(target => !target || locations.includes(target));
+}
+
+/**
  * Redirect-binding flow: reads the base64/deflate SAML message from query
  * params and, when required, verifies the detached signature over the
  * canonical octet string.
@@ -161,6 +207,14 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     && extractedProperties.issuer !== issuer
   ) {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
+  }
+
+  if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_AUDIENCE_MISMATCH'));
+  }
+
+  if (parserType === 'SAMLResponse' && !isIntendedRecipient(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
   }
 
   // Session expiration — only enforced when SessionNotOnOrAfter is present.
@@ -272,6 +326,14 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
   }
 
+  if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_AUDIENCE_MISMATCH'));
+  }
+
+  if (parserType === 'SAMLResponse' && !isIntendedRecipient(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
+  }
+
   if (
     parserType === 'SAMLResponse'
     && (extractedProperties.sessionIndex as Record<string, string> | undefined)?.sessionNotOnOrAfter
@@ -381,6 +443,14 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     && extractedProperties.issuer !== issuer
   ) {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
+  }
+
+  if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_AUDIENCE_MISMATCH'));
+  }
+
+  if (parserType === 'SAMLResponse' && !isIntendedRecipient(self, extractedProperties)) {
+    return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
   }
 
   if (

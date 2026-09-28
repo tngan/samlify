@@ -1,6 +1,6 @@
 import * as esaml2 from '../index';
 import { readFileSync, writeFileSync } from 'fs';
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
 import { randomUUID } from 'crypto';
 import * as url from 'url';
@@ -42,6 +42,10 @@ const loginResponseTemplate = {
 
 const failedResponse: string = String(readFileSync('./test/misc/failed_response.xml'));
 
+// Callers pass the binding URN; getAssertionConsumerService expects the short name.
+const acsOf = (_sp, _binding) =>
+  _sp.entityMeta.getAssertionConsumerService(Object.keys(binding).find(k => binding[k] === _binding) ?? _binding);
+
 const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
   const now = new Date();
@@ -52,9 +56,9 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   const tvalue = {
     ID: _id,
     AssertionID: idpSetting.generateID ? idpSetting.generateID() : `${randomUUID()}`,
-    Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
+    Destination: acsOf(_sp, _binding),
     Audience: spEntityID,
-    SubjectRecipient: spEntityID,
+    SubjectRecipient: acsOf(_sp, _binding),
     NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
     NameID: user.email,
     Issuer: idp.entityMeta.getEntityID(),
@@ -62,7 +66,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
     ConditionsNotBefore: now.toISOString(),
     ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
     SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
-    AssertionConsumerServiceURL: _sp.entityMeta.getAssertionConsumerService(_binding),
+    AssertionConsumerServiceURL: acsOf(_sp, _binding),
     EntityID: spEntityID,
     // sampleRequestInfo is hoisted via `const`; the inner `template => ...`
     // function only dereferences it at runtime, by which time the binding
@@ -438,6 +442,78 @@ test('send response with signed assertion and parse it', async () => {
   expect(samlContent.endsWith('/samlp:Response>')).toBe(true);
   expect(extract.nameID).toBe('user@esaml2.com');
   expect(extract.response.inResponseTo).toBe('request_id');
+});
+
+describe('login response must be addressed to the receiving SP', () => {
+  const user = { email: 'user@esaml2.com' };
+  const acs = acsOf(sp, binding.post) as string;
+  // Rewrite the unsigned template output before the IdP signs it.
+  const issue = async (rewrite: (xml: string) => string, receiver = sp) => {
+    const callback = createTemplateCallback(idpNoEncrypt, receiver, binding.post, user);
+    const { context: SAMLResponse } = await idpNoEncrypt.createLoginResponse(receiver, sampleRequestInfo, 'post', user, template => {
+      const result = callback(template);
+      return { ...result, context: rewrite(result.context) };
+    });
+    return receiver.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse } });
+  };
+  const spEntityID = sp.entityMeta.getEntityID();
+
+  test('rejects a response whose Audience is another SP', async () => {
+    await expect(issue(xml => xml.replace(`<saml:Audience>${spEntityID}<`, '<saml:Audience>https://other-sp.example.org/metadata<')))
+      .rejects.toThrow('ERR_AUDIENCE_MISMATCH');
+  });
+
+  test('rejects a response without an AudienceRestriction', async () => {
+    await expect(issue(xml => xml.replace(/<saml:AudienceRestriction>.*<\/saml:AudienceRestriction>/, '')))
+      .rejects.toThrow('ERR_AUDIENCE_MISMATCH');
+  });
+
+  test('accepts a response listing several audiences including this SP', async () => {
+    const { extract } = await issue(xml => xml.replace(
+      `<saml:Audience>${spEntityID}</saml:Audience>`,
+      `<saml:Audience>https://other-sp.example.org/metadata</saml:Audience><saml:Audience>${spEntityID}</saml:Audience>`,
+    ));
+    expect(extract.audience).toEqual(['https://other-sp.example.org/metadata', spEntityID]);
+  });
+
+  test('rejects a response when any AudienceRestriction excludes this SP', async () => {
+    await expect(issue(xml => xml.replace(
+      '<saml:AudienceRestriction>',
+      '<saml:AudienceRestriction><saml:Audience>https://other-sp.example.org/metadata</saml:Audience></saml:AudienceRestriction><saml:AudienceRestriction>',
+    ))).rejects.toThrow('ERR_AUDIENCE_MISMATCH');
+  });
+
+  test('accepts a response when every AudienceRestriction includes this SP', async () => {
+    const { extract } = await issue(xml => xml.replace(
+      '<saml:AudienceRestriction>',
+      `<saml:AudienceRestriction><saml:Audience>https://other-sp.example.org/metadata</saml:Audience><saml:Audience>${spEntityID}</saml:Audience></saml:AudienceRestriction><saml:AudienceRestriction>`,
+    ));
+    expect(extract.audienceRestriction).toHaveLength(2);
+  });
+
+  test('rejects a response whose SubjectConfirmationData Recipient is not an ACS of this SP', async () => {
+    await expect(issue(xml => xml.replace(`Recipient="${acs}"`, 'Recipient="https://other-sp.example.org/acs"')))
+      .rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+  });
+
+  test('rejects a response whose Destination is not an ACS of this SP', async () => {
+    await expect(issue(xml => xml.replace(`Destination="${acs}"`, 'Destination="https://other-sp.example.org/acs"')))
+      .rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+  });
+
+  test('exposes the signed SubjectConfirmationData on the extract', async () => {
+    const { extract } = await issue(xml => xml);
+    expect(extract.subjectConfirmation.recipient).toBe(acs);
+    expect(extract.subjectConfirmation.inResponseTo).toBe('request_id');
+  });
+
+  test('wantAudienceCheck: false disables the audience, Destination and Recipient checks', async () => {
+    const lenientSp = serviceProvider({ ...defaultSpConfig, wantAudienceCheck: false });
+    const { extract } = await issue(xml => xml
+      .replace(`<saml:Audience>${spEntityID}<`, '<saml:Audience>https://other-sp.example.org/metadata<')
+      .replace(`Recipient="${acs}"`, 'Recipient="https://other-sp.example.org/acs"'), lenientSp);
+    expect(extract.audience).toBe('https://other-sp.example.org/metadata');
+  });
 });
 
 // + REDIRECT

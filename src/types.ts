@@ -321,6 +321,12 @@ export interface ServiceProviderSettings {
   relayState?: string;
   /** Clock drift tolerance in ms for notBefore / notOnOrAfter checks. */
   clockDrifts?: [number, number];
+  /**
+   * Reject login responses whose `<Audience>` does not include this SP's
+   * entityID (saml-core §2.5.1.4). Defaults to `true`; disabling it lets a
+   * response issued for another SP be accepted by this one.
+   */
+  wantAudienceCheck?: boolean;
 }
 
 /** Identity-provider configuration accepted by the IdP factory. */

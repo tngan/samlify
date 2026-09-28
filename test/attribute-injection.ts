@@ -48,7 +48,7 @@ function createTemplateCallback(_idp: any, _sp: any, _binding: string, user: any
       AssertionID: '_' + randomUUID(),
       Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
       Audience: _sp.entityMeta.getEntityID(),
-      SubjectRecipient: _sp.entityMeta.getEntityID(),
+      SubjectRecipient: _sp.entityMeta.getAssertionConsumerService(_binding),
       NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
       NameID: user.email,
       Issuer: _idp.entityMeta.getEntityID(),
