@@ -151,7 +151,7 @@ test('#31 query param for sso/slo returns error', () => {
     const originalURL = url.parse(context, true);
     const request = originalURL.query.SAMLRequest as string;
     const rawRequest = utility.inflateString(decodeURIComponent(request));
-    const xml = new dom().parseFromString(rawRequest);
+    const xml = new dom().parseFromString(rawRequest, 'text/xml');
     const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
     expect(acsUrl).toBe('https://example.org/response');
   });

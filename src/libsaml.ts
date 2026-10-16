@@ -13,6 +13,7 @@ import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { getContext } from './api';
+import { parseXml } from './xml';
 import xmlEscape from 'xml-escape';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -565,11 +566,8 @@ const libSaml = () => {
      * @returns tuple `[verified, authenticatedAssertion | null]`
      */
     verifySignature(xml: string, opts: SignatureVerifierOptions): [boolean, string | null] {
-      const { dom } = getContext();
-      const doc = dom.parseFromString(xml);
+      const doc = parseXml(xml);
 
-      const { dom: contextDom } = getContext();
-      const docParser = contextDom;
       // Absolute XPaths defend against signature-wrapping attacks.
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
       const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
@@ -652,7 +650,7 @@ const libSaml = () => {
           throw new Error('NO_SIGNATURE_REFERENCES');
         }
         const signedVerifiedXML = sig.getSignedReferences()[0];
-        const rootNode = docParser.parseFromString(signedVerifiedXML, 'text/xml').documentElement;
+        const rootNode = parseXml(signedVerifiedXML).documentElement;
 
         if (rootNode.localName === 'Response') {
           const assertions = toNodeArray(select("./*[local-name()='Assertion']", rootNode));
@@ -790,8 +788,7 @@ const libSaml = () => {
 
         const sourceEntitySetting = sourceEntity.entitySetting;
         const targetEntityMetadata = targetEntity.entityMeta;
-        const { dom } = getContext();
-        const doc = dom.parseFromString(xml);
+        const doc = parseXml(xml);
         const assertions = select("//*[local-name(.)='Assertion']", doc) as Node[];
         if (!Array.isArray(assertions) || assertions.length === 0) {
           throw new Error('ERR_NO_ASSERTION');
@@ -821,7 +818,7 @@ const libSaml = () => {
             }
             /* v8 ignore stop */
             const encAssertionPrefix = sourceEntitySetting.tagPrefix!.encryptedAssertion;
-            const encryptAssertionDoc = dom.parseFromString(
+            const encryptAssertionDoc = parseXml(
               `<${encAssertionPrefix}:EncryptedAssertion xmlns:${encAssertionPrefix}="${namespace.names.assertion}">${res}</${encAssertionPrefix}:EncryptedAssertion>`,
             );
             doc.documentElement.replaceChild(encryptAssertionDoc.documentElement, rawAssertionNode);
@@ -848,8 +845,7 @@ const libSaml = () => {
           return reject(new Error('ERR_UNDEFINED_ASSERTION'));
         }
         const hereSetting = here.entitySetting;
-        const { dom } = getContext();
-        const doc = dom.parseFromString(entireXML);
+        const doc = parseXml(entireXML);
         const encryptedAssertions = select(
           "/*[contains(local-name(), 'Response')]/*[local-name(.)='EncryptedAssertion']",
           doc,
@@ -877,7 +873,7 @@ const libSaml = () => {
             return reject(new Error('ERR_UNDEFINED_ENCRYPTED_ASSERTION'));
           }
           /* v8 ignore stop */
-          const rawAssertionDoc = dom.parseFromString(res);
+          const rawAssertionDoc = parseXml(res);
           doc.documentElement.replaceChild(rawAssertionDoc.documentElement, encAssertionNode);
           return resolve([doc.toString(), res]);
         });

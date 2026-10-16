@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": false,
+    "lib": ["es2020"],
+    "types": ["node"]
+  },
+  "files": ["index.ts"]
+}

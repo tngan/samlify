@@ -7,7 +7,7 @@
  */
 import { select, SelectedValue, SelectReturnType } from 'xpath';
 import { uniq, last, zipObject, notEmpty, escapeXPathValue, camelCase } from './utility';
-import { getContext } from './api';
+import { parseXml } from './xml';
 import type { ExtractorField, ExtractorFields, ExtractorResult, ExtractorValue } from './types';
 
 export type { ExtractorField, ExtractorFields, ExtractorResult } from './types';
@@ -230,15 +230,14 @@ export const logoutResponseFields: ExtractorFields = [
  * @returns extracted SAML values keyed by field name
  */
 export function extract(context: string, fields: ExtractorField[]): ExtractorResult {
-  const { dom } = getContext();
-  const rootDoc = dom.parseFromString(context);
+  const rootDoc = parseXml(context);
 
   return fields.reduce<ExtractorResult>((result, field) => {
     const { key, localPath, attributes, context: isEntire, shortcut, index, attributePath } = field;
 
     let targetDoc = rootDoc;
     if (shortcut) {
-      targetDoc = dom.parseFromString(shortcut);
+      targetDoc = parseXml(shortcut);
     }
 
     // Multi-path union: each entry is a separate localPath whose text()
@@ -270,7 +269,7 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       const fullChildXPath = `${childXPath}${childAttributeXPath}`;
 
       const childAttributes = parentNodes.map(node => {
-        const nodeDoc = dom.parseFromString(node.toString());
+        const nodeDoc = parseXml(node.toString());
         if (attributes.length === 0) {
           const childValues = toNodeArray(select(fullChildXPath, nodeDoc)).map((n: Node) => n.nodeValue);
           return childValues.length === 1 ? childValues[0] : childValues;
@@ -304,7 +303,7 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       const baseNode = toNodeArray(select(baseXPath, targetDoc)).map(n => n.toString());
       const childXPath = `${buildAbsoluteXPath([last(localPath as string[])])}${attributeXPath}`;
       const attributeValues = baseNode.map((node: string) => {
-        const nodeDoc = dom.parseFromString(node);
+        const nodeDoc = parseXml(node);
         return toNodeArray(select(childXPath, nodeDoc)).reduce<Record<string, string>>((r, n: Attr) => {
           r[camelCase(n.name)] = n.value;
           return r;

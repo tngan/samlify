@@ -260,7 +260,7 @@ test('getAssertionConsumerService with two bindings', () => {
   test('encrypt assertion with invalid xml syntax returns error', async () => {
     await expect(() => libsaml.encryptAssertion(idp, sp, 'This is not a xml format string')).rejects.toThrow();
     const error = await libsaml.encryptAssertion(idp, sp, 'This is not a xml format string').catch(e => e);
-    expect(error?.message).toBe('ERR_NO_ASSERTION');
+    expect(error?.message).toMatch(/XML fatal error/);
   });
   test('encrypt assertion with empty string returns error', async () => {
     await expect(() => libsaml.encryptAssertion(idp, sp, '')).rejects.toThrow();
@@ -389,18 +389,12 @@ test('verify time with and without drift tolerance', () => {
 });
 
 
-// new versions of xmldom realizes multiple_entitydescriptor.xml is invalid XML and doesn't parse it anymore.
-// It just logs an error and ignores the rest of the file, so this test is no longer a valid test case.
-// [xmldom error]  element parse error: Error: Hierarchy request error: Only one element can be added and only after doctype
-test.skip('metadata with multiple entity descriptors is invalid', () => {
+// multiple_entitydescriptor.xml has two root elements, so it is not well-formed
+// XML; xmldom 0.9 reports this as a fatal parse error before samlify inspects it.
+test('metadata with multiple entity descriptors is invalid', () => {
   expect(() => {
     identityProvider({ ...defaultIdpConfig, metadata: readFileSync('./test/misc/multiple_entitydescriptor.xml') });
-  }).toThrow();
-  try {
-    identityProvider({ ...defaultIdpConfig, metadata: readFileSync('./test/misc/multiple_entitydescriptor.xml') });
-  } catch ({ message }) {
-    expect(message).toBe('ERR_MULTIPLE_METADATA_ENTITYDESCRIPTOR');
-  }
+  }).toThrow(/Only one element can be added/);
 });
 
 test('undefined x509 key in metadata should return null', () => {
