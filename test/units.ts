@@ -215,6 +215,49 @@ describe('api configuration', () => {
     const after = getContext().dom;
     expect(after).not.toBe(before);
   });
+
+  describe('setDOMParserOptions error handling (xmldom 0.9)', () => {
+    const malformed = '<a><b></a>';
+    // A U+FFFD replacement character is reported at the `warning` level.
+    const withWarning = '<a>\uFFFD</a>';
+    afterEach(() => setDOMParserOptions());
+
+    test('default parser rejects malformed XML', () => {
+      setDOMParserOptions();
+      expect(() => getContext().dom.parseFromString(malformed, 'text/xml')).toThrow(/XML (parsing|fatal) error/);
+    });
+
+    test('default parser logs warnings instead of throwing', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      setDOMParserOptions();
+      expect(() => getContext().dom.parseFromString(withWarning, 'text/xml')).not.toThrow();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('[xmldom warning]'));
+      warn.mockRestore();
+    });
+
+    test('caller-supplied onError takes precedence', () => {
+      const levels: string[] = [];
+      setDOMParserOptions({ onError: level => { levels.push(level); } });
+      getContext().dom.parseFromString(withWarning, 'text/xml');
+      expect(levels).toContain('warning');
+    });
+
+    test('deprecated errorHandler function is used as onError', () => {
+      const onError = vi.fn();
+      setDOMParserOptions({ errorHandler: onError });
+      getContext().dom.parseFromString(withWarning, 'text/xml');
+      expect(onError).toHaveBeenCalledWith('warning', expect.any(String), expect.anything());
+    });
+
+    test('legacy errorHandler object is converted instead of rejected by xmldom', () => {
+      const warning = vi.fn();
+      setDOMParserOptions({ errorHandler: { warning } });
+      getContext().dom.parseFromString(withWarning, 'text/xml');
+      expect(warning).toHaveBeenCalledWith(expect.any(String));
+      // Levels the object omits still fail closed.
+      expect(() => getContext().dom.parseFromString(malformed, 'text/xml')).toThrow(/XML (parsing|fatal) error/);
+    });
+  });
 });
 
 describe('libsaml — pure helpers', () => {
@@ -1042,7 +1085,7 @@ describe('Security audit (2026-04)', () => {
     setDOMParserOptions();
     // Attempt to parse a DOCTYPE-laden document; the safe error handler
     // throws on the entity declaration.
-    expect(() => dom.parseFromString(`<!DOCTYPE r [<!ENTITY xxe "secret">]><r>&xxe;</r>`)).toThrow();
+    expect(() => dom.parseFromString(`<!DOCTYPE r [<!ENTITY xxe "secret">]><r>&xxe;</r>`, 'text/xml')).toThrow();
   });
 
   // saml-sec-consider §6.5 / xmldsig-core §6.4 — verifying with an
