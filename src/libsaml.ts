@@ -609,31 +609,33 @@ const libSaml = () => {
 
         if (opts.metadata) {
           const certificateNode = toNodeArray(select(".//*[local-name(.)='X509Certificate']", signatureNode));
-          let metadataCert: string | string[] | undefined = opts.metadata.getX509Certificate(certUse.signing);
-          if (Array.isArray(metadataCert)) {
-            metadataCert = flattenDeep<string>(metadataCert as string[]);
-          } else if (typeof metadataCert === 'string') {
-            metadataCert = [metadataCert];
-          }
-          metadataCert = (metadataCert as string[]).map(utility.normalizeCerString);
+          const declaredCert = opts.metadata.getX509Certificate(certUse.signing);
+          const metadataCert = (Array.isArray(declaredCert)
+            ? flattenDeep<string>(declaredCert as string[])
+            : typeof declaredCert === 'string' ? [declaredCert] : []
+          )
+            .map(utility.normalizeCerString)
+            .filter(cert => cert.trim() !== '');
 
-          if (certificateNode.length === 0 && metadataCert.length === 0) {
+          // Only certificates declared in the peer's metadata are trusted
+          // (saml-metadata §2.4.1.1); a certificate carried in the message's
+          // own KeyInfo is attacker-controlled and must never be used unless
+          // it matches one of them.
+          if (metadataCert.length === 0) {
             throw new Error('NO_SELECTED_CERTIFICATE');
           }
 
           if (certificateNode.length !== 0) {
             const certEl = certificateNode[0] as Element;
             const x509CertificateData = certEl.textContent ?? '';
-            const x509Certificate = utility.normalizeCerString(x509CertificateData);
+            const x509Certificate = utility.normalizeCerString(x509CertificateData).trim();
+            const trustedCert = metadataCert.find(cert => cert.trim() === x509Certificate);
 
-            if (
-              metadataCert.length >= 1 &&
-              !metadataCert.find(cert => cert.trim() === x509Certificate.trim())
-            ) {
+            if (!trustedCert) {
               throw new Error('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
             }
 
-            sig.publicCert = this.getKeyInfo(x509Certificate).getKey();
+            sig.publicCert = this.getKeyInfo(trustedCert).getKey();
           } else {
             sig.publicCert = this.getKeyInfo(metadataCert[0]).getKey();
           }

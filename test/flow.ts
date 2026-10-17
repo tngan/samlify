@@ -1496,3 +1496,41 @@ test.sequential('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML r
   }
 
 });
+
+describe('signature verification trusts only metadata-declared certificates', () => {
+  const idpMetaXml = String(readFileSync('./test/misc/idpmeta.xml'));
+  const certBody = (pem: Buffer) => String(pem).replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  // An unrelated key pair: same entityID as the trusted IdP, its own cert in KeyInfo.
+  const otherKeyIdp = identityProvider({
+    ...defaultIdpConfig,
+    isAssertionEncrypted: false,
+    privateKey: readFileSync('./test/key/sp/privkey.pem'),
+    privateKeyPass: 'VHOSp5RUiBcrsjrcAuXFwU1NKCkGA8px',
+    metadata: idpMetaXml.replace(
+      /(<KeyDescriptor use="signing">[\s\S]*?<X509Certificate>)[^<]+(<\/X509Certificate>)/,
+      `$1${certBody(readFileSync('./test/key/sp/cert.cer'))}$2`,
+    ),
+  });
+  const mint = async (issuer: typeof idp) => {
+    const { context } = await issuer.createLoginResponse(sp, sampleRequestInfo, 'post', { email: 'user@esaml2.com' });
+    return { body: { SAMLResponse: context } };
+  };
+
+  test('rejects a response whose embedded certificate is not declared in IdP metadata', async () => {
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await mint(otherKeyIdp)))
+      .rejects.toThrow('ERROR_UNMATCH_CERTIFICATE_DECLARATION_IN_METADATA');
+  });
+
+  test('rejects a response when IdP metadata declares no X.509 signing certificate', async () => {
+    // Signing key published only as ds:RSAKeyValue, which samlify does not import.
+    const keyValueOnlyMeta = idpMetaXml
+      .replace(/<KeyDescriptor use="encryption">[\s\S]*?<\/KeyDescriptor>/, '')
+      .replace(
+        /<KeyDescriptor use="signing">[\s\S]*?<\/KeyDescriptor>/,
+        '<KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:KeyValue><ds:RSAKeyValue><ds:Modulus>AQAB</ds:Modulus><ds:Exponent>AQAB</ds:Exponent></ds:RSAKeyValue></ds:KeyValue></ds:KeyInfo></KeyDescriptor>',
+      );
+    const keyValueOnlyIdp = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, metadata: keyValueOnlyMeta });
+    await expect(sp.parseLoginResponse(keyValueOnlyIdp, 'post', await mint(otherKeyIdp)))
+      .rejects.toThrow('NO_SELECTED_CERTIFICATE');
+  });
+});
