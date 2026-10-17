@@ -15,6 +15,7 @@ import type {
   ServiceProviderSettings,
   CreateLoginRequestOptions,
   CustomTagReplacement,
+  ParseLoginResponseOptions,
 } from './types';
 import { normalizeCreateLoginRequestOptions } from './options';
 import { namespace } from './urn';
@@ -162,8 +163,14 @@ export class ServiceProvider extends Entity {
    * @param idp identity provider that produced the response
    * @param binding `redirect`, `post`, or `simpleSign`
    * @param request HTTP request envelope
+   * @param options per-request checks, e.g. the expected `inResponseTo`
    */
-  public parseLoginResponse(idp: IdentityProvider, binding: string, request: ESamlHttpRequest) {
+  public parseLoginResponse(
+    idp: IdentityProvider,
+    binding: string,
+    request: ESamlHttpRequest,
+    options: ParseLoginResponseOptions = {},
+  ) {
     return flow({
       from: idp,
       self: this,
@@ -173,6 +180,7 @@ export class ServiceProvider extends Entity {
       type: 'login',
       binding,
       request,
+      inResponseTo: options.inResponseTo,
     });
   }
 }

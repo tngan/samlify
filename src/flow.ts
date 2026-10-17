@@ -5,7 +5,7 @@
  * and POST-SimpleSign flows, handling decoding, schema validation, status
  * checks, signature verification, and time-window validation.
  */
-import { inflateString, base64Decode } from './utility';
+import { inflateString, base64Decode, uniq, notEmpty } from './utility';
 import { verifyTime } from './validator';
 import libsaml from './libsaml';
 import {
@@ -48,6 +48,8 @@ export interface FlowOptions {
   type: 'login' | 'logout';
   binding: string;
   supportBindings?: string[];
+  /** Request ID(s) a login response must answer; see `ParseLoginResponseOptions`. */
+  inResponseTo?: string | string[];
 }
 
 /**
@@ -123,6 +125,59 @@ function isIntendedRecipient(self: Entity, extracted: ExtractorResult): boolean 
   const destination = (extracted.response as Record<string, string> | undefined)?.destination;
   const recipient = (extracted.subjectConfirmation as Record<string, string> | undefined)?.recipient;
   return [destination, recipient].every(target => !target || locations.includes(target));
+}
+
+/**
+ * Check which request a login response answers.
+ *
+ * The answered request is read from the signed bearer
+ * `SubjectConfirmationData@InResponseTo` (saml-profiles §4.1.4.2). The outer
+ * `Response@InResponseTo` is only trusted when the whole message is covered
+ * by the verified signature (redirect / SimpleSign bindings); on the POST
+ * binding it may sit outside the signed assertion.
+ *
+ * - Always: the signed values and the outer value must agree.
+ * - When `expected` is given: the answered request must be one of them.
+ * - When the SP sets `allowUnsolicitedResponse: false`: a response that does
+ *   not answer a request is rejected.
+ *
+ * @param self receiving entity (the SP)
+ * @param extracted login-response extractor result
+ * @param messageSigned whether the outer `Response` is covered by the signature
+ * @param expected request ID(s) the caller issued
+ * @returns error code, or `null` when the response passes
+ */
+function checkInResponseTo(
+  self: Entity,
+  extracted: ExtractorResult,
+  messageSigned: boolean,
+  expected?: string | string[],
+): string | null {
+  const outer = (extracted.response as Record<string, string> | undefined)?.inResponseTo;
+  const confirmations = ([] as Record<string, string>[])
+    .concat((extracted.subjectConfirmation ?? []) as unknown as Record<string, string>[]);
+  const signed = uniq(confirmations.map(confirmation => confirmation.inResponseTo).filter(notEmpty));
+
+  if (signed.length > 1 || (outer && signed.length === 1 && signed[0] !== outer)) {
+    return 'ERR_INRESPONSETO_MISMATCH';
+  }
+
+  const answered = signed[0] ?? (messageSigned ? outer : undefined);
+
+  if (expected !== undefined) {
+    if (!answered) {
+      return 'ERR_MISSING_INRESPONSETO';
+    }
+    if (!([] as string[]).concat(expected).includes(answered)) {
+      return 'ERR_INRESPONSETO_MISMATCH';
+    }
+  }
+
+  if (self.entitySetting.allowUnsolicitedResponse === false && !answered) {
+    return 'ERR_UNSOLICITED_RESPONSE';
+  }
+
+  return null;
 }
 
 /**
@@ -215,6 +270,13 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
 
   if (parserType === 'SAMLResponse' && !isIntendedRecipient(self, extractedProperties)) {
     return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
+  }
+
+  if (parserType === 'SAMLResponse') {
+    const inResponseToError = checkInResponseTo(self, extractedProperties, checkSignature, options.inResponseTo);
+    if (inResponseToError) {
+      return Promise.reject(new Error(inResponseToError));
+    }
   }
 
   // Session expiration — only enforced when SessionNotOnOrAfter is present.
@@ -334,6 +396,13 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
   }
 
+  if (parserType === 'SAMLResponse') {
+    const inResponseToError = checkInResponseTo(self, extractedProperties, false, options.inResponseTo);
+    if (inResponseToError) {
+      return Promise.reject(new Error(inResponseToError));
+    }
+  }
+
   if (
     parserType === 'SAMLResponse'
     && (extractedProperties.sessionIndex as Record<string, string> | undefined)?.sessionNotOnOrAfter
@@ -451,6 +520,13 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
 
   if (parserType === 'SAMLResponse' && !isIntendedRecipient(self, extractedProperties)) {
     return Promise.reject(new Error('ERR_RECIPIENT_MISMATCH'));
+  }
+
+  if (parserType === 'SAMLResponse') {
+    const inResponseToError = checkInResponseTo(self, extractedProperties, checkSignature, options.inResponseTo);
+    if (inResponseToError) {
+      return Promise.reject(new Error(inResponseToError));
+    }
   }
 
   if (

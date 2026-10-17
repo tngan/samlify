@@ -1534,3 +1534,68 @@ describe('signature verification trusts only metadata-declared certificates', ()
       .rejects.toThrow('NO_SELECTED_CERTIFICATE');
   });
 });
+
+describe('login response must answer the expected request', () => {
+  const user = { email: 'user@esaml2.com' };
+  const spStrict = serviceProvider({ ...defaultSpConfig, allowUnsolicitedResponse: false });
+  // Template edits applied before the IdP fills and signs the response.
+  const withoutAnyInResponseTo = (t: string) => t.replace(/ InResponseTo="\{InResponseTo\}"/g, '');
+  const withoutSubjectInResponseTo = (t: string) =>
+    t.replace(/(<saml:SubjectConfirmationData\b[^>]*?) InResponseTo="\{InResponseTo\}"/, '$1');
+  const mint = (b: 'post' | 'redirect', target = sp, edit: (t: string) => string = t => t) =>
+    idpNoEncrypt.createLoginResponse(
+      target, sampleRequestInfo, b, user,
+      (template: string) => createTemplateCallback(idpNoEncrypt, target, binding[b], user)(edit(template)),
+      undefined, 'relaystate',
+    );
+  const postRequest = async (target = sp, edit?: (t: string) => string) =>
+    ({ body: { SAMLResponse: (await mint('post', target, edit)).context } });
+
+  test('rejects a response whose outer InResponseTo differs from the signed one', async () => {
+    const { body } = await postRequest();
+    const xml = String(utility.base64Decode(body.SAMLResponse, true))
+      .replace(/(<samlp:Response\b[^>]*?\bInResponseTo=")[^"]*(")/, '$1_other_request$2');
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: utility.base64Encode(xml) } }))
+      .rejects.toThrow('ERR_INRESPONSETO_MISMATCH');
+  });
+
+  test('accepts a response answering one of the expected request IDs', async () => {
+    const one = await sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(), { inResponseTo: 'request_id' });
+    expect(one.extract.nameID).toBe(user.email);
+    const many = await sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(), { inResponseTo: ['_older', 'request_id'] });
+    expect(many.extract.nameID).toBe(user.email);
+  });
+
+  test('rejects a response answering a different request', async () => {
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(), { inResponseTo: '_another_request' }))
+      .rejects.toThrow('ERR_INRESPONSETO_MISMATCH');
+  });
+
+  test('rejects an unsolicited response when a request ID is expected', async () => {
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(sp, withoutAnyInResponseTo), { inResponseTo: 'request_id' }))
+      .rejects.toThrow('ERR_MISSING_INRESPONSETO');
+  });
+
+  test('post binding: an InResponseTo outside the signed assertion does not answer the request', async () => {
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(sp, withoutSubjectInResponseTo), { inResponseTo: 'request_id' }))
+      .rejects.toThrow('ERR_MISSING_INRESPONSETO');
+  });
+
+  test('redirect binding: the signed message InResponseTo answers the request', async () => {
+    const { context } = await mint('redirect', sp, withoutSubjectInResponseTo);
+    const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context), { inResponseTo: 'request_id' });
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('unsolicited responses are accepted by default', async () => {
+    const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(sp, withoutAnyInResponseTo));
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('allowUnsolicitedResponse: false rejects a response that answers no request', async () => {
+    await expect(spStrict.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(spStrict, withoutAnyInResponseTo)))
+      .rejects.toThrow('ERR_UNSOLICITED_RESPONSE');
+    const { extract } = await spStrict.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(spStrict));
+    expect(extract.nameID).toBe(user.email);
+  });
+});

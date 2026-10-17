@@ -165,6 +165,20 @@ export interface CreateLoginRequestOptions {
   assertionConsumerServiceIndex?: number;
 }
 
+/** Per-request options accepted by `ServiceProvider#parseLoginResponse`. */
+export interface ParseLoginResponseOptions {
+  /**
+   * ID(s) of the `AuthnRequest`s this SP issued and is still waiting on,
+   * e.g. the `id` returned by `createLoginRequest`, kept in the user's
+   * session. When set, the response must answer one of them (saml-profiles
+   * §4.1.4.3): the signed `SubjectConfirmationData@InResponseTo` is compared,
+   * and a response without one is rejected with `ERR_MISSING_INRESPONSETO`,
+   * a different one with `ERR_INRESPONSETO_MISMATCH`. Remove the ID after a
+   * successful parse so the response cannot answer it again.
+   */
+  inResponseTo?: string | string[];
+}
+
 /** Per-request options accepted by `IdentityProvider#createLoginResponse`. */
 export interface CreateLoginResponseOptions {
   relayState?: string;
@@ -327,6 +341,12 @@ export interface ServiceProviderSettings {
    * response issued for another SP be accepted by this one.
    */
   wantAudienceCheck?: boolean;
+  /**
+   * Accept login responses that do not answer a request of this SP
+   * (IdP-initiated SSO). Defaults to `true`. When `false`, a response without
+   * a verified `InResponseTo` is rejected with `ERR_UNSOLICITED_RESPONSE`.
+   */
+  allowUnsolicitedResponse?: boolean;
 }
 
 /** Identity-provider configuration accepted by the IdP factory. */

@@ -81,6 +81,8 @@ const sp = new ServiceProvider({
 
 - **`wantAudienceCheck: boolean`** — Whether `parseLoginResponse` rejects a response that is not addressed to this SP. Defaults to `true`. When enabled, the assertion's `<Audience>` must include the SP entityID (`ERR_AUDIENCE_MISMATCH`), and the response `Destination` and the bearer `SubjectConfirmationData` `Recipient`, when present, must match one of the SP's AssertionConsumerService locations (`ERR_RECIPIENT_MISMATCH`). Only disable it if the application performs these checks itself.
 
+- **`allowUnsolicitedResponse: boolean`** — Whether `parseLoginResponse` accepts a response that does not answer a request of this SP (IdP-initiated SSO). Defaults to `true`. When `false`, a response without a verified `InResponseTo` is rejected with `ERR_UNSOLICITED_RESPONSE`. To check *which* request a response answers, pass `inResponseTo` to `parseLoginResponse` (see [SAML Response](/saml-response#checking-inresponseto)).
+
 - **`clockDrifts: [number, number]`** — Tolerance for clock drift on the SAML validity window, in milliseconds. The first element applies to `notBefore`; the second applies to `notOnOrAfter`. Both default to `0`. Either value may be negative or positive.
 
   For example, `[-5000, 3000]` extends the valid window by 5 seconds before `notBefore` and 3 seconds after `notOnOrAfter`:

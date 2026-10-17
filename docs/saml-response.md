@@ -76,6 +76,30 @@ Signature verification performed inside `sp.parseLoginResponse`:
 - XML signature
 - Issuer name
 - Audience, `Destination` and `Recipient` match this SP (see `wantAudienceCheck` in [SP configuration](/sp-configuration))
+- The outer `Response` `InResponseTo` agrees with the signed `SubjectConfirmationData` `InResponseTo` (`ERR_INRESPONSETO_MISMATCH`)
+
+### Checking InResponseTo
+
+Pass the ID of the request the user started with, so a response for any other (or no) request is rejected. Keep the `id` returned by `createLoginRequest` in the user's session:
+
+```javascript
+// Start the login.
+const { id, context } = sp.createLoginRequest(idp, 'redirect');
+req.session.samlRequestId = id;
+res.redirect(context);
+
+// ACS endpoint.
+sp.parseLoginResponse(idp, 'post', req, { inResponseTo: req.session.samlRequestId })
+  .then(parseResult => {
+    delete req.session.samlRequestId; // a request is answered once
+    // ...
+  });
+```
+
+`inResponseTo` also accepts an array of IDs when several logins may be pending. The signed `SubjectConfirmationData` `InResponseTo` is compared; on the POST binding the outer `Response` attribute is not trusted on its own, because it may sit outside the signed assertion. A response that answers a different request fails with `ERR_INRESPONSETO_MISMATCH`, and one that answers no request fails with `ERR_MISSING_INRESPONSETO`. To reject IdP-initiated responses even when no ID is passed, set `allowUnsolicitedResponse: false` on the SP.
+
+The check is opt-in: without `inResponseTo`, any request ID is accepted. Use `extract.subjectConfirmation.inResponseTo` (signed) rather than `extract.response.inResponseTo` if you compare it yourself.
+
 
 The promise resolves to a `parseResult` object. The `extract` member is
 keyed by the field names declared in `src/extractor.ts:loginResponseFields`,
