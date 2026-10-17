@@ -5,8 +5,10 @@
  */
 import * as fs from 'fs';
 import { namespace } from './urn';
+import { select } from 'xpath';
 import { extract } from './extractor';
 import { isString } from './utility';
+import { parseXml } from './xml';
 import type { ExtractorFields } from './types';
 
 /** Public interface exposed by every metadata instance. */
@@ -26,10 +28,74 @@ export interface MetadataBag {
   [key: string]: unknown;
   entityDescriptor?: string | string[];
   entityID?: string;
+  /** @deprecated no longer populated; use `certificate`. */
   sharedCertificate?: string;
   certificate?: { signing?: string | string[]; encryption?: string | string[] } | Record<string, string | string[]>;
   singleLogoutService?: Array<{ binding: string; location: string }> | { binding: string; location: string };
   nameIDFormat?: string | string[];
+}
+
+type CertificateUse = 'signing' | 'encryption';
+
+/**
+ * Collect the X.509 certificates of each `<KeyDescriptor>` by its `use`.
+ *
+ * A key declared `use="signing"` is only for signing and `use="encryption"`
+ * only for encryption; a `KeyDescriptor` without `use` serves both, and
+ * several keys for the same use are all accepted (saml-metadata §2.4.1.1 as
+ * amended by errata E62 and E68). An encryption-only key must never become a
+ * signature verification key.
+ *
+ * `use` is optional in the schema, but the Metadata Interoperability Profile
+ * (saml-metadata-iop §2.5.1) requires it, so its absence is logged.
+ *
+ * For backward compatibility, metadata whose only certificate is a single
+ * signing key still exposes it for encryption. This goes beyond E62, which
+ * does not make a signing key usable for encryption.
+ *
+ * @param xml metadata XML
+ * @param entityID entity ID used in the missing-`use` warning
+ * @returns certificates keyed by use; a single certificate is a string
+ */
+function extractCertificates(xml: string, entityID?: string): Partial<Record<CertificateUse, string | string[]>> {
+  const keyDescriptors = select(
+    "/*[local-name(.)='EntityDescriptor']/*[contains(local-name(), 'SSODescriptor')]/*[local-name(.)='KeyDescriptor']",
+    parseXml(xml),
+  ) as Element[];
+  const certs: Record<CertificateUse, string[]> = { signing: [], encryption: [] };
+
+  for (const keyDescriptor of keyDescriptors) {
+    const values = (select(
+      "./*[local-name(.)='KeyInfo']/*[local-name(.)='X509Data']/*[local-name(.)='X509Certificate']",
+      keyDescriptor,
+    ) as Element[]).map(node => node.textContent ?? '');
+    const use = keyDescriptor.getAttribute('use');
+    if (use === 'signing' || use === 'encryption') {
+      certs[use].push(...values);
+    } else if (!use) {
+      if (values.length > 0) {
+        console.warn(
+          `[samlify] KeyDescriptor without a use attribute in metadata of ${entityID ?? 'unknown entity'}; `
+          + 'its certificate is used for both signing and encryption. '
+          + 'Declare use="signing" or use="encryption" to restrict it.',
+        );
+      }
+      certs.signing.push(...values);
+      certs.encryption.push(...values);
+    }
+  }
+
+  if (certs.encryption.length === 0 && certs.signing.length === 1) {
+    certs.encryption = certs.signing;
+  }
+
+  const result: Partial<Record<CertificateUse, string | string[]>> = {};
+  (Object.keys(certs) as CertificateUse[]).forEach(use => {
+    if (certs[use].length > 0) {
+      result[use] = certs[use].length === 1 ? certs[use][0] : certs[use];
+    }
+  });
+  return result;
 }
 
 export default class Metadata implements MetadataInterface {
@@ -58,20 +124,6 @@ export default class Metadata implements MetadataInterface {
         attributes: ['entityID'],
       },
       {
-        // shared certificate for both encryption and signing
-        key: 'sharedCertificate',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor', 'KeyInfo', 'X509Data', 'X509Certificate'],
-        attributes: [],
-      },
-      {
-        // explicit certificate declaration for encryption and signing
-        key: 'certificate',
-        localPath: ['EntityDescriptor', '~SSODescriptor', 'KeyDescriptor'],
-        index: ['use'],
-        attributePath: ['KeyInfo', 'X509Data', 'X509Certificate'],
-        attributes: [],
-      },
-      {
         key: 'singleLogoutService',
         localPath: ['EntityDescriptor', '~SSODescriptor', 'SingleLogoutService'],
         attributes: ['Binding', 'Location'],
@@ -83,14 +135,7 @@ export default class Metadata implements MetadataInterface {
       },
     ])) as MetadataBag;
 
-    const sharedCertificate = this.meta.sharedCertificate;
-    if (typeof sharedCertificate === 'string') {
-      this.meta.certificate = {
-        signing: sharedCertificate,
-        encryption: sharedCertificate,
-      };
-      delete this.meta.sharedCertificate;
-    }
+    this.meta.certificate = extractCertificates(this.xmlString, this.meta.entityID);
 
     if (
       Array.isArray(this.meta.entityDescriptor) &&

@@ -1,6 +1,6 @@
 import * as esaml2 from '../index';
 import { readFileSync } from 'fs';
-import { test, expect } from 'vitest';
+import { test, expect, describe, vi } from 'vitest';
 import { verifyTime } from '../src/validator';
 
 const {
@@ -440,4 +440,45 @@ test('getPublicKeyPemFromCertificate handles certificates with OID components ex
   const pem = utility.getPublicKeyPemFromCertificate(largeOIDCert);
   expect(pem).toContain('-----BEGIN PUBLIC KEY-----');
   expect(pem).toContain('-----END PUBLIC KEY-----');
+});
+
+describe('metadata KeyDescriptor use is honoured', () => {
+  const certA = 'MIIA'; const certB = 'MIIB'; const certC = 'MIIC';
+  const keyDescriptor = (cert: string, use?: string) =>
+    `<KeyDescriptor${use ? ` use="${use}"` : ''}><ds:KeyInfo><ds:X509Data><ds:X509Certificate>${cert}</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor>`;
+  const meta = (...descriptors: string[]) => idpMetadata(
+    '<EntityDescriptor entityID="https://idp.example.com/metadata" xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
+    + `<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">${descriptors.join('')}`
+    + '<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://idp.example.com/sso"/>'
+    + '</IDPSSODescriptor></EntityDescriptor>',
+  );
+
+  test('an encryption-only certificate is never exposed for signing', () => {
+    const metadata = meta(keyDescriptor(certB, 'encryption'));
+    expect(metadata.getX509Certificate('signing')).toBe(null);
+    expect(metadata.getX509Certificate('encryption')).toBe(certB);
+  });
+
+  test('certificates follow their own KeyDescriptor when use is mixed or omitted', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const metadata = meta(keyDescriptor(certA), keyDescriptor(certB, 'encryption'), keyDescriptor(certC, 'signing'));
+    expect(metadata.getX509Certificate('signing')).toEqual([certA, certC]);
+    expect(metadata.getX509Certificate('encryption')).toEqual([certA, certB]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('KeyDescriptor without a use attribute in metadata of https://idp.example.com/metadata'));
+    warn.mockRestore();
+  });
+
+  test('no warning when every KeyDescriptor declares its use', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    meta(keyDescriptor(certB, 'encryption'), keyDescriptor(certC, 'signing'));
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test('a lone signing certificate is still exposed for encryption', () => {
+    const metadata = meta(keyDescriptor(certC, 'signing'));
+    expect(metadata.getX509Certificate('signing')).toBe(certC);
+    expect(metadata.getX509Certificate('encryption')).toBe(certC);
+  });
 });
