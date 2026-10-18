@@ -103,7 +103,7 @@ function base64LoginRequest(
       // `forceAuthn` is undefined, matching `use="optional"`.
       ForceAuthn: forceAuthn,
     };
-    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
+    rawSamlRequest = libsaml.renderTags(libsaml.defaultLoginRequestTemplate.context, tags, spSetting.templateRenderer);
   }
   if (metadata.idp.isWantAuthnRequestsSigned()) {
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = spSetting;
@@ -212,7 +212,7 @@ async function base64LoginResponse(
     // overridden (closes #388); otherwise fall back to the library default.
     const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
       ?? libsaml.defaultLoginResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    rawSamlResponse = libsaml.renderTags(baseTemplate, tvalue, idpSetting.templateRenderer);
   }
   const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
   const config = {
@@ -332,7 +332,7 @@ function base64LogoutRequest(
     };
     const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
       ?? libsaml.defaultLogoutRequestTemplate.context;
-    rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    rawSamlRequest = libsaml.renderTags(baseTemplate, tvalue, initSetting.templateRenderer);
   }
   if (entity.target.entitySetting.wantLogoutRequestSigned) {
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;
@@ -410,7 +410,7 @@ function base64LogoutResponse(
     };
     const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
       ?? libsaml.defaultLogoutResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    rawSamlResponse = libsaml.renderTags(baseTemplate, tvalue, initSetting.templateRenderer);
   }
   if (entity.target.entitySetting.wantLogoutResponseSigned) {
     const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm, transformationAlgorithms } = initSetting;

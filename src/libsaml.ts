@@ -14,6 +14,8 @@ import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { getContext } from './api';
 import { parseXml } from './xml';
+import { renderTemplate, escapeXmlValue, placeholderName } from './template';
+import type { TemplateRenderer } from './template';
 import xmlEscape from 'xml-escape';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -137,11 +139,15 @@ export interface EntityLike {
 export interface LibSamlInterface {
   getQueryParamByType: (type: string) => string;
   createXPath: (local: string | { name: string; attr: string }, isExtractAll?: boolean) => string;
+  /** @deprecated Use `renderTemplate`; see docs/template-migration.md. */
   replaceTagsByValue: (rawXML: string, tagValues: TagReplacementMap) => string;
+  renderTags: (rawXML: string, tagValues: TagReplacementMap, renderer?: TemplateRenderer) => string;
+  renderTemplate: (template: string, values: TagReplacementMap) => string;
   attributeStatementBuilder: (
     attributes: LoginResponseAttribute[],
-    attributeTemplate: AttributeTemplate,
-    attributeStatementTemplate: AttributeStatementTemplate,
+    attributeTemplate?: AttributeTemplate,
+    attributeStatementTemplate?: AttributeStatementTemplate,
+    renderer?: TemplateRenderer,
   ) => string;
   constructSAMLSignature: (opts: SignatureConstructor) => string;
   verifySignature: (xml: string, opts: SignatureVerifierOptions) => [boolean, string | null];
@@ -400,7 +406,7 @@ const libSaml = () => {
   function escapeTag(replacement: unknown): (...args: string[]) => string {
     return (_match: string, quote?: string) => {
       const text: string = replacement === null || replacement === undefined ? '' : String(replacement);
-      return quote ? `${quote}${xmlEscape(text)}` : xmlEscape(text);
+      return quote ? `${quote}${escapeXmlValue(text)}` : escapeXmlValue(text);
     };
   }
 
@@ -434,37 +440,68 @@ const libSaml = () => {
      *   - in **mixed-text position** (`<X>prefix{Tag}suffix</X>`) the
      *     placeholder is replaced with the empty string (legacy behaviour).
      *
+     * Values are inserted in a single pass and never scanned again, and tag
+     * names are matched literally.
+     *
+     * @deprecated Use {@link renderTemplate} (`libsaml.renderTemplate`), which
+     *   validates where each placeholder sits and escapes for that position;
+     *   see docs/template-migration.md. Kept for backward compatibility; will
+     *   be removed in v3.
      * @param rawXML template with `{Tag}` placeholders
      * @param tagValues replacement map keyed by tag name
      * @returns XML with placeholders resolved
      */
     replaceTagsByValue(rawXML: string, tagValues: TagReplacementMap): string {
+      // Tag names are looked up literally (never compiled into a RegExp),
+      // including their encoded form (see `placeholderName`).
+      const lookup = new Map<string, string>();
       Object.keys(tagValues).forEach(t => {
-        const value = tagValues[t];
-        if (value === null || value === undefined) {
-          // Drop the entire `\s+name="{Tag}"` (or single-quoted) attribute.
-          rawXML = rawXML.replace(
-            new RegExp(`\\s+[A-Za-z_:][\\w:.-]*=("|')\\{${t}\\}\\1`, 'g'),
-            '',
-          );
-          // Drop the entire `<X ...>{Tag}</X>` element when the placeholder
-          // is the only body content (allows optional elements to be omitted
-          // rather than rendered empty).
-          rawXML = rawXML.replace(
-            new RegExp(`<([A-Za-z_:][\\w:.-]*)((?:\\s+[^>]*)?)>\\{${t}\\}</\\1>`, 'g'),
-            '',
-          );
-          // Replace any remaining `{Tag}` occurrences with empty string.
-          rawXML = rawXML.replace(new RegExp(`\\{${t}\\}`, 'g'), '');
-          return;
-        }
-        rawXML = rawXML.replace(
-          new RegExp(`("?)\\{${t}\\}`, 'g'),
-          escapeTag(value),
-        );
+        lookup.set(placeholderName(t), t);
+        lookup.set(t, t);
       });
-      return rawXML;
+      const omitted = (name: string) => {
+        const key = lookup.get(name);
+        return key !== undefined && (tagValues[key] === null || tagValues[key] === undefined);
+      };
+      // Optional attributes and elements are dropped on the template itself,
+      // before any value is inserted.
+      rawXML = rawXML.replace(
+        /\s+[A-Za-z_:][\w:.-]*=("|')\{([^{}]*)\}\1/g,
+        (match, _quote, name) => (omitted(name) ? '' : match),
+      );
+      rawXML = rawXML.replace(
+        /<([A-Za-z_:][\w:.-]*)((?:\s+[^>]*)?)>\{([^{}]*)\}<\/\1>/g,
+        (match, _tag, _attrs, name) => (omitted(name) ? '' : match),
+      );
+      // Single pass: inserted values are never scanned for placeholders again.
+      return rawXML.replace(/("?)\{([^{}]*)\}/g, (match, quote: string, name: string) => {
+        const key = lookup.get(name);
+        if (key === undefined) {
+          return match;
+        }
+        const value = tagValues[key];
+        if (value === null || value === undefined) {
+          return quote;
+        }
+        return escapeTag(value)(match, quote);
+      });
     },
+
+    /**
+     * Render a template with the engine selected by an entity's
+     * `templateRenderer` setting: {@link renderTemplate} for `strict`,
+     * {@link replaceTagsByValue} otherwise.
+     *
+     * @param rawXML template with `{Tag}` placeholders
+     * @param tagValues replacement map keyed by tag name
+     * @param renderer template engine
+     * @returns XML with placeholders resolved
+     */
+    renderTags(rawXML: string, tagValues: TagReplacementMap, renderer?: TemplateRenderer): string {
+      return renderer === 'strict' ? renderTemplate(rawXML, tagValues) : this.replaceTagsByValue(rawXML, tagValues);
+    },
+
+    renderTemplate,
 
     /**
      * Build a serialized `<AttributeStatement>` from attribute descriptors
@@ -479,20 +516,31 @@ const libSaml = () => {
       attributes: LoginResponseAttribute[],
       attributeTemplate: AttributeTemplate = defaultAttributeTemplate,
       attributeStatementTemplate: AttributeStatementTemplate = defaultAttributeStatementTemplate,
+      renderer?: TemplateRenderer,
     ): string {
+      // `{Value}` becomes the `{attr…}` placeholder filled in when the
+      // response is rendered. Attribute metadata is escaped like any value,
+      // and replacer functions keep `$&`-style patterns in data literal.
+      const fill = (template: string, fields: TagReplacementMap) => (renderer === 'strict'
+        ? renderTemplate(template, fields)
+        : Object.keys(fields).reduce(
+          (line, placeholder) => line.replace(`{${placeholder}}`, () => escapeXmlValue(String(fields[placeholder]))),
+          template,
+        ));
       const attr = attributes.map(({ name, nameFormat, valueTag, valueXsiType, valueXmlnsXs, valueXmlnsXsi }) => {
-        const defaultValueXmlnsXs = 'http://www.w3.org/2001/XMLSchema';
-        const defaultValueXmlnsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
-        let attributeLine = attributeTemplate.context;
-        attributeLine = attributeLine.replace('{Name}', name);
-        attributeLine = attributeLine.replace('{NameFormat}', nameFormat);
-        attributeLine = attributeLine.replace('{ValueXmlnsXs}', valueXmlnsXs ? valueXmlnsXs : defaultValueXmlnsXs);
-        attributeLine = attributeLine.replace('{ValueXmlnsXsi}', valueXmlnsXsi ? valueXmlnsXsi : defaultValueXmlnsXsi);
-        attributeLine = attributeLine.replace('{ValueXsiType}', valueXsiType);
-        attributeLine = attributeLine.replace('{Value}', `{${tagging('attr', valueTag)}}`);
-        return attributeLine;
+        const line = fill(attributeTemplate.context, {
+          Name: String(name),
+          NameFormat: String(nameFormat),
+          ValueXmlnsXs: valueXmlnsXs ? valueXmlnsXs : 'http://www.w3.org/2001/XMLSchema',
+          ValueXmlnsXsi: valueXmlnsXsi ? valueXmlnsXsi : 'http://www.w3.org/2001/XMLSchema-instance',
+          ValueXsiType: String(valueXsiType),
+        });
+        return line.replace('{Value}', () => `{${placeholderName(tagging('attr', valueTag))}}`);
       }).join('');
-      return attributeStatementTemplate.context.replace('{Attributes}', attr);
+      const statement = renderer === 'strict'
+        ? renderTemplate(attributeStatementTemplate.context, {})
+        : attributeStatementTemplate.context;
+      return statement.replace('{Attributes}', () => attr);
     },
 
     /**

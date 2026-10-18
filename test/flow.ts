@@ -46,7 +46,7 @@ const failedResponse: string = String(readFileSync('./test/misc/failed_response.
 const acsOf = (_sp, _binding) =>
   _sp.entityMeta.getAssertionConsumerService(Object.keys(binding).find(k => binding[k] === _binding) ?? _binding);
 
-const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
+const createTemplateCallback = (_idp, _sp, _binding, user, render: (t: string, v: any) => string = libsaml.replaceTagsByValue) => template => {
   const _id =  '_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6';
   const now = new Date();
   const spEntityID = _sp.entityMeta.getEntityID();
@@ -88,7 +88,7 @@ const createTemplateCallback = (_idp, _sp, _binding, user) => template => {
   };
   return {
     id: _id,
-    context: libsaml.replaceTagsByValue(template, tvalue),
+    context: render(template, tvalue),
   };
 };
 
@@ -1791,4 +1791,80 @@ describe('wantMessageSigned is enforced when parsing a login response', () => {
     await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(stripMessageSignature(xml)))).rejects.toThrow('ERR_MISSING_MESSAGE_SIGNATURE');
     await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(breakMessageSignature(xml)))).rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
   });
+});
+
+describe('templateRenderer: strict', () => {
+  const user = { email: 'user@esaml2.com' };
+  const strictSp = serviceProvider({ ...defaultSpConfig, templateRenderer: 'strict' });
+  const strictIdp = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, templateRenderer: 'strict' });
+
+  test('login request round-trips (post)', async () => {
+    const { id, context } = strictSp.createLoginRequest(strictIdp, 'post') as PostBindingContext;
+    const { extract } = await strictIdp.parseLoginRequest(strictSp, 'post', { body: { SAMLRequest: context } });
+    expect(extract.request.id).toBe(id);
+  });
+
+  test('login request round-trips (redirect)', async () => {
+    const { id, context } = strictSp.createLoginRequest(strictIdp, 'redirect');
+    const originalURL = url.parse(context, true);
+    const { SAMLRequest, Signature, SigAlg } = originalURL.query;
+    delete originalURL.query.Signature;
+    const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
+    const { extract } = await strictIdp.parseLoginRequest(strictSp, 'redirect', { query: { SAMLRequest, Signature, SigAlg }, octetString } as any);
+    expect(extract.request.id).toBe(id);
+  });
+
+  test('login request round-trips (simpleSign)', async () => {
+    const { relayState, id, context: SAMLRequest, type, sigAlg, signature } = strictSp.createLoginRequest(strictIdp, 'simpleSign') as SimpleSignBindingContext;
+    const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState, signature);
+    const { extract } = await strictIdp.parseLoginRequest(strictSp, 'simpleSign', { body: { SAMLRequest, Signature: signature, SigAlg: sigAlg }, octetString });
+    expect(extract.request.id).toBe(id);
+  });
+
+  test('login response with attributes round-trips, using renderTemplate in the callback', async () => {
+    const idpWithAttributes = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, templateRenderer: 'strict', loginResponseTemplate });
+    const { context } = await idpWithAttributes.createLoginResponse(
+      strictSp, sampleRequestInfo, 'post', user, createTemplateCallback(idpWithAttributes, strictSp, binding.post, user, libsaml.renderTemplate),
+    );
+    const { extract } = await strictSp.parseLoginResponse(idpWithAttributes, 'post', { body: { SAMLResponse: context } });
+    expect(extract.nameID).toBe(user.email);
+    expect(extract.attributes.mail).toBe('myemailassociatedwithsp@sp.com');
+  });
+
+  test('default login response round-trips', async () => {
+    const { context } = await strictIdp.createLoginResponse(strictSp, sampleRequestInfo, 'post', user);
+    const { extract } = await strictSp.parseLoginResponse(strictIdp, 'post', { body: { SAMLResponse: context } });
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('logout request and response round-trip', async () => {
+    const logoutRequest = strictIdp.createLogoutRequest(strictSp, 'post', { logoutNameID: user.email, sessionIndex: '_session' }) as PostBindingContext;
+    const parsedRequest = await strictSp.parseLogoutRequest(strictIdp, 'post', { body: { SAMLRequest: logoutRequest.context } });
+    expect(parsedRequest.extract.nameID).toBe(user.email);
+    expect(parsedRequest.extract.sessionIndex).toBe('_session');
+
+    const logoutResponse = strictSp.createLogoutResponse(strictIdp, parsedRequest, 'post') as PostBindingContext;
+    const parsedResponse = await strictIdp.parseLogoutResponse(strictSp, 'post', { body: { SAMLResponse: logoutResponse.context } });
+    expect(parsedResponse.extract.response.inResponseTo).toBe(parsedRequest.extract.request.id);
+  });
+});
+
+test.each(['legacy', 'strict'] as const)('attribute names cannot inject attributes into the signed assertion (%s)', async renderer => {
+  const user = { email: 'user@esaml2.com' };
+  const injectedName = 'mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue>x</saml:AttributeValue></saml:Attribute><saml:Attribute Name="role';
+  const idpWithInjectedName = identityProvider({
+    ...defaultIdpConfig,
+    isAssertionEncrypted: false,
+    templateRenderer: renderer,
+    loginResponseTemplate: {
+      ...loginResponseTemplate,
+      attributes: [{ name: injectedName, valueTag: 'user.email', nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' }],
+    },
+  });
+  const { context } = await idpWithInjectedName.createLoginResponse(
+    sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpWithInjectedName, sp, binding.post, user),
+  );
+  const { extract } = await sp.parseLoginResponse(idpWithInjectedName, 'post', { body: { SAMLResponse: context } });
+  expect(extract.attributes.role).toBeUndefined();
+  expect(extract.attributes[injectedName]).toBe('myemailassociatedwithsp@sp.com');
 });

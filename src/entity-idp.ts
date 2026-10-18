@@ -109,10 +109,11 @@ export class IdentityProvider extends Entity {
           template.attributes!,
           attributeTemplate,
           attributeStatementTemplate,
+          idpSetting.templateRenderer,
         );
         entitySetting.loginResponseTemplate = {
           ...entitySetting.loginResponseTemplate,
-          context: entitySetting.loginResponseTemplate!.context!.replace('{AttributeStatement}', attributeStatement),
+          context: entitySetting.loginResponseTemplate!.context!.replace('{AttributeStatement}', () => attributeStatement),
         };
       } else {
         console.warn('Invalid login response template');

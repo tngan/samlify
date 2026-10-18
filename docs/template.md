@@ -40,6 +40,8 @@ The library renders the attributes into the template as:
 
 The placeholder name is generated automatically with the prefix `attr` and the camel-cased `valueTag` from the configuration.
 
+Attribute metadata (`name`, `nameFormat`, `valueXsiType`, `valueXmlnsXs`, `valueXmlnsXsi`) is XML-escaped like attribute values. Keep `valueTag` to letters, digits, `.`, `-`, `_` and spaces.
+
 # Custom templates
 
 The login and logout request/response templates can be customised via configuration. Each entity factory accepts optional template parameters.
@@ -77,7 +79,11 @@ In SP configuration, `loginRequestTemplate` is the AuthnRequest template. It can
 </samlp:AuthnRequest>
 ```
 
-When supplying a custom template, pass a callback that performs tag replacement at runtime. `replaceTagFromTemplate` below is illustrative — the actual function name is up to the caller.
+::: tip
+Set `templateRenderer: 'strict'` on the entity, and use `SamlLib.renderTemplate` in your callbacks, to have every placeholder checked for its position and escaped for it. See [Migrating to the strict template renderer](/template-migration).
+:::
+
+When supplying a custom template, pass a callback that performs tag replacement at runtime. `replaceTagFromTemplate` below is illustrative — the actual function name is up to the caller; `SamlLib.renderTemplate(template, values)` does the substitution safely.
 
 ```javascript
 router.get('/spinitsso-redirect', (req, res) => {

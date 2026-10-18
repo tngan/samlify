@@ -64,6 +64,7 @@ export default defineConfig({
             ]
           },
           { text: 'Attributes & Templates', link: '/template' },
+          { text: 'Template Renderer Migration', link: '/template-migration' },
           { text: 'Multiple Entities', link: '/multi-entities' }
         ]
       },

@@ -77,4 +77,6 @@ const idp = new IdentityProvider({
 
 - **`keyEncryptionAlgorithm: KeyEncryptionAlgorithm`** — Key encryption algorithm. Defaults to `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`. Also supported: `http://www.w3.org/2001/04/xmlenc#rsa-1_5`.
 
+- **`templateRenderer: 'legacy' | 'strict'`** *(optional)* — Template engine for the messages this entity builds. Defaults to `'legacy'` until v3. `'strict'` checks the position of every placeholder and escapes for it; output is identical for valid templates. See [Migrating to the strict template renderer](/template-migration).
+
 - **`generateID: () => string`** — A function that generates the root-element identifier of each SAML document. Defaults to `_${UUID_V4}`.

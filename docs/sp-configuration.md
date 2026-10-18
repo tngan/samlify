@@ -85,6 +85,8 @@ const sp = new ServiceProvider({
 
 - **`replayCache: { saveIfAbsent(key: string, expiresAt: Date): boolean | Promise<boolean> }`** — A store, supplied by the application, of the assertions `parseLoginResponse` has already accepted. Not set by default; samlify keeps no state, so replay protection is only active when a store is provided. See [SAML Response](/saml-response#rejecting-replayed-assertions).
 
+- **`templateRenderer: 'legacy' | 'strict'`** *(optional)* — Template engine for the messages this entity builds. Defaults to `'legacy'` until v3. `'strict'` checks the position of every placeholder and escapes for it; output is identical for valid templates. See [Migrating to the strict template renderer](/template-migration).
+
 - **`clockDrifts: [number, number]`** — Tolerance for clock drift on the SAML validity window, in milliseconds. The first element applies to `notBefore`; the second applies to `notOnOrAfter`. Both default to `0`. Either value may be negative or positive.
 
   For example, `[-5000, 3000]` extends the valid window by 5 seconds before `notBefore` and 3 seconds after `notOnOrAfter`:

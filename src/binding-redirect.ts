@@ -169,7 +169,7 @@ function loginRequestRedirectURL(
       // `forceAuthn` is undefined, matching `use="optional"`.
       ForceAuthn: forceAuthn,
     };
-    rawSamlRequest = libsaml.replaceTagsByValue(libsaml.defaultLoginRequestTemplate.context, tags);
+    rawSamlRequest = libsaml.renderTags(libsaml.defaultLoginRequestTemplate.context, tags, spSetting.templateRenderer);
   }
   return {
     id,
@@ -270,7 +270,7 @@ function loginResponseRedirectURL(
     // overridden (closes #388); otherwise fall back to the library default.
     const baseTemplate = idpSetting.tagPrefixedDefaults?.loginResponseTemplate?.context
       ?? libsaml.defaultLoginResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    rawSamlResponse = libsaml.renderTags(baseTemplate, tvalue, idpSetting.templateRenderer);
   }
 
   const { privateKey, privateKeyPass, requestSignatureAlgorithm: signatureAlgorithm } = idpSetting;
@@ -367,7 +367,7 @@ function logoutRequestRedirectURL(
   } else {
     const baseTemplate = initSetting.tagPrefixedDefaults?.logoutRequestTemplate?.context
       ?? libsaml.defaultLogoutRequestTemplate.context;
-    rawSamlRequest = libsaml.replaceTagsByValue(baseTemplate, requiredTags as TagReplacementMap);
+    rawSamlRequest = libsaml.renderTags(baseTemplate, requiredTags as TagReplacementMap, initSetting.templateRenderer);
   }
   return {
     id,
@@ -443,7 +443,7 @@ function logoutResponseRedirectURL(
     }
     const baseTemplate = initSetting.tagPrefixedDefaults?.logoutResponseTemplate?.context
       ?? libsaml.defaultLogoutResponseTemplate.context;
-    rawSamlResponse = libsaml.replaceTagsByValue(baseTemplate, tvalue);
+    rawSamlResponse = libsaml.renderTags(baseTemplate, tvalue, initSetting.templateRenderer);
   }
   return {
     id,

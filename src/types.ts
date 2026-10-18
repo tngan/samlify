@@ -1,3 +1,4 @@
+import type { TemplateRenderer } from './template';
 import { LoginResponseTemplate } from './libsaml';
 
 export { IdentityProvider as IdentityProviderConstructor } from './entity-idp';
@@ -365,6 +366,13 @@ export interface ServiceProviderSettings {
    */
   allowUnsolicitedResponse?: boolean;
   /**
+   * Template engine for the SAML messages this entity builds. `legacy`
+   * (default until v3) substitutes strings; `strict` validates where every
+   * placeholder sits and escapes for that position. Output is the same for
+   * valid templates. See docs/template-migration.md.
+   */
+  templateRenderer?: TemplateRenderer;
+  /**
    * Store used to reject a bearer assertion that was already accepted
    * (saml-profiles §4.1.4.5). Not set by default: samlify keeps no state, so
    * replay protection is only active when the application supplies a store.
@@ -378,6 +386,14 @@ export interface IdentityProviderSettings {
 
   /** XML-DSig signature algorithm URI for requests. */
   requestSignatureAlgorithm?: string;
+
+  /**
+   * Template engine for the SAML messages this entity builds. `legacy`
+   * (default until v3) substitutes strings; `strict` validates where every
+   * placeholder sits and escapes for that position. Output is the same for
+   * valid templates. See docs/template-migration.md.
+   */
+  templateRenderer?: TemplateRenderer;
 
   /** Login response template with optional attribute statements. */
   loginResponseTemplate?: LoginResponseTemplate;
