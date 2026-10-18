@@ -1738,3 +1738,57 @@ describe('a signature must cover the element that contains it', () => {
     expect(extract.nameID).toBe('attacker@esaml2.com');
   });
 });
+
+describe('wantMessageSigned is enforced when parsing a login response', () => {
+  const user = { email: 'user@esaml2.com' };
+  const spWantMessageSigned = serviceProvider({ ...defaultSpConfig, wantMessageSigned: true });
+  const SIGNATURE = /<(ds:)?Signature\b/g;
+  const mint = async (issuer: typeof idp, target: typeof sp, encryptThenSign = false) => {
+    const { context } = await issuer.createLoginResponse(
+      target, sampleRequestInfo, 'post', user, createTemplateCallback(issuer, target, binding.post, user), undefined, { encryptThenSign },
+    );
+    return String(utility.base64Decode(context, true));
+  };
+  const post = (xml: string) => ({ body: { SAMLResponse: utility.base64Encode(xml) } });
+  const breakMessageSignature = (xml: string) =>
+    xml.replace(/(<samlp:Response\b[^>]*?\bIssueInstant=")[^"]*(")/, '$12001-01-01T00:00:00Z$2');
+  const stripMessageSignature = (xml: string) =>
+    xml.replace(/(<\/saml:Issuer>)<ds:Signature\b[\s\S]*?<\/ds:Signature>(<samlp:Status>)/, '$1$2');
+
+  test('rejects a response without a message signature', async () => {
+    const xml = await mint(idpNoEncrypt, sp); // assertion signed only
+    expect(xml.match(SIGNATURE)!.length).toBe(1);
+    await expect(spWantMessageSigned.parseLoginResponse(idpNoEncrypt, 'post', post(xml))).rejects.toThrow('ERR_MISSING_MESSAGE_SIGNATURE');
+  });
+
+  test('accepts a response with a valid message signature', async () => {
+    const xml = await mint(idpNoEncrypt, spWantMessageSigned);
+    expect(xml.match(SIGNATURE)!.length).toBe(2);
+    const { extract } = await spWantMessageSigned.parseLoginResponse(idpNoEncrypt, 'post', post(xml));
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('a broken message signature fails even when the assertion signature verifies', async () => {
+    const xml = breakMessageSignature(await mint(idpNoEncrypt, spWantMessageSigned));
+    await expect(spWantMessageSigned.parseLoginResponse(idpNoEncrypt, 'post', post(xml))).rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+    // Also without wantMessageSigned: a signature that is present must verify.
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', post(xml))).rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+  });
+
+  test('sign-then-encrypt: message signature verified after decryption, and still required', async () => {
+    const xml = await mint(idp, spWantMessageSigned);
+    expect(xml).toContain('EncryptedAssertion');
+    const { extract } = await spWantMessageSigned.parseLoginResponse(idp, 'post', post(xml));
+    expect(extract.nameID).toBe(user.email);
+    await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(stripMessageSignature(xml)))).rejects.toThrow('ERR_MISSING_MESSAGE_SIGNATURE');
+    await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(breakMessageSignature(xml)))).rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+  });
+
+  test('encrypt-then-sign: message signature required and must verify', async () => {
+    const xml = await mint(idp, spWantMessageSigned, true);
+    const { extract } = await spWantMessageSigned.parseLoginResponse(idp, 'post', post(xml));
+    expect(extract.nameID).toBe(user.email);
+    await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(stripMessageSignature(xml)))).rejects.toThrow('ERR_MISSING_MESSAGE_SIGNATURE');
+    await expect(spWantMessageSigned.parseLoginResponse(idp, 'post', post(breakMessageSignature(xml)))).rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+  });
+});

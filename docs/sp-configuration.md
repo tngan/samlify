@@ -30,7 +30,7 @@ const sp = new ServiceProvider({
 
 - **`wantAssertionsSigned: boolean`** *(optional)* — Whether the SP requires signed assertions. Maps to `WantAssertionsSigned` in the SP metadata. Defaults to `false`.
 
-- **`wantMessageSigned: boolean`** *(optional)* — Whether the SP requires signed SAML messages. Defaults to `false`.
+- **`wantMessageSigned: boolean`** *(optional)* — Whether the SP requires signed SAML messages. Defaults to `false`. When `true`, `parseLoginResponse` rejects a POST-binding response whose `<Response>` carries no signature (`ERR_MISSING_MESSAGE_SIGNATURE`); a samlify IdP also signs the message for this SP. Independently of this setting, any signature present on the message or assertion must verify, or the response fails with `FAILED_TO_VERIFY_SIGNATURE`.
 
 - **`signingCert: string`** *(optional)* — The certificate used for signing when the SP is constructed without metadata.
 

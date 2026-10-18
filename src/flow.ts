@@ -382,6 +382,8 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
   const verificationOptions = {
     metadata: from.entityMeta,
     signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
+    // An SP with `wantMessageSigned` requires the <Response> itself to be signed.
+    requireMessageSignature: parserType === urlParams.samlResponse && self.entitySetting.wantMessageSigned === true,
   };
 
   const decryptRequired = from.entitySetting.isAssertionEncrypted;

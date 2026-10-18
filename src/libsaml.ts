@@ -58,6 +58,8 @@ export interface SignatureVerifierOptions {
   metadata?: MetadataInterface;
   keyFile?: string;
   signatureAlgorithm?: string;
+  /** Reject a message whose root element carries no signature. */
+  requireMessageSignature?: boolean;
 }
 
 /**
@@ -585,6 +587,10 @@ const libSaml = () => {
         throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
       }
 
+      if (opts.requireMessageSignature && messageSignatureNode.length === 0) {
+        throw new Error('ERR_MISSING_MESSAGE_SIGNATURE');
+      }
+
       if (selection.length === 0) {
         return [false, null];
       }
@@ -645,8 +651,11 @@ const libSaml = () => {
 
         verified = sig.checkSignature(doc.toString());
 
+        // A signature that is present but does not verify fails the message;
+        // falling through to the next one would let a broken message
+        // signature be ignored whenever the assertion signature verifies.
         if (!verified) {
-          continue;
+          return [false, null];
         }
         if (!(sig.getSignedReferences().length >= 1)) {
           throw new Error('NO_SIGNATURE_REFERENCES');
