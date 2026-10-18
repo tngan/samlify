@@ -147,6 +147,12 @@ export const loginResponseFields: (assertion: string) => ExtractorFields = asser
     shortcut: assertion,
   },
   {
+    key: 'assertionID',
+    localPath: ['Assertion'],
+    attributes: ['ID'],
+    shortcut: assertion,
+  },
+  {
     key: 'subjectConfirmation',
     localPath: ['Assertion', 'Subject', 'SubjectConfirmation', 'SubjectConfirmationData'],
     attributes: ['Recipient', 'InResponseTo', 'NotOnOrAfter'],

@@ -101,6 +101,25 @@ sp.parseLoginResponse(idp, 'post', req, { inResponseTo: req.session.samlRequestI
 The check is opt-in: without `inResponseTo`, any request ID is accepted. Use `extract.subjectConfirmation.inResponseTo` (signed) rather than `extract.response.inResponseTo` if you compare it yourself.
 
 
+### Rejecting replayed assertions
+
+A bearer assertion must be accepted only once (saml-profiles §4.1.4.5). Supply a `replayCache` on the SP so a response that was already accepted is rejected with `ERR_REPLAYED_ASSERTION`:
+
+```javascript
+const sp = ServiceProvider({
+  // ...
+  replayCache: {
+    // Resolve true when the key was saved, false when it already existed.
+    async saveIfAbsent(key, expiresAt) {
+      const result = await redis.set(`saml:${key}`, '1', { NX: true, PXAT: expiresAt.getTime() });
+      return result === 'OK';
+    },
+  },
+});
+```
+
+`saveIfAbsent` must check and save in one atomic step (e.g. Redis `SET … NX`, or an insert into a table with a unique key), and the store must be shared by every instance of the application; otherwise two copies of one response handled at the same time, or by different servers, can both be accepted. The key identifies the issuer and the assertion ID. `expiresAt` is the earliest `NotOnOrAfter` of the assertion's `Conditions` and `SubjectConfirmationData`, plus the `clockDrifts` allowance, after which the response is rejected as expired anyway (24 hours when the assertion declares no `NotOnOrAfter`). The check runs after every other validation, so a response that fails validation does not use up its assertion.
+
 The promise resolves to a `parseResult` object. The `extract` member is
 keyed by the field names declared in `src/extractor.ts:loginResponseFields`,
 and inner attribute keys are camelCased (so `NotBefore` becomes `notBefore`).

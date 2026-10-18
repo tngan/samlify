@@ -165,6 +165,23 @@ export interface CreateLoginRequestOptions {
   assertionConsumerServiceIndex?: number;
 }
 
+/**
+ * Store of accepted assertion IDs, supplied by the application (e.g. Redis
+ * `SET key 1 NX PXAT expiresAt`, or a SQL table with a unique key).
+ */
+export interface ReplayCache {
+  /**
+   * Save `key` until `expiresAt` unless it is already present, as one atomic
+   * operation, so that of two concurrent copies of an assertion only one is
+   * accepted. Resolve `true` when the key was saved and `false` when it was
+   * already present.
+   *
+   * @param key opaque key identifying the assertion (issuer and assertion ID)
+   * @param expiresAt when the assertion can no longer be accepted anyway
+   */
+  saveIfAbsent(key: string, expiresAt: Date): boolean | Promise<boolean>;
+}
+
 /** Per-request options accepted by `ServiceProvider#parseLoginResponse`. */
 export interface ParseLoginResponseOptions {
   /**
@@ -347,6 +364,12 @@ export interface ServiceProviderSettings {
    * a verified `InResponseTo` is rejected with `ERR_UNSOLICITED_RESPONSE`.
    */
   allowUnsolicitedResponse?: boolean;
+  /**
+   * Store used to reject a bearer assertion that was already accepted
+   * (saml-profiles §4.1.4.5). Not set by default: samlify keeps no state, so
+   * replay protection is only active when the application supplies a store.
+   */
+  replayCache?: ReplayCache;
 }
 
 /** Identity-provider configuration accepted by the IdP factory. */

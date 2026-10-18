@@ -180,6 +180,49 @@ function checkInResponseTo(
   return null;
 }
 
+/** Retention for an assertion that declares no `NotOnOrAfter`. */
+const REPLAY_RETENTION_WITHOUT_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Reject a bearer assertion this SP already accepted (saml-profiles
+ * §4.1.4.5). Only active when the SP supplies a `replayCache`. The assertion
+ * is remembered until the earliest `NotOnOrAfter` of its `Conditions` and
+ * bearer `SubjectConfirmationData`, plus the allowed clock drift, after
+ * which the validity checks reject it anyway.
+ *
+ * Run after every other check, so a response that fails validation does not
+ * use up its assertion.
+ *
+ * @param self receiving entity (the SP)
+ * @param extracted login-response extractor result
+ * @returns error code, or `null` when the assertion was not seen before
+ */
+async function checkReplay(self: Entity, extracted: ExtractorResult): Promise<string | null> {
+  const replayCache = self.entitySetting.replayCache;
+  if (!replayCache) {
+    return null;
+  }
+  const assertionID = extracted.assertionID;
+  if (typeof assertionID !== 'string' || assertionID === '') {
+    return 'ERR_UNDEFINED_ASSERTION_ID';
+  }
+  const confirmations = ([] as Record<string, string>[])
+    .concat((extracted.subjectConfirmation ?? []) as unknown as Record<string, string>[]);
+  const expiries = [
+    (extracted.conditions as Record<string, string> | undefined)?.notOnOrAfter,
+    ...confirmations.map(confirmation => confirmation.notOnOrAfter),
+  ]
+    .filter(notEmpty)
+    .map(value => new Date(value).getTime())
+    .filter(time => !Number.isNaN(time));
+  const drift = self.entitySetting.clockDrifts?.[1] ?? 0;
+  const expiresAt = new Date(
+    expiries.length > 0 ? Math.min(...expiries) + Math.max(drift, 0) : Date.now() + REPLAY_RETENTION_WITHOUT_EXPIRY_MS,
+  );
+  const key = JSON.stringify(['assertion', extracted.issuer, assertionID]);
+  return (await replayCache.saveIfAbsent(key, expiresAt)) ? null : 'ERR_REPLAYED_ASSERTION';
+}
+
 /**
  * Redirect-binding flow: reads the base64/deflate SAML message from query
  * params and, when required, verifies the detached signature over the
@@ -305,6 +348,13 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
   }
 
+  if (parserType === 'SAMLResponse') {
+    const replayError = await checkReplay(self, extractedProperties);
+    if (replayError) {
+      return Promise.reject(new Error(replayError));
+    }
+  }
+
   return Promise.resolve(parseResult);
 }
 
@@ -425,6 +475,13 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     )
   ) {
     return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
+  }
+
+  if (parserType === 'SAMLResponse') {
+    const replayError = await checkReplay(self, extractedProperties);
+    if (replayError) {
+      return Promise.reject(new Error(replayError));
+    }
   }
 
   return Promise.resolve(parseResult);
@@ -551,6 +608,13 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     )
   ) {
     return Promise.reject(new Error('ERR_SUBJECT_UNCONFIRMED'));
+  }
+
+  if (parserType === 'SAMLResponse') {
+    const replayError = await checkReplay(self, extractedProperties);
+    if (replayError) {
+      return Promise.reject(new Error(replayError));
+    }
   }
 
   return Promise.resolve(parseResult);

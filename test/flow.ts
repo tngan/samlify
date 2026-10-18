@@ -1599,3 +1599,102 @@ describe('login response must answer the expected request', () => {
     expect(extract.nameID).toBe(user.email);
   });
 });
+
+describe('replay protection with an application-supplied store', () => {
+  const user = { email: 'user@esaml2.com' };
+  const memoryStore = () => {
+    const saved = new Map<string, Date>();
+    return { saved, saveIfAbsent: (key: string, expiresAt: Date) => saved.has(key) ? false : (saved.set(key, expiresAt), true) };
+  };
+  const mintPost = async (target: typeof sp) => {
+    const { context } = await idpNoEncrypt.createLoginResponse(
+      target, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, target, binding.post, user),
+    );
+    return { body: { SAMLResponse: context } };
+  };
+
+  test('without a store the same response is accepted again', async () => {
+    const request = await mintPost(sp);
+    await sp.parseLoginResponse(idpNoEncrypt, 'post', request);
+    const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', request);
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('rejects an assertion that was already accepted', async () => {
+    const store = memoryStore();
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
+    const request = await mintPost(spWithStore);
+    const { extract } = await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', request);
+    expect(extract.nameID).toBe(user.email);
+    await expect(spWithStore.parseLoginResponse(idpNoEncrypt, 'post', request)).rejects.toThrow('ERR_REPLAYED_ASSERTION');
+
+    expect(store.saved.size).toBe(1);
+    const [[key, expiresAt]] = [...store.saved];
+    expect(JSON.parse(key)).toEqual(['assertion', idpNoEncrypt.entityMeta.getEntityID(), extract.assertionID]);
+    // Kept until the earliest NotOnOrAfter of Conditions / SubjectConfirmationData.
+    const notOnOrAfter = [extract.conditions.notOnOrAfter, extract.subjectConfirmation.notOnOrAfter].map(v => new Date(v).getTime());
+    expect(expiresAt.getTime()).toBe(Math.min(...notOnOrAfter));
+  });
+
+  test('keeps the assertion for the allowed clock drift as well', async () => {
+    const store = memoryStore();
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store, clockDrifts: [0, 60000] });
+    const { extract } = await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', await mintPost(spWithStore));
+    const [[, expiresAt]] = [...store.saved];
+    expect(expiresAt.getTime()).toBe(new Date(extract.conditions.notOnOrAfter).getTime() + 60000);
+  });
+
+  test('an assertion without NotOnOrAfter is kept for 24 hours', async () => {
+    const store = memoryStore();
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
+    const withoutExpiry = (t: string) => t.replace(/ NotOnOrAfter="\{(ConditionsNotOnOrAfter|SubjectConfirmationDataNotOnOrAfter)\}"/g, '');
+    const { context } = await idpNoEncrypt.createLoginResponse(
+      spWithStore, sampleRequestInfo, 'post', user,
+      (template: string) => createTemplateCallback(idpNoEncrypt, spWithStore, binding.post, user)(withoutExpiry(template)),
+    );
+    const before = Date.now();
+    await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: context } });
+    const [[, expiresAt]] = [...store.saved];
+    expect(expiresAt.getTime() - before).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000);
+    expect(expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+  });
+
+  test('a response that fails validation does not use up its assertion', async () => {
+    const store = memoryStore();
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
+    const otherSp = serviceProvider({ ...defaultSpConfig, replayCache: store, metadata: String(defaultSpConfig.metadata).replace(/sp\.example\.org/g, 'sp-b.example.org') });
+    const request = await mintPost(spWithStore);
+    await expect(otherSp.parseLoginResponse(idpNoEncrypt, 'post', request)).rejects.toThrow('ERR_AUDIENCE_MISMATCH');
+    expect(store.saved.size).toBe(0);
+    const { extract } = await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', request);
+    expect(extract.nameID).toBe(user.email);
+  });
+
+  test('encrypted assertion: the decrypted assertion ID is remembered', async () => {
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: memoryStore() });
+    const { context } = await idp.createLoginResponse(
+      spWithStore, sampleRequestInfo, 'post', user, createTemplateCallback(idp, spWithStore, binding.post, user),
+    );
+    const request = { body: { SAMLResponse: context } };
+    const { extract } = await spWithStore.parseLoginResponse(idp, 'post', request);
+    expect(extract.assertionID).toMatch(/^_/);
+    await expect(spWithStore.parseLoginResponse(idp, 'post', request)).rejects.toThrow('ERR_REPLAYED_ASSERTION');
+  });
+
+  test('redirect binding: rejects a replayed response', async () => {
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: memoryStore() });
+    const { context } = await idpNoEncrypt.createLoginResponse(
+      spWithStore, sampleRequestInfo, 'redirect', user, createTemplateCallback(idpNoEncrypt, spWithStore, binding.redirect, user), undefined, 'relaystate',
+    );
+    await spWithStore.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context));
+    await expect(spWithStore.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context)))
+      .rejects.toThrow('ERR_REPLAYED_ASSERTION');
+  });
+
+  test('supports an asynchronous store and surfaces its errors', async () => {
+    const asyncSp = serviceProvider({ ...defaultSpConfig, replayCache: { saveIfAbsent: async () => false } });
+    await expect(asyncSp.parseLoginResponse(idpNoEncrypt, 'post', await mintPost(asyncSp))).rejects.toThrow('ERR_REPLAYED_ASSERTION');
+    const failingSp = serviceProvider({ ...defaultSpConfig, replayCache: { saveIfAbsent: async () => { throw new Error('store unavailable'); } } });
+    await expect(failingSp.parseLoginResponse(idpNoEncrypt, 'post', await mintPost(failingSp))).rejects.toThrow('store unavailable');
+  });
+});
