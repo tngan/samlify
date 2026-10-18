@@ -131,6 +131,30 @@ test('getAssertionConsumerService with two bindings', () => {
   const _decodedRequestSHA512: string = String(readFileSync('./test/misc/signed_request_sha512.xml'));
   const _falseDecodedRequestSHA512: string = String(readFileSync('./test/misc/false_signed_request_sha512.xml'));
 
+  // Signatures enveloped in the element they sign (saml-core §5.4.2).
+  const _idpPrivPem = String(readFileSync('./test/key/idp/privkey.pem'));
+  const _idpPrivKeyPass = 'q9ALNhGT5EhfcRmp8Pg7e9zTQeP2x1bW';
+  const _unsignedResponse: string = String(readFileSync('./test/misc/response.xml'));
+  const assertionXPath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']";
+  const signAssertion = (privateKey: string | Buffer, privateKeyPass: string | undefined, signingCert: string, signatureAlgorithm: string) =>
+    libsaml.constructSAMLSignature({
+      rawSamlMessage: _unsignedResponse,
+      referenceTagXPath: assertionXPath,
+      signatureConfig: { prefix: 'ds', location: { reference: `${assertionXPath}/*[local-name(.)='Issuer']`, action: 'after' } },
+      privateKey, privateKeyPass, signingCert, signatureAlgorithm, isBase64Output: false,
+    });
+  const signRequest = (signatureAlgorithm: string) =>
+    libsaml.constructSAMLSignature({
+      rawSamlMessage: _originRequest,
+      isMessageSigned: true,
+      signatureConfig: { prefix: 'ds', location: { reference: "/*/*[local-name(.)='Issuer']", action: 'after' } },
+      privateKey: _spPrivPem,
+      privateKeyPass: _spPrivKeyPass,
+      signingCert: SPMetadata.getX509Certificate('signing') as string,
+      signatureAlgorithm,
+      isBase64Output: false,
+    });
+
   const octetString: string = 'SAMLRequest=fVNdj9MwEHxH4j9Yfm%2Fi5PpBrLaotEJUOrioKTzwgoy9oZZiO9ibu%2FLvcXLtKUhHnyzZM7Mzu+tlEKZp+abDkz3A7w4CkrNpbODDw4p23nIngg7cCgOBo+TV5vM9zxPGW+%2FQSdfQEeU2Q4QAHrWzlOx3K%2FrjHSsWbFEzdsfETDE2z5ksVKHqYlHP84WooVBS5lNKvoEPkbeiUYaS0rtHrcB%2FiRVWtCoJRuNRM4QO9jagsBiRLJtO2GKSzY%2F5HZ%2FlfDr7TskuIrUVOIidEFueplq1CZyFaRtIpDNpVT1U4B+1hKQ9tUO5IegHbZW2v25n%2FPkMCvzT8VhOyofqSMnmmnvrbOgM+Iv818P9i4nwrwcFxmVp1IJzb+K9kIGu374hZNm3mQ9R%2Ffp1rgEUSqBYpmPsC7nlfd%2F2u9I1Wv4hH503Av8fKkuy4UarST1AORihm41SHkKI4ZrGPW09CIyzQN8BTce1LmsFaliy2ACEM5KtM63wOvRTiNYlPoe7xhtjt01cmwPU65ubJbnscfG6jMeT8+qS%2FlWpwV96w2BEXN%2FHn2P9Fw%3D%3D&SigAlg=http%3A%2F%2Fwww.w3.org%2F2000%2F09%2Fxmldsig%23rsa-sha1';
   const octetStringSHA256: string = 'SAMLRequest=fZJbTwIxEIX%2Fyqbvy3Yv3BogQYiRBJWw6INvY3eAJt0WO10v%2F966YIKJkPRpek7nfDMdEdT6IKaN35s1vjVIPvqstSHRXoxZ44ywQIqEgRpJeCnK6f1SZB0uDs56K61mZ5brDiBC55U1LFrMx2wrB8P%2BIB%2FGeQHbuOgVwxigB3EqewXfDjDPZJ9Fz%2BgoWMYsvBB8RA0uDHkwPpR42o1THvNswzMRTtHtpEX2wqJ5QFEGfOvce38QSaKtBL235EXOeZoQ2aRUZqexVDvzaEp070pikveG3W5otTrx3ShTBdl1tNejiMTdZrOKV4%2FlhkXTX9yZNdTU6E4dntbLfzIVnGdtJpDEJqOfaYqW1k0ua2v0UIGHUXKuHx3X%2BhBSLuYrq5X8im6tq8Ffhkg7aVtRVbxtpQJrUHpaVQ6JAozW9mPmEDyGzYEmZMnk2PbvB5p8Aw%3D%3D&SigAlg=http%3A%2F%2Fwww.w3.org%2F2001%2F04%2Fxmldsig-more%23rsa-sha256';
   const octetStringSHA512: string = 'SAMLRequest=fZJfT8IwFMW%2FytL3sY5tCA0jQYiRBIUw9MG3a3cnTboWezv%2FfHvr0AQT9fX2nJ7zu%2B2UoNVHMe%2F8wezwuUPy0VurDYn%2BoGSdM8ICKRIGWiThpajmN2sxHHBxdNZbaTU7s%2FzvACJ0XlnDotWyZFBkDcAE47wZjeNcXqTxGAsZy0lR1EUzAiwaFt2jo2ApWbgh%2BIg6XBnyYHwY8bSIUx7z4Z4PRZaLbDLg4%2FyBRcuAogz43nnw%2FiiSRFsJ%2BmDJi4zzNCGySaXMk8ZKPZmNqdC9KIlJNgr5IWr7xXepTB1k%2F6M9nkQkrvf7bbzdVHsWzb9xF9ZQ16L7SrjbrX%2FplHM%2B7DuBJDabfm5T9LRu9re2RQ81eJgm5%2Frp6VlvQ8vVcmu1ku%2FRlXUt%2BL8h0kHaT1QdN71UYAtKz%2BvaIVGA0dq%2BLhyCx5I1oAlZMjvF%2FvxAsw8%3D&SigAlg=http%3A%2F%2Fwww.w3.org%2F2001%2F04%2Fxmldsig-more%23rsa-sha512';
@@ -207,21 +231,22 @@ test('getAssertionConsumerService with two bindings', () => {
     })).toBe(dummySignRequestSHA512);
   });
   test('verify a XML signature signed by RSA-SHA1 with metadata', () => {
-    expect(libsaml.verifySignature(_decodedResponse, { metadata: IdPMetadata })[0]).toBe(true);
+    const signed = signAssertion(_idpPrivPem, _idpPrivKeyPass, IdPMetadata.getX509Certificate('signing') as string, signatureAlgorithms.RSA_SHA1);
+    expect(libsaml.verifySignature(signed, { metadata: IdPMetadata })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA1', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
     expect(verified).toBe(false);
   });
   test('verify a XML signature signed by RSA-SHA256 with metadata', () => {
-    expect(libsaml.verifySignature(_decodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
+    expect(libsaml.verifySignature(signRequest(signatureAlgorithms.RSA_SHA256), { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA256', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
     expect(verified).toBe(false);
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', () => {
-    expect(libsaml.verifySignature(_decodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0]).toBe(true);
+    expect(libsaml.verifySignature(signRequest(signatureAlgorithms.RSA_SHA512), { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA512', () => {
     const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
@@ -230,24 +255,32 @@ test('getAssertionConsumerService with two bindings', () => {
 
   test('verify a XML signature with metadata but with rolling certificate', () => {
 
-    const responseSignedByCert1 = String(readFileSync('./test/misc/response_signed_cert1.xml'));
-    const responseSignedByCert2 = String(readFileSync('./test/misc/response_signed_cert2.xml'));
+    const responseSignedByCert1 = signAssertion(_idpPrivPem, _idpPrivKeyPass, utility.normalizeCerString(readFileSync('./test/key/idp/cert.cer')), signatureAlgorithms.RSA_SHA256);
+    const responseSignedByCert2 = signAssertion(readFileSync('./test/key/idp/privkey2.pem'), undefined, utility.normalizeCerString(readFileSync('./test/key/idp/cert2.cer')), signatureAlgorithms.RSA_SHA256);
     expect(libsaml.verifySignature(responseSignedByCert1, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
     expect(libsaml.verifySignature(responseSignedByCert2, { metadata: idpRollingCert.entityMeta, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
 
   });
 
   test('verify a XML signature signed by RSA-SHA1 with .cer keyFile', () => {
-    const xml = String(readFileSync('./test/misc/signed_request_sha1.xml'));
+    const xml = signRequest(signatureAlgorithms.RSA_SHA1);
     expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
   });
   test('verify a XML signature signed by RSA-SHA256 with .cer keyFile', () => {
-    const xml = String(readFileSync('./test/misc/signed_request_sha256.xml'));
+    const xml = signRequest(signatureAlgorithms.RSA_SHA256);
     expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
   });
   test('verify a XML signature signed by RSA-SHA512 with .cer keyFile', () => {
-    const xml = String(readFileSync('./test/misc/signed_request_sha512.xml'));
+    const xml = signRequest(signatureAlgorithms.RSA_SHA512);
     expect(libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })[0]).toBe(true);
+  });
+  test('rejects a signature that does not envelop the element it signs', () => {
+    // Signature under <Response> referencing the sibling <Assertion>.
+    expect(() => libsaml.verifySignature(_decodedResponse, { metadata: IdPMetadata })).toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
+    // Signature under <AuthnRequest> covering only its <Issuer>.
+    for (const xml of [_decodedRequestSHA256, _decodedRequestSHA512, String(readFileSync('./test/misc/signed_request_sha1.xml'))]) {
+      expect(() => libsaml.verifySignature(xml, { keyFile: './test/key/sp/cert.cer' })).toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
+    }
   });
   test('encrypt assertion test passes', async () => {
     await expect(libsaml.encryptAssertion(idp, sp, sampleSignedResponse)).resolves.not.toThrow();

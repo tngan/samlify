@@ -1330,8 +1330,9 @@ test('should use signed contents in signature wrapped response - case 2', async 
   //Put stripped version under SubjectConfirmationData of modified version
   const xmlWrapped = outer.replace(/<\/saml:Conditions>/, '</saml:Conditions><saml:Advice>' + stripped.replace('<?xml version="1.0" encoding="UTF-8"?>', '') + '</saml:Advice>');
   const wrappedResponse = Buffer.from(xmlWrapped).toString('base64');
-  const {extract} = await sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } });
-  expect(extract.nameID).toBe('user@esaml2.com');
+  // The genuine signature now sits under an assertion it does not sign.
+  await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: wrappedResponse } }))
+    .rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
 });
 
 test('should throw two-tiers code error when the response does not return success status', async () => {
@@ -1696,5 +1697,44 @@ describe('replay protection with an application-supplied store', () => {
     await expect(asyncSp.parseLoginResponse(idpNoEncrypt, 'post', await mintPost(asyncSp))).rejects.toThrow('ERR_REPLAYED_ASSERTION');
     const failingSp = serviceProvider({ ...defaultSpConfig, replayCache: { saveIfAbsent: async () => { throw new Error('store unavailable'); } } });
     await expect(failingSp.parseLoginResponse(idpNoEncrypt, 'post', await mintPost(failingSp))).rejects.toThrow('store unavailable');
+  });
+});
+
+describe('a signature must cover the element that contains it', () => {
+  const SIGNATURE = /<(ds:)?Signature\b[\s\S]*<\/(ds:)?Signature>/;
+  // Move the genuine signature under a forged root and hide the signed message in <Extensions>.
+  const wrap = (signedXml: string, forge: (xml: string) => string) => {
+    const signature = signedXml.match(SIGNATURE)![0];
+    const hidden = signedXml.replace(SIGNATURE, '').replace(/^<\?xml[^>]*>/, '');
+    return forge(hidden)
+      .replace(/(<saml:Issuer>[^<]*<\/saml:Issuer>)/, `$1${signature}<samlp:Extensions><x:w xmlns:x="urn:x">${hidden}</x:w></samlp:Extensions>`);
+  };
+  const decode = (b64: string) => String(utility.base64Decode(b64, true));
+
+  test('rejects a wrapped AuthnRequest', async () => {
+    const { context } = sp.createLoginRequest(idp, 'post') as PostBindingContext;
+    const genuine = decode(context);
+    expect(genuine).toMatch(SIGNATURE);
+    const forged = wrap(genuine, xml => xml
+      .replace(/ ID="[^"]+"/, ' ID="_forged"')
+      .replace(/AssertionConsumerServiceURL="[^"]+"/, 'AssertionConsumerServiceURL="https://evil.example.com/acs"'));
+    await expect(idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest: utility.base64Encode(forged) } }))
+      .rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
+    // The genuine request is still accepted.
+    const { extract } = await idp.parseLoginRequest(sp, 'post', { body: { SAMLRequest: context } });
+    expect(extract.request.id).not.toBe('_forged');
+  });
+
+  test('rejects a wrapped LogoutRequest', async () => {
+    const { context } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'attacker@esaml2.com' }) as PostBindingContext;
+    const genuine = decode(context);
+    expect(genuine).toMatch(SIGNATURE);
+    const forged = wrap(genuine, xml => xml
+      .replace(/ ID="[^"]+"/, ' ID="_forged"')
+      .replace('attacker@esaml2.com', 'victim@esaml2.com'));
+    await expect(spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: utility.base64Encode(forged) } }))
+      .rejects.toThrow('ERR_POTENTIAL_WRAPPING_ATTACK');
+    const { extract } = await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: context } });
+    expect(extract.nameID).toBe('attacker@esaml2.com');
   });
 });

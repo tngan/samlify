@@ -654,6 +654,20 @@ const libSaml = () => {
         const signedVerifiedXML = sig.getSignedReferences()[0];
         const rootNode = parseXml(signedVerifiedXML).documentElement;
 
+        // saml-core §5.4.2: the signature must be enveloped in the element it
+        // signs. A valid signature moved under another element (e.g. a forged
+        // root wrapping the genuine message) must not vouch for that element.
+        const signedElement = signatureNode.parentNode as Element | null;
+        if (
+          !signedElement
+          || !rootNode.getAttribute('ID')
+          || rootNode.getAttribute('ID') !== signedElement.getAttribute('ID')
+          || rootNode.localName !== signedElement.localName
+          || rootNode.namespaceURI !== signedElement.namespaceURI
+        ) {
+          throw new Error('ERR_POTENTIAL_WRAPPING_ATTACK');
+        }
+
         if (rootNode.localName === 'Response') {
           const assertions = toNodeArray(select("./*[local-name()='Assertion']", rootNode));
           const encryptedAssertions = toNodeArray(select("./*[local-name()='EncryptedAssertion']", rootNode));

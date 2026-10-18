@@ -1174,7 +1174,8 @@ describe('RSASSA-PSS signature algorithms (#624, xmldsig-more 2007-05)', () => {
   test('post binding — round-trip with PSS-SHA256', () => {
     const signedB64 = libsaml.constructSAMLSignature({
       rawSamlMessage: _originRequest,
-      referenceTagXPath: libsaml.createXPath('Issuer'),
+      isMessageSigned: true,
+      signatureConfig: { prefix: 'ds', location: { reference: "/*/*[local-name(.)='Issuer']", action: 'after' } },
       signingCert: SPMetadata.getX509Certificate('signing') as string,
       privateKey: _spPrivPem,
       privateKeyPass: _spPrivKeyPass,
