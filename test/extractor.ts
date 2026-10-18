@@ -1,5 +1,5 @@
 // This test file includes all the units related to the extractor
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { readFileSync } from 'fs';
 import { extract } from '../src/extractor';
 
@@ -128,3 +128,30 @@ const _spmeta: string = String(readFileSync('./test/misc/spmeta.xml'));
   });
 
 })();
+
+describe('element text is read whole', () => {
+  const doc = (nameID: string) => `<Assertion><Subject>${nameID}</Subject></Assertion>`;
+  const field = [{ key: 'nameID', localPath: ['Assertion', 'Subject', 'NameID'], attributes: [] }];
+
+  test('a comment does not truncate the value', () => {
+    expect(extract(doc('<NameID>admin@corp.com<!-- x -->.evil</NameID>'), field).nameID).toBe('admin@corp.com.evil');
+    expect(extract(doc('<NameID><!-- x -->admin</NameID>'), field).nameID).toBe('admin');
+    expect(extract(doc('<NameID>a<![CDATA[b]]>c</NameID>'), field).nameID).toBe('abc');
+  });
+
+  test('several elements are each read whole, and child elements are not part of the value', () => {
+    expect(extract(doc('<NameID><!--admin-->us<!-- -->er</NameID><NameID>x</NameID><NameID/>'), field).nameID).toEqual(['user', 'x']);
+    expect(extract(doc('<NameID>a<X>injected</X>b</NameID>'), field).nameID).toBe('ab');
+    expect(extract(doc('<NameID/>'), field).nameID).toBe('');
+  });
+
+  test('attribute values and multi-path fields are read whole', () => {
+    const xml = '<Assertion><AttributeStatement><Attribute Name="role"><AttributeValue>user<!-- x -->admin</AttributeValue><AttributeValue/></Attribute></AttributeStatement></Assertion>';
+    const { attributes } = extract(xml, [{
+      key: 'attributes', localPath: ['Assertion', 'AttributeStatement', 'Attribute'], index: ['Name'], attributePath: ['AttributeValue'], attributes: [],
+    }]);
+    expect(attributes).toEqual({ role: 'useradmin' });
+    const { union } = extract('<R><A>x<!-- -->y</A><B>z</B></R>', [{ key: 'union', localPath: [['R', 'A'], ['R', 'B']], attributes: [] }]);
+    expect(union).toEqual(['xy', 'z']);
+  });
+});

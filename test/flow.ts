@@ -1868,3 +1868,14 @@ test.each(['legacy', 'strict'] as const)('attribute names cannot inject attribut
   expect(extract.attributes.role).toBeUndefined();
   expect(extract.attributes[injectedName]).toBe('myemailassociatedwithsp@sp.com');
 });
+
+test('redirect binding: a comment inside a signed NameID does not truncate it', async () => {
+  const user = { email: 'user@esaml2.com' };
+  const withComment = (template: string) => {
+    const filled = createTemplateCallback(idpNoEncrypt, sp, binding.redirect, user)(template);
+    return { ...filled, context: filled.context.replace('>user@esaml2.com<', '>user@esaml2.com<!-- x -->.evil.example<') };
+  };
+  const { context } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'redirect', user, withComment, undefined, 'relaystate');
+  const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context));
+  expect(extract.nameID).toBe('user@esaml2.com.evil.example');
+});

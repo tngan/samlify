@@ -40,6 +40,25 @@ function buildAbsoluteXPath(paths: string[]): string {
 }
 
 /**
+ * Character data of an element: its direct text and CDATA children joined.
+ *
+ * A comment splits an element's text into several text nodes; reading only
+ * the first one (`string(…/text())`) would return a truncated value. Joining
+ * them gives the same value as the canonicalized form
+ * (`xml-exc-c14n#` without comments), whichever binding delivered the
+ * message. Child elements are not part of the value.
+ *
+ * @param node element
+ * @returns the joined text, or `null` when the element has no text
+ */
+function textValue(node: Node): string | null {
+  const parts = Array.from(node.childNodes)
+    .filter(child => child.nodeType === 3 || child.nodeType === 4)
+    .map(child => child.nodeValue ?? '');
+  return parts.length > 0 ? parts.join('') : null;
+}
+
+/**
  * Append an attribute selector to an XPath. Zero attributes select text
  * content; one attribute selects that attribute; multiple attributes use an
  * `or` filter.
@@ -259,16 +278,16 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       targetDoc = parseXml(shortcut);
     }
 
-    // Multi-path union: each entry is a separate localPath whose text()
+    // Multi-path union: each entry is a separate localPath whose text
     // values are merged.
     if (localPath.every(path => Array.isArray(path))) {
       const multiXPaths = (localPath as string[][])
-        .map(path => `${buildAbsoluteXPath(path)}/text()`)
+        .map(path => buildAbsoluteXPath(path))
         .join(' | ');
 
       result[key] = uniq(
         toNodeArray(select(multiXPaths, targetDoc))
-          .map((n: Node) => n.nodeValue)
+          .map(textValue)
           .filter(notEmpty),
       );
       return result;
@@ -290,7 +309,7 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       const childAttributes = parentNodes.map(node => {
         const nodeDoc = parseXml(node.toString());
         if (attributes.length === 0) {
-          const childValues = toNodeArray(select(fullChildXPath, nodeDoc)).map((n: Node) => n.nodeValue);
+          const childValues = toNodeArray(select(childXPath, nodeDoc)).map(textValue).filter(notEmpty);
           return childValues.length === 1 ? childValues[0] : childValues;
         }
         if (attributes.length > 0) {
@@ -345,24 +364,10 @@ export function extract(context: string, fields: ExtractorField[]): ExtractorRes
       let attributeValue: SelectedValue[] | (string | null)[] | string | null = null;
       const nodes = toNodeArray(select(baseXPath, targetDoc));
       if (nodes.length === 1) {
-        const fullPath = `string(${baseXPath}${attributeXPath})`;
-        const strResult = select(fullPath, targetDoc);
-        // `string(...)` always evaluates to a string in XPath 1.0, but the
-        // type signature is wider — the alternative branches are defensive.
-        /* v8 ignore next 7 */
-        attributeValue =
-          typeof strResult === 'string'
-            ? strResult
-            : strResult === null
-              ? null
-              : Array.isArray(strResult)
-                ? strResult
-                : null;
+        attributeValue = textValue(nodes[0]) ?? '';
       }
       if (nodes.length > 1) {
-        attributeValue = nodes
-          .filter((n: Node) => n.firstChild)
-          .map((n: Node) => n.firstChild!.nodeValue);
+        attributeValue = nodes.map(textValue).filter(notEmpty);
       }
       result[key] = attributeValue as ExtractorValue;
       return result;
