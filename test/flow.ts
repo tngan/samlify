@@ -1879,3 +1879,32 @@ test('redirect binding: a comment inside a signed NameID does not truncate it', 
   const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'redirect', parseRedirectUrlContextCallBack(context));
   expect(extract.nameID).toBe('user@esaml2.com.evil.example');
 });
+
+describe('an embedded assertion signature does not authenticate a request', () => {
+  const user = { email: 'user@esaml2.com' };
+  // A genuine IdP-signed assertion, as any user receives in their own login response.
+  const signedAssertion = async () => {
+    const { context } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idpNoEncrypt, sp, binding.post, user));
+    return String(utility.base64Decode(context, true)).match(/<saml:Assertion\b[\s\S]*<\/saml:Assertion>/)![0];
+  };
+  const forgedLogoutRequest = (assertion: string) =>
+    '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_forged" Version="2.0" IssueInstant="2026-01-01T00:00:00Z" Destination="https://sp.example.org/sp/slo">'
+    + '<saml:Issuer>https://idp.example.com/metadata</saml:Issuer><saml:NameID>victim@esaml2.com</saml:NameID><samlp:SessionIndex>_victim</samlp:SessionIndex>'
+    + assertion + '</samlp:LogoutRequest>';
+
+  test('verifySignature ignores an assertion signature under a request root', async () => {
+    const xml = forgedLogoutRequest(await signedAssertion());
+    expect(libsaml.verifySignature(xml, { metadata: idpNoEncrypt.entityMeta })).toEqual([false, null]);
+  });
+
+  test('parseLogoutRequest rejects it even without schema validation', async () => {
+    const xml = forgedLogoutRequest(await signedAssertion());
+    esaml2.setSchemaValidator({ validate: () => Promise.resolve('skipped') });
+    try {
+      await expect(spWantLogoutReqSign.parseLogoutRequest(idpNoEncrypt, 'post', { body: { SAMLRequest: utility.base64Encode(xml) } }))
+        .rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+    } finally {
+      esaml2.setSchemaValidator(validator);
+    }
+  });
+});

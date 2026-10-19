@@ -620,7 +620,11 @@ const libSaml = () => {
 
       // Absolute XPaths defend against signature-wrapping attacks.
       const messageSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Signature']";
-      const assertionSignatureXpath = "/*[contains(local-name(), 'Response') or contains(local-name(), 'Request')]/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
+      // Only a <Response> may carry assertions (saml-schema-protocol ResponseType).
+      // A request or logout message is authenticated by its own root-level
+      // signature alone; an embedded assertion's signature covers only that
+      // assertion (saml-core §5.4.2) and must not vouch for the message.
+      const assertionSignatureXpath = "/*[local-name(.)='Response']/*[local-name(.)='Assertion']/*[local-name(.)='Signature']";
       const wrappingElementsXPath = "/*[contains(local-name(), 'Response')]/*[local-name(.)='Assertion']/*[local-name(.)='Subject']/*[local-name(.)='SubjectConfirmation']/*[local-name(.)='SubjectConfirmationData']//*[local-name(.)='Assertion' or local-name(.)='Signature']";
 
       let selection: Node[] = [];
