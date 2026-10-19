@@ -83,6 +83,8 @@ const sp = new ServiceProvider({
 
 - **`allowUnsolicitedResponse: boolean`** — Whether `parseLoginResponse` accepts a response that does not answer a request of this SP (IdP-initiated SSO). Defaults to `true`. When `false`, a response without a verified `InResponseTo` is rejected with `ERR_UNSOLICITED_RESPONSE`. To check *which* request a response answers, pass `inResponseTo` to `parseLoginResponse` (see [SAML Response](/saml-response#checking-inresponseto)).
 
+- **`allowInsecureDecryptionAlgorithms: boolean`** — Whether `parseLoginResponse` decrypts an assertion that uses RSA-1.5 key transport or TripleDES. Defaults to `false`: such an assertion is rejected with `ERR_INSECURE_ENCRYPTION_ALGORITHM` before the private key is used. Only enable it for an IdP that cannot be moved to RSA-OAEP and AES. See [Encrypted Assertion](/encrypted-saml-response).
+
 - **`replayCache: { saveIfAbsent(key: string, expiresAt: Date): boolean | Promise<boolean> }`** — A store, supplied by the application, of the assertions `parseLoginResponse` has already accepted. Not set by default; samlify keeps no state, so replay protection is only active when a store is provided. See [SAML Response](/saml-response#rejecting-replayed-assertions).
 
 - **`templateRenderer: 'legacy' | 'strict'`** *(optional)* — Template engine for the messages this entity builds. Defaults to `'legacy'` until v3. `'strict'` checks the position of every placeholder and escapes for it; output is identical for valid templates. See [Migrating to the strict template renderer](/template-migration).

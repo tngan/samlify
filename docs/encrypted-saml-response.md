@@ -6,8 +6,8 @@ The SAML specification leaves encryption up to the deployment. When the assertio
 const idp = IdentityProvider({
   isAssertionEncrypted: true,
   metadata: fs.readFileSync('./metadata_idp.xml'),
-  dataEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
-  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5'
+  dataEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes256-cbc',
+  keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p'
 });
 ```
 
@@ -41,14 +41,16 @@ Supported algorithms:
 
 **Data encryption algorithms**
 
-- `http://www.w3.org/2001/04/xmlenc#tripledes-cbc`
+- `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` *(insecure)*
 - `http://www.w3.org/2001/04/xmlenc#aes128-cbc`
 - `http://www.w3.org/2001/04/xmlenc#aes256-cbc`
 - `http://www.w3.org/2009/xmlenc11#aes128-gcm`
 
 **Key encryption algorithms**
 
-- `http://www.w3.org/2001/04/xmlenc#rsa-1_5`
+- `http://www.w3.org/2001/04/xmlenc#rsa-1_5` *(insecure)*
 - `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`
+
+The SP refuses to decrypt an assertion that uses an insecure algorithm and rejects it with `ERR_INSECURE_ENCRYPTION_ALGORITHM`. The algorithms are named in the incoming XML, so the SP cannot otherwise stop an attacker from choosing them. RSA-1.5 key transport is open to padding-oracle attacks (see [XML Encryption 1.1 §5.4.1](https://www.w3.org/TR/xmlenc-core1/#rsav15note)), and TripleDES is deprecated by NIST. If an IdP you cannot reconfigure still uses them, set `allowInsecureDecryptionAlgorithms: true` on the SP.
 
 XML encryption is provided by [auth0/node-xml-encryption](https://github.com/auth0/node-xml-encryption).

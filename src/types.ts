@@ -366,6 +366,12 @@ export interface ServiceProviderSettings {
    */
   allowUnsolicitedResponse?: boolean;
   /**
+   * Decrypt assertions that use RSA-1.5 key transport or TripleDES. Defaults
+   * to `false`: such an assertion is rejected with
+   * `ERR_INSECURE_ENCRYPTION_ALGORITHM` before the private key is used.
+   */
+  allowInsecureDecryptionAlgorithms?: boolean;
+  /**
    * Template engine for the SAML messages this entity builds. `legacy`
    * (default until v3) substitutes strings; `strict` validates where every
    * placeholder sits and escapes for that position. Output is the same for

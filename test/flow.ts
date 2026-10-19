@@ -1908,3 +1908,34 @@ describe('an embedded assertion signature does not authenticate a request', () =
     }
   });
 });
+
+describe('insecure encryption algorithms are refused on decryption', () => {
+  const user = { email: 'user@esaml2.com' };
+  const { data, key } = esaml2.Constants.algorithms.encryption;
+  const encryptedResponse = async (dataEncryptionAlgorithm: string, keyEncryptionAlgorithm: string) => {
+    const legacyIdp = identityProvider({ ...defaultIdpConfig, dataEncryptionAlgorithm, keyEncryptionAlgorithm });
+    const { context: SAMLResponse } = await legacyIdp.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(legacyIdp, sp, binding.post, user));
+    return { legacyIdp, request: { body: { SAMLResponse } } };
+  };
+
+  test.each([
+    ['RSA-1.5 key transport', data.AES_256, key.RSA_1_5],
+    ['TripleDES data encryption', data.TRI_DEC, key.RSA_OAEP_MGF1P],
+  ])('rejects %s by default', async (_name, dataAlg, keyAlg) => {
+    const { legacyIdp, request } = await encryptedResponse(dataAlg, keyAlg);
+    await expect(sp.parseLoginResponse(legacyIdp, 'post', request)).rejects.toThrow('ERR_INSECURE_ENCRYPTION_ALGORITHM');
+  });
+
+  test('accepts them when allowInsecureDecryptionAlgorithms is set', async () => {
+    const legacySp = serviceProvider({ ...defaultSpConfig, allowInsecureDecryptionAlgorithms: true });
+    const { legacyIdp, request } = await encryptedResponse(data.TRI_DEC, key.RSA_1_5);
+    const { extract } = await legacySp.parseLoginResponse(legacyIdp, 'post', request);
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+
+  test('accepts the default algorithms', async () => {
+    const { legacyIdp, request } = await encryptedResponse(data.AES_128_GCM, key.RSA_OAEP_MGF1P);
+    const { extract } = await sp.parseLoginResponse(legacyIdp, 'post', request);
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+});

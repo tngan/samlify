@@ -31,6 +31,12 @@ const signatureAlgorithms = algorithms.signature;
 const digestAlgorithms = algorithms.digest;
 const certUse = wording.certUse;
 const urlParams = wording.urlParams;
+// Key transport and data encryption algorithms refused on decryption unless
+// `allowInsecureDecryptionAlgorithms` is set.
+const insecureEncryptionAlgorithms = [
+  algorithms.encryption.key.RSA_1_5,
+  algorithms.encryption.data.TRI_DEC,
+];
 
 /** Coerce the heterogeneous return of `xpath.select` into a Node array. */
 function toNodeArray(result: SelectReturnType): Node[] {
@@ -131,6 +137,7 @@ export interface EntityLike {
     };
     encPrivateKey?: string | Buffer;
     encPrivateKeyPass?: string | Buffer;
+    allowInsecureDecryptionAlgorithms?: boolean;
   };
   entityMeta: MetadataInterface;
 }
@@ -935,11 +942,22 @@ const libSaml = () => {
         }
         const encAssertionNode = encryptedAssertions[0];
 
+        // RSA-1.5 key transport and 3DES are read from the incoming XML, so
+        // reject them before any key is used (xmlenc-core1 §5.4.1).
+        const allowInsecure = hereSetting.allowInsecureDecryptionAlgorithms === true;
+        if (!allowInsecure) {
+          const methods = select(".//*[local-name(.)='EncryptionMethod']/@Algorithm", encAssertionNode) as Attr[];
+          if (methods.some(method => insecureEncryptionAlgorithms.includes(method.value))) {
+            return reject(new Error('ERR_INSECURE_ENCRYPTION_ALGORITHM'));
+          }
+        }
+
         return xmlenc.decrypt(encAssertionNode.toString(), {
           key: utility.readPrivateKey(
             hereSetting.encPrivateKey as string | Buffer,
             hereSetting.encPrivateKeyPass as string | undefined,
           ),
+          disallowDecryptionWithInsecureAlgorithm: !allowInsecure,
         }, (err, res) => {
           /* v8 ignore start */
           if (err) {

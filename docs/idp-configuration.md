@@ -73,9 +73,9 @@ const idp = new IdentityProvider({
 
 - **`requestSignatureAlgorithm: SigningAlgorithm`** — Signature algorithm used for requests. Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. Also supported: `http://www.w3.org/2000/09/xmldsig#rsa-sha1` (not recommended) and `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`.
 
-- **`dataEncryptionAlgorithm: EncryptionAlgorithm`** — Data encryption algorithm used in responses. Defaults to `http://www.w3.org/2001/04/xmlenc#aes256-cbc`. Also supported: `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` (3DES), `http://www.w3.org/2001/04/xmlenc#aes128-cbc` (AES-128 CBC), and `http://www.w3.org/2009/xmlenc11#aes128-gcm` (AES-128 GCM).
+- **`dataEncryptionAlgorithm: EncryptionAlgorithm`** — Data encryption algorithm used in responses. Defaults to `http://www.w3.org/2001/04/xmlenc#aes256-cbc`. Also supported: `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` (3DES, insecure; samlify SPs refuse it by default), `http://www.w3.org/2001/04/xmlenc#aes128-cbc` (AES-128 CBC), and `http://www.w3.org/2009/xmlenc11#aes128-gcm` (AES-128 GCM).
 
-- **`keyEncryptionAlgorithm: KeyEncryptionAlgorithm`** — Key encryption algorithm. Defaults to `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`. Also supported: `http://www.w3.org/2001/04/xmlenc#rsa-1_5`.
+- **`keyEncryptionAlgorithm: KeyEncryptionAlgorithm`** — Key encryption algorithm. Defaults to `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`. Also supported: `http://www.w3.org/2001/04/xmlenc#rsa-1_5` (insecure; samlify SPs refuse it by default).
 
 - **`templateRenderer: 'legacy' | 'strict'`** *(optional)* — Template engine for the messages this entity builds. Defaults to `'legacy'` until v3. `'strict'` checks the position of every placeholder and escapes for it; output is identical for valid templates. See [Migrating to the strict template renderer](/template-migration).
 
