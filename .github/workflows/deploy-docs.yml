@@ -6,6 +6,16 @@ on:
       - master
     paths:
       - 'docs/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.github/workflows/deploy-docs.yml'
+  # Build (without deploying) on pull requests, so a dependency change that
+  # breaks the docs build is caught before it reaches master.
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'package.json'
+      - 'yarn.lock'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -14,16 +24,9 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +36,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'yarn'
 
       - name: Install dependencies
@@ -42,15 +45,26 @@ jobs:
       - name: Build VitePress
         run: yarn docs:build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
       - name: Upload artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
 
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

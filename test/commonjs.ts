@@ -6,9 +6,10 @@ import { resolve } from 'path';
 const buildDir = resolve(__dirname, '..', 'build');
 const entryPoint = resolve(buildDir, 'index.js');
 
+// Compiling the project can take well over vitest's 10s default on a busy CI runner.
 beforeAll(() => {
   execSync('npx tsc', { cwd: resolve(__dirname, '..'), stdio: 'pipe' });
-});
+}, 120_000);
 
 test('build output exists as CommonJS', () => {
   expect(existsSync(entryPoint)).toBe(true);
