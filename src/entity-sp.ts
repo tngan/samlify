@@ -180,7 +180,10 @@ export class ServiceProvider extends Entity {
       type: 'login',
       binding,
       request,
-      inResponseTo: options.inResponseTo,
+      // Passing the option without a value means no request is pending.
+      inResponseTo: Object.prototype.hasOwnProperty.call(options, 'inResponseTo')
+        ? options.inResponseTo ?? null
+        : undefined,
     });
   }
 }

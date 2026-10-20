@@ -1,6 +1,6 @@
 import * as esaml2 from '../index';
 import { readFileSync, writeFileSync } from 'fs';
-import { test, expect, describe } from 'vitest';
+import { test, expect, describe, vi } from 'vitest';
 import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
 import { randomUUID } from 'crypto';
 import * as url from 'url';
@@ -1578,8 +1578,11 @@ describe('login response must answer the expected request', () => {
   });
 
   test('post binding: an InResponseTo outside the signed assertion does not answer the request', async () => {
-    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await postRequest(sp, withoutSubjectInResponseTo), { inResponseTo: 'request_id' }))
-      .rejects.toThrow('ERR_MISSING_INRESPONSETO');
+    const request = await postRequest(sp, withoutSubjectInResponseTo);
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', request, { inResponseTo: 'request_id' }))
+      .rejects.toThrow('ERR_INRESPONSETO_MISMATCH');
+    // Without a signed counterpart the unsigned outer value is never trusted.
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', request)).rejects.toThrow('ERR_INRESPONSETO_MISMATCH');
   });
 
   test('redirect binding: the signed message InResponseTo answers the request', async () => {
@@ -1645,7 +1648,7 @@ describe('replay protection with an application-supplied store', () => {
     expect(expiresAt.getTime()).toBe(new Date(extract.conditions.notOnOrAfter).getTime() + 60000);
   });
 
-  test('an assertion without NotOnOrAfter is kept for 24 hours', async () => {
+  test('an assertion without any NotOnOrAfter is rejected', async () => {
     const store = memoryStore();
     const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
     const withoutExpiry = (t: string) => t.replace(/ NotOnOrAfter="\{(ConditionsNotOnOrAfter|SubjectConfirmationDataNotOnOrAfter)\}"/g, '');
@@ -1653,11 +1656,9 @@ describe('replay protection with an application-supplied store', () => {
       spWithStore, sampleRequestInfo, 'post', user,
       (template: string) => createTemplateCallback(idpNoEncrypt, spWithStore, binding.post, user)(withoutExpiry(template)),
     );
-    const before = Date.now();
-    await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: context } });
-    const [[, expiresAt]] = [...store.saved];
-    expect(expiresAt.getTime() - before).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000);
-    expect(expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+    await expect(spWithStore.parseLoginResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: context } }))
+      .rejects.toThrow('ERR_SUBJECT_UNCONFIRMED');
+    expect(store.saved.size).toBe(0);
   });
 
   test('a response that fails validation does not use up its assertion', async () => {
@@ -2078,5 +2079,114 @@ describe('values from configuration and metadata written into XML', () => {
     expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { assertion: 'a"><evil/' } })).toThrow('ERR_INVALID_TAG_PREFIX');
     expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { protocol: '$&' } })).toThrow('ERR_INVALID_TAG_PREFIX');
     expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { protocol: 'p2', assertion: 'a_b' } })).not.toThrow();
+  });
+});
+
+describe('bearer subject confirmation', () => {
+  const user = { email: 'user@esaml2.com' };
+  const minutes = (n: number) => new Date(Date.now() + n * 60 * 1000).toISOString();
+  // Render the default response, then edit the XML before the IdP signs it.
+  const mint = async (edit: (xml: string) => string, target = sp, bindingName: 'post' | 'redirect' | 'simpleSign' = 'post') => {
+    const urn = { post: binding.post, redirect: binding.redirect, simpleSign: binding.simpleSign }[bindingName];
+    const callback = (template: string) => {
+      const filled = createTemplateCallback(idpNoEncrypt, target, urn, user)(template);
+      return { ...filled, context: edit(filled.context) };
+    };
+    const result = await idpNoEncrypt.createLoginResponse(target, sampleRequestInfo, bindingName, user, callback, undefined, 'relaystate');
+    if (bindingName === 'redirect') {
+      return parseRedirectUrlContextCallBack(result.context);
+    }
+    if (bindingName === 'simpleSign') {
+      const { context: SAMLResponse, type, sigAlg, signature, relayState } = result as unknown as Record<string, string>;
+      return { body: { SAMLResponse, Signature: signature, SigAlg: sigAlg }, octetString: buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature) };
+    }
+    return { body: { SAMLResponse: result.context } };
+  };
+  const scdExpiry = (iso: string) => (xml: string) => xml.replace(/(<saml:SubjectConfirmationData[^>]*NotOnOrAfter=")[^"]*/, `$1${iso}`);
+  const conditionsExpiry = (iso: string) => (xml: string) => xml.replace(/(<saml:Conditions[^>]*NotOnOrAfter=")[^"]*/, `$1${iso}`);
+
+  test.each(['post', 'redirect', 'simpleSign'] as const)('rejects an expired SubjectConfirmationData while Conditions is still valid (%s)', async b => {
+    const request = await mint(xml => conditionsExpiry(minutes(60))(scdExpiry(minutes(-1))(xml)), sp, b);
+    await expect(sp.parseLoginResponse(idpNoEncrypt, b, request as any)).rejects.toThrow('ERR_SUBJECT_UNCONFIRMED');
+  });
+
+  test('a replayed assertion stays rejected after its confirmation window', async () => {
+    const saved = new Map<string, Date>();
+    const store = { saveIfAbsent: (key: string, expiresAt: Date) => saved.has(key) ? false : (saved.set(key, expiresAt), true) };
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
+    const scdEnd = minutes(5);
+    const request = await mint(xml => conditionsExpiry(minutes(60))(scdExpiry(scdEnd)(xml)), spWithStore);
+    await spWithStore.parseLoginResponse(idpNoEncrypt, 'post', request);
+    // The cache entry lives exactly as long as the confirmation window.
+    expect([...saved.values()][0].toISOString()).toBe(scdEnd);
+    await expect(spWithStore.parseLoginResponse(idpNoEncrypt, 'post', request)).rejects.toThrow('ERR_REPLAYED_ASSERTION');
+  });
+
+  test('rejects an assertion without a bearer confirmation', async () => {
+    const holderOfKey = (xml: string) => xml.replace('urn:oasis:names:tc:SAML:2.0:cm:bearer', 'urn:oasis:names:tc:SAML:2.0:cm:holder-of-key');
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await mint(holderOfKey))).rejects.toThrow('ERR_SUBJECT_UNCONFIRMED');
+    const noData = (xml: string) => xml.replace(/<saml:SubjectConfirmationData[^>]*\/>/, '');
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await mint(noData))).rejects.toThrow('ERR_SUBJECT_UNCONFIRMED');
+  });
+
+  test('checks the Recipient when present and warns when it is missing', async () => {
+    const wrong = await mint(xml => xml.replace(/ Recipient="[^"]*"/, ' Recipient="https://other.example.org/acs"'));
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', wrong)).rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+    const missing = await mint(xml => xml.replace(/ Recipient="[^"]*"/, ''));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', missing);
+      expect(extract.nameID).toBe(user.email);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('without Recipient'));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test('checks every bearer confirmation', async () => {
+    const second = (xml: string) => xml.replace(/(<saml:SubjectConfirmation [\s\S]*?<\/saml:SubjectConfirmation>)/, (c: string) =>
+      c + c.replace(/Recipient="[^"]*"/, 'Recipient="https://other.example.org/acs"'));
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await mint(second))).rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+  });
+
+  test('checks every SessionNotOnOrAfter', async () => {
+    const statement = (until: string) =>
+      `<saml:AuthnStatement AuthnInstant="${minutes(0)}" SessionIndex="_s" SessionNotOnOrAfter="${until}"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement>`;
+    const two = (xml: string) => xml.replace('</saml:Conditions>', `</saml:Conditions>${statement(minutes(60))}${statement(minutes(-1))}`);
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', await mint(two))).rejects.toThrow('ERR_EXPIRED_SESSION');
+  });
+});
+
+describe('inResponseTo passed without a pending request', () => {
+  const user = { email: 'user@esaml2.com' };
+  const mint = async (requestId?: string) => {
+    const info = requestId ? { extract: { request: { id: requestId } } } : { extract: { request: {} } };
+    const callback = (template: string) => {
+      const filled = createTemplateCallback(idpNoEncrypt, sp, binding.post, user)(template);
+      return requestId ? filled : { ...filled, context: filled.context.replace(/ InResponseTo="[^"]*"/g, '') };
+    };
+    const { context } = await idpNoEncrypt.createLoginResponse(sp, info as any, 'post', user, callback);
+    return { body: { SAMLResponse: context } };
+  };
+
+  test.each([undefined, null])('rejects a response that answers a request (%s)', async pending => {
+    // The attacker's own solicited response, posted into a session with no pending login.
+    const request = await mint('request_id');
+    await expect(sp.parseLoginResponse(idpNoEncrypt, 'post', request, { inResponseTo: pending }))
+      .rejects.toThrow('ERR_INRESPONSETO_MISMATCH');
+  });
+
+  test('an unsolicited response follows allowUnsolicitedResponse', async () => {
+    const request = await mint();
+    const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', request, { inResponseTo: undefined });
+    expect(extract.nameID).toBe(user.email);
+    const strictSp = serviceProvider({ ...defaultSpConfig, allowUnsolicitedResponse: false });
+    await expect(strictSp.parseLoginResponse(idpNoEncrypt, 'post', request, { inResponseTo: undefined }))
+      .rejects.toThrow('ERR_UNSOLICITED_RESPONSE');
+  });
+
+  test('omitting the option skips the check', async () => {
+    const { extract } = await sp.parseLoginResponse(idpNoEncrypt, 'post', await mint('request_id'));
+    expect(extract.nameID).toBe(user.email);
   });
 });

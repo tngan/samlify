@@ -193,8 +193,13 @@ export interface ParseLoginResponseOptions {
    * and a response without one is rejected with `ERR_MISSING_INRESPONSETO`,
    * a different one with `ERR_INRESPONSETO_MISMATCH`. Remove the ID after a
    * successful parse so the response cannot answer it again.
+   *
+   * Passing the option with `undefined` or `null` (no request pending in
+   * this session) rejects any response that answers a request with
+   * `ERR_INRESPONSETO_MISMATCH`; a response that answers none is then
+   * governed by `allowUnsolicitedResponse`. Omit the option to skip the check.
    */
-  inResponseTo?: string | string[];
+  inResponseTo?: string | string[] | null;
 }
 
 /** Per-request options accepted by `IdentityProvider#createLoginResponse`. */

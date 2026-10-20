@@ -7,6 +7,8 @@
  */
 import { inflateString, base64Decode, uniq, notEmpty } from './utility';
 import { verifyTime } from './validator';
+import { parseXml } from './xml';
+import { select } from 'xpath';
 import libsaml, { assertAllowedSignatureAlgorithm } from './libsaml';
 import {
   extract,
@@ -49,7 +51,7 @@ export interface FlowOptions {
   binding: string;
   supportBindings?: string[];
   /** Request ID(s) a login response must answer; see `ParseLoginResponseOptions`. */
-  inResponseTo?: string | string[];
+  inResponseTo?: string | string[] | null;
 }
 
 /**
@@ -118,13 +120,91 @@ function isIntendedRecipient(self: Entity, extracted: ExtractorResult): boolean 
   if (self.entitySetting.wantAudienceCheck === false) {
     return true;
   }
+  const locations = acsLocations(self);
+  const destination = (extracted.response as Record<string, string> | undefined)?.destination;
+  return !destination || locations.includes(destination);
+}
+
+/** ACS locations of this SP. */
+function acsLocations(self: Entity): (string | undefined)[] {
   const acs = (self.entityMeta as unknown as { meta: { assertionConsumerService?: unknown } }).meta.assertionConsumerService;
-  const locations = ([] as { location?: string }[])
+  return ([] as { location?: string }[])
     .concat((acs ?? []) as { location?: string }[])
     .map(service => service.location);
-  const destination = (extracted.response as Record<string, string> | undefined)?.destination;
-  const recipient = (extracted.subjectConfirmation as Record<string, string> | undefined)?.recipient;
-  return [destination, recipient].every(target => !target || locations.includes(target));
+}
+
+const BEARER = 'urn:oasis:names:tc:SAML:2.0:cm:bearer';
+
+/**
+ * `<SubjectConfirmationData>` of each bearer `<SubjectConfirmation>` in the
+ * verified assertion; `null` for a bearer confirmation without one.
+ */
+function bearerConfirmationData(extracted: ExtractorResult): (Element | null)[] {
+  return ([] as string[])
+    .concat((extracted.subjectConfirmations ?? []) as string[])
+    .map(xml => parseXml(xml).documentElement)
+    .filter(confirmation => confirmation.getAttribute('Method') === BEARER)
+    .map(confirmation => (select("./*[local-name(.)='SubjectConfirmationData']", confirmation) as Element[])[0] ?? null);
+}
+
+/**
+ * Check the bearer subject confirmation of the verified assertion
+ * (saml-profiles §4.1.4.2, §4.1.4.3). At least one bearer
+ * `<SubjectConfirmation>` must be present, and each one must carry a
+ * `<SubjectConfirmationData>` that is valid now:
+ *
+ * - `NotOnOrAfter` has not passed and `NotBefore`, if present, has been
+ *   reached (with the SP's clock drift). Without its own `NotOnOrAfter`, the
+ *   `Conditions` must declare one, so the assertion cannot be used forever.
+ * - Unless `wantAudienceCheck` is `false`, `Recipient`, when present, is one
+ *   of the SP's AssertionConsumerService locations. A missing `Recipient`
+ *   (required by the profile) is logged.
+ *
+ * @param self receiving entity (the SP)
+ * @param extracted login-response extractor result
+ * @returns error code, or `null` when the subject is confirmed
+ */
+function checkBearerConfirmation(self: Entity, extracted: ExtractorResult): string | null {
+  const bearer = bearerConfirmationData(extracted);
+  if (bearer.length === 0 || bearer.includes(null)) {
+    return 'ERR_SUBJECT_UNCONFIRMED';
+  }
+  const conditionsExpiry = (extracted.conditions as Record<string, string> | undefined)?.notOnOrAfter;
+  const checkRecipient = self.entitySetting.wantAudienceCheck !== false;
+  const locations = acsLocations(self);
+
+  for (const data of bearer as Element[]) {
+    const notBefore = data.getAttribute('NotBefore') || undefined;
+    const notOnOrAfter = data.getAttribute('NotOnOrAfter') || undefined;
+    if (!notOnOrAfter && !conditionsExpiry) {
+      return 'ERR_SUBJECT_UNCONFIRMED';
+    }
+    if ((notBefore || notOnOrAfter) && !verifyTime(notBefore, notOnOrAfter, self.entitySetting.clockDrifts)) {
+      return 'ERR_SUBJECT_UNCONFIRMED';
+    }
+    const recipient = data.getAttribute('Recipient');
+    if (checkRecipient && recipient && !locations.includes(recipient)) {
+      return 'ERR_RECIPIENT_MISMATCH';
+    }
+    if (checkRecipient && !recipient) {
+      console.warn(
+        `[samlify] bearer SubjectConfirmationData without Recipient from ${String(extracted.issuer)}; `
+        + 'saml-profiles §4.1.4.2 requires it, only the Audience binds this assertion to the SP.',
+      );
+    }
+  }
+  return null;
+}
+
+/**
+ * Every `SessionNotOnOrAfter` of the assertion's AuthnStatements must not
+ * have passed.
+ */
+function isSessionValid(self: Entity, extracted: ExtractorResult): boolean {
+  return ([] as Record<string, string>[])
+    .concat((extracted.sessionIndex ?? []) as Record<string, string>[])
+    .every(statement => !statement?.sessionNotOnOrAfter
+      || verifyTime(undefined, statement.sessionNotOnOrAfter, self.entitySetting.clockDrifts));
 }
 
 /**
@@ -136,8 +216,11 @@ function isIntendedRecipient(self: Entity, extracted: ExtractorResult): boolean 
  * by the verified signature (redirect / SimpleSign bindings); on the POST
  * binding it may sit outside the signed assertion.
  *
- * - Always: the signed values and the outer value must agree.
+ * - Always: the signed values and the outer value must agree, and an outer
+ *   value that is not covered by the signature needs a signed counterpart.
  * - When `expected` is given: the answered request must be one of them.
+ * - When `expected` is `null` (no request pending): a response that answers
+ *   a request is rejected.
  * - When the SP sets `allowUnsolicitedResponse: false`: a response that does
  *   not answer a request is rejected.
  *
@@ -151,7 +234,7 @@ function checkInResponseTo(
   self: Entity,
   extracted: ExtractorResult,
   messageSigned: boolean,
-  expected?: string | string[],
+  expected?: string | string[] | null,
 ): string | null {
   const outer = (extracted.response as Record<string, string> | undefined)?.inResponseTo;
   const confirmations = ([] as Record<string, string>[])
@@ -161,10 +244,20 @@ function checkInResponseTo(
   if (signed.length > 1 || (outer && signed.length === 1 && signed[0] !== outer)) {
     return 'ERR_INRESPONSETO_MISMATCH';
   }
+  // An answered request is always named in the signed confirmation
+  // (saml-profiles §4.1.4.2); an unsigned outer value alone is not trusted.
+  if (outer && signed.length === 0 && !messageSigned) {
+    return 'ERR_INRESPONSETO_MISMATCH';
+  }
 
   const answered = signed[0] ?? (messageSigned ? outer : undefined);
 
-  if (expected !== undefined) {
+  if (expected === null) {
+    // No request is pending: a response answering one was not meant for this session.
+    if (answered) {
+      return 'ERR_INRESPONSETO_MISMATCH';
+    }
+  } else if (expected !== undefined) {
     if (!answered) {
       return 'ERR_MISSING_INRESPONSETO';
     }
@@ -179,9 +272,6 @@ function checkInResponseTo(
 
   return null;
 }
-
-/** Retention for an assertion that declares no `NotOnOrAfter`. */
-const REPLAY_RETENTION_WITHOUT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Reject a bearer assertion this SP already accepted (saml-profiles
@@ -206,19 +296,20 @@ async function checkReplay(self: Entity, extracted: ExtractorResult): Promise<st
   if (typeof assertionID !== 'string' || assertionID === '') {
     return 'ERR_UNDEFINED_ASSERTION_ID';
   }
-  const confirmations = ([] as Record<string, string>[])
-    .concat((extracted.subjectConfirmation ?? []) as unknown as Record<string, string>[]);
+  // The same bounds checkBearerConfirmation and the Conditions check enforce.
   const expiries = [
     (extracted.conditions as Record<string, string> | undefined)?.notOnOrAfter,
-    ...confirmations.map(confirmation => confirmation.notOnOrAfter),
+    ...bearerConfirmationData(extracted).map(data => data?.getAttribute('NotOnOrAfter')),
   ]
     .filter(notEmpty)
     .map(value => new Date(value).getTime())
     .filter(time => !Number.isNaN(time));
+  /* v8 ignore next 3 */
+  if (expiries.length === 0) {
+    return 'ERR_SUBJECT_UNCONFIRMED';
+  }
   const drift = self.entitySetting.clockDrifts?.[1] ?? 0;
-  const expiresAt = new Date(
-    expiries.length > 0 ? Math.min(...expiries) + Math.max(drift, 0) : Date.now() + REPLAY_RETENTION_WITHOUT_EXPIRY_MS,
-  );
+  const expiresAt = new Date(Math.min(...expiries) + Math.max(drift, 0));
   const key = JSON.stringify(['assertion', extracted.issuer, assertionID]);
   return (await replayCache.saveIfAbsent(key, expiresAt)) ? null : 'ERR_REPLAYED_ASSERTION';
 }
@@ -407,22 +498,20 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'SAMLResponse') {
+    const confirmationError = checkBearerConfirmation(self, extractedProperties);
+    if (confirmationError) {
+      return Promise.reject(new Error(confirmationError));
+    }
+  }
+
+  if (parserType === 'SAMLResponse') {
     const inResponseToError = checkInResponseTo(self, extractedProperties, checkSignature, options.inResponseTo);
     if (inResponseToError) {
       return Promise.reject(new Error(inResponseToError));
     }
   }
 
-  // Session expiration — only enforced when SessionNotOnOrAfter is present.
-  if (
-    parserType === 'SAMLResponse'
-    && (extractedProperties.sessionIndex as Record<string, string> | undefined)?.sessionNotOnOrAfter
-    && !verifyTime(
-      undefined,
-      (extractedProperties.sessionIndex as Record<string, string>).sessionNotOnOrAfter,
-      self.entitySetting.clockDrifts,
-    )
-  ) {
+  if (parserType === 'SAMLResponse' && !isSessionValid(self, extractedProperties)) {
     return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
@@ -519,6 +608,11 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     extract: extract(samlContent, extractorFields),
   };
 
+  // verifySignature checks a root-level signature first and fails on any
+  // invalid one, so once it passed, such a signature covers the whole message.
+  const messageSigned = checkSignature
+    && (select("/*/*[local-name(.)='Signature']", parseXml(samlContent)) as Node[]).length > 0;
+
   const targetEntityMetadata = from.entityMeta;
   const issuer = targetEntityMetadata.getEntityID();
   const extractedProperties = parseResult.extract;
@@ -540,21 +634,20 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'SAMLResponse') {
-    const inResponseToError = checkInResponseTo(self, extractedProperties, false, options.inResponseTo);
+    const confirmationError = checkBearerConfirmation(self, extractedProperties);
+    if (confirmationError) {
+      return Promise.reject(new Error(confirmationError));
+    }
+  }
+
+  if (parserType === 'SAMLResponse') {
+    const inResponseToError = checkInResponseTo(self, extractedProperties, messageSigned, options.inResponseTo);
     if (inResponseToError) {
       return Promise.reject(new Error(inResponseToError));
     }
   }
 
-  if (
-    parserType === 'SAMLResponse'
-    && (extractedProperties.sessionIndex as Record<string, string> | undefined)?.sessionNotOnOrAfter
-    && !verifyTime(
-      undefined,
-      (extractedProperties.sessionIndex as Record<string, string>).sessionNotOnOrAfter,
-      self.entitySetting.clockDrifts,
-    )
-  ) {
+  if (parserType === 'SAMLResponse' && !isSessionValid(self, extractedProperties)) {
     return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
@@ -686,21 +779,20 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'SAMLResponse') {
+    const confirmationError = checkBearerConfirmation(self, extractedProperties);
+    if (confirmationError) {
+      return Promise.reject(new Error(confirmationError));
+    }
+  }
+
+  if (parserType === 'SAMLResponse') {
     const inResponseToError = checkInResponseTo(self, extractedProperties, checkSignature, options.inResponseTo);
     if (inResponseToError) {
       return Promise.reject(new Error(inResponseToError));
     }
   }
 
-  if (
-    parserType === 'SAMLResponse'
-    && (extractedProperties.sessionIndex as Record<string, string> | undefined)?.sessionNotOnOrAfter
-    && !verifyTime(
-      undefined,
-      (extractedProperties.sessionIndex as Record<string, string>).sessionNotOnOrAfter,
-      self.entitySetting.clockDrifts,
-    )
-  ) {
+  if (parserType === 'SAMLResponse' && !isSessionValid(self, extractedProperties)) {
     return Promise.reject(new Error('ERR_EXPIRED_SESSION'));
   }
 
