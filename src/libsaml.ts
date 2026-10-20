@@ -866,10 +866,18 @@ const libSaml = () => {
       signature: string | Buffer,
       verifyAlgorithm?: string,
     ): boolean {
-      const signCert = metadata.getX509Certificate(certUse.signing) as string;
+      const declared = metadata.getX509Certificate(certUse.signing);
+      const certificates = (Array.isArray(declared) ? flattenDeep<string>(declared as string[]) : declared ? [declared] : [])
+        .filter(cert => typeof cert === 'string' && cert.trim() !== '');
+      if (certificates.length === 0) {
+        throw new Error('NO_SELECTED_CERTIFICATE');
+      }
       const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
-      return key.verify(Buffer.from(octetString), Buffer.from(signature));
+      // Any signing certificate declared in metadata may have signed it (key rollover).
+      return certificates.some(cert => {
+        const key = new nrsa(utility.getPublicKeyPemFromCertificate(cert), 'public', { signingScheme });
+        return key.verify(Buffer.from(octetString), Buffer.from(signature));
+      });
     },
 
     /**

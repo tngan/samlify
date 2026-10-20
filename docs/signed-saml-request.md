@@ -99,14 +99,19 @@ When parsing a signed Redirect or SimpleSign message, pass the octet string as `
 
 ```javascript
 router.get('/sso', async (req, res) => {
-  const octetString = req.originalUrl.split('?')[1]
+  // Keep the signed parameters exactly as received, in their original order.
+  const signedKeys = ['SAMLRequest', 'SAMLResponse', 'RelayState', 'SigAlg'];
+  const octetString = (req.originalUrl.split('?')[1] ?? '')
     .split('&')
-    .filter(pair => !pair.startsWith('Signature='))
+    .filter(pair => signedKeys.includes(pair.split('=')[0]))
     .join('&');
-  const { extract } = await idp.parseLoginRequest(sp, 'redirect', { query: req.query, octetString });
+  const { extract, relayState } = await idp.parseLoginRequest(sp, 'redirect', { query: req.query, octetString });
+  // Use `relayState` from the result: it is the value covered by the signature.
   // ...
 });
 ```
+
+The result's `relayState` is the `RelayState` covered by the signature (form-decoded), or `undefined` when none was signed. Prefer it over the request parameter. A message whose root element does not match the parser (for example an `AuthnRequest` passed to `parseLogoutRequest`) is rejected with `ERR_UNEXPECTED_MESSAGE_TYPE` on every binding.
 
 ### HTTP-POST binding
 

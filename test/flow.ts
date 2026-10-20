@@ -2190,3 +2190,58 @@ describe('inResponseTo passed without a pending request', () => {
     expect(extract.nameID).toBe(user.email);
   });
 });
+
+describe('detached signatures on the Redirect and SimpleSign bindings', () => {
+  const redirectParts = (context: string) => {
+    const parsed = url.parse(context, true);
+    const { SAMLRequest, Signature, SigAlg, RelayState } = parsed.query as Record<string, string>;
+    delete parsed.query.Signature;
+    const octetString = Object.keys(parsed.query).map(q => q + '=' + encodeURIComponent(parsed.query[q] as string)).join('&');
+    return { query: { SAMLRequest, Signature, SigAlg, RelayState }, octetString };
+  };
+
+  test.each([
+    ['a signing and a no-use KeyDescriptor', String(defaultIdpConfig.metadata).replace('<KeyDescriptor use="encryption">', '<KeyDescriptor>')],
+    ['two signing certificates (rollover)', String(readFileSync('./test/misc/idpmeta_rollingcert.xml'))],
+  ])('verifies with every metadata signing certificate: %s', async (_name, metadata) => {
+    const signer = identityProvider({ ...defaultIdpConfig, metadata });
+    expect(Array.isArray(signer.entityMeta.getX509Certificate('signing'))).toBe(true);
+    const { context } = signer.createLogoutRequest(spWantLogoutReqSign, 'redirect', { logoutNameID: 'user@esaml2.com' });
+    const { extract } = await spWantLogoutReqSign.parseLogoutRequest(signer, 'redirect', redirectParts(context));
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+
+  test('accepts a RelayState with a space signed as + and returns the signed value', async () => {
+    const { context } = sp.createLoginRequest(idp, 'redirect', { relayState: '/x' });
+    const { query } = redirectParts(context);
+    // Re-sign the way OpenSAML / python3-saml encode a space.
+    const SigAlg = query.SigAlg;
+    const octetString = `SAMLRequest=${encodeURIComponent(query.SAMLRequest)}&RelayState=%2Fdashboard%3Ftab%3Dmy+reports&SigAlg=${encodeURIComponent(SigAlg)}`;
+    const Signature = libsaml.constructMessageSignature(octetString, defaultSpConfig.privateKey, defaultSpConfig.privateKeyPass, undefined, SigAlg).toString();
+    const parsed = await idp.parseLoginRequest(sp, 'redirect', {
+      query: { SAMLRequest: query.SAMLRequest, Signature, SigAlg, RelayState: '/dashboard?tab=my reports' }, octetString,
+    });
+    expect(parsed.relayState).toBe('/dashboard?tab=my reports');
+    // Without RelayState in the query, the signed value is still returned.
+    const withoutQuery = await idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest: query.SAMLRequest, Signature, SigAlg }, octetString });
+    expect(withoutQuery.relayState).toBe('/dashboard?tab=my reports');
+  });
+
+  test('simpleSign returns the signed RelayState', async () => {
+    const { relayState, context: SAMLRequest, type, sigAlg, signature } = sp.createLoginRequest(idp, 'simpleSign', { relayState: '/home' }) as SimpleSignBindingContext;
+    const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState, signature);
+    const parsed = await idp.parseLoginRequest(sp, 'simpleSign', { body: { SAMLRequest, Signature: signature, SigAlg: sigAlg }, octetString });
+    expect(parsed.relayState).toBe('/home');
+  });
+
+  test('rejects a signed message submitted as another message type', async () => {
+    const login = redirectParts(sp.createLoginRequest(idp, 'redirect').context);
+    const idpWantsSignedLogout = identityProvider({ ...defaultIdpConfig, wantLogoutRequestSigned: true });
+    await expect(idpWantsSignedLogout.parseLogoutRequest(sp, 'redirect', {
+      query: { SAMLRequest: login.query.SAMLRequest, Signature: login.query.Signature, SigAlg: login.query.SigAlg }, octetString: login.octetString,
+    })).rejects.toThrow('ERR_UNEXPECTED_MESSAGE_TYPE');
+    const { context } = await idpNoEncrypt.createLoginResponse(sp, sampleRequestInfo, 'post', { email: 'user@esaml2.com' }, createTemplateCallback(idpNoEncrypt, sp, binding.post, { email: 'user@esaml2.com' }));
+    await expect(spWantLogoutReqSign.parseLogoutResponse(idpNoEncrypt, 'post', { body: { SAMLResponse: context } }))
+      .rejects.toThrow('ERR_UNEXPECTED_MESSAGE_TYPE');
+  });
+});

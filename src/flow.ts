@@ -27,6 +27,7 @@ import {
   BindingNamespace,
   ParserType,
   wording,
+  namespace,
   StatusCode,
 } from './urn';
 
@@ -38,6 +39,11 @@ export interface FlowResult {
   samlContent: string;
   extract: ExtractorResult;
   sigAlg?: string | null;
+  /**
+   * `RelayState` covered by the verified detached signature (Redirect and
+   * SimpleSign bindings). Use it instead of the request parameter.
+   */
+  relayState?: string;
 }
 
 /** Options consumed by {@link flow} and its internal dispatch helpers. */
@@ -314,6 +320,25 @@ async function checkReplay(self: Entity, extracted: ExtractorResult): Promise<st
   return (await replayCache.saveIfAbsent(key, expiresAt)) ? null : 'ERR_REPLAYED_ASSERTION';
 }
 
+/** Root element each parser expects (saml-schema-protocol). */
+const MESSAGE_ROOTS: Record<string, string> = {
+  SAMLRequest: 'AuthnRequest',
+  SAMLResponse: 'Response',
+  LogoutRequest: 'LogoutRequest',
+  LogoutResponse: 'LogoutResponse',
+};
+
+/**
+ * Throw unless the message is the SAML protocol element the parser expects,
+ * so one signed message type cannot be submitted as another.
+ */
+function assertMessageType(xml: string, parserType: string): void {
+  const root = parseXml(xml).documentElement;
+  if (root.namespaceURI !== namespace.names.protocol || root.localName !== MESSAGE_ROOTS[parserType]) {
+    throw new Error('ERR_UNEXPECTED_MESSAGE_TYPE');
+  }
+}
+
 /** Decode a query value; a value the caller already decoded is returned as is. */
 function decodeQueryValue(value: string): string {
   try {
@@ -328,6 +353,8 @@ function decodeQueryValue(value: string): string {
  * message, `SigAlg` and `RelayState` this flow parses (saml-bindings
  * §3.4.4.1). Otherwise a signature over one message could vouch for another
  * one supplied in the query.
+ *
+ * @returns the signed `RelayState`, form-decoded, if the octet string has one
  */
 function assertRedirectOctetString(
   octetString: string | undefined,
@@ -335,7 +362,7 @@ function assertRedirectOctetString(
   content: string,
   sigAlg: string,
   relayState: string | undefined,
-): void {
+): string | undefined {
   if (typeof octetString !== 'string') {
     throw new Error('ERR_MISSING_OCTET_STRING');
   }
@@ -351,23 +378,30 @@ function assertRedirectOctetString(
   const signedMessage = signed.get(direction);
   const signedSigAlg = signed.get(urlParams.sigAlg);
   const signedRelayState = signed.get(urlParams.relayState);
+  // A query parser may decode `+` as a space (form encoding) or keep it.
+  const relayStateForms = signedRelayState === undefined ? [] : [
+    decodeQueryValue(signedRelayState.replace(/\+/g, ' ')),
+    decodeQueryValue(signedRelayState),
+    signedRelayState,
+  ];
   if (
     signedMessage === undefined
     || decodeQueryValue(signedMessage) !== decodeQueryValue(content)
     || signedSigAlg === undefined
     || decodeQueryValue(signedSigAlg) !== decodeQueryValue(sigAlg)
-    || (relayState !== undefined
-      && (signedRelayState === undefined
-        || (decodeQueryValue(signedRelayState) !== relayState && signedRelayState !== relayState)))
+    || (relayState !== undefined && !relayStateForms.includes(relayState))
   ) {
     throw new Error('ERR_OCTET_STRING_MISMATCH');
   }
+  return relayStateForms[0];
 }
 
 /**
  * Check that the SimpleSign octet string that was signed is built from the
  * message, `SigAlg` and `RelayState` this flow parses (saml-bindings
  * §3.5.4.1): `<direction>=<xml>[&RelayState=<value>]&SigAlg=<value>`.
+ *
+ * @returns the signed `RelayState`, if the octet string has one
  */
 function assertSimpleSignOctetString(
   octetString: string | undefined,
@@ -375,7 +409,7 @@ function assertSimpleSignOctetString(
   xmlString: string,
   sigAlg: string,
   relayState: string | undefined,
-): void {
+): string | undefined {
   if (typeof octetString !== 'string') {
     throw new Error('ERR_MISSING_OCTET_STRING');
   }
@@ -390,6 +424,7 @@ function assertSimpleSignOctetString(
   if (signedRelayState === null || (relayState !== undefined && relayState !== '' && signedRelayState !== relayState)) {
     throw new Error('ERR_OCTET_STRING_MISMATCH');
   }
+  return signedRelayState;
 }
 
 /**
@@ -419,6 +454,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     return Promise.reject(new Error('ERR_INVALID_XML'));
   }
 
+  assertMessageType(xmlString, parserType as string);
   await checkStatus(xmlString, parserType as string);
 
   let assertion = '';
@@ -451,7 +487,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
 
-    assertRedirectOctetString(
+    const signedRelayState = assertRedirectOctetString(
       octetString,
       direction,
       content,
@@ -476,6 +512,9 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     }
 
     parseResult.sigAlg = decodeSigAlg;
+    if (signedRelayState !== undefined) {
+      parseResult.relayState = signedRelayState;
+    }
   }
 
   const issuer = targetEntityMetadata.getEntityID();
@@ -576,6 +615,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     extractorFields = getDefaultExtractorFields(parserType, null);
   }
 
+  assertMessageType(samlContent, parserType as string);
   await checkStatus(samlContent, parserType as string);
 
   if (checkSignature) {
@@ -701,6 +741,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     return Promise.reject(new Error('ERR_INVALID_XML'));
   }
 
+  assertMessageType(xmlString, parserType as string);
   await checkStatus(xmlString, parserType as string);
 
   let assertion = '';
@@ -732,7 +773,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
 
     const base64Signature = Buffer.from(signature, 'base64');
 
-    assertSimpleSignOctetString(
+    const signedRelayState = assertSimpleSignOctetString(
       octetString,
       direction,
       xmlString,
@@ -757,6 +798,9 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     }
 
     parseResult.sigAlg = sigAlg;
+    if (signedRelayState !== undefined) {
+      parseResult.relayState = signedRelayState;
+    }
   }
 
   const issuer = targetEntityMetadata.getEntityID();
