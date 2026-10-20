@@ -223,6 +223,84 @@ async function checkReplay(self: Entity, extracted: ExtractorResult): Promise<st
   return (await replayCache.saveIfAbsent(key, expiresAt)) ? null : 'ERR_REPLAYED_ASSERTION';
 }
 
+/** Decode a query value; a value the caller already decoded is returned as is. */
+function decodeQueryValue(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Check that the Redirect-binding octet string that was signed carries the
+ * message, `SigAlg` and `RelayState` this flow parses (saml-bindings
+ * §3.4.4.1). Otherwise a signature over one message could vouch for another
+ * one supplied in the query.
+ */
+function assertRedirectOctetString(
+  octetString: string | undefined,
+  direction: string,
+  content: string,
+  sigAlg: string,
+  relayState: string | undefined,
+): void {
+  if (typeof octetString !== 'string') {
+    throw new Error('ERR_MISSING_OCTET_STRING');
+  }
+  const signed = new Map<string, string>();
+  for (const pair of octetString.split('&')) {
+    const separator = pair.indexOf('=');
+    const key = separator === -1 ? pair : pair.slice(0, separator);
+    if (![direction, urlParams.relayState, urlParams.sigAlg].includes(key) || signed.has(key)) {
+      throw new Error('ERR_OCTET_STRING_MISMATCH');
+    }
+    signed.set(key, separator === -1 ? '' : pair.slice(separator + 1));
+  }
+  const signedMessage = signed.get(direction);
+  const signedSigAlg = signed.get(urlParams.sigAlg);
+  const signedRelayState = signed.get(urlParams.relayState);
+  if (
+    signedMessage === undefined
+    || decodeQueryValue(signedMessage) !== decodeQueryValue(content)
+    || signedSigAlg === undefined
+    || decodeQueryValue(signedSigAlg) !== decodeQueryValue(sigAlg)
+    || (relayState !== undefined
+      && (signedRelayState === undefined
+        || (decodeQueryValue(signedRelayState) !== relayState && signedRelayState !== relayState)))
+  ) {
+    throw new Error('ERR_OCTET_STRING_MISMATCH');
+  }
+}
+
+/**
+ * Check that the SimpleSign octet string that was signed is built from the
+ * message, `SigAlg` and `RelayState` this flow parses (saml-bindings
+ * §3.5.4.1): `<direction>=<xml>[&RelayState=<value>]&SigAlg=<value>`.
+ */
+function assertSimpleSignOctetString(
+  octetString: string | undefined,
+  direction: string,
+  xmlString: string,
+  sigAlg: string,
+  relayState: string | undefined,
+): void {
+  if (typeof octetString !== 'string') {
+    throw new Error('ERR_MISSING_OCTET_STRING');
+  }
+  const prefix = `${direction}=${xmlString}`;
+  const suffix = `&${urlParams.sigAlg}=${sigAlg}`;
+  if (!octetString.startsWith(prefix) || !octetString.endsWith(suffix) || octetString.length < prefix.length + suffix.length) {
+    throw new Error('ERR_OCTET_STRING_MISMATCH');
+  }
+  const middle = octetString.slice(prefix.length, octetString.length - suffix.length);
+  const relayStatePrefix = `&${urlParams.relayState}=`;
+  const signedRelayState = middle === '' ? undefined : middle.startsWith(relayStatePrefix) ? middle.slice(relayStatePrefix.length) : null;
+  if (signedRelayState === null || (relayState !== undefined && relayState !== '' && signedRelayState !== relayState)) {
+    throw new Error('ERR_OCTET_STRING_MISMATCH');
+  }
+}
+
 /**
  * Redirect-binding flow: reads the base64/deflate SAML message from query
  * params and, when required, verifies the detached signature over the
@@ -281,6 +359,14 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
 
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
+
+    assertRedirectOctetString(
+      octetString,
+      direction,
+      content,
+      sigAlg,
+      (query as Record<string, string | undefined>)[urlParams.relayState],
+    );
 
     const { allowedSignatureAlgorithms } = self.entitySetting;
     if (allowedSignatureAlgorithms) {
@@ -552,6 +638,14 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     }
 
     const base64Signature = Buffer.from(signature, 'base64');
+
+    assertSimpleSignOctetString(
+      octetString,
+      direction,
+      xmlString,
+      sigAlg,
+      (body as Record<string, string | undefined>)[urlParams.relayState],
+    );
 
     const { allowedSignatureAlgorithms } = self.entitySetting;
     if (allowedSignatureAlgorithms) {

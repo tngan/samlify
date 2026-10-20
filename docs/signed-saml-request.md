@@ -95,6 +95,19 @@ This section explains how samlify computes the signature for each binding. Skip 
 - The resulting signature is base64-encoded.
 - `RelayState` is optional. When absent, it is omitted from the octet string: `SAMLRequest=xxx&SigAlg=zzz`.
 
+When parsing a signed Redirect or SimpleSign message, pass the octet string as `octetString`. For the Redirect binding, take it from the raw query string exactly as received, because re-encoding parsed values may not reproduce the signed bytes. samlify verifies the signature over `octetString` and checks that it carries the same message and `SigAlg` as the parsed request, and the same `RelayState` when the request includes one. A request where they differ is rejected with `ERR_OCTET_STRING_MISMATCH`. A request without `octetString` is rejected with `ERR_MISSING_OCTET_STRING`.
+
+```javascript
+router.get('/sso', async (req, res) => {
+  const octetString = req.originalUrl.split('?')[1]
+    .split('&')
+    .filter(pair => !pair.startsWith('Signature='))
+    .join('&');
+  const { extract } = await idp.parseLoginRequest(sp, 'redirect', { query: req.query, octetString });
+  // ...
+});
+```
+
 ### HTTP-POST binding
 
 The binding uses an XML digital signature embedded inside the AuthnRequest:

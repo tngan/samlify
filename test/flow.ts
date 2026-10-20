@@ -2001,3 +2001,60 @@ describe('allowedSignatureAlgorithms', () => {
     expect(extract.issuer).toBe('https://sp.example.org/metadata');
   });
 });
+
+describe('the signed octet string must carry the parsed message', () => {
+  const redirectParts = (context: string) => {
+    const parsed = url.parse(context, true);
+    const { SAMLRequest, Signature, SigAlg, RelayState } = parsed.query as Record<string, string>;
+    delete parsed.query.Signature;
+    const octetString = Object.keys(parsed.query).map(q => q + '=' + encodeURIComponent(parsed.query[q] as string)).join('&');
+    return { SAMLRequest, Signature, SigAlg, RelayState, octetString };
+  };
+  const signedRedirect = (relayState?: string) => redirectParts(sp.createLoginRequest(idp, 'redirect', { relayState }).context);
+
+  test('redirect: rejects a message that is not the one in the octet string', async () => {
+    const signed = signedRedirect();
+    const other = signedRedirect();
+    expect(other.SAMLRequest).not.toBe(signed.SAMLRequest);
+    await expect(idp.parseLoginRequest(sp, 'redirect', {
+      query: { SAMLRequest: other.SAMLRequest, Signature: signed.Signature, SigAlg: signed.SigAlg },
+      octetString: signed.octetString,
+    })).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+  });
+
+  test('redirect: checks RelayState when it is passed', async () => {
+    const { SAMLRequest, Signature, SigAlg, RelayState, octetString } = signedRedirect('/home?a=1&b=2');
+    expect(RelayState).toBe('/home?a=1&b=2');
+    const parse = (relayState?: string) => idp.parseLoginRequest(sp, 'redirect', {
+      query: { SAMLRequest, Signature, SigAlg, RelayState: relayState }, octetString,
+    });
+    await expect(parse('https://evil.example')).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse(RelayState)).resolves.toBeTruthy();
+    await expect(parse(encodeURIComponent(RelayState))).resolves.toBeTruthy();
+    await expect(parse(undefined)).resolves.toBeTruthy();
+  });
+
+  test('redirect: rejects a different SigAlg, repeated or unknown parameters, and a missing octet string', async () => {
+    const { SAMLRequest, Signature, SigAlg, octetString } = signedRedirect();
+    const parse = (query: Record<string, string>, octet?: string) =>
+      idp.parseLoginRequest(sp, 'redirect', { query: { SAMLRequest, Signature, SigAlg, ...query }, octetString: octet });
+    await expect(parse({ SigAlg: esaml2.Constants.algorithms.signature.RSA_SHA512 }, octetString)).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse({}, `${octetString}&SAMLRequest=x`)).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse({}, `${octetString}&Extra=1`)).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse({}, undefined)).rejects.toThrow('ERR_MISSING_OCTET_STRING');
+  });
+
+  test('simpleSign: rejects a message or RelayState that is not the one signed', async () => {
+    const signed = sp.createLoginRequest(idp, 'simpleSign', { relayState: 'state' }) as SimpleSignBindingContext;
+    const other = sp.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
+    const octetString = buildSimpleSignOctetString(signed.type, signed.context, signed.sigAlg, signed.relayState, signed.signature);
+    const parse = (SAMLRequest: string, RelayState?: string, octet = octetString) => idp.parseLoginRequest(sp, 'simpleSign', {
+      body: { SAMLRequest, Signature: signed.signature, SigAlg: signed.sigAlg, RelayState }, octetString: octet,
+    });
+    await expect(parse(other.context)).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse(signed.context, 'other')).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse(signed.context, undefined, octetString.replace('&RelayState=', '&Other='))).rejects.toThrow('ERR_OCTET_STRING_MISMATCH');
+    await expect(parse(signed.context, 'state')).resolves.toBeTruthy();
+    await expect(parse(signed.context)).resolves.toBeTruthy();
+  });
+});
