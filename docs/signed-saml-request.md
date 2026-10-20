@@ -58,7 +58,7 @@ const setting = {
 const sp = saml.ServiceProvider(setting);
 ```
 
-`privateKeyPass` is only required when the private key is encrypted. `requestSignatureAlgorithm` defaults to RSA-SHA256.
+`privateKeyPass` is only required when the private key is encrypted. `requestSignatureAlgorithm` defaults to RSA-SHA256. It selects the algorithm the SP signs with; to restrict the algorithms the SP accepts, use `allowedSignatureAlgorithms`.
 
 Supported signature algorithms:
 

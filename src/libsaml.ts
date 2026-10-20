@@ -65,7 +65,16 @@ export interface SignatureConstructor {
 export interface SignatureVerifierOptions {
   metadata?: MetadataInterface;
   keyFile?: string;
+  /**
+   * @deprecated Ignored: the algorithm is read from each signature's
+   * `<SignatureMethod>`. Use `allowedSignatureAlgorithms` to restrict it.
+   */
   signatureAlgorithm?: string;
+  /**
+   * Accepted signature algorithm URIs; unset accepts every supported one.
+   * Each `<DigestMethod>` must be the digest of an allowed algorithm.
+   */
+  allowedSignatureAlgorithms?: string[];
   /** Reject a message whose root element carries no signature. */
   requireMessageSignature?: boolean;
 }
@@ -194,6 +203,31 @@ export interface LibSamlInterface {
   defaultAttributeTemplate: AttributeTemplate;
   defaultLogoutRequestTemplate: LogoutRequestTemplate;
   defaultLogoutResponseTemplate: LogoutResponseTemplate;
+}
+
+/**
+ * Throw unless a signature algorithm is in the allow-list.
+ *
+ * @param sigAlg signature algorithm URI declared by the sender
+ * @param allowed accepted signature algorithm URIs
+ */
+export function assertAllowedSignatureAlgorithm(sigAlg: string, allowed: string[]): void {
+  if (!allowed.includes(sigAlg)) {
+    throw new Error('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+  }
+}
+
+/** Check an XML signature's `<SignatureMethod>` and every `<DigestMethod>`. */
+function assertAllowedXmlSignatureAlgorithms(signatureNode: Node, allowed: string[]): void {
+  const algorithmOf = (path: string) =>
+    (select(path, signatureNode) as Attr[]).map(attr => attr.value);
+  const [signatureMethod] = algorithmOf("./*[local-name(.)='SignedInfo']/*[local-name(.)='SignatureMethod']/@Algorithm");
+  assertAllowedSignatureAlgorithm(signatureMethod ?? '', allowed);
+  const allowedDigests = allowed.map(alg => (digestAlgorithms as Record<string, string>)[alg]).filter(Boolean);
+  const digestMethods = algorithmOf("./*[local-name(.)='SignedInfo']/*[local-name(.)='Reference']/*[local-name(.)='DigestMethod']/@Algorithm");
+  if (digestMethods.some(digest => !allowedDigests.includes(digest))) {
+    throw new Error('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+  }
 }
 
 const libSaml = () => {
@@ -662,7 +696,9 @@ const libSaml = () => {
         registerPssAlgorithms(sig);
         let verified = false;
 
-        sig.signatureAlgorithm = opts.signatureAlgorithm!;
+        if (opts.allowedSignatureAlgorithms) {
+          assertAllowedXmlSignatureAlgorithms(signatureNode, opts.allowedSignatureAlgorithms);
+        }
 
         if (!opts.keyFile && !opts.metadata) {
           throw new Error('ERR_UNDEFINED_SIGNATURE_VERIFIER_OPTIONS');

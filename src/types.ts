@@ -328,6 +328,7 @@ export interface ServiceProviderSettings {
   privateKey?: string | Buffer;
   privateKeyPass?: string;
   isAssertionEncrypted?: boolean;
+  /** Signature algorithm URI this SP signs with. Not used for verification. */
   requestSignatureAlgorithm?: string;
   encPrivateKey?: string | Buffer;
   encPrivateKeyPass?: string | Buffer;
@@ -379,6 +380,14 @@ export interface ServiceProviderSettings {
    */
   templateRenderer?: TemplateRenderer;
   /**
+   * Signature algorithm URIs this entity accepts on incoming messages, on every
+   * binding. Unset (the default) accepts every supported algorithm. For XML
+   * signatures each `<DigestMethod>` must also be the digest of an allowed
+   * algorithm, so dropping RSA-SHA1 also drops SHA-1 digests. Rejected with
+   * `ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED`.
+   */
+  allowedSignatureAlgorithms?: string[];
+  /**
    * Store used to reject a bearer assertion that was already accepted
    * (saml-profiles §4.1.4.5). Not set by default: samlify keeps no state, so
    * replay protection is only active when the application supplies a store.
@@ -392,6 +401,15 @@ export interface IdentityProviderSettings {
 
   /** XML-DSig signature algorithm URI for requests. */
   requestSignatureAlgorithm?: string;
+
+  /**
+   * Signature algorithm URIs this entity accepts on incoming messages, on every
+   * binding. Unset (the default) accepts every supported algorithm. For XML
+   * signatures each `<DigestMethod>` must also be the digest of an allowed
+   * algorithm, so dropping RSA-SHA1 also drops SHA-1 digests. Rejected with
+   * `ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED`.
+   */
+  allowedSignatureAlgorithms?: string[];
 
   /**
    * Template engine for the SAML messages this entity builds. `legacy`

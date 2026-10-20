@@ -7,7 +7,7 @@
  */
 import { inflateString, base64Decode, uniq, notEmpty } from './utility';
 import { verifyTime } from './validator';
-import libsaml from './libsaml';
+import libsaml, { assertAllowedSignatureAlgorithm } from './libsaml';
 import {
   extract,
   loginRequestFields,
@@ -282,6 +282,11 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
     const base64Signature = Buffer.from(decodeURIComponent(signature), 'base64');
     const decodeSigAlg = decodeURIComponent(sigAlg);
 
+    const { allowedSignatureAlgorithms } = self.entitySetting;
+    if (allowedSignatureAlgorithms) {
+      assertAllowedSignatureAlgorithm(decodeSigAlg, allowedSignatureAlgorithms);
+    }
+
     const verified = libsaml.verifyMessageSignature(
       targetEntityMetadata,
       octetString as string,
@@ -381,7 +386,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
 
   const verificationOptions = {
     metadata: from.entityMeta,
-    signatureAlgorithm: from.entitySetting.requestSignatureAlgorithm,
+    allowedSignatureAlgorithms: self.entitySetting.allowedSignatureAlgorithms,
     // An SP with `wantMessageSigned` requires the <Response> itself to be signed.
     requireMessageSignature: parserType === urlParams.samlResponse && self.entitySetting.wantMessageSigned === true,
   };
@@ -547,6 +552,11 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
     }
 
     const base64Signature = Buffer.from(signature, 'base64');
+
+    const { allowedSignatureAlgorithms } = self.entitySetting;
+    if (allowedSignatureAlgorithms) {
+      assertAllowedSignatureAlgorithm(sigAlg, allowedSignatureAlgorithms);
+    }
 
     const verified = libsaml.verifyMessageSignature(
       targetEntityMetadata,

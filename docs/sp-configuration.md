@@ -85,6 +85,8 @@ const sp = new ServiceProvider({
 
 - **`allowInsecureDecryptionAlgorithms: boolean`** — Whether `parseLoginResponse` decrypts an assertion that uses RSA-1.5 key transport or TripleDES. Defaults to `false`: such an assertion is rejected with `ERR_INSECURE_ENCRYPTION_ALGORITHM` before the private key is used. Only enable it for an IdP that cannot be moved to RSA-OAEP and AES. See [Encrypted Assertion](/encrypted-saml-response).
 
+- **`allowedSignatureAlgorithms: string[]`** *(optional)* — Signature algorithms accepted on incoming messages, on every binding. Defaults to every supported algorithm. For XML signatures, each `DigestMethod` must also be the digest of an allowed algorithm. A message signed with any other algorithm is rejected with `ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED`. `requestSignatureAlgorithm` only selects the algorithm this entity signs with; it does not restrict what it accepts. See [Restricting accepted algorithms](/signed-saml-response#restricting-accepted-algorithms).
+
 - **`replayCache: { saveIfAbsent(key: string, expiresAt: Date): boolean | Promise<boolean> }`** — A store, supplied by the application, of the assertions `parseLoginResponse` has already accepted. Not set by default; samlify keeps no state, so replay protection is only active when a store is provided. See [SAML Response](/saml-response#rejecting-replayed-assertions).
 
 - **`templateRenderer: 'legacy' | 'strict'`** *(optional)* — Template engine for the messages this entity builds. Defaults to `'legacy'` until v3. `'strict'` checks the position of every placeholder and escapes for it; output is identical for valid templates. See [Migrating to the strict template renderer](/template-migration).

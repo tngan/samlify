@@ -144,3 +144,22 @@ Combine the settings from *signed message* and *signed assertion* sections above
 ### Signed message, signed and encrypted assertion
 
 The most involved case — combine all of the above.
+
+## Restricting accepted algorithms
+
+The verifier uses the algorithm named in each signature: `<SignatureMethod>` and `<DigestMethod>` on the POST binding, and `SigAlg` on the Redirect and SimpleSign bindings. By default every supported algorithm is accepted. Changing the algorithm does not let anyone forge a signature, because a signature only verifies under the algorithm it was created with.
+
+To refuse an algorithm, such as SHA-1, list the ones the receiving entity accepts:
+
+```javascript
+const sp = saml.ServiceProvider({
+  // ...
+  allowedSignatureAlgorithms: [
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
+    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512',
+    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1',
+  ],
+});
+```
+
+Each `<DigestMethod>` must be the digest of an allowed algorithm, so the list above also refuses SHA-1 digests. Any other algorithm is rejected with `ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED`. The setting is available on both the SP and the IdP.

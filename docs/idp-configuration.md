@@ -71,7 +71,9 @@ const idp = new IdentityProvider({
   This option will be removed in a future release. samlify will detect encryption automatically.
   :::
 
-- **`requestSignatureAlgorithm: SigningAlgorithm`** — Signature algorithm used for requests. Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. Also supported: `http://www.w3.org/2000/09/xmldsig#rsa-sha1` (not recommended) and `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`.
+- **`requestSignatureAlgorithm: SigningAlgorithm`** — Signature algorithm this entity signs with. It does not restrict the algorithms accepted from partners (see `allowedSignatureAlgorithms`). Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`. Also supported: `http://www.w3.org/2000/09/xmldsig#rsa-sha1` (not recommended) and `http://www.w3.org/2001/04/xmldsig-more#rsa-sha512`.
+
+- **`allowedSignatureAlgorithms: string[]`** *(optional)* — Signature algorithms accepted on incoming messages, on every binding. Defaults to every supported algorithm. For XML signatures, each `DigestMethod` must also be the digest of an allowed algorithm. A message signed with any other algorithm is rejected with `ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED`. `requestSignatureAlgorithm` only selects the algorithm this entity signs with; it does not restrict what it accepts. See [Restricting accepted algorithms](/signed-saml-response#restricting-accepted-algorithms).
 
 - **`dataEncryptionAlgorithm: EncryptionAlgorithm`** — Data encryption algorithm used in responses. Defaults to `http://www.w3.org/2001/04/xmlenc#aes256-cbc`. Also supported: `http://www.w3.org/2001/04/xmlenc#tripledes-cbc` (3DES, insecure; samlify SPs refuse it by default), `http://www.w3.org/2001/04/xmlenc#aes128-cbc` (AES-128 CBC), and `http://www.w3.org/2009/xmlenc11#aes128-gcm` (AES-128 GCM).
 

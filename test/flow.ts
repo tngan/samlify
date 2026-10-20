@@ -1939,3 +1939,65 @@ describe('insecure encryption algorithms are refused on decryption', () => {
     expect(extract.nameID).toBe('user@esaml2.com');
   });
 });
+
+describe('allowedSignatureAlgorithms', () => {
+  const user = { email: 'user@esaml2.com' };
+  const { RSA_SHA1, RSA_SHA256, RSA_SHA512 } = esaml2.Constants.algorithms.signature;
+  const SHA1_DIGEST = 'http://www.w3.org/2000/09/xmldsig#sha1';
+  const SHA256_DIGEST = 'http://www.w3.org/2001/04/xmlenc#sha256';
+  const noSha1 = [RSA_SHA256, RSA_SHA512];
+  const spSha1Signer = serviceProvider({ ...defaultSpConfig, requestSignatureAlgorithm: RSA_SHA1 });
+  const idpNoSha1 = identityProvider({ ...defaultIdpConfig, allowedSignatureAlgorithms: noSha1 });
+
+  const signedResponse = async (requestSignatureAlgorithm: string) => {
+    const signer = identityProvider({ ...defaultIdpConfig, isAssertionEncrypted: false, requestSignatureAlgorithm });
+    const { context: SAMLResponse } = await signer.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(signer, sp, binding.post, user));
+    return { signer, SAMLResponse };
+  };
+
+  test('post: rejects a response signed with an algorithm that is not allowed', async () => {
+    const spNoSha1 = serviceProvider({ ...defaultSpConfig, allowedSignatureAlgorithms: noSha1 });
+    const { signer, SAMLResponse } = await signedResponse(RSA_SHA1);
+    await expect(spNoSha1.parseLoginResponse(signer, 'post', { body: { SAMLResponse } }))
+      .rejects.toThrow('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+    // Without the setting every supported algorithm is still accepted.
+    const { extract } = await sp.parseLoginResponse(signer, 'post', { body: { SAMLResponse } });
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+
+  test('post: accepts an allowed algorithm', async () => {
+    const spNoSha1 = serviceProvider({ ...defaultSpConfig, allowedSignatureAlgorithms: noSha1 });
+    const { signer, SAMLResponse } = await signedResponse(RSA_SHA256);
+    const { extract } = await spNoSha1.parseLoginResponse(signer, 'post', { body: { SAMLResponse } });
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+
+  test('post: rejects a SHA-1 digest under an allowed signature algorithm', async () => {
+    const { SAMLResponse } = await signedResponse(RSA_SHA256);
+    const xml = String(utility.base64Decode(SAMLResponse)).split(SHA256_DIGEST).join(SHA1_DIGEST);
+    expect(() => libsaml.verifySignature(xml, { metadata: idp.entityMeta, allowedSignatureAlgorithms: noSha1 }))
+      .toThrow('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+  });
+
+  test('redirect: rejects a SigAlg that is not allowed', async () => {
+    const { context } = spSha1Signer.createLoginRequest(idp, 'redirect');
+    const originalURL = url.parse(context, true);
+    const { SAMLRequest, Signature, SigAlg } = originalURL.query as Record<string, string>;
+    delete originalURL.query.Signature;
+    const octetString = Object.keys(originalURL.query).map(q => q + '=' + encodeURIComponent(originalURL.query[q] as string)).join('&');
+    const request = { query: { SAMLRequest, Signature, SigAlg }, octetString };
+    await expect(idpNoSha1.parseLoginRequest(sp, 'redirect', request)).rejects.toThrow('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+    const { extract } = await idp.parseLoginRequest(sp, 'redirect', request);
+    expect(extract.issuer).toBe('https://sp.example.org/metadata');
+  });
+
+  test('simpleSign: rejects a SigAlg that is not allowed', async () => {
+    const { relayState, context: SAMLRequest, type, sigAlg, signature } = spSha1Signer.createLoginRequest(idp, 'simpleSign') as SimpleSignBindingContext;
+    expect(sigAlg).toBe(RSA_SHA1);
+    const octetString = buildSimpleSignOctetString(type, SAMLRequest, sigAlg, relayState, signature);
+    const request = { body: { SAMLRequest, Signature: signature, SigAlg: sigAlg }, octetString };
+    await expect(idpNoSha1.parseLoginRequest(sp, 'simpleSign', request)).rejects.toThrow('ERR_SIGNATURE_ALGORITHM_NOT_ALLOWED');
+    const { extract } = await idp.parseLoginRequest(sp, 'simpleSign', request);
+    expect(extract.issuer).toBe('https://sp.example.org/metadata');
+  });
+});
