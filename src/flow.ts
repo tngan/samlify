@@ -279,6 +279,62 @@ function checkInResponseTo(
   return null;
 }
 
+/** Retention for a replay-checked LogoutRequest without `NotOnOrAfter`. */
+const LOGOUT_REQUEST_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+/** SingleLogoutService locations of this entity. */
+function sloLocations(self: Entity): (string | undefined)[] {
+  const slo = (self.entityMeta as unknown as { meta: { singleLogoutService?: unknown } }).meta.singleLogoutService;
+  return ([] as { location?: string }[])
+    .concat((slo ?? []) as { location?: string }[])
+    .map(service => service.location);
+}
+
+/**
+ * Checks for an inbound `LogoutRequest` / `LogoutResponse` (saml-core §3.7,
+ * saml-profiles §4.4.4, saml-bindings §3.4.5.2 / §3.5.5.2):
+ *
+ * - `Destination`, when present, is one of this entity's SingleLogoutService
+ *   locations (`ERR_RECIPIENT_MISMATCH`). Shares the `wantAudienceCheck`
+ *   opt-out.
+ * - A `LogoutRequest` whose `NotOnOrAfter` has passed is rejected
+ *   (`ERR_EXPIRED_REQUEST`).
+ * - With a `replayCache`, a `LogoutRequest` is accepted once
+ *   (`ERR_REPLAYED_REQUEST`). It is remembered until its `NotOnOrAfter`, or
+ *   24 hours after its `IssueInstant`; an older request is rejected.
+ *
+ * @param self receiving entity
+ * @param parserType `LogoutRequest` or `LogoutResponse`
+ * @param extracted extractor result
+ * @returns error code, or `null` when the message passes
+ */
+async function checkLogoutMessage(self: Entity, parserType: string, extracted: ExtractorResult): Promise<string | null> {
+  const message = (parserType === 'LogoutRequest' ? extracted.request : extracted.response) as Record<string, string> | undefined;
+  const drift = self.entitySetting.clockDrifts;
+  if (self.entitySetting.wantAudienceCheck !== false && message?.destination && !sloLocations(self).includes(message.destination)) {
+    return 'ERR_RECIPIENT_MISMATCH';
+  }
+  if (parserType !== 'LogoutRequest') {
+    return null;
+  }
+  if (message?.notOnOrAfter && !verifyTime(undefined, message.notOnOrAfter, drift)) {
+    return 'ERR_EXPIRED_REQUEST';
+  }
+  const replayCache = self.entitySetting.replayCache;
+  if (!replayCache) {
+    return null;
+  }
+  const expiry = message?.notOnOrAfter
+    ? new Date(message.notOnOrAfter).getTime()
+    : new Date(message?.issueInstant ?? '').getTime() + LOGOUT_REQUEST_LIFETIME_MS;
+  const allowed = expiry + Math.max(drift?.[1] ?? 0, 0);
+  if (!message?.id || Number.isNaN(expiry) || allowed <= Date.now()) {
+    return 'ERR_EXPIRED_REQUEST';
+  }
+  const key = JSON.stringify(['logoutRequest', extracted.issuer, message.id]);
+  return (await replayCache.saveIfAbsent(key, new Date(allowed))) ? null : 'ERR_REPLAYED_REQUEST';
+}
+
 /**
  * Reject a bearer assertion this SP already accepted (saml-profiles
  * §4.1.4.5). Only active when the SP supplies a `replayCache`. The assertion
@@ -521,11 +577,18 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
   const extractedProperties = parseResult.extract;
 
   if (
-    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    (parserType === 'LogoutRequest' || parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
+  }
+
+  if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    if (logoutError) {
+      return Promise.reject(new Error(logoutError));
+    }
   }
 
   if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {
@@ -658,11 +721,18 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
   const extractedProperties = parseResult.extract;
 
   if (
-    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    (parserType === 'LogoutRequest' || parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
+  }
+
+  if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    if (logoutError) {
+      return Promise.reject(new Error(logoutError));
+    }
   }
 
   if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {
@@ -807,11 +877,18 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
   const extractedProperties = parseResult.extract;
 
   if (
-    (parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
+    (parserType === 'LogoutRequest' || parserType === 'LogoutResponse' || parserType === 'SAMLResponse')
     && extractedProperties
     && extractedProperties.issuer !== issuer
   ) {
     return Promise.reject(new Error('ERR_UNMATCH_ISSUER'));
+  }
+
+  if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    if (logoutError) {
+      return Promise.reject(new Error(logoutError));
+    }
   }
 
   if (parserType === 'SAMLResponse' && !isIntendedAudience(self, extractedProperties)) {

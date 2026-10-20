@@ -2245,3 +2245,89 @@ describe('detached signatures on the Redirect and SimpleSign bindings', () => {
       .rejects.toThrow('ERR_UNEXPECTED_MESSAGE_TYPE');
   });
 });
+
+describe('logout message checks', () => {
+  const hoursAgo = (n: number) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
+  const logoutRequest = (attrs: Record<string, string>, issuer = 'https://idp.example.com/metadata') => {
+    const attributes = Object.entries({ ID: `_${randomUUID()}`, Version: '2.0', IssueInstant: new Date().toISOString(), Destination: 'https://sp.example.org/sp/slo', ...attrs })
+      .filter(([, value]) => value !== '')
+      .map(([name, value]) => `${name}="${value}"`).join(' ');
+    const xml = `<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ${attributes}>`
+      + `<saml:Issuer>${issuer}</saml:Issuer><saml:NameID>user@esaml2.com</saml:NameID></samlp:LogoutRequest>`;
+    return { body: { SAMLRequest: utility.base64Encode(xml) } };
+  };
+
+  test('accepts a well-formed LogoutRequest', async () => {
+    const { extract } = await sp.parseLogoutRequest(idp, 'post', logoutRequest({}));
+    expect(extract.nameID).toBe('user@esaml2.com');
+  });
+
+  test('rejects a LogoutRequest from another issuer', async () => {
+    await expect(sp.parseLogoutRequest(idp, 'post', logoutRequest({}, 'https://evil.example.com/metadata')))
+      .rejects.toThrow('ERR_UNMATCH_ISSUER');
+  });
+
+  test('rejects a LogoutRequest addressed elsewhere unless wantAudienceCheck is false', async () => {
+    const request = logoutRequest({ Destination: 'https://other.example.org/slo' });
+    await expect(sp.parseLogoutRequest(idp, 'post', request)).rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+    const lenientSp = serviceProvider({ ...defaultSpConfig, wantAudienceCheck: false });
+    await expect(lenientSp.parseLogoutRequest(idp, 'post', request)).resolves.toBeTruthy();
+    await expect(sp.parseLogoutRequest(idp, 'post', logoutRequest({ Destination: '' }))).resolves.toBeTruthy();
+  });
+
+  test('rejects an expired LogoutRequest', async () => {
+    await expect(sp.parseLogoutRequest(idp, 'post', logoutRequest({ NotOnOrAfter: hoursAgo(1) })))
+      .rejects.toThrow('ERR_EXPIRED_REQUEST');
+  });
+
+  test('with a replayCache, accepts a LogoutRequest once and bounds its lifetime', async () => {
+    const saved = new Map<string, Date>();
+    const store = { saveIfAbsent: (key: string, expiresAt: Date) => saved.has(key) ? false : (saved.set(key, expiresAt), true) };
+    const spWithStore = serviceProvider({ ...defaultSpConfig, replayCache: store });
+    const request = logoutRequest({});
+    await spWithStore.parseLogoutRequest(idp, 'post', request);
+    await expect(spWithStore.parseLogoutRequest(idp, 'post', request)).rejects.toThrow('ERR_REPLAYED_REQUEST');
+    await expect(spWithStore.parseLogoutRequest(idp, 'post', logoutRequest({ IssueInstant: hoursAgo(25) })))
+      .rejects.toThrow('ERR_EXPIRED_REQUEST');
+  });
+
+  test('rejects a LogoutResponse addressed elsewhere', async () => {
+    const xml = '<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" '
+      + `ID="_r" Version="2.0" IssueInstant="${new Date().toISOString()}" Destination="https://other.example.org/slo" InResponseTo="_q">`
+      + '<saml:Issuer>https://idp.example.com/metadata</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status></samlp:LogoutResponse>';
+    await expect(sp.parseLogoutResponse(idp, 'post', { body: { SAMLResponse: utility.base64Encode(xml) } }))
+      .rejects.toThrow('ERR_RECIPIENT_MISMATCH');
+  });
+});
+
+describe('input reaching the schema validator', () => {
+  const P = 'xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"';
+  test.each([
+    ['not XML', 'A'.repeat(1000)],
+    ['a DTD', `<!DOCTYPE a [<!ENTITY x "y">]><samlp:AuthnRequest ${P}/>`],
+    ['a control character', `<samlp:AuthnRequest ${P}>\u0001</samlp:AuthnRequest>`],
+    ['an invalid character reference', `<samlp:AuthnRequest ${P}>&#1;</samlp:AuthnRequest>`],
+    ['an invalid hex character reference', `<samlp:AuthnRequest ${P}>&#xFFFE;</samlp:AuthnRequest>`],
+    ['a lone surrogate', `<samlp:AuthnRequest ${P}>\uDC00</samlp:AuthnRequest>`],
+  ])('rejects %s before validation', async (_name, xml) => {
+    const validate = vi.fn(() => Promise.resolve('ok'));
+    esaml2.setSchemaValidator({ validate });
+    try {
+      await expect(libsaml.isValidXml(xml)).rejects.toThrow('ERR_INVALID_XML');
+      expect(validate).not.toHaveBeenCalled();
+    } finally {
+      esaml2.setSchemaValidator(validator);
+    }
+  });
+
+  test('passes valid XML, including allowed character references, to the validator', async () => {
+    const validate = vi.fn(() => Promise.resolve('ok'));
+    esaml2.setSchemaValidator({ validate });
+    try {
+      await libsaml.isValidXml(`<samlp:AuthnRequest ${P}>&#123;&#x1F600;\u{1F600}</samlp:AuthnRequest>`);
+      expect(validate).toHaveBeenCalledTimes(1);
+    } finally {
+      esaml2.setSchemaValidator(validator);
+    }
+  });
+});

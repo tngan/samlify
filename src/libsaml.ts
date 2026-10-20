@@ -205,6 +205,45 @@ export interface LibSamlInterface {
   defaultLogoutResponseTemplate: LogoutResponseTemplate;
 }
 
+// XML 1.0 Char production (§2.2).
+const NON_XML_CHAR = new RegExp('[^\\t\\n\\r\\u0020-\\uD7FF\\uE000-\\uFFFD\\u{10000}-\\u{10FFFF}]', 'u');
+const CHAR_REFERENCE = /&#(?:x([0-9a-fA-F]+)|([0-9]+));/g;
+
+function isXmlChar(codePoint: number): boolean {
+  return codePoint === 0x9 || codePoint === 0xA || codePoint === 0xD
+    || (codePoint >= 0x20 && codePoint <= 0xD7FF)
+    || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
+    || (codePoint >= 0x10000 && codePoint <= 0x10FFFF);
+}
+
+/**
+ * Reject input that is not a plain, well-formed XML document before it
+ * reaches the schema validator: a DTD (SAML messages never carry one), a
+ * character or character reference outside the XML Char range, or anything
+ * the XML parser rejects. Throws `ERR_INVALID_XML`.
+ *
+ * @param input SAML XML string
+ */
+function assertPlainXml(input: string): void {
+  if (typeof input !== 'string' || input.includes('<!DOCTYPE') || NON_XML_CHAR.test(input)) {
+    throw new Error('ERR_INVALID_XML');
+  }
+  for (const [, hex, decimal] of input.matchAll(CHAR_REFERENCE)) {
+    if (!isXmlChar(hex !== undefined ? parseInt(hex, 16) : parseInt(decimal, 10))) {
+      throw new Error('ERR_INVALID_XML');
+    }
+  }
+  let root: Element | null;
+  try {
+    root = parseXml(input).documentElement;
+  } catch {
+    throw new Error('ERR_INVALID_XML');
+  }
+  if (!root) {
+    throw new Error('ERR_INVALID_XML');
+  }
+}
+
 /**
  * Throw unless a signature algorithm is in the allow-list.
  *
@@ -1036,6 +1075,7 @@ const libSaml = () => {
         ));
       }
 
+      assertPlainXml(input);
       return await validate(input);
     },
   };

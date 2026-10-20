@@ -217,7 +217,7 @@ export const logoutRequestFields: ExtractorFields = [
   {
     key: 'request',
     localPath: ['LogoutRequest'],
-    attributes: ['ID', 'IssueInstant', 'Destination'],
+    attributes: ['ID', 'IssueInstant', 'Destination', 'NotOnOrAfter'],
   },
   {
     key: 'issuer',
