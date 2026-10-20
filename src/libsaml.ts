@@ -882,7 +882,8 @@ const libSaml = () => {
       const prefix = signatureConfig.prefix ? `${signatureConfig.prefix}:` : '';
       return {
         getKeyInfo: (): string => {
-          return `<${prefix}X509Data><${prefix}X509Certificate>${x509Certificate}</${prefix}X509Certificate></${prefix}X509Data>`;
+          const body = utility.toCertificateBody(x509Certificate);
+          return `<${prefix}X509Data><${prefix}X509Certificate>${body}</${prefix}X509Certificate></${prefix}X509Data>`;
         },
         getKey: (): string => {
           return utility.getPublicKeyPemFromCertificate(x509Certificate).toString();
