@@ -1929,7 +1929,9 @@ describe('insecure encryption algorithms are refused on decryption', () => {
 
   test('accepts them when allowInsecureDecryptionAlgorithms is set', async () => {
     const legacySp = serviceProvider({ ...defaultSpConfig, allowInsecureDecryptionAlgorithms: true });
-    const { legacyIdp, request } = await encryptedResponse(data.TRI_DEC, key.RSA_1_5);
+    // TripleDES only: Node itself refuses RSA-1.5 private decryption on
+    // OpenSSL builds without implicit rejection (CVE-2023-46809).
+    const { legacyIdp, request } = await encryptedResponse(data.TRI_DEC, key.RSA_OAEP_MGF1P);
     const { extract } = await legacySp.parseLoginResponse(legacyIdp, 'post', request);
     expect(extract.nameID).toBe('user@esaml2.com');
   });

@@ -51,6 +51,6 @@ Supported algorithms:
 - `http://www.w3.org/2001/04/xmlenc#rsa-1_5` *(insecure)*
 - `http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p`
 
-The SP refuses to decrypt an assertion that uses an insecure algorithm and rejects it with `ERR_INSECURE_ENCRYPTION_ALGORITHM`. The algorithms are named in the incoming XML, so the SP cannot otherwise stop an attacker from choosing them. RSA-1.5 key transport is open to padding-oracle attacks (see [XML Encryption 1.1 §5.4.1](https://www.w3.org/TR/xmlenc-core1/#rsav15note)), and TripleDES is deprecated by NIST. If an IdP you cannot reconfigure still uses them, set `allowInsecureDecryptionAlgorithms: true` on the SP.
+The SP refuses to decrypt an assertion that uses an insecure algorithm and rejects it with `ERR_INSECURE_ENCRYPTION_ALGORITHM`. The algorithms are named in the incoming XML, so the SP cannot otherwise stop an attacker from choosing them. RSA-1.5 key transport is open to padding-oracle attacks (see [XML Encryption 1.1 §5.4.1](https://www.w3.org/TR/xmlenc-core1/#rsav15note)), and TripleDES is deprecated by NIST. If an IdP you cannot reconfigure still uses them, set `allowInsecureDecryptionAlgorithms: true` on the SP. Even then, Node.js refuses RSA-1.5 private decryption on OpenSSL builds without implicit rejection (CVE-2023-46809), so RSA-1.5 may fail regardless of this setting.
 
 XML encryption is provided by [auth0/node-xml-encryption](https://github.com/auth0/node-xml-encryption).
