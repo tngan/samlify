@@ -76,7 +76,9 @@ Signature verification performed inside `sp.parseLoginResponse`:
 - XML signature
 - Issuer name
 - Audience, `Destination` and `Recipient` match this SP (see `wantAudienceCheck` in [SP configuration](/sp-configuration))
-- The outer `Response` `InResponseTo` agrees with the signed `SubjectConfirmationData` `InResponseTo` (`ERR_INRESPONSETO_MISMATCH`)
+- The assertion has a bearer `SubjectConfirmation`, and every bearer `SubjectConfirmationData` is within its `NotBefore` / `NotOnOrAfter` window (`ERR_SUBJECT_UNCONFIRMED`). An assertion that declares no `NotOnOrAfter` at all is rejected. A bearer `SubjectConfirmationData` without `Recipient` is accepted with a warning.
+- `Conditions` `NotBefore` / `NotOnOrAfter` (`ERR_SUBJECT_UNCONFIRMED`) and every `SessionNotOnOrAfter` (`ERR_EXPIRED_SESSION`)
+- The outer `Response` `InResponseTo` agrees with the signed `SubjectConfirmationData` `InResponseTo` (`ERR_INRESPONSETO_MISMATCH`). On the POST binding, an outer value without a signed counterpart is rejected unless the `Response` itself is signed.
 
 ### Checking InResponseTo
 
@@ -96,9 +98,11 @@ sp.parseLoginResponse(idp, 'post', req, { inResponseTo: req.session.samlRequestI
   });
 ```
 
+If the session has no pending request, `req.session.samlRequestId` is `undefined`. Passing the option with `undefined` (or `null`) means exactly that: a response that answers a request is rejected with `ERR_INRESPONSETO_MISMATCH`, so a response from someone else's login cannot be posted into this session. A response that answers no request (IdP-initiated) is still governed by `allowUnsolicitedResponse`.
+
 `inResponseTo` also accepts an array of IDs when several logins may be pending. The signed `SubjectConfirmationData` `InResponseTo` is compared; on the POST binding the outer `Response` attribute is not trusted on its own, because it may sit outside the signed assertion. A response that answers a different request fails with `ERR_INRESPONSETO_MISMATCH`, and one that answers no request fails with `ERR_MISSING_INRESPONSETO`. To reject IdP-initiated responses even when no ID is passed, set `allowUnsolicitedResponse: false` on the SP.
 
-The check is opt-in: without `inResponseTo`, any request ID is accepted. Use `extract.subjectConfirmation.inResponseTo` (signed) rather than `extract.response.inResponseTo` if you compare it yourself.
+The check is opt-in: when the option is omitted, any request ID is accepted. Use `extract.subjectConfirmation.inResponseTo` (signed) rather than `extract.response.inResponseTo` if you compare it yourself.
 
 
 ### Rejecting replayed assertions
@@ -118,7 +122,7 @@ const sp = ServiceProvider({
 });
 ```
 
-`saveIfAbsent` must check and save in one atomic step (e.g. Redis `SET … NX`, or an insert into a table with a unique key), and the store must be shared by every instance of the application; otherwise two copies of one response handled at the same time, or by different servers, can both be accepted. The key identifies the issuer and the assertion ID. `expiresAt` is the earliest `NotOnOrAfter` of the assertion's `Conditions` and `SubjectConfirmationData`, plus the `clockDrifts` allowance, after which the response is rejected as expired anyway (24 hours when the assertion declares no `NotOnOrAfter`). The check runs after every other validation, so a response that fails validation does not use up its assertion.
+`saveIfAbsent` must check and save in one atomic step (e.g. Redis `SET … NX`, or an insert into a table with a unique key), and the store must be shared by every instance of the application; otherwise two copies of one response handled at the same time, or by different servers, can both be accepted. The key identifies the issuer and the assertion ID. `expiresAt` is the earliest `NotOnOrAfter` of the assertion's `Conditions` and bearer `SubjectConfirmationData`, plus the `clockDrifts` allowance; after it, the response is rejected as expired anyway. The check runs after every other validation, so a response that fails validation does not use up its assertion.
 
 The promise resolves to a `parseResult` object. The `extract` member is
 keyed by the field names declared in `src/extractor.ts:loginResponseFields`,

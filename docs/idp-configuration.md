@@ -51,7 +51,7 @@ const idp = new IdentityProvider({
 
 - **`wantAuthnRequestsSigned: boolean`** — Whether the IdP requires signed AuthnRequest messages from the SP. Maps to `WantAuthnRequestsSigned` in the IdP metadata. Defaults to `false`.
 
-- **`tagPrefix: { [key: TagPrefixKey]: string }`** — XML tag prefix overrides. `TagPrefixKey` currently supports `encryptedAssertion` only. See [#220](https://github.com/tngan/samlify/issues/220).
+- **`tagPrefix: { [key: TagPrefixKey]: string }`** — XML tag prefix overrides. `TagPrefixKey` supports `protocol`, `assertion` and `encryptedAssertion`. See [#220](https://github.com/tngan/samlify/issues/220). Each prefix must be an XML name (letters, digits, `_`, `.`, `-`, not starting with a digit), otherwise the IdP constructor throws `ERR_INVALID_TAG_PREFIX`.
 
 - **`loginResponseTemplate: { context: string, attributes: Attributes, additionalTemplates: LoginResponseAdditionalTemplates }`** — Custom login response template, reusable from the callback function for runtime interpolation. See [Templates](/template).
 

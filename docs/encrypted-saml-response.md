@@ -13,7 +13,7 @@ const idp = IdentityProvider({
 
 As with request signing, the SP configuration supplies `privateKey` and `privateKeyPass`. **Important:** when samlify is used as the identity provider, do not reuse the same key pair for both signing and encryption.
 
-The SP metadata must include an encryption certificate so that the IdP can encrypt the assertion:
+The SP metadata must include an encryption certificate so that the IdP can encrypt the assertion. Certificates in metadata must be plain base64 (whitespace and line breaks are allowed); metadata with any other content in `X509Certificate` is rejected with `ERR_INVALID_CERTIFICATE`, because the certificate is copied into the encrypted assertion:
 
 ```xml
 <KeyDescriptor use="encryption">
