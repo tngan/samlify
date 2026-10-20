@@ -91,6 +91,12 @@ export class IdentityProvider extends Entity {
       ...defaultIdpEntitySetting.tagPrefix,
       ...idpSetting.tagPrefix,
     };
+    // Prefixes are written into the XML as-is, so they must be NCNames.
+    Object.values(entitySetting.tagPrefix).forEach(prefix => {
+      if (prefix !== undefined && !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(prefix)) {
+        throw new Error('ERR_INVALID_TAG_PREFIX');
+      }
+    });
 
     if (idpSetting.loginResponseTemplate) {
       const template = idpSetting.loginResponseTemplate as typeof idpSetting.loginResponseTemplate & {

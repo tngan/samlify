@@ -73,6 +73,20 @@ describe('renderTemplate', () => {
     expect(() => renderTemplate('<a b="1" ', {})).toThrow('ERR_TEMPLATE_MALFORMED');
   });
 
+  test('cannot be desynchronised by unexpected characters or quoted >', () => {
+    // A `>` inside a quoted value must not end the tag early and hide a placeholder.
+    expect(() => renderTemplate('<a é="x>" {Y}="v"/>', { Y: 'y' })).toThrow('ERR_TEMPLATE_PLACEHOLDER_POSITION');
+    expect(() => renderTemplate('<a "x>" {Y}="v"/>', { Y: 'y' })).toThrow('ERR_TEMPLATE_MALFORMED');
+    expect(() => renderTemplate('<a b"x">{Y}</a>', { Y: 'y' })).toThrow('ERR_TEMPLATE_MALFORMED');
+    expect(() => renderTemplate('< a x="{Y}"/>', { Y: 'y' })).toThrow('ERR_TEMPLATE_MALFORMED');
+    expect(() => renderTemplate('<?pi a > {X} ?><a/>', { X: 'x' })).toThrow('ERR_TEMPLATE_PLACEHOLDER_POSITION');
+    expect(() => renderTemplate('<!DOCTYPE a [<!ATTLIST a b CDATA ">{X}">]><a/>', { X: 'x' })).toThrow('ERR_TEMPLATE_PLACEHOLDER_POSITION');
+  });
+
+  test('accepts non-ASCII element and attribute names', () => {
+    expect(renderTemplate('<é á="{V}">{V}</é>', { V: '<v>' })).toBe('<é á="&lt;v&gt;">&lt;v&gt;</é>');
+  });
+
   test('renders fragments and text without a root element', () => {
     expect(renderTemplate('<saml:A x="{X}"/>{Y}<saml:B/>', { X: '1', Y: '<2>' })).toBe('<saml:A x="1"/>&lt;2&gt;<saml:B/>');
   });

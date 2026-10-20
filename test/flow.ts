@@ -2058,3 +2058,25 @@ describe('the signed octet string must carry the parsed message', () => {
     await expect(parse(signed.context)).resolves.toBeTruthy();
   });
 });
+
+describe('values from configuration and metadata written into XML', () => {
+  test('rejects metadata whose certificate is not base64', () => {
+    const spMeta = String(readFileSync('./test/misc/spmeta.xml'));
+    const injected = spMeta.replace(
+      /(<KeyDescriptor use="encryption">[\s\S]*?X509Certificate>)([^<]+)/,
+      (_m, open, cert) => `${open}${cert.trim()}&lt;/X509Certificate&gt;&lt;evil/&gt;&lt;X509Certificate&gt;`,
+    );
+    expect(injected).toContain('&lt;evil/&gt;');
+    expect(() => serviceProvider({ metadata: injected })).toThrow('ERR_INVALID_CERTIFICATE');
+    // Whitespace and line breaks inside a certificate are still accepted.
+    const wrapped = spMeta.replace(/(<KeyDescriptor use="encryption">[\s\S]*?X509Certificate>)([^<]+)/,
+      (_m, open, cert) => `${open}\n  ${cert.trim().replace(/(.{64})/g, '$1\n  ')}\n`);
+    expect(() => serviceProvider({ metadata: wrapped })).not.toThrow();
+  });
+
+  test('rejects a tag prefix that is not an XML name', () => {
+    expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { assertion: 'a"><evil/' } })).toThrow('ERR_INVALID_TAG_PREFIX');
+    expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { protocol: '$&' } })).toThrow('ERR_INVALID_TAG_PREFIX');
+    expect(() => identityProvider({ ...defaultIdpConfig, tagPrefix: { protocol: 'p2', assertion: 'a_b' } })).not.toThrow();
+  });
+});

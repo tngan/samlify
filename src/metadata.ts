@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import { namespace } from './urn';
 import { select } from 'xpath';
 import { extract } from './extractor';
-import { isString } from './utility';
+import { isString, toCertificateBody } from './utility';
 import { parseXml } from './xml';
 import type { ExtractorFields } from './types';
 
@@ -68,7 +68,7 @@ function extractCertificates(xml: string, entityID?: string): Partial<Record<Cer
     const values = (select(
       "./*[local-name(.)='KeyInfo']/*[local-name(.)='X509Data']/*[local-name(.)='X509Certificate']",
       keyDescriptor,
-    ) as Element[]).map(node => node.textContent ?? '');
+    ) as Element[]).map(node => toCertificateBody(node.textContent ?? ''));
     const use = keyDescriptor.getAttribute('use');
     if (use === 'signing' || use === 'encryption') {
       certs[use].push(...values);

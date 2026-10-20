@@ -51,8 +51,9 @@ interface OptionalElement {
 
 type Segment = Literal | Placeholder | OptionalAttribute | OptionalElement;
 
-const NAME_START = /[A-Za-z_:]/;
-const NAME_CHAR = /[\w:.-]/;
+// XML Name characters (XML 1.0 §2.3), including non-ASCII letters.
+const NAME_START = new RegExp('[\\p{L}_:]', 'u');
+const NAME_CHAR = new RegExp('[\\p{L}\\p{N}\\p{M}_:.\\-\\u00B7]', 'u');
 
 /**
  * XML-escape text for an attribute value or character data, also encoding
@@ -164,6 +165,9 @@ function parseStartTag(template: string, index: number): { segments: Segment[]; 
   }
   const name = template.slice(nameStart, i);
   assertNoPlaceholder(template, nameStart, i + 1, 'in an element name');
+  if (name === '' && template[i] !== '{') {
+    throw new Error(`ERR_TEMPLATE_MALFORMED: missing element name at offset ${index}`);
+  }
   let literalStart = index;
 
   while (i < template.length) {
@@ -176,59 +180,85 @@ function parseStartTag(template: string, index: number): { segments: Segment[]; 
     if (c === '{') {
       throw positionError(template, i, 'in an element or attribute name');
     }
-    if (/\s/.test(c)) {
-      // Attribute: whitespace, name, `=`, quoted value.
-      const attrStart = i;
-      while (i < template.length && /\s/.test(template[i])) {
-        i++;
-      }
-      if (!NAME_START.test(template[i] ?? '')) {
-        continue;
-      }
-      while (i < template.length && NAME_CHAR.test(template[i])) {
-        i++;
-      }
-      if (template[i] === '{') {
-        throw positionError(template, i, 'in an attribute name');
-      }
-      while (/\s/.test(template[i] ?? '')) {
-        i++;
-      }
-      if (template[i] !== '=') {
-        continue;
-      }
+    if (!/\s/.test(c)) {
+      // Only whitespace-separated attributes may follow the element name.
+      throw new Error(`ERR_TEMPLATE_MALFORMED: unexpected character in start tag at offset ${i}`);
+    }
+    // Attribute: whitespace, name, `=`, quoted value.
+    const attrStart = i;
+    while (i < template.length && /\s/.test(template[i])) {
       i++;
-      while (/\s/.test(template[i] ?? '')) {
-        i++;
-      }
-      const quote = template[i];
-      if (quote !== '"' && quote !== "'") {
-        throw new Error(`ERR_TEMPLATE_MALFORMED: unquoted attribute value at offset ${i}`);
-      }
-      const valueStart = i + 1;
-      const valueEnd = template.indexOf(quote, valueStart);
-      if (valueEnd === -1) {
-        throw new Error(`ERR_TEMPLATE_MALFORMED: unterminated attribute value at offset ${i}`);
-      }
-      const value = splitValue(template, valueStart, valueEnd, 'attribute');
-      i = valueEnd + 1;
-      const whole = value.length === 1 && value[0].kind === 'placeholder' ? value[0] as Placeholder : null;
-      if (attrStart > literalStart) {
-        segments.push({ kind: 'literal', text: template.slice(literalStart, attrStart) });
-      }
-      if (whole) {
-        segments.push({ kind: 'optional-attribute', text: template.slice(attrStart, i), name: whole.name });
-      } else {
-        segments.push({ kind: 'literal', text: template.slice(attrStart, valueStart) });
-        segments.push(...value);
-        segments.push({ kind: 'literal', text: quote });
-      }
-      literalStart = i;
+    }
+    if (!NAME_START.test(template[i] ?? '')) {
+      // Whitespace before `>` or `/>`; anything else is malformed.
+      continue;
+    }
+    while (i < template.length && NAME_CHAR.test(template[i])) {
+      i++;
+    }
+    if (template[i] === '{') {
+      throw positionError(template, i, 'in an attribute name');
+    }
+    while (/\s/.test(template[i] ?? '')) {
+      i++;
+    }
+    if (template[i] !== '=') {
       continue;
     }
     i++;
+    while (/\s/.test(template[i] ?? '')) {
+      i++;
+    }
+    const quote = template[i];
+    if (quote !== '"' && quote !== "'") {
+      throw new Error(`ERR_TEMPLATE_MALFORMED: unquoted attribute value at offset ${i}`);
+    }
+    const valueStart = i + 1;
+    const valueEnd = template.indexOf(quote, valueStart);
+    if (valueEnd === -1) {
+      throw new Error(`ERR_TEMPLATE_MALFORMED: unterminated attribute value at offset ${i}`);
+    }
+    const value = splitValue(template, valueStart, valueEnd, 'attribute');
+    i = valueEnd + 1;
+    const whole = value.length === 1 && value[0].kind === 'placeholder' ? value[0] as Placeholder : null;
+    if (attrStart > literalStart) {
+      segments.push({ kind: 'literal', text: template.slice(literalStart, attrStart) });
+    }
+    if (whole) {
+      segments.push({ kind: 'optional-attribute', text: template.slice(attrStart, i), name: whole.name });
+    } else {
+      segments.push({ kind: 'literal', text: template.slice(attrStart, valueStart) });
+      segments.push(...value);
+      segments.push({ kind: 'literal', text: quote });
+    }
+    literalStart = i;
   }
   throw new Error(`ERR_TEMPLATE_MALFORMED: unterminated start tag at offset ${index}`);
+}
+
+/**
+ * Index of the `>` closing an end tag or a markup declaration, skipping
+ * quoted strings and an internal DTD subset (`[...]`).
+ */
+function declarationEnd(template: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < template.length; i++) {
+    const c = template[i];
+    if (c === '"' || c === "'") {
+      const close = template.indexOf(c, i + 1);
+      if (close === -1) {
+        return -1;
+      }
+      i = close;
+    } else if (c === '[') {
+      depth++;
+    } else if (c === ']') {
+      depth--;
+    } else if (c === '>' && depth <= 0) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 /**
@@ -264,8 +294,8 @@ function tokenize(template: string): Segment[] {
       end = end === -1 ? template.length : end + 3;
       assertNoPlaceholder(template, i, end, 'in a CDATA section');
     } else if (template.startsWith('<?', i) || template.startsWith('<!', i) || template.startsWith('</', i)) {
-      end = template.indexOf('>', i + 2);
-      end = end === -1 ? template.length : end + 1;
+      end = template.startsWith('<?', i) ? template.indexOf('?>', i + 2) : declarationEnd(template, i + 2);
+      end = end === -1 ? template.length : end + (template.startsWith('<?', i) ? 2 : 1);
       assertNoPlaceholder(template, i, end, template[i + 1] === '/' ? 'in an end tag' : 'in markup declarations');
       segments.push({ kind: 'literal', text: template.slice(i, end) });
       i = end;

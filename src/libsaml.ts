@@ -919,7 +919,7 @@ const libSaml = () => {
         const rawAssertionNode = assertions[0];
 
         if (sourceEntitySetting.isAssertionEncrypted) {
-          const encryptCert = targetEntityMetadata.getX509Certificate(certUse.encrypt) as string;
+          const encryptCert = utility.toCertificateBody(targetEntityMetadata.getX509Certificate(certUse.encrypt) as string);
           const publicKeyPem = utility.getPublicKeyPemFromCertificate(encryptCert);
 
           xmlenc.encrypt(rawAssertionNode.toString(), {

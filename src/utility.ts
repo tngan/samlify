@@ -193,6 +193,23 @@ function normalizeCerString(certString: string | Buffer): string {
 }
 
 /**
+ * Normalise a certificate read from metadata and require a plain base64
+ * body. The value is later written into XML (e.g. `<X509Certificate>` of an
+ * encrypted assertion), so anything but base64 is refused.
+ *
+ * @param certString certificate text, optionally PEM-wrapped
+ * @returns base64 certificate body
+ * @throws `ERR_INVALID_CERTIFICATE` when the body is not base64
+ */
+export function toCertificateBody(certString: string | Buffer): string {
+  const body = normalizeCerString(certString).replace(/\s/g, '');
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(body)) {
+    throw new Error('ERR_INVALID_CERTIFICATE');
+  }
+  return body;
+}
+
+/**
  * Normalise a PEM RSA private key string to its base64 body.
  *
  * @param pemString PEM-encoded RSA private key
@@ -348,6 +365,7 @@ const utility = {
   deflateString,
   inflateString,
   normalizeCerString,
+  toCertificateBody,
   normalizePemString,
   getFullURL,
   parseString,
