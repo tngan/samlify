@@ -10,11 +10,7 @@ const {
   IdentityProvider: identityProvider,
   ServiceProvider: serviceProvider,
   SamlLib: libsaml,
-  Utility: utility,
-  Constants: ref,
 } = esaml2;
-
-const binding = ref.namespace.binding;
 
 const defaultIdpConfig = {
   privateKey: readFileSync('./test/key/idp/privkey.pem'),

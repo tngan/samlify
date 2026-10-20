@@ -9,8 +9,6 @@ import { extract } from '../src/extractor';
 const {
   IdentityProvider: identityProvider,
   ServiceProvider: serviceProvider,
-  IdPMetadata: idpMetadata,
-  SPMetadata: spMetadata,
   Utility: utility,
   SamlLib: libsaml,
   Constants: ref,

@@ -235,21 +235,21 @@ test('getAssertionConsumerService with two bindings', () => {
     expect(libsaml.verifySignature(signed, { metadata: IdPMetadata })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA1', () => {
-    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
+    const [verified] = libsaml.verifySignature(_falseDecodedRequestSHA1, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA1 });
     expect(verified).toBe(false);
   });
   test('verify a XML signature signed by RSA-SHA256 with metadata', () => {
     expect(libsaml.verifySignature(signRequest(signatureAlgorithms.RSA_SHA256), { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA256', () => {
-    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
+    const [verified] = libsaml.verifySignature(_falseDecodedRequestSHA256, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA256 });
     expect(verified).toBe(false);
   });
   test('verify a XML signature signed by RSA-SHA512 with metadata', () => {
     expect(libsaml.verifySignature(signRequest(signatureAlgorithms.RSA_SHA512), { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 })[0]).toBe(true);
   });
   test('integrity check for request signed with RSA-SHA512', () => {
-    const [verified, verifiedData] = libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
+    const [verified] = libsaml.verifySignature(_falseDecodedRequestSHA512, { metadata: SPMetadata, signatureAlgorithm: signatureAlgorithms.RSA_SHA512 });
     expect(verified).toBe(false);
   });
 

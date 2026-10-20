@@ -387,7 +387,7 @@ describe('extractor — buildAbsoluteXPath / buildAttributeXPath via extract', (
   });
 
   test('context: true returns a single string when there is exactly one node', () => {
-    const xml = `<Root><Sig>x</Sig></Root>`;
+    const xml = '<Root><Sig>x</Sig></Root>';
     const result = Extractor.extract(xml, [{
       key: 'sig',
       localPath: ['Root', 'Sig'],
@@ -399,7 +399,7 @@ describe('extractor — buildAbsoluteXPath / buildAttributeXPath via extract', (
   });
 
   test('context: true returns null when no node matches', () => {
-    const xml = `<Root/>`;
+    const xml = '<Root/>';
     const result = Extractor.extract(xml, [{
       key: 'sig',
       localPath: ['Root', 'Missing'],
@@ -1097,7 +1097,7 @@ describe('Security audit (2026-04)', () => {
     setDOMParserOptions();
     // Attempt to parse a DOCTYPE-laden document; the safe error handler
     // throws on the entity declaration.
-    expect(() => dom.parseFromString(`<!DOCTYPE r [<!ENTITY xxe "secret">]><r>&xxe;</r>`, 'text/xml')).toThrow();
+    expect(() => dom.parseFromString('<!DOCTYPE r [<!ENTITY xxe "secret">]><r>&xxe;</r>', 'text/xml')).toThrow();
   });
 
   // saml-sec-consider §6.5 / xmldsig-core §6.4 — verifying with an

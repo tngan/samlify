@@ -35,23 +35,10 @@ function verifyTime(
   }
 
   const [notBeforeDrift, notOnOrAfterDrift] = drift;
-
-  if (utcNotBefore && !utcNotOnOrAfter) {
-    const notBeforeLocal = new Date(utcNotBefore);
-    return +notBeforeLocal + notBeforeDrift <= +now;
-  }
-  if (!utcNotBefore && utcNotOnOrAfter) {
-    const notOnOrAfterLocal = new Date(utcNotOnOrAfter);
-    return +now < +notOnOrAfterLocal + notOnOrAfterDrift;
-  }
-
-  const notBeforeLocal = new Date(utcNotBefore!);
-  const notOnOrAfterLocal = new Date(utcNotOnOrAfter!);
-
-  return (
-    +notBeforeLocal + notBeforeDrift <= +now &&
-    +now < +notOnOrAfterLocal + notOnOrAfterDrift
-  );
+  // An unparseable bound yields NaN, so the comparison fails closed.
+  const afterNotBefore = !utcNotBefore || +new Date(utcNotBefore) + notBeforeDrift <= +now;
+  const beforeNotOnOrAfter = !utcNotOnOrAfter || +now < +new Date(utcNotOnOrAfter) + notOnOrAfterDrift;
+  return afterNotBefore && beforeNotOnOrAfter;
 }
 
 export { verifyTime };

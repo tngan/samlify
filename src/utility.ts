@@ -134,7 +134,7 @@ function base64Encode(message: string | number[]): string {
  */
 export function base64Decode(base64Message: string, isBytes?: boolean): string | Buffer {
   const bytes = Buffer.from(base64Message, BASE64_STR);
-  return Boolean(isBytes) ? bytes : bytes.toString();
+  return isBytes ? bytes : bytes.toString();
 }
 
 /**
@@ -286,7 +286,7 @@ export function readPrivateKey(
  * it through untouched.
  */
 function convertToString(input: string | Buffer, isOutputString?: boolean): string | Buffer {
-  return Boolean(isOutputString) ? String(input) : input;
+  return isOutputString ? String(input) : input;
 }
 
 /**
@@ -307,7 +307,9 @@ export function isNonEmptyArray<T>(a: unknown): a is T[] {
  * @returns array form of the input
  */
 export function castArrayOpt<T>(a?: T | T[]): T[] {
-  if (a === undefined) return [];
+  if (a === undefined) {
+    return [];
+  }
   return Array.isArray(a) ? a : [a];
 }
 
@@ -333,7 +335,7 @@ export function escapeXPathValue(value: string): string {
     return "'" + value + "'";
   }
   const parts = value.split("'").map(part => "'" + part + "'");
-  return 'concat(' + parts.join(`,"'",`) + ')';
+  return 'concat(' + parts.join(',"\'",') + ')';
 }
 
 /**
@@ -347,7 +349,7 @@ export function camelCase(input: string): string {
   const words = input
     .replace(/([a-z\d])([A-Z])/g, '$1\0$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1\0$2')
-    .split(/[\0\s\-_\.]+/)
+    .split(/[\0\s\-_.]+/)
     .filter(w => w.length > 0);
 
   return words

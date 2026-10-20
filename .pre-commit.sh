@@ -1,13 +1,13 @@
 echo "Linting"
-npm run lint
+yarn -s lint
 LINTRESULT=$?
 
 echo "Compiling"
-$(npm bin)/tsc
+npx tsc --noEmit
 BUILDRESULT=$?
 
 echo "Type guards"
-$(npm bin)/tsc -p tsconfig.typecheck.json
+npx tsc -p tsconfig.typecheck.json
 TYPEGUARDRESULT=$?
 
 if [[ $LINTRESULT -ne 0 || $BUILDRESULT -ne 0 || $TYPEGUARDRESULT -ne 0 ]]; then

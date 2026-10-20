@@ -1,4 +1,4 @@
-declare module "xml-encryption" {
+declare module 'xml-encryption' {
   export interface EncryptOptions {
     rsa_pub: string | Buffer;
     pem: string | Buffer;

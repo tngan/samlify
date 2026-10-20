@@ -23,8 +23,12 @@ import type {
 export function normalizeCreateLoginRequestOptions(
   input: CreateLoginRequestOptions | CustomTagReplacement | undefined,
 ): CreateLoginRequestOptions {
-  if (input == null) return {};
-  if (typeof input === 'function') return { customTagReplacement: input };
+  if (input == null) {
+    return {};
+  }
+  if (typeof input === 'function') {
+    return { customTagReplacement: input };
+  }
   return input;
 }
 

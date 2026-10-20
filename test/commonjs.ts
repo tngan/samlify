@@ -17,7 +17,7 @@ test('build output exists as CommonJS', () => {
 
 test('require() succeeds without throwing', () => {
   const result = execSync(
-    `node -e "require('./build/index'); console.log('OK')"`,
+    'node -e "require(\'./build/index\'); console.log(\'OK\')"',
     { cwd: resolve(__dirname, '..'), encoding: 'utf-8' }
   );
   expect(result.trim()).toBe('OK');

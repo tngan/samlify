@@ -16,14 +16,12 @@ import { getContext } from './api';
 import { parseXml } from './xml';
 import { renderTemplate, escapeXmlValue, placeholderName } from './template';
 import type { TemplateRenderer } from './template';
-import xmlEscape from 'xml-escape';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import type {
   EntitySetting,
   SignatureConfig,
   TagReplacementMap,
-  XmlAttributeMap,
   XmlElementArray,
 } from './types';
 
@@ -40,7 +38,9 @@ const insecureEncryptionAlgorithms = [
 
 /** Coerce the heterogeneous return of `xpath.select` into a Node array. */
 function toNodeArray(result: SelectReturnType): Node[] {
-  if (Array.isArray(result)) return result;
+  if (Array.isArray(result)) {
+    return result;
+  }
   if (result != null && typeof result === 'object' && 'nodeType' in (result as object)) {
     return [result as Node];
   }

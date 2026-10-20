@@ -9,7 +9,7 @@ const placeholders = (template: string) => [...new Set([...template.matchAll(/\{
 
 describe('renderTemplate', () => {
   test('escapes values in attribute values and text', () => {
-    const xml = renderTemplate('<a x="{V}" y=\'{V}\'>{V}</a>', { V: `"'<&>` });
+    const xml = renderTemplate('<a x="{V}" y=\'{V}\'>{V}</a>', { V: '"\'<&>' });
     expect(xml).toBe('<a x="&quot;&apos;&lt;&amp;&gt;" y=\'&quot;&apos;&lt;&amp;&gt;\'>&quot;&apos;&lt;&amp;&gt;</a>');
   });
 
@@ -19,7 +19,7 @@ describe('renderTemplate', () => {
   });
 
   test('keeps $-replacement patterns literal', () => {
-    expect(renderTemplate('<a>{V}</a>', { V: "$&$'$`$1" })).toBe("<a>$&amp;$&apos;$`$1</a>");
+    expect(renderTemplate('<a>{V}</a>', { V: "$&$'$`$1" })).toBe('<a>$&amp;$&apos;$`$1</a>');
   });
 
   test('omits optional attributes and elements', () => {
@@ -94,7 +94,7 @@ describe('renderTemplate', () => {
 
 describe('renderTemplate matches replaceTagsByValue on samlify templates', () => {
   const samples = [
-    'plain', 'https://sp.example.org/acs?a=1&b=2', `quote" apos' lt< gt> amp&`, '{Other}', "$&$'", null, undefined, 42, true, '',
+    'plain', 'https://sp.example.org/acs?a=1&b=2', 'quote" apos\' lt< gt> amp&', '{Other}', "$&$'", null, undefined, 42, true, '',
   ];
   const attributeStatement = libsaml.attributeStatementBuilder([
     { name: 'mail', valueTag: 'user.email', nameFormat: 'urn:oasis:names:tc:SAML:2.0:attrname-format:basic', valueXsiType: 'xs:string' },

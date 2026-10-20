@@ -16,7 +16,9 @@ export type { ExtractorField, ExtractorFields, ExtractorResult } from './types';
  * Coerce the heterogeneous return type of `xpath.select` into a Node array.
  */
 function toNodeArray(result: SelectReturnType): Node[] {
-  if (Array.isArray(result)) return result;
+  if (Array.isArray(result)) {
+    return result;
+  }
   if (result != null && typeof result === 'object' && 'nodeType' in (result as object)) {
     return [result as Node];
   }
