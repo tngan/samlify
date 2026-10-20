@@ -52,7 +52,7 @@
   },
   "resolutions": {
     "diff": ">=4.0.4",
-    "esbuild": ">=0.25.0",
+    "esbuild": "^0.25.0",
     "vitest/vite": "^6.4.2",
     "vitest/vite-node/vite": "^6.4.2",
     "vitepress/vite": "^6.4.2",
