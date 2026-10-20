@@ -55,7 +55,7 @@ const idp = new IdentityProvider({
 
 - **`loginResponseTemplate: { context: string, attributes: Attributes, additionalTemplates: LoginResponseAdditionalTemplates }`** — Custom login response template, reusable from the callback function for runtime interpolation. See [Templates](/template).
 
-- **`wantLogoutResponseSigned: boolean`** — Whether the IdP requires the SP's logout response to be signed.
+- **`wantLogoutResponseSigned: boolean`** — Whether the IdP requires the SP's logout response to be signed. Defaults to `false`; accepting an unsigned logout message logs a warning (saml-profiles §4.4.4 requires front-channel logout messages to be authenticated). `wantLogoutRequestSigned` works the same for logout requests from the SP. Both become `true` by default in v3.
 
 - **`messageSigningOrder: SigningOrder`** — Message signing order. Either `sign-then-encrypt` (default) or `encrypt-then-sign`.
 

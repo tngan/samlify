@@ -60,7 +60,7 @@ const sp = new ServiceProvider({
 
 - **`loginRequestTemplate: { context: string, attributes: Attributes }`** — Custom login request template, reusable from the callback function for runtime interpolation. See [Templates](/template).
 
-- **`wantLogoutRequestSigned: boolean`** — Whether the SP requires the IdP's logout request to be signed.
+- **`wantLogoutRequestSigned: boolean`** — Whether the SP requires the IdP's logout request to be signed. Defaults to `false`; accepting an unsigned logout request logs a warning, because anyone can forge one to log a user out (saml-profiles §4.4.4 requires front-channel logout messages to be authenticated). Set it to `true` whenever the IdP signs its logout requests. It becomes the default in v3, as does `wantLogoutResponseSigned`.
 
 - **`relayState: string`** — RelayState for outgoing requests.
 

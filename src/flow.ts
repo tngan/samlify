@@ -303,12 +303,33 @@ function sloLocations(self: Entity): (string | undefined)[] {
  *   (`ERR_REPLAYED_REQUEST`). It is remembered until its `NotOnOrAfter`, or
  *   24 hours after its `IssueInstant`; an older request is rejected.
  *
+ * Accepting a message whose signature was not required is logged:
+ * saml-profiles §4.4.4 requires front-channel logout messages to be
+ * authenticated, and signed logout becomes the default in v3.
+ *
  * @param self receiving entity
  * @param parserType `LogoutRequest` or `LogoutResponse`
  * @param extracted extractor result
+ * @param signatureChecked whether the message signature was verified
  * @returns error code, or `null` when the message passes
  */
-async function checkLogoutMessage(self: Entity, parserType: string, extracted: ExtractorResult): Promise<string | null> {
+async function checkLogoutMessage(
+  self: Entity,
+  parserType: string,
+  extracted: ExtractorResult,
+  signatureChecked: boolean,
+): Promise<string | null> {
+  const error = await logoutMessageError(self, parserType, extracted);
+  if (!error && !signatureChecked) {
+    console.warn(
+      `[samlify] accepted an unsigned ${parserType} from ${String(extracted.issuer)}; `
+      + `set want${parserType}Signed: true to require a signature (the default in v3).`,
+    );
+  }
+  return error;
+}
+
+async function logoutMessageError(self: Entity, parserType: string, extracted: ExtractorResult): Promise<string | null> {
   const message = (parserType === 'LogoutRequest' ? extracted.request : extracted.response) as Record<string, string> | undefined;
   const drift = self.entitySetting.clockDrifts;
   if (self.entitySetting.wantAudienceCheck !== false && message?.destination && !sloLocations(self).includes(message.destination)) {
@@ -585,7 +606,7 @@ async function redirectFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
-    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties, checkSignature);
     if (logoutError) {
       return Promise.reject(new Error(logoutError));
     }
@@ -668,7 +689,8 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
     requireMessageSignature: parserType === urlParams.samlResponse && self.entitySetting.wantMessageSigned === true,
   };
 
-  const decryptRequired = from.entitySetting.isAssertionEncrypted;
+  // Only a login response carries an (encrypted) assertion.
+  const decryptRequired = from.entitySetting.isAssertionEncrypted && parserType === urlParams.samlResponse;
 
   let extractorFields: ExtractorFields = [];
 
@@ -729,7 +751,7 @@ async function postFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
-    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties, checkSignature);
     if (logoutError) {
       return Promise.reject(new Error(logoutError));
     }
@@ -885,7 +907,7 @@ async function postSimpleSignFlow(options: FlowOptions): Promise<FlowResult> {
   }
 
   if (parserType === 'LogoutRequest' || parserType === 'LogoutResponse') {
-    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties);
+    const logoutError = await checkLogoutMessage(self, parserType, extractedProperties, checkSignature);
     if (logoutError) {
       return Promise.reject(new Error(logoutError));
     }

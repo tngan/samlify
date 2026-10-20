@@ -2331,3 +2331,23 @@ describe('input reaching the schema validator', () => {
     }
   });
 });
+
+describe('unsigned logout messages', () => {
+  test('are accepted with a warning unless a signature is required', async () => {
+    const { context: unsigned } = idp.createLogoutRequest(sp, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
+    const { context: signed } = idp.createLogoutRequest(spWantLogoutReqSign, 'post', { logoutNameID: 'user@esaml2.com' }) as PostBindingContext;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await sp.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: unsigned } });
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('accepted an unsigned LogoutRequest'));
+      warn.mockClear();
+      await spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: signed } });
+      expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('accepted an unsigned'));
+      // An unsigned request is refused, with the signature error rather than a decryption one.
+      await expect(spWantLogoutReqSign.parseLogoutRequest(idp, 'post', { body: { SAMLRequest: unsigned } }))
+        .rejects.toThrow('FAILED_TO_VERIFY_SIGNATURE');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
