@@ -39,7 +39,7 @@ workflows:
           node: '20.19'
       - test:
           name: test-node-22
-          node: '22.12'
+          node: '22.23'
       - test:
           name: test-node-24
           node: '24.0'
