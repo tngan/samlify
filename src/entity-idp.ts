@@ -70,7 +70,7 @@ function applyTagPrefixes(
 /** Identity-provider entity. */
 export class IdentityProvider extends Entity {
 
-  entityMeta!: IdentityProviderMetadata;
+  declare entityMeta: IdentityProviderMetadata;
 
   /**
    * Build an IdP, expanding `loginResponseTemplate.attributes` into a

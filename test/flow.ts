@@ -5,7 +5,6 @@ import { PostBindingContext, SimpleSignBindingContext } from '../src/entity';
 import { randomUUID } from 'crypto';
 import * as url from 'url';
 import util from '../src/utility';
-import * as tk from 'timekeeper';
 
 import * as validator from '@authenio/samlify-xsd-schema-validator';
 // import * as validator from '@authenio/samlify-validate-with-xmllint';
@@ -1340,14 +1339,14 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
   try {
     const { context: SAMLResponse } = await idp.createLoginResponse(sp, sampleRequestInfo, 'post', user, createTemplateCallback(idp, sp, binding.post, user));
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
     expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 });
 
@@ -1363,14 +1362,14 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
   try {
     const { context: SAMLResponse } = await idp.createLoginResponse(sp, sampleRequestInfo, 'redirect', user, createTemplateCallback(idp, sp, binding.redirect, user), undefined, 'relaystate');
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'redirect', parseRedirectUrlContextCallBack(SAMLResponse));
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
     expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 });
 
@@ -1385,14 +1384,14 @@ test.sequential('should throw ERR_SUBJECT_UNCONFIRMED for the expired SAML respo
     const { context: SAMLResponse, type, sigAlg, signature, relayState } = await idp.createLoginResponse(sp, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, sp, binding.simpleSign, user), undefined, 'relaystate');
     const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await sp.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } catch (e: any) {
     expect(e.message).toBe('ERR_SUBJECT_UNCONFIRMED');
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 });
 
@@ -1405,14 +1404,14 @@ test.sequential('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML r
   try {
     const { context: SAMLResponse } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'post', user, createTemplateCallback(idp, spWithClockDrift, binding.post, user));
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await spWithClockDrift.parseLoginResponse(idp, 'post', { body: { SAMLResponse } });
     expect(true).toBe(true);
   } catch (e) {
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 
 });
@@ -1426,14 +1425,14 @@ test.sequential('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML r
   try {
     const { context: SAMLResponse } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'redirect', user, createTemplateCallback(idp, spWithClockDrift, binding.redirect, user), undefined, '');
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await spWithClockDrift.parseLoginResponse(idp, 'redirect', parseRedirectUrlContextCallBack(SAMLResponse));
     expect(true).toBe(true);
   } catch (e) {
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 
 });
@@ -1448,14 +1447,14 @@ test.sequential('should not throw ERR_SUBJECT_UNCONFIRMED for the expired SAML r
     const { context: SAMLResponse, type, signature, sigAlg, relayState } = await idp.createLoginResponse(spWithClockDrift, sampleRequestInfo, 'simpleSign', user, createTemplateCallback(idp, spWithClockDrift, binding.simpleSign, user), undefined, 'relaystate');
     const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
     // simulate the time on client side when response arrives after 5.1 sec
-    tk.freeze(fiveMinutesOneSecLater);
+    vi.setSystemTime(fiveMinutesOneSecLater);
     await spWithClockDrift.parseLoginResponse(idp, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
     expect(true).toBe(true);
   } catch (e) {
     // test failed, it shouldn't happen
     expect(true).toBe(false);
   } finally {
-    tk.reset();
+    vi.useRealTimers();
   }
 
 });

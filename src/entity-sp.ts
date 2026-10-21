@@ -36,7 +36,7 @@ export default function (props: ServiceProviderSettings): ServiceProvider {
 
 /** Service-provider entity. */
 export class ServiceProvider extends Entity {
-  entityMeta!: ServiceProviderMetadata;
+  declare entityMeta: ServiceProviderMetadata;
 
   /**
    * Build an SP with sensible defaults for signing flags.
