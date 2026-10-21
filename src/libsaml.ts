@@ -9,7 +9,6 @@ import utility, { flattenDeep, isString, escapeXPathValue, camelCase } from './u
 import { algorithms, wording, namespace } from './urn';
 import { select, SelectReturnType } from 'xpath';
 import { MetadataInterface } from './metadata';
-import nrsa, { SigningSchemeHash } from 'node-rsa';
 import { SignedXml } from 'xml-crypto';
 import * as xmlenc from '@authenio/xml-encryption';
 import { getContext } from './api';
@@ -36,6 +35,13 @@ const insecureEncryptionAlgorithms = [
   algorithms.encryption.data.TRI_DEC,
 ];
 
+/** Warn once per insecure algorithm in use, with the wording xml-encryption 2.x used. */
+function warnInsecureEncryptionAlgorithms(used: Array<string | undefined>): void {
+  insecureEncryptionAlgorithms
+    .filter(algorithm => used.includes(algorithm))
+    .forEach(algorithm => console.warn(`${algorithm} is no longer recommended due to security reasons. Please deprecate its use as soon as possible.`));
+}
+
 /** Coerce the heterogeneous return of `xpath.select` into a Node array. */
 function toNodeArray(result: SelectReturnType): Node[] {
   if (Array.isArray(result)) {
@@ -46,6 +52,12 @@ function toNodeArray(result: SelectReturnType): Node[] {
   }
   return [];
 }
+
+/**
+ * Detached-signature scheme for the redirect and SimpleSign bindings
+ * (`saml-bindings §3.4.4.1`): padding plus hash, in the naming node-rsa used.
+ */
+export type SigningSchemeHash = 'pkcs1-sha1' | 'pkcs1-sha256' | 'pkcs1-sha512' | 'pss-sha256';
 
 /** Options accepted by {@link LibSamlInterface.constructSAMLSignature}. */
 export interface SignatureConstructor {
@@ -289,10 +301,11 @@ const libSaml = () => {
   }
 
   /**
-   * Mapping from XML-DSig signature algorithm URIs to node-rsa schemes.
+   * Mapping from XML-DSig signature algorithm URIs to detached-signature
+   * schemes. The name is kept for compatibility; signing goes through
+   * `node:crypto` (see {@link detachedSignatureOptions}).
    *
-   * The PSS entry covers the redirect-binding detached signature path:
-   * `node-rsa` accepts `pss-sha256` directly as a `signingScheme` value.
+   * The PSS entry covers the redirect-binding detached signature path.
    * The `xmldsig-more#sha256-rsa-MGF1` URI (W3C Note, 2007-05) is listed
    * in `xmldsig-core §6.4.2` as the recommended successor to PKCS#1 v1.5
    * RSA-SHA256 (`saml-sec-consider §6.5`).
@@ -305,57 +318,21 @@ const libSaml = () => {
   };
 
   /**
-   * RSASSA-PSS plugin class for `xml-crypto`'s `SignedXml.SignatureAlgorithms`
-   * registry (`xmldsig-core §6.4.2`).
-   *
-   * **Temporary shim.** xml-crypto already implements PSS-SHA256 on its
-   * master branch (PR node-saml/xml-crypto#488, merged 2025-10-17), but
-   * the latest published npm version (6.1.2, 2024-08) predates that
-   * commit. Once xml-crypto cuts a release containing #488, delete this
-   * class and the `registerPssAlgorithms` helper below — the URI alone
-   * in `algorithms.signature` is sufficient and the constructor will
-   * seed `SignatureAlgorithms` with the upstream implementation.
-   *
-   * `RSA_PKCS1_PSS_PADDING` with `RSA_PSS_SALTLEN_DIGEST` matches the
-   * MGF1+SHA-256 convention referenced by the `sha256-rsa-MGF1` URI
-   * (xmldsig-more, W3C Note 2007-05).
+   * Translate a detached-signature scheme into `node:crypto` sign/verify
+   * arguments. PSS uses MGF1 with the same hash. Signing keeps the 20-byte
+   * salt node-rsa (used up to samlify 2.15) produced, so output is unchanged;
+   * verification accepts any salt length.
    */
-  const pssPaddingOptions = {
-    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
-  } as const;
-
-  class RsaSha256Mgf1 {
-    getSignature = (signedInfo: crypto.BinaryLike, privateKey: crypto.KeyLike): string => {
-      const signOpts: crypto.SignPrivateKeyInput = {
-        key: privateKey as crypto.SignPrivateKeyInput['key'],
-        padding: pssPaddingOptions.padding,
-        saltLength: pssPaddingOptions.saltLength,
-      };
-      return crypto.sign('RSA-SHA256', Buffer.from(signedInfo as string), signOpts).toString('base64');
-    };
-    verifySignature = (material: string, key: crypto.KeyLike, signatureValue: string): boolean => {
-      const verifyOpts: crypto.VerifyPublicKeyInput = {
-        key: key as crypto.VerifyPublicKeyInput['key'],
-        padding: pssPaddingOptions.padding,
-        saltLength: pssPaddingOptions.saltLength,
-      };
-      return crypto.verify('RSA-SHA256', Buffer.from(material), verifyOpts, Buffer.from(signatureValue, 'base64'));
-    };
-    getAlgorithmName = (): string => 'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1';
-  }
-
-  /**
-   * Register the RSASSA-PSS SHA-256 signature class on a fresh `SignedXml`
-   * instance so the algorithm-agility surface from `xmldsig-core §6.4` is
-   * available for both signing and verification. PKCS#1 v1.5 entries are
-   * preserved untouched.
-   */
-  function registerPssAlgorithms(sig: SignedXml): void {
-    sig.SignatureAlgorithms = {
-      ...sig.SignatureAlgorithms,
-      'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1': RsaSha256Mgf1,
-    };
+  function detachedSignatureOptions(
+    scheme: SigningSchemeHash,
+    forVerify = false,
+  ): { hash: string; padding: number; saltLength?: number } {
+    const [padding, hash] = scheme.split('-');
+    if (padding === 'pss') {
+      const saltLength = forVerify ? crypto.constants.RSA_PSS_SALTLEN_AUTO : 20;
+      return { hash, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength };
+    }
+    return { hash, padding: crypto.constants.RSA_PKCS1_PADDING };
   }
 
   /**
@@ -411,7 +388,7 @@ const libSaml = () => {
   };
 
   /**
-   * Map a SAML signature algorithm URI to its node-rsa signing scheme.
+   * Map a SAML signature algorithm URI to its detached-signature scheme.
    *
    * - When `sigAlg` is omitted, the default RSA-SHA256 scheme is used
    *   (per `saml-bindings §3.4.4.1` recommendation).
@@ -423,7 +400,7 @@ const libSaml = () => {
    *   (`saml-sec-consider §6.5`, `xmldsig-core §6.4`).
    *
    * @param sigAlg signature algorithm URI
-   * @returns node-rsa signing scheme string
+   * @returns signing scheme string
    * @throws when `sigAlg` is supplied and does not match a supported URI
    */
   function getSigningScheme(sigAlg?: string): SigningSchemeHash {
@@ -648,11 +625,6 @@ const libSaml = () => {
         isMessageSigned = false,
       } = opts;
       const sig = new SignedXml();
-      // xmldsig-core §6.4.2 — make PSS variants available alongside the
-      // PKCS#1 v1.5 set built into xml-crypto v6.x. No-op for callers
-      // staying on RSA-SHA*; required when `signatureAlgorithm` is one of
-      // the `xmldsig-more 2007-05` PSS URIs.
-      registerPssAlgorithms(sig);
       const digestAlgorithm = getDigestMethod(signatureAlgorithm);
       if (referenceTagXPath) {
         sig.addReference({
@@ -729,10 +701,6 @@ const libSaml = () => {
 
       for (const signatureNode of selection) {
         const sig = new SignedXml();
-        // Register PSS plugins on the verifier instance so the algorithm
-        // declared inside the signed XML can resolve to a SignatureAlgorithm
-        // class (xmldsig-core §6.4.2; see `registerPssAlgorithms`).
-        registerPssAlgorithms(sig);
         let verified = false;
 
         if (opts.allowedSignatureAlgorithms) {
@@ -879,14 +847,11 @@ const libSaml = () => {
       isBase64?: boolean,
       signingAlgorithm?: string,
     ): string | Buffer {
-      const decryptedKey = new nrsa(
-        utility.readPrivateKey(key, passphrase),
-        undefined,
-        {
-          signingScheme: getSigningScheme(signingAlgorithm),
-        },
-      );
-      const signature = decryptedKey.sign(octetString);
+      const { hash, ...padding } = detachedSignatureOptions(getSigningScheme(signingAlgorithm));
+      const signature = crypto.sign(hash, Buffer.from(octetString), {
+        key: utility.readPrivateKey(key, passphrase),
+        ...padding,
+      });
       return isBase64 !== false ? signature.toString('base64') : signature;
     },
 
@@ -911,12 +876,14 @@ const libSaml = () => {
       if (certificates.length === 0) {
         throw new Error('NO_SELECTED_CERTIFICATE');
       }
-      const signingScheme = getSigningScheme(verifyAlgorithm);
+      const { hash, ...padding } = detachedSignatureOptions(getSigningScheme(verifyAlgorithm), true);
       // Any signing certificate declared in metadata may have signed it (key rollover).
-      return certificates.some(cert => {
-        const key = new nrsa(utility.getPublicKeyPemFromCertificate(cert), 'public', { signingScheme });
-        return key.verify(Buffer.from(octetString), Buffer.from(signature));
-      });
+      return certificates.some(cert => crypto.verify(
+        hash,
+        Buffer.from(octetString),
+        { key: utility.getPublicKeyPemFromCertificate(cert), ...padding },
+        Buffer.from(signature),
+      ));
     },
 
     /**
@@ -967,14 +934,19 @@ const libSaml = () => {
         const rawAssertionNode = assertions[0];
 
         if (sourceEntitySetting.isAssertionEncrypted) {
+          warnInsecureEncryptionAlgorithms([sourceEntitySetting.dataEncryptionAlgorithm, sourceEntitySetting.keyEncryptionAlgorithm]);
           const encryptCert = utility.toCertificateBody(targetEntityMetadata.getX509Certificate(certUse.encrypt) as string);
           const publicKeyPem = utility.getPublicKeyPemFromCertificate(encryptCert);
 
           xmlenc.encrypt(rawAssertionNode.toString(), {
             rsa_pub: Buffer.from(publicKeyPem),
             pem: Buffer.from(`-----BEGIN CERTIFICATE-----${encryptCert}-----END CERTIFICATE-----`),
-            encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm,
+            encryptionAlgorithm: sourceEntitySetting.dataEncryptionAlgorithm!,
             keyEncryptionAlgorithm: sourceEntitySetting.keyEncryptionAlgorithm,
+            // xml-encryption 4+ refuses and warns about AES-CBC by default; the
+            // algorithms here are the entity's own configuration, so honour them.
+            disallowEncryptionWithInsecureAlgorithm: false,
+            warnInsecureAlgorithm: false,
           }, (err, res) => {
             /* v8 ignore start */
             if (err) {
@@ -1029,19 +1001,22 @@ const libSaml = () => {
         // RSA-1.5 key transport and 3DES are read from the incoming XML, so
         // reject them before any key is used (xmlenc-core1 §5.4.1).
         const allowInsecure = hereSetting.allowInsecureDecryptionAlgorithms === true;
-        if (!allowInsecure) {
-          const methods = select(".//*[local-name(.)='EncryptionMethod']/@Algorithm", encAssertionNode) as Attr[];
-          if (methods.some(method => insecureEncryptionAlgorithms.includes(method.value))) {
-            return reject(new Error('ERR_INSECURE_ENCRYPTION_ALGORITHM'));
-          }
+        const methods = (select(".//*[local-name(.)='EncryptionMethod']/@Algorithm", encAssertionNode) as Attr[])
+          .map(method => method.value);
+        if (!allowInsecure && methods.some(method => insecureEncryptionAlgorithms.includes(method))) {
+          return reject(new Error('ERR_INSECURE_ENCRYPTION_ALGORITHM'));
         }
+        warnInsecureEncryptionAlgorithms(methods);
 
         return xmlenc.decrypt(encAssertionNode.toString(), {
           key: utility.readPrivateKey(
             hereSetting.encPrivateKey as string | Buffer,
             hereSetting.encPrivateKeyPass as string | undefined,
           ),
-          disallowDecryptionWithInsecureAlgorithm: !allowInsecure,
+          // samlify applies its own policy above (RSA-1.5 and 3DES); xml-encryption
+          // 4+ would also refuse AES-CBC, which IdPs still commonly send.
+          disallowDecryptionWithInsecureAlgorithm: false,
+          warnInsecureAlgorithm: false,
         }, (err, res) => {
           /* v8 ignore start */
           if (err) {

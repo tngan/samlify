@@ -42,13 +42,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@authenio/xml-encryption": "^2.0.2",
+    "@authenio/xml-encryption": "^6.0.2",
     "@xmldom/xmldom": "^0.9.12",
-    "node-rsa": "^1.1.1",
     "xml": "^1.0.1",
-    "xml-crypto": "^6.1.2",
+    "xml-crypto": "^6.4.0",
     "xml-escape": "^1.1.0",
-    "xpath": "^0.0.34"
+    "xpath": "^0.0.35"
   },
   "resolutions": {
     "diff": ">=4.0.4",
@@ -61,7 +60,6 @@
     "@authenio/samlify-xsd-schema-validator": "^1.0.5",
     "@eslint/js": "^9.39.5",
     "@types/node": "^25.4.0",
-    "@types/node-rsa": "^1.1.4",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.5",
     "timekeeper": "^2.3.1",

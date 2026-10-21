@@ -162,14 +162,13 @@
   dependencies:
     "@authenio/xsd-schema-validator" "^0.7.3"
 
-"@authenio/xml-encryption@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-2.0.2.tgz#df1f491dacb9b1f65bc7a9a554c189644f72bbe0"
-  integrity sha512-cTlrKttbrRHEw3W+0/I609A2Matj5JQaRvfLtEIGZvlN0RaPi+3ANsMeqAyCAVlH/lUIW2tmtBlSMni74lcXeg==
+"@authenio/xml-encryption@^6.0.2":
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/@authenio/xml-encryption/-/xml-encryption-6.0.2.tgz#5a43bd1a9f78d156db93824f9b5d575016a12f20"
+  integrity sha512-/jv5qO935fH4Ma+fxh5rJLRYZvUM57fd/I74IiSoR8cFm+sgjszXFEEn1PkqZhhBD4MVkH2YT+/UDY+pnW0S0Q==
   dependencies:
-    "@xmldom/xmldom" "^0.8.6"
+    "@xmldom/xmldom" "^0.8.13"
     escape-html "^1.0.3"
-    xpath "0.0.32"
 
 "@authenio/xsd-schema-validator@^0.7.3":
   version "0.7.4"
@@ -742,14 +741,7 @@
   resolved "https://registry.yarnpkg.com/@types/mdurl/-/mdurl-2.0.0.tgz#d43878b5b20222682163ae6f897b20447233bdfd"
   integrity sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==
 
-"@types/node-rsa@^1.1.4":
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/@types/node-rsa/-/node-rsa-1.1.4.tgz#6d2e06f8ca3619550be4fd5c12db5f2267048e20"
-  integrity sha512-dB0ECel6JpMnq5ULvpUTunx3yNm8e/dIkv8Zu9p2c8me70xIRUUG3q+qXRwcSf9rN3oqamv4116iHy90dJGRpA==
-  dependencies:
-    "@types/node" "*"
-
-"@types/node@*", "@types/node@^25.4.0":
+"@types/node@^25.4.0":
   version "25.6.0"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-25.6.0.tgz#4e09bad9b469871f2d0f68140198cbd714f4edca"
   integrity sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ==
@@ -1092,7 +1084,7 @@
   resolved "https://registry.yarnpkg.com/@xmldom/is-dom-node/-/is-dom-node-1.0.1.tgz#83b9f3e1260fb008061c6fa787b93a00f9be0629"
   integrity sha512-CJDxIgE5I0FH+ttq/Fxy6nRpxP70+e2O048EPe85J2use3XKdatVM7dDVvFNjQudd9B49NPoZ+8PG49zj4Er8Q==
 
-"@xmldom/xmldom@^0.8.10", "@xmldom/xmldom@^0.8.6":
+"@xmldom/xmldom@^0.8.13", "@xmldom/xmldom@^0.8.15":
   version "0.8.15"
   resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.8.15.tgz#71ebf80729e4e95221d519ac9b1e1eaea7784907"
   integrity sha512-/5NV/vDALVFDXgLmfsy9TRCBlKwO2LNBFzpzvb9iIj+jR+eSc6DLYYvVOdivT/jm7MtU6TebYuRmzEOI7w40UA==
@@ -1153,13 +1145,6 @@ argparse@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/argparse/-/argparse-2.0.1.tgz#246f50f3ca78a3240f6c997e8a9bd1eac49e4b38"
   integrity sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
-
-asn1@^0.2.4:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/asn1/-/asn1-0.2.6.tgz#0d3a7bb6e64e02a90c0303b31f292868ea09a08d"
-  integrity sha512-ix/FxPn0MDjeyJ7i/yoHGFt/EX6LyNbxSEhPPXODPL+KB0VPk86UYfL0lMdy+KCnv+fmvIzySwaK5COwqVbWTQ==
-  dependencies:
-    safer-buffer "~2.1.0"
 
 assertion-error@^2.0.1:
   version "2.0.1"
@@ -1836,13 +1821,6 @@ natural-compare@^1.4.0:
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
 
-node-rsa@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/node-rsa/-/node-rsa-1.1.1.tgz#efd9ad382097782f506153398496f79e4464434d"
-  integrity sha512-Jd4cvbJMryN21r5HgxQOpMEqv+ooke/korixNNK3mGqfGJmy0M77WDDzo/05969+OkMy3XW1UuZsSmW9KQm7Fw==
-  dependencies:
-    asn1 "^0.2.4"
-
 obug@^2.1.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/obug/-/obug-2.2.1.tgz#9c453efeeda822050eb9774242e969c784d64d78"
@@ -2025,11 +2003,6 @@ rollup@^4.34.9:
     "@rollup/rollup-win32-x64-gnu" "4.60.2"
     "@rollup/rollup-win32-x64-msvc" "4.60.2"
     fsevents "~2.3.2"
-
-safer-buffer@~2.1.0:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/safer-buffer/-/safer-buffer-2.1.2.tgz#44fa161b0187b9549dd84bb91802f9bd8385cd6a"
-  integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
 semver@^7.5.3:
   version "7.7.4"
@@ -2358,13 +2331,13 @@ word-wrap@^1.2.5:
   resolved "https://registry.yarnpkg.com/word-wrap/-/word-wrap-1.2.5.tgz#d2c45c6dd4fbce621a66f136cbe328afd0410b34"
   integrity sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==
 
-xml-crypto@^6.1.2:
-  version "6.1.2"
-  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-6.1.2.tgz#ed93e87d9538f92ad1ad2db442e9ec586723d07d"
-  integrity sha512-leBOVQdVi8FvPJrMYoum7Ici9qyxfE4kVi+AkpUoYCSXaQF4IlBm1cneTK9oAxR61LpYxTx7lNcsnBIeRpGW2w==
+xml-crypto@^6.4.0:
+  version "6.4.0"
+  resolved "https://registry.yarnpkg.com/xml-crypto/-/xml-crypto-6.4.0.tgz#6d78f09a58a7d57c6a9cc8ea306fea26820c4ce1"
+  integrity sha512-d21ModhBO/+QWWAmOjyDeQJuHNmsR/HtOxyBchiTbKfGNKuHYwQNd+SlLhwyyrwoAGLp4Qc6BQ7nAtnM47dHSQ==
   dependencies:
     "@xmldom/is-dom-node" "^1.0.1"
-    "@xmldom/xmldom" "^0.8.10"
+    "@xmldom/xmldom" "^0.8.15"
     xpath "^0.0.33"
 
 xml-escape@^1.1.0:
@@ -2377,20 +2350,15 @@ xml@^1.0.1:
   resolved "https://registry.yarnpkg.com/xml/-/xml-1.0.1.tgz#78ba72020029c5bc87b8a81a3cfcd74b4a2fc1e5"
   integrity sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==
 
-xpath@0.0.32:
-  version "0.0.32"
-  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.32.tgz#1b73d3351af736e17ec078d6da4b8175405c48af"
-  integrity sha512-rxMJhSIoiO8vXcWvSifKqhvV96GjiD5wYb8/QHdoRyQvraTpp4IEv944nhGausZZ3u7dhQXteZuZbaqfpB7uYw==
-
 xpath@^0.0.33:
   version "0.0.33"
   resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.33.tgz#5136b6094227c5df92002e7c3a13516a5074eb07"
   integrity sha512-NNXnzrkDrAzalLhIUc01jO2mOzXGXh1JwPgkihcLLzw98c0WgYDmmjSh1Kl3wzaxSVWMuA+fe0WTWOBDWCBmNA==
 
-xpath@^0.0.34:
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.34.tgz#a769255e8816e0938e1e0005f2baa7279be8be12"
-  integrity sha512-FxF6+rkr1rNSQrhUNYrAFJpRXNzlDoMxeXN5qI84939ylEv3qqPFKa85Oxr6tDaJKqwW6KKyo2v26TSv3k6LeA==
+xpath@^0.0.35:
+  version "0.0.35"
+  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.35.tgz#300e6f37c2e5d48912ae8d20675df0606dd69d1d"
+  integrity sha512-8O+m2N04SwLpGw/1Grz2HD8ejnWDV7M1dMPgKKuOjhYh5W9H4pel/+06kInohIdpS2FeSbL4i8ID8c4tpxwq9Q==
 
 yocto-queue@^0.1.0:
   version "0.1.0"
