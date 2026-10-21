@@ -1,53 +1,40 @@
-# samlify &middot;
+# samlify
 
 [![Build Status](https://img.shields.io/circleci/build/github/tngan/samlify?style=for-the-badge&logo=circleci)](https://app.circleci.com/pipelines/github/tngan/samlify)
 [![npm version](https://img.shields.io/npm/v/samlify.svg?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/samlify)
 [![NPM](https://img.shields.io/npm/dm/samlify.svg?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/samlify)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A590%25-brightgreen?style=for-the-badge&logo=vitest)](./vitest.config.ts)
 
-Highly configuarable Node.js SAML 2.0 library for Single Sign On
-
-## Welcome PRs
-
-Welcome all PRs for maintaining this project, or provide a link to the repositories especially for use cases alongside with different frameworks.
+Node.js library for SAML SSO
 
 ### Installation
 
-Multiple schema validators are currently supported by our system, with couple validator modules available and the option to create custom ones. It is essential to utilize the setSchemaValidator function at the outset to avoid errors.
+```console
+npm install samlify
+```
+
+### Schema validation
+
+samlify validates every incoming SAML message against the XML schema, so register a schema validator before anything else. Pick one of the validator modules:
 
 ```js
 import * as samlify from 'samlify';
-import * as validator from '@authenio/samlify-xsd-schema-validator';
-// import * as validator from '@authenio/samlify-validate-with-xmllint';
+import * as validator from '@authenio/samlify-xsd-schema-validator'; // requires Java
+// import * as validator from '@authenio/samlify-validate-with-xmllint'; // requires xmllint
 // import * as validator from '@authenio/samlify-node-xmllint';
 
 samlify.setSchemaValidator(validator);
 ```
 
-Now you can create your own schema validator and even suppress it but you have to take the risk for accepting malicious response.
+You can also supply your own validator. Skipping validation means accepting messages that may be malicious, so only do this if you understand the risk:
 
 ```typescript
 samlify.setSchemaValidator({
   validate: (response: string) => {
-    /* implment your own or always returns a resolved promise to skip */
+    /* implement your own, or always resolve to skip validation */
     return Promise.resolve('skipped');
   }
 });
-```
-
-For those using Windows, `windows-build-tools` should be installed globally before installing samlify if you are using `libxml` validator.
-
-```console
-yarn global add windows-build-tools
-```
-
-### Development
-
-This project is now developed using TypeScript, also support Yarn which is a new package manager.
-
-```console
-yarn global add typescript
-yarn
 ```
 
 ### Get Started
@@ -56,15 +43,24 @@ yarn
 const saml = require('samlify');
 ```
 
-See full documentation [here](https://samlify.js.org/)
+See the full documentation [here](https://samlify.js.org/).
 
 ### Example
 
 [samlify-starter](https://github.com/tngan/samlify-starter) — starter example for getting up and running with samlify
 
+### Development
+
+```console
+yarn
+yarn test
+```
+
+PRs are welcome, as are links to examples that use samlify with other frameworks. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Talks
 
-[An introduction to Single Sign On](http://www.slideshare.net/TonyNgan/an-introduction-of-single-sign-on)
+[An introduction to Single Sign On](https://www.slideshare.net/TonyNgan/an-introduction-of-single-sign-on)
 
 ### License
 
