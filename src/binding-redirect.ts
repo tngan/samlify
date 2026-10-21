@@ -15,7 +15,6 @@ import type {
 import type { IdentityProvider as Idp } from './entity-idp';
 import type { ServiceProvider as Sp } from './entity-sp';
 import type Entity from './entity';
-import * as url from 'url';
 import { wording, namespace } from './urn';
 
 const binding = wording.binding;
@@ -53,6 +52,22 @@ function pvPair(param: string, value: string, first?: boolean): string {
 }
 
 /**
+ * Whether the URL already carries a non-empty query string, i.e. text after a
+ * `?` that comes before any `#`. Same answer `url.parse(baseUrl).query` gave,
+ * without the deprecated parser (DEP0169) and without throwing on the
+ * scheme-less or relative locations metadata may declare, which `new URL()`
+ * rejects.
+ *
+ * @param baseUrl endpoint location from metadata
+ */
+function hasQueryString(baseUrl: string): boolean {
+  const hashIndex = baseUrl.indexOf('#');
+  const beforeHash = hashIndex === -1 ? baseUrl : baseUrl.slice(0, hashIndex);
+  const queryIndex = beforeHash.indexOf('?');
+  return queryIndex !== -1 && queryIndex < beforeHash.length - 1;
+}
+
+/**
  * Compose the final redirect URL, deflate/base64/urlencode the SAML message,
  * optionally append the detached signature.
  *
@@ -62,7 +77,7 @@ function pvPair(param: string, value: string, first?: boolean): string {
 function buildRedirectURL(opts: BuildRedirectConfig): string {
   const { baseUrl, type, isSigned, context, entitySetting } = opts;
   let { relayState = '' } = opts;
-  const noParams = (url.parse(baseUrl).query || []).length === 0;
+  const noParams = !hasQueryString(baseUrl);
   const queryParam = libsaml.getQueryParamByType(type);
   // SAML redirect binding: deflate → base64 → URL-encode.
   const samlRequest = encodeURIComponent(utility.base64Encode(utility.deflateString(context)));
@@ -121,7 +136,7 @@ function loginRequestRedirectURL(
   // <SingleSignOnService> entry with the HTTP-Redirect Binding URI.
   // When that endpoint is absent, getSingleSignOnService returns the raw
   // service map (an object) rather than a URL string — surface a clear
-  // error instead of letting it crash inside url.parse downstream.
+  // error instead of letting it crash inside buildRedirectURL downstream.
   if (typeof base !== 'string') {
     throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
   }
@@ -221,7 +236,7 @@ function loginResponseRedirectURL(
   // <AssertionConsumerService> entry with the HTTP-Redirect Binding URI.
   // When that endpoint is absent, getAssertionConsumerService returns
   // undefined or the raw service list — reject with a clear error rather
-  // than crashing in url.parse.
+  // than crashing in buildRedirectURL.
   if (typeof base !== 'string') {
     throw new Error('ERR_NO_REDIRECT_SSO_ENDPOINT');
   }
@@ -338,7 +353,7 @@ function logoutRequestRedirectURL(
   const base = metadata.target.getSingleLogoutService(binding.redirect);
   // saml-bindings §3.4 / saml-metadata §2.4.3: the target entity must declare
   // a <SingleLogoutService> with the HTTP-Redirect Binding URI. Otherwise the
-  // service map leaks through and crashes inside url.parse downstream.
+  // service map leaks through and crashes inside buildRedirectURL downstream.
   if (typeof base !== 'string') {
     throw new Error('ERR_NO_REDIRECT_SLO_ENDPOINT');
   }

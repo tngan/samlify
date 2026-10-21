@@ -153,4 +153,28 @@ test('#31 query param for sso/slo returns error', () => {
     const acsUrl = xml.documentElement.attributes.getNamedItem('AssertionConsumerServiceURL')?.value;
     expect(acsUrl).toBe('https://example.org/response');
   });
+
+  const redirectLoginUrlFor = (location: string): string => {
+    const _idp = identityProvider({
+      ...idpcfg,
+      singleSignOnService: [{
+        Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+        Location: location,
+      }],
+    });
+    return sp.createLoginRequest(_idp, 'redirect').context;
+  };
+
+  test('redirect binding starts the query when the endpoint has none', () => {
+    expect(redirectLoginUrlFor('https://idp.example.com/sso').startsWith('https://idp.example.com/sso?SAMLRequest=')).toBe(true);
+    expect(redirectLoginUrlFor('idp.example.com/sso').startsWith('idp.example.com/sso?SAMLRequest=')).toBe(true);
+  });
+
+  test('redirect binding appends to a query the endpoint already has', () => {
+    expect(redirectLoginUrlFor('https://idp.example.com/sso?tenant=acme').startsWith('https://idp.example.com/sso?tenant=acme&SAMLRequest=')).toBe(true);
+  });
+
+  test('redirect binding does not read a ? inside the fragment as a query', () => {
+    expect(redirectLoginUrlFor('https://idp.example.com/sso#a?b').startsWith('https://idp.example.com/sso#a?b?SAMLRequest=')).toBe(true);
+  });
 })();
