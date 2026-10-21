@@ -58,6 +58,7 @@
   "devDependencies": {
     "@authenio/samlify-xsd-schema-validator": "^1.0.5",
     "@eslint/js": "^9.39.5",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.4.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.5",

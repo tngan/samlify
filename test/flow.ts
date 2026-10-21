@@ -105,7 +105,7 @@ const parseRedirectUrlContextCallBack = (_context: string) => {
     SAMLResponse: _SAMLResponse,
     Signature: _Signature,
     SigAlg: _SigAlg, },
-    octetString: _octetString,
+  octetString: _octetString,
   };
 };
 
@@ -544,8 +544,8 @@ test('send response with signed assertion + custom transformation algorithms and
     {
       ...defaultSpConfig,
       transformationAlgorithms: [
-          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
+        'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+        'http://www.w3.org/2001/10/xml-exc-c14n#'
       ]
     }
   );
@@ -572,8 +572,8 @@ test('send response with signed assertion + custom transformation algorithms by 
     {
       ...defaultSpConfig,
       transformationAlgorithms: [
-          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
+        'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+        'http://www.w3.org/2001/10/xml-exc-c14n#'
       ]
     }
   );
@@ -605,8 +605,8 @@ test('send response with signed assertion + custom transformation algorithms by 
     {
       ...defaultSpConfig,
       transformationAlgorithms: [
-          'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
+        'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+        'http://www.w3.org/2001/10/xml-exc-c14n#'
       ]
     }
   );
@@ -620,7 +620,7 @@ test('send response with signed assertion + custom transformation algorithms by 
     createTemplateCallback(idpNoEncrypt, sp, binding.simpleSign, user),
     undefined,
     'relaystate'
-    ) as SimpleSignBindingContext;
+  ) as SimpleSignBindingContext;
   // receiver (caution: only use metadata and public key when declare pair-up in oppoent entity)
   const octetString = buildSimpleSignOctetString(type, SAMLResponse, sigAlg, relayState, signature);
   const { samlContent, extract } = await sp.parseLoginResponse(idpNoEncrypt, 'simpleSign', { body: { SAMLResponse, Signature: signature, SigAlg:sigAlg }, octetString });
@@ -671,7 +671,7 @@ test('send response with [custom template] signed assertion by redirect and pars
     createTemplateCallback(idpcustomNoEncrypt, sp, binding.redirect, user),
     undefined,
     'relaystate'
-    );
+  );
   const query = url.parse(context).query;
   expect(query!.includes('SAMLResponse=')).toBe(true);
   expect(query!.includes('SigAlg=')).toBe(true);
@@ -741,7 +741,7 @@ test('send response with signed message by redirect and parse it', async () => {
     createTemplateCallback(idpNoEncrypt, spNoAssertSign, binding.redirect, user),
     undefined,
     'relaystate'
-    );
+  );
   const query = url.parse(context).query;
   expect(query!.includes('SAMLResponse=')).toBe(true);
   expect(query!.includes('SigAlg=')).toBe(true);
@@ -811,7 +811,7 @@ test('send response with [custom template] and signed message by redirect and pa
     createTemplateCallback(idpcustomNoEncrypt, spNoAssertSign, binding.redirect, user),
     undefined,
     'relaystate'
-    );
+  );
   const query = url.parse(context).query;
   expect(query!.includes('SAMLResponse=')).toBe(true);
   expect(query!.includes('SigAlg=')).toBe(true);
@@ -884,7 +884,7 @@ test('send response with signed assertion + signed message by redirect and parse
     createTemplateCallback(idpNoEncrypt, spWantMessageSign, binding.redirect, user),
     undefined,
     'relaystate'
-    );
+  );
   const query = url.parse(context).query;
   expect(query!.includes('SAMLResponse=')).toBe(true);
   expect(query!.includes('SigAlg=')).toBe(true);
@@ -961,7 +961,7 @@ test('send response with [custom template] and signed assertion + signed message
     createTemplateCallback(idpcustomNoEncrypt, spWantMessageSign, binding.redirect, user),
     undefined,
     'relaystate'
-    );
+  );
   const query = url.parse(context).query;
   expect(query!.includes('SAMLResponse=')).toBe(true);
   expect(query!.includes('SigAlg=')).toBe(true);

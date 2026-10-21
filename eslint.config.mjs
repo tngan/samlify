@@ -1,6 +1,7 @@
 // @ts-check
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import stylistic from '@stylistic/eslint-plugin';
 
 export default tseslint.config(
   {
@@ -23,6 +24,18 @@ export default tseslint.config(
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none', ignoreRestSiblings: true }],
+    },
+  },
+  {
+    // Whitespace rules that .editorconfig used to describe, now enforced in CI.
+    files: ['**/*.{ts,mjs,js}'],
+    plugins: { '@stylistic': stylistic },
+    rules: {
+      '@stylistic/indent': ['error', 2],
+      '@stylistic/no-tabs': 'error',
+      '@stylistic/no-trailing-spaces': 'error',
+      '@stylistic/eol-last': 'error',
+      '@stylistic/linebreak-style': ['error', 'unix'],
     },
   },
   {
