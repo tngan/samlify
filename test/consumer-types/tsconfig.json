@@ -10,5 +10,5 @@
     "lib": ["es2020"],
     "types": ["node"]
   },
-  "files": ["index.ts"]
+  "files": ["index.ts", "express-request-compat.ts"]
 }

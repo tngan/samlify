@@ -3,11 +3,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     include: ['test/**/*.ts'],
-    // test/typecheck/** is compile-time-only (tsconfig.typecheck.json /
-    // `yarn test:types`); it has no runtime assertions, so keep vitest
-    // from collecting it as an empty/failing suite. Same for
-    // test/consumer-types/** (compiled against the emitted declarations).
-    exclude: ['node_modules', 'build', 'test/typecheck/**', 'test/consumer-types/**'],
+    // test/consumer-types/** is compile-time-only (`yarn test:types`, against
+    // the emitted declarations); it has no runtime assertions, so keep vitest
+    // from collecting it as an empty/failing suite.
+    exclude: ['node_modules', 'build', 'test/consumer-types/**'],
     globals: true,
     environment: 'node',
     coverage: {

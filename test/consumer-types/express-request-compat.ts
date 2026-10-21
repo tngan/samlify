@@ -9,8 +9,8 @@
  * `parseLoginRequest` / `parseLoginResponse` / `parseLogoutRequest` /
  * `parseLogoutResponse` started failing to compile (TS2345 / TS2322).
  *
- * This file is type-checked (not run) via `tsconfig.typecheck.json`,
- * wired into `yarn test`. It has no runtime assertions on purpose: the
+ * This file is type-checked (not run) against the emitted declarations
+ * by `yarn test:types`, wired into `yarn test`. It has no runtime assertions on purpose: the
  * regression is purely at the type level, so a vitest runtime test
  * (types erased) cannot catch it.
  *
@@ -20,7 +20,7 @@
  * mode and proves the Express mock genuinely reproduces it (if the mock
  * is weakened so it no longer reproduces, that line errors instead).
  */
-import type { ESamlHttpRequest } from '../../src/types';
+import type { ESamlHttpRequest } from '../../types/src/types';
 
 /**
  * Exact shape of Express's `req.query` (`qs.ParsedQs` from @types/qs,
